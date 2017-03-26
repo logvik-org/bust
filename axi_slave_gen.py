@@ -4,11 +4,13 @@
 #  More details.
 
 import os
-
+from reg import Reg
 
 filepath = "test/output.txt"
-wregs = ['drp_address', 'drp_data', 'transceiver_settings']
-rregs = ['transceiver_status', 'run_status', 'dec8b10b_errcnt']
+wregs = [Reg('drp_address', True, 0), Reg('drp_data', True, 1),
+         Reg('transceiver_settings', True, 2)]
+rregs = [Reg('transceiver_status', False, 3), Reg('run_status', False, 4),
+         Reg('dec8b10b_errcnt', False, 5)]
 dataSize = 32
 addrSize = 32
 
@@ -38,16 +40,15 @@ def writePkg(filepath, modName, wregs, rregs, dataSize, addrSize):
         print('type t_' + modName + '_reg_write is record', file=f)
 
         for i, r in enumerate(wregs):
-            print(r + ' : t_axi_data;', file=f)
+            print(r.name + ' : t_axi_data; -- reg ' + str(r.number), file=f)
         print('end record;\n', file=f)
 
         print('type t_' + modName + '_reg_read is record', file=f)
 
         for i, r in enumerate(rregs):
-            print(r + ' : t_axi_data;', file=f)
+            print(r.name + ' : t_axi_data; -- reg ' + str(r.number), file=f)
         print('end record;\n', file=f)
 
 
 def writeGlobalPkg(filepath, dataSize, addrSize):
     ensureDirExist(filepath)
-    
