@@ -1,7 +1,7 @@
 ## The attributes of a axi data register
 #
 # @param name The name of the register, to be used in the reg record \n
-# @param mode (r/rw) - true -> rw, false -> r \n
+# @param mode (r/rw) - true -> rw, false -> ro \n
 # @param number Which regnumber in the module, word-addressable \n
 class Reg(object):
     size = 0
