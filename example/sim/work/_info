@@ -1,0 +1,75 @@
+m255
+K4
+z2
+13
+cModel Technology
+d/home/ogre/Dropbox/Project/axi_slave_gen/test
+!s112 0.1
+!i10d 8192
+!i10e 25
+!i10f 100
+Emodule_name_axi_handler
+Z0 w1494470028
+Z1 DPx4 work 15 module_name_pkg 0 22 WdM`4RW7go@fkehRfSbJg1
+Z2 DPx4 ieee 11 numeric_std 0 22 WES[o8HS0jHV[MIXQk2Ha1
+Z3 DPx3 std 6 textio 0 22 Y8d?=bLj9m4jiPLbo;>GT0
+Z4 DPx4 ieee 14 std_logic_1164 0 22 1bm?@Gd;P>[>_lN8Do9gP3
+Z5 d/home/ogre/Dropbox/Project/axi_slave_gen/example/sim
+Z6 8/home/ogre/Dropbox/Project/axi_slave_gen/example/hdl/axi_module_name_reg.vhd
+Z7 F/home/ogre/Dropbox/Project/axi_slave_gen/example/hdl/axi_module_name_reg.vhd
+l0
+L15
+V;59gm<=YW6KBHIG^0g9cK2
+!s100 I4ae2JE=;hJRk0hHUYj[m3
+Z8 OL;C;10.2c_5;57
+33
+Z9 !s110 1494470034
+!i10b 1
+Z10 !s108 1494470034.614393
+Z11 !s90 -reportprogress|300|-work|work|-2008|-explicit|-vopt|/home/ogre/Dropbox/Project/axi_slave_gen/example/hdl/axi_module_name_reg.vhd|
+Z12 !s107 /home/ogre/Dropbox/Project/axi_slave_gen/example/hdl/axi_module_name_reg.vhd|
+!i111 0
+Z13 o-work work -2008 -explicit
+Z14 tExplicit 1
+Abehavior
+R1
+R2
+R3
+R4
+Z15 DEx4 work 23 module_name_axi_handler 0 22 ;59gm<=YW6KBHIG^0g9cK2
+l95
+L70
+VSkEfX9Tn15]3408Nj?_Vi2
+!s100 Hb4Yi:RK@dgKngXET5k;k2
+R8
+33
+R9
+!i10b 1
+R10
+R11
+R12
+!i111 0
+R13
+R14
+Pmodule_name_pkg
+R2
+R3
+R4
+w1494468907
+R5
+8/home/ogre/Dropbox/Project/axi_slave_gen/example/hdl/module_name_pkg.vhd
+F/home/ogre/Dropbox/Project/axi_slave_gen/example/hdl/module_name_pkg.vhd
+l0
+L14
+VWdM`4RW7go@fkehRfSbJg1
+R8
+33
+R13
+R14
+!s100 6TojLin9j]EZjN?@?d<kJ0
+!s110 1494468912
+!i10b 1
+!s108 1494468912.927912
+!s90 -reportprogress|300|-work|work|-2008|-explicit|-vopt|/home/ogre/Dropbox/Project/axi_slave_gen/example/hdl/module_name_pkg.vhd|
+!s107 /home/ogre/Dropbox/Project/axi_slave_gen/example/hdl/module_name_pkg.vhd|
+!i111 0
