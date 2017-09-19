@@ -11,11 +11,11 @@ use ieee.std_logic_1164.all;
 package axi_pkg is
   
   -- Slave data & addr widths
-  constant C_axi_data_width : natural := 32;
-  constant C_axi_addr_width : natural := 32;
+  constant C_AXI_DATA_WIDTH : natural := 32;
+  constant C_AXI_ADDR_WIDTH : natural := 32;
 
-  subtype t_axi_data is std_logic_vector(C_axi_data_width-1 downto 0);
-  subtype t_axi_addr is std_logic_vector(C_axi_addr_width-1 downto 0);
+  subtype t_axi_data is std_logic_vector(C_AXI_DATA_WIDTH-1 downto 0);
+  subtype t_axi_addr is std_logic_vector(C_AXI_ADDR_WIDTH-1 downto 0);
   
  --! AXI bus record
   type t_axi_interconnect_to_slave is record
@@ -28,7 +28,7 @@ package axi_pkg is
     bready  : std_logic;
     rready  : std_logic;
     wdata   : t_axi_data;
-    wstrb   : std_logic_vector((C_axi_data_width/8)-1 downto 0);
+    wstrb   : std_logic_vector((C_AXI_DATA_WIDTH/8)-1 downto 0);
     wvalid  : std_logic;
   end record;
 

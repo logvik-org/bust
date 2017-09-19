@@ -19,7 +19,7 @@ entity module_name_axi_handler is
     --! global clock signal
     clk         : in  std_logic;
     --! global reset signal. this signal is active low
-    areset_n    : in  std_logic;
+    areset_n      : in  std_logic;
     --! write address (issued by master, acceped by slave)
     awaddr      : in  t_module_name_addr;
     --! write address valid. this signal indicates that the master signaling
@@ -198,16 +198,16 @@ begin
       if (slv_reg_wren = '1') then
 
         case awaddr_i is
-          when C_addr_reg0 =>
+          when C_ADDR_REG0 =>
 
             axi_rw_regs_i.reg0.run       <= wdata(0);
             axi_rw_regs_i.reg0.test_word <= wdata(8 downto 1);
 
-          when C_addr_reg1 =>
+          when C_ADDR_REG1 =>
 
             axi_rw_regs_i.reg1 <= wdata;
 
-          when C_addr_reg2 =>
+          when C_ADDR_REG2 =>
 
             axi_rw_regs_i.reg2 <= wdata(0);
 
@@ -311,21 +311,25 @@ begin
     -- address decoding for reading registers
     reg_data_out <= (others => '0');
     case araddr_i is
-      when C_addr_reg0 =>
+      when C_ADDR_REG0 =>
 
         reg_data_out(0)          <= axi_rw_regs_i.reg0.run;
         reg_data_out(8 downto 1) <= axi_rw_regs_i.reg0.test_word;
 
-      when C_addr_reg1 =>
+      when C_ADDR_REG1 =>
 
         reg_data_out <= axi_rw_regs.reg1;
 
-      when C_addr_reg2 =>
+      when C_ADDR_REG2 =>
 
         reg_data_out(0) <= axi_rw_regs.reg2;
 
-      when C_addr_reg3 =>
+      when C_ADDR_REG3 =>
         reg_data_out <= axi_ro_regs.reg3;
+
+      when C_ADDR_REG4 =>
+        reg_data_out(5 downto 0) <= axi_ro_regs.reg4.test;
+        reg_data_out(6)          <= axi_ro_regs.reg4.test2;
 
       when others =>
         null;
