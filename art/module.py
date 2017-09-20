@@ -89,6 +89,10 @@ class Register:
         else:
             raise UndefinedRegisterType(reg['type'])
 
+        # Perform check that data bits are not exceeded
+        self.checkRegisterDataLength(mod_data_length)
+        
+
     def __str__(self):
         string = "Name: " + self.name + "\n"
         string += "Mode: " + self.mode + "\n"
@@ -110,4 +114,5 @@ class Register:
         exceed data bits of module
         
         """
-        pass
+        if self.length > module:
+            raise ModuleDataBitsExceeded(self.name, self.length, module)

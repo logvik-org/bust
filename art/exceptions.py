@@ -14,6 +14,12 @@ class ModuleDataBitsExceeded(Exception):
     """! @brief Raised when the specified module data bits are exceeded
 
     """
+    def __init__(self, register, reglength, mod_data_length):
+        msg = "\nFAILURE:\n"
+        msg += "In register " + register + "\n"
+        msg += "Register length exceeded module data length by "
+        msg += str(reglength-mod_data_length)
+        super().__init__(msg)
 
 
 class UndefinedRegisterType(RuntimeError):
