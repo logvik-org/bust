@@ -1,6 +1,7 @@
 from utils import indentString
 from utils import jsonParser
 from exceptions import *
+import sys
 
 
 def test():
@@ -8,10 +9,10 @@ def test():
         
         a = jsonParser()
         mod = Module(a)
-        print(mod)
-        print(mod.returnModulePkgVHDL())
+        #print(mod)
+        #print(mod.returnModulePkgVHDL())
 
-        print(mod.printJSON(True))
+        #print(mod.printJSON(True))
         print(mod.returnRegisterPIFVHDL())
 
     except Exception as e:
@@ -57,77 +58,87 @@ class Module:
                 raise InvalidRegister(i)
 
     def returnRegisterPIFVHDL(self):
+
         s = 'use work.' + self.name + '.all;\n\n'
         s += 'entity ' + self.name + '_axi_pif is\n\n'
 
-        s += indentString('port (') + '\n'
+        s += indentString('port (')
 
-        s += indentString('-- register record signals', 2) + '\n'
-        s += indentString('axi_ro_regs : in  t_', 2) + self.name + '_ro_regs;\n'
-        s += indentString('axi_rw_regs : out t_', 2) + self.name + '_rw_regs;\n'
-        s += '\n'
-        s += indentString('-- bus signals', 2) + '\n'
-        s += indentString('clk         : in  std_logic', 2) + ':\n'
-        s += indentString('areset_n    : in  std_logic', 2) + ';\n'
-        s += indentString('awaddr      : in  t_', 2) + self.name + '_addr' + ';\n'
-        s += indentString('awvalid     : in  std_logic', 2) + ';\n'
-        s += indentString('awready     : out std_logic', 2) + ';\n'
-        s += indentString('wdata       : in  t_', 2) + self.name + '_data' + ';\n'
-        s += indentString('wvalid      : in  std_logic', 2) + ';\n'
-        s += indentString('wready      : out std_logic', 2) + ';\n'
-        s += indentString('bresp       : out std_logic_vector(1 downto 0)', 2) + ';\n'
-        s += indentString('bvalid      : out std_logic', 2) + ';\n'
-        s += indentString('bready      : in  std_logic', 2) + ';\n'
-        s += indentString('araddr      : in  t_', 2) + self.name + '_addr' + ';\n'
-        s += indentString('arvalid     : in  std_logic', 2) + ';\n'
-        s += indentString('arready     : out std_logic', 2) + ';\n'
-        s += indentString('rdata       : out t_', 2) + self.name + '_data' + ';\n'
-        s += indentString('rresp       : out std_logic_vector(1 downto 0)', 2) + ';\n'
-        s += indentString('rvalid      : out std_logic', 2) + ';\n'
-        s += indentString('rready      : in  std_logic', 2) + '\n'
-        s += indentString(');', 2) + '\n'
+        par = ''
+        par += '-- register record signals\n'
+        par += 'axi_ro_regs : in  t_' + self.name + '_ro_regs;\n'
+        par += 'axi_rw_regs : out t_' + self.name + '_rw_regs;\n'
+        par += '\n'
+        par += '-- bus signals\n'
+        par += 'clk         : in  std_logic;\n'
+        par += 'areset_n    : in  std_logic;\n'
+        par += 'awaddr      : in  t_' + self.name + '_addr;\n'
+        par += 'awvalid     : in  std_logic;\n'
+        par += 'awready     : out std_logic;\n'
+        par += 'wdata       : in  t_' + self.name + '_data;\n'
+        par += 'wvalid      : in  std_logic;\n'
+        par += 'wready      : out std_logic;\n'
+        par += 'bresp       : out std_logic_vector(1 downto 0);\n'
+        par += 'bvalid      : out std_logic;\n'
+        par += 'bready      : in  std_logic;\n'
+        par += 'araddr      : in  t_' + self.name + '_addr;\n'
+        par += 'arvalid     : in  std_logic;\n'
+        par += 'arready     : out std_logic;\n'
+        par += 'rdata       : out t_' + self.name + '_data;\n'
+        par += 'rresp       : out std_logic_vector(1 downto 0);\n'
+        par += 'rvalid      : out std_logic;\n'
+        par += 'rready      : in  std_logic\n'
+        par += ');\n'
+        s += indentString(par, 2)
+        
         s += 'end ' + self.name + '_axi_pif;\n\n'
 
+        
         s += 'architecture behavior of ' + self.name + '_axi_pif is\n\n'
 
-        s += indentString('-- internal signal for readback') + '\n'
-        s += indentString('signal axi_rw_regs_i : t_')
-        s += self.name + '_rw_regs;\n\n'
+        par = ''
+        par += '-- internal signal for readback' + '\n'
+        par += 'signal axi_rw_regs_i : t_'
+        par += self.name + '_rw_regs;\n\n'
 
-        s += indentString('-- internal bus signals for readback') + '\n'
-        s += indentString('signal awaddr_i      : t_') + self.name + '_addr;\n'
-        s += indentString('signal awready_i     : std_logic') + ';\n'
-        s += indentString('signal wready_i      : std_logic') + ';\n'
-        s += indentString('signal bresp_i       : std_logic_vector(1 downto 0)')
-        s += ';\n'
-        s += indentString('signal bvalid_i      : std_logic') + ';\n'
-        s += indentString('signal araddr_i      : t_') + self.name + '_addr;\n'
-        s += indentString('signal arready_i     : std_logic') + ';\n'
-        s += indentString('signal rdata_i       : t_') + self.name + '_data;\n'
-        s += indentString('signal rresp_i       : std_logic_vector(1 downto 0)')
-        s += ';\n'
-        s += indentString('signal rvalid_i      : std_logic') + ';\n\n'
+        par += '-- internal bus signals for readback\n'
+        par += 'signal awaddr_i      : t_' + self.name + '_addr;\n'
+        par += 'signal awready_i     : std_logic;\n'
+        par += 'signal wready_i      : std_logic;\n'
+        par += 'signal bresp_i       : std_logic_vector(1 downto 0);\n'
+        par += 'signal bvalid_i      : std_logic;\n'
+        par += 'signal araddr_i      : t_' + self.name + '_addr;\n'
+        par += 'signal arready_i     : std_logic;\n'
+        par += 'signal rdata_i       : t_' + self.name + '_data;\n'
+        par += 'signal rresp_i       : std_logic_vector(1 downto 0);\n'
+        par += 'signal rvalid_i      : std_logic;\n\n'
 
-        s += indentString('signal slv_reg_rden : std_logic') + ';\n'
-        s += indentString('signal slv_reg_wren : std_logic') + ';\n'
-        s += indentString('signal reg_data_out : t_') + self.name + '_data;\n'
-        s += indentString('signal byte_index   : integer') + '; -- unused\n'
-        s += '\n'
+        par += 'signal slv_reg_rden : std_logic;\n'
+        par += 'signal slv_reg_wren : std_logic;\n'
+        par += 'signal reg_data_out : t_' + self.name + '_data;\n'
+        par += '-- signal byte_index   : integer' + '; -- unused\n\n'
+        s += indentString(par)
 
         s += 'begin\n\n'
         s += indentString('axi_rw_regs <= axi_rw_regs_i') + ';\n'
         s += '\n'
 
-        s += indentString('awready <= awready_i') + ';\n'
-        s += indentString('wready  <= wready_i') + ';\n'
-        s += indentString('bresp   <= bresp_i') + ';\n'
-        s += indentString('bvalid  <= bvalid_i') + ';\n'
-        s += indentString('arready <= arready_i') + ';\n'
-        s += indentString('rdata   <= rdata_i') + ';\n'
-        s += indentString('rresp   <= rresp_i') + ';\n'
-        s += indentString('rvalid  <= rvalid_i') + ';\n'
-        s += '\n'
+        par = ''
+        par += 'awready <= awready_i;\n'
+        par += 'wready  <= wready_i;\n'
+        par += 'bresp   <= bresp_i;\n'
+        par += 'bvalid  <= bvalid_i;\n'
+        par += 'arready <= arready_i;\n'
+        par += 'rdata   <= rdata_i;\n'
+        par += 'rresp   <= rresp_i;\n'
+        par += 'rvalid  <= rvalid_i;\n'
+        par += '\n'
 
+        s += indentString(par)
+        
+
+        s += indentString('p_awready : process(clk)') + ';\n'
+        
         
         return s
 
@@ -135,27 +146,30 @@ class Module:
     def returnModulePkgVHDL(self):
         s = "package " + self.name + "_pkg is"
         s += "\n\n"
-        s += indentString("constant C_" + self.name.upper())
-        s += "_ADDR_WIDTH : natural := " + str(self.addr_width) + ";\n"
-        s += indentString("constant C_" + self.name.upper())
-        s += "_DATA_WIDTH : natural := " + str(self.data_width) + ";\n"
-        s += "\n"
 
-        s += indentString("subtype t_" + self.name + "_addr is ")
-        s += "std_logic_vector(C_" + self.name.upper() + "_ADDR_WIDTH-1 "
-        s += "downto 0);\n"
+        par = ''
+        par += "constant C_" + self.name.upper()
+        par += "_ADDR_WIDTH : natural := " + str(self.addr_width) + ";\n"
+        par += "constant C_" + self.name.upper()
+        par += "_DATA_WIDTH : natural := " + str(self.data_width) + ";\n"
+        par += "\n"
 
-        s += indentString("subtype t_" + self.name + "_data is ")
-        s += "std_logic_vector(C_" + self.name.upper() + "_DATA_WIDTH-1 "
-        s += "downto 0);\n"
-        s += "\n"
+        par += "subtype t_" + self.name + "_addr is "
+        par += "std_logic_vector(C_" + self.name.upper() + "_ADDR_WIDTH-1 "
+        par += "downto 0);\n"
+
+        par += "subtype t_" + self.name + "_data is "
+        par += "std_logic_vector(C_" + self.name.upper() + "_DATA_WIDTH-1 "
+        par += "downto 0);\n"
+        par += "\n"
 
         for i in self.registers:
-            s += indentString("constant C_ADDR_" + i.name.upper())
-            s += " : t_" + self.name + "_addr := " + str(self.addr_width)
-            s += 'X"' + '%X' % i.address + '";\n'
-
-        s += '\n'
+            par += "constant C_ADDR_" + i.name.upper()
+            par += " : t_" + self.name + "_addr := " + str(self.addr_width)
+            par += 'X"' + '%X' % i.address + '";\n'
+        par += '\n'
+        s += indentString(par)
+        
         # Create all types for RW registers with records
         for i in self.registers:
             if i.mode == "rw" and i.regtype == "record":
@@ -177,7 +191,6 @@ class Module:
                 
         # The RW register record type
         s += indentString("type t_" + self.name + "_rw_regs is record")
-        s += "\n"
         for i in self.registers:
             if i.mode == "rw":
                 s += indentString(i.name, 2) + " : "
@@ -343,7 +356,7 @@ class Module:
         string += "Description: " + self.description + "\n"
         for i, reg in enumerate(self.registers):
             string += "Register " + str(i) + "\n"
-            string += indentString(str(reg), 2) +"\n"
+            string += indentString(str(reg), 2)
         return string
 
 
