@@ -137,8 +137,284 @@ class Module:
         s += indentString(par)
         
 
-        s += indentString('p_awready : process(clk)') + ';\n'
-        
+        s += indentString('p_awready : process(clk);\n')
+        s += indentString('begin\n')
+        s += indentString('if rising_edge(clk) then\n', 2)
+        s += indentString("if areset_n = '0' then\n", 3)
+        s += indentString("awready_i <= '0';\n", 4)
+        s += indentString("elsif (awready_i = '0' and awvalid = '1' ", 3)
+        s += "and wvalid = '1') then\n"
+        s += indentString("awready_i <= '1';\n", 4)
+        s += indentString('else\n', 3)
+        s += indentString("awready_i <= '0';\n", 4)
+        s += indentString('end if;\n', 3)
+        s += indentString('end if;\n', 2)
+        s += indentString('end process p_awready;\n')
+        s += '\n'
+
+        s += indentString('p_awaddr : process(clk);\n')
+        s += indentString('begin\n')
+        s += indentString('if rising_edge(clk) then\n', 2)
+        s += indentString("if areset_n = '0' then\n", 3)
+        s += indentString("awaddr_i <= (others => '0');\n", 4)
+        s += indentString("elsif (awready_i = '0' and awvalid = '1' ", 3)
+        s += "and wvalid = '1') then\n"
+        s += indentString("awaddr_i <= awaddr;\n", 4)
+        s += indentString('end if;\n', 3)
+        s += indentString('end if;\n', 2)
+        s += indentString('end process p_awaddr;\n')
+        s += '\n'
+
+        s += indentString('p_wready : process(clk);\n')
+        s += indentString('begin\n')
+        s += indentString('if rising_edge(clk) then\n', 2)
+        s += indentString("if areset_n = '0' then\n", 3)
+        s += indentString("wready_i <= '0';\n", 4)
+        s += indentString("elsif (wready_i = '0' and awvalid = '1' ", 3)
+        s += "and wvalid = '1') then\n"
+        s += indentString("wready_i <= '1';\n", 4)
+        s += indentString('else\n', 3)
+        s += indentString("wready_i <= '0';\n", 4)
+        s += indentString('end if;\n', 3)
+        s += indentString('end if;\n', 2)
+        s += indentString('end process p_wready;\n')
+        s += '\n'
+
+        s += indentString('slv_reg_wren <= wready_i and wvalid and awready_i and awvalid;\n')
+        s += '\n'
+        s += indentString('p_mm_select_write : process(clk);\n')
+        s += indentString('begin\n')
+        s += indentString("if areset_n = '0' then\n", 2)
+
+        # Assign default values
+        # @todo Ensure that record entries' and registers' default values are
+        # assigned properly
+        par = ''
+        # create a generator for looping through all rw regs
+        gen = (reg for reg in self.registers if reg.mode == "rw")
+        for reg in gen:
+
+            if reg.regtype == 'record':
+
+                for entry in reg.entries:
+                    par += 'axi_rw_regs_i.'
+                    par += reg.name + '.' + entry['name'] + ' <= '
+                    if entry['type'] == 'slv':
+                        par += "(others => '0');\n"
+                    elif entry['type'] == 'sl':
+                        par += "'0';\n"
+                    else:
+                        raise UndefinedEntryType("Unknown entry type: " + entry['type'])
+            elif reg.regtype == 'slv' or reg.regtype == 'default':
+                par += 'axi_rw_regs_i.'
+                par += reg.name + " <= (others => '0');\n"
+            elif reg.regtype == 'sl':
+                par += 'axi_rw_regs_i.'
+                par += reg.name + " <= '0';\n"
+            else:
+                raise UndefinedRegisterType("Unknown register type: " + reg.regtype)
+        par += '\n'
+        s += indentString(par, 3)
+
+        s += indentString('elsif rising_edge(clk) then\n', 2)
+        s += indentString("if (slv_reg_wren = '1') then\n", 3)
+        s += '\n'
+        s += indentString('case awaddr_i is\n', 4)
+
+        # create a generator for looping through all rw regs
+        gen = (reg for reg in self.registers if reg.mode == "rw")
+        for reg in gen:
+            s += indentString('when C_ADDR_', 5)
+            s += reg.name.upper() + ' =>\n\n'
+            par = ''
+            if reg.regtype == 'record':
+
+                lasthigh = -1
+                for entry in reg.entries:
+                    par += 'axi_rw_regs_i.' + reg.name + '.' + entry['name']
+                    par += ' <= wdata('
+                    if entry['type'] == 'sl':
+                        lasthigh += 1
+                        par += str(lasthigh)
+                    elif entry['type'] == 'slv':
+                        lasthigh += 1
+                        par += str(entry['length'] + lasthigh - 1)
+                        par += ' downto '
+                        par += str(lasthigh)
+                        lasthigh+= entry['length'] - 1
+                    else:
+                        raise UndefinedEntryType("Unknown entry type: " + entry['type'])
+                    par += ');\n'
+                    
+
+            elif reg.regtype == 'default':
+                par += 'axi_rw_regs_i.' + reg.name + ' <= wdata;\n'
+            elif reg.regtype == 'slv':
+                par += 'axi_rw_regs_i.' + reg.name + ' <= wdata('
+                par += str(reg.length-1) + ' downto 0);\n'
+            elif reg.regtype == 'sl':
+                par += 'axi_rw_regs_i.' + reg.name + ' <= wdata(0);\n'
+            else:
+                raise UndefinedRegisterType("Unknown register type: " + reg.regtype)
+            s += indentString(par, 6)            
+            s += '\n'
+
+        s += indentString('when others =>\n', 5)
+        s += indentString('null;\n', 6)
+        s += '\n'
+        s += indentString('end case;\n', 4)
+        s += indentString('end if;\n', 3)
+        s += indentString('end if;\n', 2)
+        s += indentString('end process p_mm_select_write;\n')
+        s += '\n'
+
+        s += indentString('p_write_response : process(clk)\n')
+        s += indentString('begin\n')
+        s += indentString('if rising_edge(clk) then\n', 2)
+        s += indentString("if areset_n = '0' then\n", 3)
+        s += indentString("bvalid_i <= '0';\n", 4)
+        s += indentString('bresp_i  <= "00";\n', 4)
+        s += indentString("elsif (awready_i = '1' and awvalid = '1' and ", 3)
+        s += "wready_i = '1' and wvalid = '1' and bvalid_i = '0') then\n"
+        s += indentString("bvalid_i <= '1';\n", 4)
+        s += indentString('bresp_i  <= "00";\n', 4)
+        s += indentString("elsif (bready = '1' and bvalid_i = '1') then\n", 3)
+        s += indentString("bvalid_i <= '0';\n", 4)
+        s += indentString('end if;\n', 3)
+        s += indentString('end if;\n', 2)
+        s += indentString('end process p_write_response;\n')
+        s += '\n'
+
+        s += indentString('p_arready : process(clk)\n')
+        s += indentString('begin\n')
+        s += indentString('if rising_edge(clk) then\n', 2)
+        s += indentString("if areset_n = '0' then\n", 3)
+        s += indentString("arready_i <= '0';\n", 4)
+        s += indentString("araddr_i  <= (others => '0';\n", 4)
+        s += indentString("elsif (arready_i = '0' and arvalid = '1') then\n", 3)
+        s += indentString("arready_i <= '1';\n", 4)
+        s += indentString('araddr_i  <= araddr;\n', 4)
+        s += indentString('else\n', 3)
+        s += indentString("arready_i <= '0';\n", 4)
+        s += indentString('end if;\n', 3)
+        s += indentString('end if;\n', 2)
+        s += indentString('end process p_arready;\n')
+        s += '\n'
+
+        s += indentString('p_arvalid : process(clk)\n')
+        s += indentString('begin\n')
+        s += indentString('if rising_edge(clk) then\n', 2)
+        s += indentString("if areset_n = '0' then\n", 3)
+        s += indentString("rvalid_i <= '0';\n", 4)
+        s += indentString('rresp_i  <= "00";\n', 4)
+        s += indentString("elsif (arready_i = '1' and arvalid = '1' and ", 3)
+        s += "rvalid_i = '0') then\n"
+        s += indentString("rvalid_i <= '1';\n", 4)
+        s += indentString('rresp_i  <= "00";\n', 4)
+        s += indentString("elsif (rvalid_i = '1' and rready = '1') then\n", 3)
+        s += indentString("rvalid_i <= '0';\n", 4)
+        s += indentString('end if;\n', 3)
+        s += indentString('end if;\n', 2)
+        s += indentString('end process p_arvalid;\n')
+        s += '\n'
+
+        s += indentString('slv_reg_rden <= arready_i and arvalid and ')
+        s += '(not rvalid_i);\n'
+        s += '\n'
+        s += indentString('p_mm_select_read : process (all)\n')
+        s += indentString('begin\n')
+        s += '\n'
+        s += indentString("reg_data_out <= (others => '0');\n", 2)
+        s += '\n'
+        s += indentString('case aradrr_i is\n', 2)
+        s += '\n'
+        # Generator for looping through all "readable registers, rw&ro
+        gen = [reg for reg in self.registers
+               if reg.mode == "ro" or reg.mode == "rw"]
+        for reg in gen:
+            s += indentString('when C_ADDR_', 3)
+            s += reg.name.upper() + ' =>\n\n'
+            par = ''
+            
+            if reg.regtype == 'record':
+
+                lasthigh = -1
+                for entry in reg.entries:
+                    lasthigh += 1
+                    par += 'reg_data_out('
+
+                    if entry['type'] == 'sl':
+                        par += str(lasthigh)
+                    elif entry['type'] == 'slv':
+                        par += str(entry['length'] + lasthigh - 1)
+                        par += ' downto ' + str(lasthigh)
+                        lasthigh += entry['length'] - 1
+                    else:
+                        raise UndefinedEntryType('Unknown entry type: ' + entry['type'])
+                    if reg.mode == 'rw':
+                        par += ') <= axi_rw_regs_i.'
+                    elif reg.mode == 'ro':
+                        par += ') <= axi_ro_regs_i.'
+                    else:
+                        raise Exception("Unknown error occurred")
+                    par += reg.name + '.' + entry['name'] + ';\n'
+
+            elif reg.regtype == 'default':
+                par += 'reg_data_out <= '
+                if reg.mode == 'rw':
+                    par += 'axi_rw_regs_i.'
+                elif reg.mode == 'ro':
+                    par += 'axi_ro_regs_i.'
+                else:
+                        raise Exception("Unknown error occurred")
+                par += reg.name + ';\n'
+
+            elif reg.regtype == 'slv':
+                par += 'reg_data_out('
+                par += str(reg.length-1) + ' downto 0) <= '
+                if reg.mode == 'rw':
+                    par += 'axi_rw_regs_i.'
+                elif reg.mode == 'ro':
+                    par += ') <= axi_ro_regs_i.'
+                else:
+                        raise Exception("Unknown error occurred")
+                par += reg.name + ';\n'
+
+            elif reg.regtype == 'sl':
+                par += 'reg_data_out(0) <= '
+                if reg.mode == 'rw':
+                    par += 'axi_rw_regs_i.'
+                elif reg.mode == 'ro':
+                    par += ') <= axi_ro_regs_i.'
+                else:
+                        raise Exception("Unknown error occurred")
+                par += reg.name + ';\n'
+
+            else:
+                raise UndefinedRegisterType("Unknown register type: " + reg.regtype)
+            s += indentString(par, 4)
+            s += '\n'
+
+        s += indentString('when others =>\n', 3)
+        s += indentString('null;\n', 4)
+        s += '\n'
+        s += indentString('end case;\n', 2)
+        s += indentString('end process p_mm_select_read;\n')
+        s += '\n'
+
+        s += indentString('p_output : process(clk)\n')
+        s += indentString('begin\n')
+        s += indentString('if rising_edge(clk) then\n', 2)
+        s += indentString("if areset_n = '0' then\n", 3)
+        s += indentString("rdata_i <= (others => '0');\n", 4)
+        s += indentString("elsif (slv_reg_rden = '1') then\n", 3)
+        s += indentString("rdata_i <= reg_data_out;\n", 4)
+        s += indentString('end if;\n', 3)
+        s += indentString('end if;\n', 2)
+        s += indentString('end process p_arvalid;\n')
+        s += '\n'
+
+        s += 'end behavior;'
         
         return s
 
