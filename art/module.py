@@ -9,11 +9,13 @@ def test():
         
         a = jsonParser()
         mod = Module(a)
-        #print(mod)
-        #print(mod.returnModulePkgVHDL())
+        print(mod)
+        print(mod.returnModulePkgVHDL())
 
-        #print(mod.printJSON(True))
+        print(mod.printJSON(True))
         print(mod.returnRegisterPIFVHDL())
+        print(mod.returnBusPkgVHDL())
+        print(mod.returnModuleVHDL())
 
     except Exception as e:
         print(str(e))
@@ -29,9 +31,12 @@ class Module:
 
         """
         self.name = mod['name']
-        self.addr_width = mod['addr_width']
-        self.data_width = mod['data_width']
+        self.addrWidth = mod['addr_width']
+        self.dataWidth = mod['data_width']
         self.description = mod['description']
+        self.busType = 'axi'
+        self.busDataWitdh = 32
+        self.busAddrWitdh = 32
         self.registers = []
         self.addresses = []
         self.addRegisters(mod['register'])
@@ -43,24 +48,28 @@ class Module:
             if self.registerValid(i):
                 # Check if size is specified
                 if "address" in i:
-                    addr = int(i['address'], self.addr_width)
+                    addr = int(i['address'], self.addrWidth)
                     if self.isAddressIsFree(addr):
                         self.isAddressOutOfRange(addr)
                         self.addresses.append(addr)
                         self.registers.append(Register(i, addr,
-                                                       self.data_width))
+                                                       self.dataWidth))
                     else:
                         raise InvalidAddress(i['name'], addr)
                 else:
                     self.registers.append(Register(i, self.getNextAddress(),
-                                                   self.data_width))
+                                                   self.dataWidth))
             else:
                 raise InvalidRegister(i)
 
     def returnRegisterPIFVHDL(self):
 
-        s = 'use work.' + self.name + '.all;\n\n'
-        s += 'entity ' + self.name + '_axi_pif is\n\n'
+        s = 'library ieee;\n'
+        s += 'use ieee.std_logic_1164.all;\n'
+        s += 'use ieee.numeric_std.all;\n'
+        s += '\n'
+        s += 'use work.' + self.name + '.all;\n\n'
+        s += 'entity ' + self.name + '_' + self.busType + '_pif is\n\n'
 
         s += indentString('port (')
 
@@ -420,14 +429,18 @@ class Module:
 
 
     def returnModulePkgVHDL(self):
-        s = "package " + self.name + "_pkg is"
+        s = 'library ieee;\n'
+        s += 'ieee.std_logic_1164.all;\n'
+        s += 'ieee.numeric_std.all;\n'
+        s += '\n'
+        s += "package " + self.name + "_pkg is"
         s += "\n\n"
 
         par = ''
         par += "constant C_" + self.name.upper()
-        par += "_ADDR_WIDTH : natural := " + str(self.addr_width) + ";\n"
+        par += "_ADDR_WIDTH : natural := " + str(self.addrWidth) + ";\n"
         par += "constant C_" + self.name.upper()
-        par += "_DATA_WIDTH : natural := " + str(self.data_width) + ";\n"
+        par += "_DATA_WIDTH : natural := " + str(self.dataWidth) + ";\n"
         par += "\n"
 
         par += "subtype t_" + self.name + "_addr is "
@@ -441,7 +454,7 @@ class Module:
 
         for i in self.registers:
             par += "constant C_ADDR_" + i.name.upper()
-            par += " : t_" + self.name + "_addr := " + str(self.addr_width)
+            par += " : t_" + self.name + "_addr := " + str(self.addrWidth)
             par += 'X"' + '%X' % i.address + '";\n'
         par += '\n'
         s += indentString(par)
@@ -470,7 +483,7 @@ class Module:
         for i in self.registers:
             if i.mode == "rw":
                 s += indentString(i.name, 2) + " : "
-                if i.regtype == "default" or (i.regtype == "slv" and i.length == self.data_width):
+                if i.regtype == "default" or (i.regtype == "slv" and i.length == self.dataWidth):
                     s += "t_" + self.name + "_data;\n"
                 elif i.regtype == "slv":
                     s += "std_logic_vector(" + str(i.length-1) + " downto 0);\n"
@@ -507,7 +520,7 @@ class Module:
         for i in self.registers:
             if i.mode == "ro":
                 s += indentString(i.name, 2) + " : "
-                if i.regtype == "default" or (i.regtype == "slv" and i.length == self.data_width):
+                if i.regtype == "default" or (i.regtype == "slv" and i.length == self.dataWidth):
                     s += "t_" + self.name + "_data;\n"
                 elif i.regtype == "slv":
                     s += "std_logic_vector(" + str(i.length-1) + " downto 0);\n"
@@ -523,7 +536,184 @@ class Module:
         s += "end package " + self.name + "_pkg;"
         
         return s
+
+    def returnBusPkgVHDL(self):
+        s = 'library ieee;\n'
+        s += 'use ieee.std_logic_1164.all;\n'
+        s += '\n'
+
+        s += 'package ' + self.busType + '_pgk is\n'
+        s += '\n\n'
+
+        dataWidthConstant = 'C_' + self.busType.upper() + '_DATA_WIDTH'
+        addrWidthConstant = 'C_' + self.busType.upper() + '_ADDR_WIDTH'
+        dataSubType = 't_' + self.busType + '_data'
+        addrSubType = 't_' + self.busType + '_addr'
         
+        par = ''
+        par += 'constant ' + dataWidthConstant
+        par += ' : natural := ' + str(self.busDataWitdh) + ';\n'
+        par += 'constant ' + addrWidthConstant
+        par += ' : natural := ' + str(self.busAddrWitdh) + ';\n'
+        par += '\n'
+        par += 'subtype ' + dataSubType + ' is std_logic_vector('
+        par += dataWidthConstant + '-1 downto 0);\n'
+        par += 'subtype ' + addrSubType + ' is std_logic_vector('
+        par += addrWidthConstant + '-1 downto 0);\n'
+        par += '\n'
+        s += indentString(par)
+
+        s += indentString('type t_' + self.busType)
+        s += '_interconnect_to_slave is record\n'
+        par = ''
+        par += 'araddr  : ' + addrSubType + ';\n'
+        par += 'arprot  : std_logic_vector(2 downto 0);\n'
+        par += 'arvalid : std_logic;\n'
+        par += 'awaddr  : ' + addrSubType + ';\n'
+        par += 'awprot  : std_logic_vector(2 downto 0);\n'
+        par += 'awvalid : std_logic;\n'
+        par += 'bready  : std_logic;\n'
+        par += 'rready  : std_logic;\n'
+        par += 'wdata   : ' + dataSubType + ';\n'
+        par += 'wstrb   : std_logic_vector((' + dataWidthConstant
+        par += '/8)-1 downto 0);\n'
+        par += 'wvalid  : std_logic;\n'
+        s += indentString(par, 2)
+        s += indentString('end record;\n')
+        s += '\n'
+
+        s += indentString('type t_' + self.busType)
+        s += '_slave_to_interconnect is record\n'
+        par = ''
+        par += 'arready : std_logic;\n'
+        par += 'awready : std_logic;\n'
+        par += 'bresp   : std_logic_vector(1 downto 0);\n'
+        par += 'bvalid  : std_logic;\n'
+        par += 'rdata   : ' + dataSubType + ';\n'
+        par += 'rresp   : std_logic_vector(1 downto 0);\n'
+        par += 'rvalid  : std_logic;\n'
+        par += 'wready  : std_logic;\n'
+        s += indentString(par, 2)
+        s += indentString('end record;\n')
+        s += '\n'
+
+        s += 'end ' + self.busType + '_pkg;'
+        
+        return s
+
+    def returnModuleVHDL(self):
+        s = 'library ieee;\n'
+        s += 'use ieee.std_logic_1164.all;\n'
+        s += 'use ieee.numeric_std.all;\n'
+        s += '\n'
+        s += 'use work.' + self.busType + '_pkg.all;\n'
+        s += 'use work.' + self.name + '_pkg.all;\n'
+        s += '\n'
+
+        s += 'entity ' + self.name + ' is\n'
+        s += '\n'
+        s += indentString('port (\n')
+        s += '\n'
+        par = ''
+        par += '-- ' + self.busType.upper() + ' Bus Interface\n'
+        par += self.busType + '_clk      : in std_logic;\n'
+        par += self.busType + '_areset_n : std_logic;\n'
+        par += self.busType + '_in       : t_' + self.busType + '_interconnect_to_slave;\n'
+        par += self.busType + '_out      : t_' + self.busType + '_slave_to_interconnect\n'
+        par += ');\n'
+        s += indentString(par, 2)
+        s += '\n'
+        s += 'end entity ' + self.name + ';\n'
+        s += '\n'
+
+        s += 'architecture behavior of ' + self.name + ' is\n'
+        s += '\n'
+
+        s += indentString('signal ' + self.busType + '_rw_regs : t_')
+        s += self.name + '_rw_regs;\n'
+        s += indentString('signal ' + self.busType + '_ro_regs : t_')
+        s += self.name + '_ro_regs := (\n'
+
+        # Use list instead of generator, so length can be obtained
+        gen = [reg for reg in self.registers if reg.mode == 'ro']
+        
+        for i, reg in enumerate(gen):
+            par = ''
+            par += reg.name + ' => '
+
+            # @todo RO default values must be declared
+            if reg.regtype == 'default' or reg.regtype == 'slv':
+                par += "(others => '0')"
+                if i < len(gen)-1:
+                    par += ','
+                par += '\n'
+            elif reg.regtype == 'record':
+                
+                par += '(\n'
+                for j, entry in enumerate(reg.entries):
+                    par += indentString(entry['name'] + ' => ')
+                    if entry['type'] == 'slv':
+                        par += "(others => '0')"
+                    elif entry['type'] == 'sl':
+                        par += "'0'"
+                    else:
+                        raise UndefinedEntryType("Unknown entry type: " + entry['type'])
+                    if j < len(reg.entries)-1:
+                        par += ','
+                    par += '\n'
+                        
+
+                par += ')'
+                if i < len(gen)-1:
+                    par += ','
+
+            s += indentString(par, 2)
+        s += ');\n'
+        s += '\n'
+
+        s += 'begin\n'
+        s += '\n'
+
+        s += indentString('i_' + self.name + '_' + self.busType + '_pif ')
+        s += ': entity work.' + self.name + '_' + self.busType + '_pif\n'
+        s += indentString('port map (\n', 2)
+
+        par = ''
+        par += self.busType + '_ro_regs => ' + self.busType + '_ro_regs,\n'
+        par += self.busType + '_rw_regs => ' + self.busType + '_rw_regs,\n'
+        par += 'clk         => ' + self.busType + '_clk,\n'
+        par += 'areset_n    => ' + self.busType + '_areset_n,\n'
+        par += 'awaddr      => ' + self.busType + '_awaddr(C_'
+        par += self.name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
+        par += 'awvalid     => ' + self.busType + '_awvalid,\n'
+        par += 'awready     => ' + self.busType + '_awready,\n'
+        par += 'wdata       => ' + self.busType + '_wdata(C_'
+        par += self.name.upper() + '_DATA_WIDTH-1 downto 0),\n'
+        par += 'wvalid      => ' + self.busType + '_wvalid,\n'
+        par += 'wready      => ' + self.busType + '_wready,\n'
+        par += 'bresp       => ' + self.busType + '_bresp,\n'
+        par += 'bvalid      => ' + self.busType + '_bvalid,\n'
+        par += 'bready      => ' + self.busType + '_bready,\n'
+        par += 'araddr      => ' + self.busType + '_araddr(C_'
+        par += self.name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
+        par += 'arvalid     => ' + self.busType + '_arvalid,\n'
+        par += 'arready     => ' + self.busType + '_arready,\n'
+        par += 'rdata       => ' + self.busType + '_rdata(C_'
+        par += self.name.upper() + '_DATA_WIDTH-1 downto 0),\n'
+        par += 'rresp       => ' + self.busType + '_rresp,\n'
+        par += 'rvalid      => ' + self.busType + '_rvalid,\n'
+        par += 'rready      => ' + self.busType + '_rready\n'
+        par += ');\n'
+        s += indentString(par, 3)
+
+        s += indentString('-- Set unused bus data bits to zero\n')
+        s += indentString(self.busType + '_out.rdata(C_' + self.busType.upper())
+        s += '_DATA_WIDTH-1 downto C_' + self.name.upper() + '_DATA_WIDTH)'
+        s += " <= (others => '0');\n"
+        s += '\n'
+        s += 'end architecture behavior;'
+        
+        return s
 
     def printJSON(self, includeAddress=False):
         """! @brief Returns JSON string
@@ -532,9 +722,9 @@ class Module:
         string = '{ "name": "'
         string += self.name + '",\n'
         string += indentString('"addr_width": ')
-        string += str(self.addr_width) + ',\n'
+        string += str(self.addrWidth) + ',\n'
         string += indentString('"data_width": ')
-        string += str(self.data_width) + ',\n'
+        string += str(self.dataWidth) + ',\n'
 
         string += indentString('"register": [') + '\n'
 
@@ -604,10 +794,10 @@ class Module:
                 return addr
             else:
                 # force integer division to prevent float
-                addr += self.data_width//8
+                addr += self.dataWidth//8
 
     def isAddressOutOfRange(self, addr):
-        if addr > pow(2, self.addr_width)-1:
+        if addr > pow(2, self.addrWidth)-1:
             raise RuntimeError("Address " + hex(addr) + " is definetely out of range...")
         return True
 
@@ -627,8 +817,8 @@ class Module:
 
     def __str__(self):
         string = "Name: " + self.name + "\n"
-        string += "Address width: " + str(self.addr_width) + "\n"
-        string += "Data width: " + str(self.data_width) + "\n"
+        string += "Address width: " + str(self.addrWidth) + "\n"
+        string += "Data width: " + str(self.dataWidth) + "\n"
         string += "Description: " + self.description + "\n"
         for i, reg in enumerate(self.registers):
             string += "Register " + str(i) + "\n"

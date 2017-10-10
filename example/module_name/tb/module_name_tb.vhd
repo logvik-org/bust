@@ -70,21 +70,21 @@ begin  -- architecture func
     log("Wait 10 clock period for reset to be turned off");
     wait for (10 * C_CLK_PERIOD);       -- for reset to be turned off
 
-    axilite_check(AXILITE_VVCT, 0, 32X"0", 16X"----" & 16X"0", "Reg check");
+    axilite_check(AXILITE_VVCT, 0, 32X"0", 32X"0", "Reg check");
     axilite_write(AXILITE_VVCT, 0, 32X"0", 9X"1A5", "Reg check");
-    axilite_check(AXILITE_VVCT, 0, 32X"0", 16X"----" & 16X"1A5", "Reg check");
+    axilite_check(AXILITE_VVCT, 0, 32X"0", 32X"1A5", "Reg check");
 
-    axilite_check(AXILITE_VVCT, 0, 32X"2", 16X"----" & 16X"0", "Reg check");
+    axilite_check(AXILITE_VVCT, 0, 32X"2", 32X"0", "Reg check");
     axilite_write(AXILITE_VVCT, 0, 32X"2", 16X"A5A5", "Reg check");
-    axilite_check(AXILITE_VVCT, 0, 32X"2", 16X"----" & 16X"A5A5", "Reg check");
+    axilite_check(AXILITE_VVCT, 0, 32X"2", 32X"A5A5", "Reg check");
 
-    axilite_check(AXILITE_VVCT, 0, 32X"4", 16X"----" & 16X"0", "Reg check");
+    axilite_check(AXILITE_VVCT, 0, 32X"4", 32X"0", "Reg check");
     axilite_write(AXILITE_VVCT, 0, 32X"4", 1X"1", "Reg check");
-    axilite_check(AXILITE_VVCT, 0, 32X"4", 16X"----" & 16X"1", "Reg check");
+    axilite_check(AXILITE_VVCT, 0, 32X"4", 32X"1", "Reg check");
 
-    axilite_check(AXILITE_VVCT, 0, 32X"6", 16X"----" & 16X"A5", "Reg check");
+    axilite_check(AXILITE_VVCT, 0, 32X"6", 32X"A5", "Reg check");
 
-    axilite_check(AXILITE_VVCT, 0, 32X"8", 16X"----" & 16X"4F", "Reg check");
+    axilite_check(AXILITE_VVCT, 0, 32X"8", 32X"4F", "Reg check");
 
     await_completion(AXILITE_VVCT, 0, 2500 us);
 

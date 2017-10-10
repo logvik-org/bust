@@ -32,10 +32,11 @@ architecture behavior of module_name is
     reg3    => 16X"A5",
     reg4    => (
       test  => 6X"F",
-      test2 => '1'));
+      test2 => '1'
+      ));
 
   -- axi bus specifies active low reset
-  signal areset_n : std_logic := '0';
+  --signal areset_n : std_logic := '0';
 
 begin  -- architecture behavior
 
@@ -64,5 +65,7 @@ begin  -- architecture behavior
       rvalid      => axi_out.rvalid,
       rready      => axi_in.rready
       );
+
+  axi_out.rdata(C_AXI_DATA_WIDTH-1 downto C_MODULE_NAME_DATA_WIDTH) <= (others => '0');
 
 end architecture behavior;
