@@ -62,3 +62,9 @@ def compareJSON(json1, json2, raiseError=False):
             return False
 
     return True
+
+def writeStringToFile(string, outputFile, outputDir):
+    """! @brief Write string to file
+
+    """
+    print('Writing string to ' + outputDir + outputFile)
