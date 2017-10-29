@@ -1,5 +1,7 @@
 from utils import indentString
 from utils import jsonParser
+from utils import compareJSON
+from utils import jsonToString
 from exceptions import *
 import sys
 
@@ -9,13 +11,16 @@ def test():
         
         a = jsonParser()
         mod = Module(a)
-        print(mod)
-        print(mod.returnModulePkgVHDL())
+        #print(mod)
+        #print(mod.returnModulePkgVHDL())
 
-        print(mod.printJSON(True))
-        print(mod.returnRegisterPIFVHDL())
-        print(mod.returnBusPkgVHDL())
-        print(mod.returnModuleVHDL())
+        #print(mod.printJSON(False))
+        #print(jsonToString())
+        
+        #print(compareJSON(jsonToString(), mod.printJSON(False), True))
+        #print(mod.returnRegisterPIFVHDL())
+        #print(mod.returnBusPkgVHDL())
+        #print(mod.returnModuleVHDL())
 
     except Exception as e:
         print(str(e))
@@ -28,7 +33,6 @@ class Module:
 
     def __init__(self, mod):
         """! @brief
-
         """
         self.name = mod['name']
         self.addrWidth = mod['addr_width']
@@ -729,8 +733,8 @@ class Module:
         string += indentString('"register": [') + '\n'
 
         for i, reg in enumerate(self.registers):
-
-            string += indentString('{"name": "', 3)
+            string += indentString('{\n', 3)
+            string += indentString('"name": "', 3)
             string += reg.name + '",\n'
             string += indentString('"mode": "', 3)
             string += reg.mode + '",\n'
@@ -741,7 +745,8 @@ class Module:
                 string += indentString('"address": "', 3)
                 string += str(hex(reg.address)) + '",\n'
 
-            if reg.length != 0:
+            if (reg.regtype != "default" and reg.regtype != "record" and
+            reg.regtype != "sl") :
 
                 string += indentString('"length": ', 3)
                 string += str(reg.length) + ',\n'

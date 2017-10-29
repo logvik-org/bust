@@ -32,7 +32,7 @@ If you are contributing and have added a module to the project, update the requi
 
 Start the project by simply running the main file:
 
-`$ python axi_slave_gen.py`
+`$ python art.py`
 
 ### Virtual Environment
 
