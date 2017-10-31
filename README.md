@@ -1,17 +1,10 @@
-# axi_slave_gen
+# art - AXI register tool
 
 Utility for simply creating and modifying AXI Slave modules.
 
 ## Concept
 
 The main goal of the project is to able to automatically create and modify AXI slave modules based on a simple definition format. By employing VHDL records the handling of the registers can be completely hidden in a module seperate from the rest of the designers logic. All referring to the registers are done via a record which specifies if the register is read-only or read-write, and also includes the name. All AXI-specific signals are also wrapped in records. This increases the readability of the design as a whole.
-
-
-### Philosophy
-  * Information hiding
-  * Naming of registers
-  * Seperate read-only and rw registers
-  * Easy modification
   
 
 ## Getting Started
@@ -20,7 +13,7 @@ It is highly recommended to employ virtual environments while tinkering with thi
 
 ### Requirements
 
-The utility require Python 3. The requirements for running the utility, and a few more, are listed in `requirements.txt`. To install them in your virtual environment run the following command:
+The utility require Python3 and pip. The requirements for running the utility, and a few more, are listed in `requirements.txt`. To install them in your virtual environment run the following command:
 
 `$ pip install -r requirements.txt`
 
@@ -30,9 +23,9 @@ If you are contributing and have added a module to the project, update the requi
 
 ### Run
 
-Start the project by simply running the main file:
+View program help by simply running the main file:
 
-`$ python art.py`
+`$ python3 art.py -h`
 
 ### Virtual Environment
 

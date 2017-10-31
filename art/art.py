@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""art - axi register tool
+"""art - AXI register tool
 
 Usage:
   art.py FILE [-o DIR]
@@ -11,7 +11,7 @@ Options:
   -o DIR         Specify output directory
   -c             Start menu-based creation of JSON file
   -h --help      HELP!
-  --version   Show version info
+  --version      Show version info
 
 Arguments:
   FILE         Module configuration file, JSON format
