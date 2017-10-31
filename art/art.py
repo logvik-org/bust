@@ -23,6 +23,7 @@ from utils import jsonParser
 from utils import writeStringToFile
 from exceptions import *
 from module import Module
+from module import Bus
 import os
 
 if __name__ == '__main__':
@@ -31,26 +32,38 @@ if __name__ == '__main__':
     if arguments['FILE'] != None:
         jsonFile = arguments['FILE']
 
-        
-            
         print('Parsing file: ' + jsonFile + '...')
 
         json = jsonParser(jsonFile)
-        mod = Module(json)
+
+        # AXI BUS FOR NOW
+        axi = {'bus_type': 'axi', 'data_width': 32, 'addr_width': 32}
+        bus = Bus(axi)
+
+        mod = Module(json, bus.busType)
 
         if arguments['-o'] == None:
-            outputDir = mod.name + "/"
+            outputDir = "output/"
         else:
             outputDir = arguments['-o']
 
         print('Creating VHDL files...')
-        outputDirHDL = os.path.join(outputDir, 'hdl/')
+        # Keep all files in the same directory for now, expand when handling multiple modules
+        # outputDirBus = os.path.join(outputDir, bus.busType)
+        # outputDirBusHDL = os.path.join(outputDirBus, 'hdl/')
+        outputDirMod = os.path.join(outputDir, mod.name)
+        outputDirModHDL = os.path.join(outputDirMod, 'hdl/')
+
         try:
-            writeStringToFile(mod.returnRegisterPIFVHDL(), mod.name + '_axi_pif.vhd', outputDirHDL)
-            writeStringToFile(mod.returnBusPkgVHDL(), 'axi_pkg.vhd', outputDirHDL)
-            writeStringToFile(mod.returnModulePkgVHDL(), mod.name + '_pkg.vhd', outputDirHDL)
-            writeStringToFile(mod.returnModuleVHDL(), mod.name + '.vhd', outputDirHDL)
-            
+            writeStringToFile(bus.returnBusPkgVHDL(),
+                              bus.busType + '_pkg.vhd', outputDirModHDL)
+
+            writeStringToFile(mod.returnRegisterPIFVHDL(),
+                              mod.name + '_axi_pif.vhd', outputDirModHDL)
+            writeStringToFile(mod.returnModulePkgVHDL(),
+                              mod.name + '_pkg.vhd', outputDirModHDL)
+            writeStringToFile(mod.returnModuleVHDL(),
+                              mod.name + '.vhd', outputDirModHDL)
 
         except Exception as e:
             print(str(e))

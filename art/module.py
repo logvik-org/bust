@@ -1,51 +1,123 @@
 from utils import indentString
-from utils import jsonParser
-from utils import compareJSON
-from utils import jsonToString
+# from utils import jsonParser
+# from utils import compareJSON
+# from utils import jsonToString
 from exceptions import *
-import sys
 
 
 def test():
     try:
-        
-        a = jsonParser()
-        mod = Module(a)
-        #print(mod)
-        #print(mod.returnModulePkgVHDL())
+        pass
+        # a = jsonParser()
+        # mod = Module(a)
+        # print(mod)
+        # print(mod.returnModulePkgVHDL())
 
-        #print(mod.printJSON(False))
-        #print(jsonToString())
-        
-        #print(compareJSON(jsonToString(), mod.printJSON(False), True))
-        #print(mod.returnRegisterPIFVHDL())
-        #print(mod.returnBusPkgVHDL())
-        #print(mod.returnModuleVHDL())
+        # print(mod.printJSON(False))
+        # print(jsonToString())
+        # print(compareJSON(jsonToString(), mod.printJSON(False), True))
+        # print(mod.returnRegisterPIFVHDL())
+        # print(mod.returnBusPkgVHDL())
+        # print(mod.returnModuleVHDL())
 
     except Exception as e:
         print(str(e))
 
+
+class Bus(object):
+    """! @brief Managing bus information
+
+    """
+
+    def __init__(self, bus):
+        self.busType = bus['bus_type']
+        self.busDataWitdh = bus['data_width']
+        self.busAddrWitdh = bus['addr_width']
+
+    def returnBusPkgVHDL(self):
+        s = 'library ieee;\n'
+        s += 'use ieee.std_logic_1164.all;\n'
+        s += '\n'
+
+        s += 'package ' + self.busType + '_pkg is\n'
+        s += '\n\n'
+
+        dataWidthConstant = 'C_' + self.busType.upper() + '_DATA_WIDTH'
+        addrWidthConstant = 'C_' + self.busType.upper() + '_ADDR_WIDTH'
+        dataSubType = 't_' + self.busType + '_data'
+        addrSubType = 't_' + self.busType + '_addr'
+
+        par = ''
+        par += 'constant ' + dataWidthConstant
+        par += ' : natural := ' + str(self.busDataWitdh) + ';\n'
+        par += 'constant ' + addrWidthConstant
+        par += ' : natural := ' + str(self.busAddrWitdh) + ';\n'
+        par += '\n'
+        par += 'subtype ' + dataSubType + ' is std_logic_vector('
+        par += dataWidthConstant + '-1 downto 0);\n'
+        par += 'subtype ' + addrSubType + ' is std_logic_vector('
+        par += addrWidthConstant + '-1 downto 0);\n'
+        par += '\n'
+        s += indentString(par)
+
+        s += indentString('type t_' + self.busType)
+        s += '_interconnect_to_slave is record\n'
+        par = ''
+        par += 'araddr  : ' + addrSubType + ';\n'
+        par += 'arprot  : std_logic_vector(2 downto 0);\n'
+        par += 'arvalid : std_logic;\n'
+        par += 'awaddr  : ' + addrSubType + ';\n'
+        par += 'awprot  : std_logic_vector(2 downto 0);\n'
+        par += 'awvalid : std_logic;\n'
+        par += 'bready  : std_logic;\n'
+        par += 'rready  : std_logic;\n'
+        par += 'wdata   : ' + dataSubType + ';\n'
+        par += 'wstrb   : std_logic_vector((' + dataWidthConstant
+        par += '/8)-1 downto 0);\n'
+        par += 'wvalid  : std_logic;\n'
+        s += indentString(par, 2)
+        s += indentString('end record;\n')
+        s += '\n'
+
+        s += indentString('type t_' + self.busType)
+        s += '_slave_to_interconnect is record\n'
+        par = ''
+        par += 'arready : std_logic;\n'
+        par += 'awready : std_logic;\n'
+        par += 'bresp   : std_logic_vector(1 downto 0);\n'
+        par += 'bvalid  : std_logic;\n'
+        par += 'rdata   : ' + dataSubType + ';\n'
+        par += 'rresp   : std_logic_vector(1 downto 0);\n'
+        par += 'rvalid  : std_logic;\n'
+        par += 'wready  : std_logic;\n'
+        s += indentString(par, 2)
+        s += indentString('end record;\n')
+        s += '\n'
+
+        s += 'end ' + self.busType + '_pkg;'
+
+        return s
+
+
 class Module:
-    """! @brief
+    """! @brief Managing module information
 
 
     """
 
-    def __init__(self, mod):
+    def __init__(self, mod, busType):
         """! @brief
         """
         self.name = mod['name']
         self.addrWidth = mod['addr_width']
         self.dataWidth = mod['data_width']
         self.description = mod['description']
-        self.busType = 'axi'
+        self.busType = busType
         self.busDataWitdh = 32
         self.busAddrWitdh = 32
         self.registers = []
         self.addresses = []
         self.addRegisters(mod['register'])
-        
-        
 
     def addRegisters(self, regs):
         for i in regs:
@@ -103,10 +175,9 @@ class Module:
         par += 'rready      : in  std_logic\n'
         par += ');\n'
         s += indentString(par, 2)
-        
+
         s += 'end ' + self.name + '_axi_pif;\n\n'
 
-        
         s += 'architecture behavior of ' + self.name + '_axi_pif is\n\n'
 
         par = ''
@@ -148,7 +219,6 @@ class Module:
         par += '\n'
 
         s += indentString(par)
-        
 
         s += indentString('p_awready : process(clk)\n')
         s += indentString('begin\n')
@@ -217,7 +287,8 @@ class Module:
                     elif entry['type'] == 'sl':
                         par += "'0';\n"
                     else:
-                        raise UndefinedEntryType("Unknown entry type: " + entry['type'])
+                        raise UndefinedEntryType(
+                            "Unknown entry type: " + entry['type'])
             elif reg.regtype == 'slv' or reg.regtype == 'default':
                 par += 'axi_rw_regs_i.'
                 par += reg.name + " <= (others => '0');\n"
@@ -225,7 +296,8 @@ class Module:
                 par += 'axi_rw_regs_i.'
                 par += reg.name + " <= '0';\n"
             else:
-                raise UndefinedRegisterType("Unknown register type: " + reg.regtype)
+                raise UndefinedRegisterType(
+                    "Unknown register type: " + reg.regtype)
         par += '\n'
         s += indentString(par, 3)
 
@@ -254,22 +326,23 @@ class Module:
                         par += str(entry['length'] + lasthigh - 1)
                         par += ' downto '
                         par += str(lasthigh)
-                        lasthigh+= entry['length'] - 1
+                        lasthigh += entry['length'] - 1
                     else:
-                        raise UndefinedEntryType("Unknown entry type: " + entry['type'])
+                        raise UndefinedEntryType(
+                            "Unknown entry type: " + entry['type'])
                     par += ');\n'
-                    
 
             elif reg.regtype == 'default':
                 par += 'axi_rw_regs_i.' + reg.name + ' <= wdata;\n'
             elif reg.regtype == 'slv':
                 par += 'axi_rw_regs_i.' + reg.name + ' <= wdata('
-                par += str(reg.length-1) + ' downto 0);\n'
+                par += str(reg.length - 1) + ' downto 0);\n'
             elif reg.regtype == 'sl':
                 par += 'axi_rw_regs_i.' + reg.name + ' <= wdata(0);\n'
             else:
-                raise UndefinedRegisterType("Unknown register type: " + reg.regtype)
-            s += indentString(par, 6)            
+                raise UndefinedRegisterType(
+                    "Unknown register type: " + reg.regtype)
+            s += indentString(par, 6)
             s += '\n'
 
         s += indentString('when others =>\n', 5)
@@ -348,7 +421,7 @@ class Module:
             s += indentString('when C_ADDR_', 3)
             s += reg.name.upper() + ' =>\n\n'
             par = ''
-            
+
             if reg.regtype == 'record':
 
                 lasthigh = -1
@@ -363,7 +436,8 @@ class Module:
                         par += ' downto ' + str(lasthigh)
                         lasthigh += entry['length'] - 1
                     else:
-                        raise UndefinedEntryType('Unknown entry type: ' + entry['type'])
+                        raise UndefinedEntryType(
+                            'Unknown entry type: ' + entry['type'])
                     if reg.mode == 'rw':
                         par += ') <= axi_rw_regs_i.'
                     elif reg.mode == 'ro':
@@ -379,18 +453,18 @@ class Module:
                 elif reg.mode == 'ro':
                     par += 'axi_ro_regs.'
                 else:
-                        raise Exception("Unknown error occurred")
+                    raise Exception("Unknown error occurred")
                 par += reg.name + ';\n'
 
             elif reg.regtype == 'slv':
                 par += 'reg_data_out('
-                par += str(reg.length-1) + ' downto 0) <= '
+                par += str(reg.length - 1) + ' downto 0) <= '
                 if reg.mode == 'rw':
                     par += 'axi_rw_regs_i.'
                 elif reg.mode == 'ro':
                     par += ') <= axi_ro_regs.'
                 else:
-                        raise Exception("Unknown error occurred")
+                    raise Exception("Unknown error occurred")
                 par += reg.name + ';\n'
 
             elif reg.regtype == 'sl':
@@ -400,11 +474,12 @@ class Module:
                 elif reg.mode == 'ro':
                     par += ') <= axi_ro_regs.'
                 else:
-                        raise Exception("Unknown error occurred")
+                    raise Exception("Unknown error occurred")
                 par += reg.name + ';\n'
 
             else:
-                raise UndefinedRegisterType("Unknown register type: " + reg.regtype)
+                raise UndefinedRegisterType(
+                    "Unknown register type: " + reg.regtype)
             s += indentString(par, 4)
             s += '\n'
 
@@ -428,9 +503,8 @@ class Module:
         s += '\n'
 
         s += 'end behavior;'
-        
-        return s
 
+        return s
 
     def returnModulePkgVHDL(self):
         s = 'library ieee;\n'
@@ -462,7 +536,7 @@ class Module:
             par += 'X"' + '%X' % i.address + '";\n'
         par += '\n'
         s += indentString(par)
-        
+
         # Create all types for RW registers with records
         for i in self.registers:
             if i.mode == "rw" and i.regtype == "record":
@@ -472,16 +546,16 @@ class Module:
                 for j in i.entries:
                     s += indentString(j['name'], 2) + " : "
                     if j['type'] == "slv":
-                        s += "std_logic_vector(" + str(j['length']-1)
+                        s += "std_logic_vector(" + str(j['length'] - 1)
                         s += " downto 0);\n"
                     elif j['type'] == "sl":
                         s += "std_logic;\n"
                     else:
-                        raise RuntimeError("Something went wrong..." + j['type'])
+                        raise RuntimeError(
+                            "Something went wrong..." + j['type'])
                 s += indentString("end record;\n")
         s += "\n"
 
-                
         # The RW register record type
         s += indentString("type t_" + self.name + "_rw_regs is record")
         for i in self.registers:
@@ -490,7 +564,8 @@ class Module:
                 if i.regtype == "default" or (i.regtype == "slv" and i.length == self.dataWidth):
                     s += "t_" + self.name + "_data;\n"
                 elif i.regtype == "slv":
-                    s += "std_logic_vector(" + str(i.length-1) + " downto 0);\n"
+                    s += "std_logic_vector(" + \
+                        str(i.length - 1) + " downto 0);\n"
                 elif i.regtype == "sl":
                     s += "std_logic;\n"
                 elif i.regtype == "record":
@@ -509,7 +584,7 @@ class Module:
                 for j in i.entries:
                     s += indentString(j['name'], 2) + " : "
                     if j['type'] == "slv":
-                        s += "std_logic_vector(" + str(j['length']-1)
+                        s += "std_logic_vector(" + str(j['length'] - 1)
                         s += " downto 0);\n"
                     elif j['type'] == "sl":
                         s += "std_logic;\n"
@@ -527,82 +602,20 @@ class Module:
                 if i.regtype == "default" or (i.regtype == "slv" and i.length == self.dataWidth):
                     s += "t_" + self.name + "_data;\n"
                 elif i.regtype == "slv":
-                    s += "std_logic_vector(" + str(i.length-1) + " downto 0);\n"
+                    s += "std_logic_vector(" + \
+                        str(i.length - 1) + " downto 0);\n"
                 elif i.regtype == "sl":
                     s += "std_logic;\n"
                 elif i.regtype == "record":
                     s += "t_" + self.name + "_ro_" + i.name + ";\n"
                 else:
-                    raise RuntimeError("Something went wrong... What now?" + i.regtype)
+                    raise RuntimeError(
+                        "Something went wrong... What now?" + i.regtype)
         s += indentString("end record;\n")
         s += "\n"
 
         s += "end package " + self.name + "_pkg;"
-        
-        return s
 
-    def returnBusPkgVHDL(self):
-        s = 'library ieee;\n'
-        s += 'use ieee.std_logic_1164.all;\n'
-        s += '\n'
-
-        s += 'package ' + self.busType + '_pkg is\n'
-        s += '\n\n'
-
-        dataWidthConstant = 'C_' + self.busType.upper() + '_DATA_WIDTH'
-        addrWidthConstant = 'C_' + self.busType.upper() + '_ADDR_WIDTH'
-        dataSubType = 't_' + self.busType + '_data'
-        addrSubType = 't_' + self.busType + '_addr'
-        
-        par = ''
-        par += 'constant ' + dataWidthConstant
-        par += ' : natural := ' + str(self.busDataWitdh) + ';\n'
-        par += 'constant ' + addrWidthConstant
-        par += ' : natural := ' + str(self.busAddrWitdh) + ';\n'
-        par += '\n'
-        par += 'subtype ' + dataSubType + ' is std_logic_vector('
-        par += dataWidthConstant + '-1 downto 0);\n'
-        par += 'subtype ' + addrSubType + ' is std_logic_vector('
-        par += addrWidthConstant + '-1 downto 0);\n'
-        par += '\n'
-        s += indentString(par)
-
-        s += indentString('type t_' + self.busType)
-        s += '_interconnect_to_slave is record\n'
-        par = ''
-        par += 'araddr  : ' + addrSubType + ';\n'
-        par += 'arprot  : std_logic_vector(2 downto 0);\n'
-        par += 'arvalid : std_logic;\n'
-        par += 'awaddr  : ' + addrSubType + ';\n'
-        par += 'awprot  : std_logic_vector(2 downto 0);\n'
-        par += 'awvalid : std_logic;\n'
-        par += 'bready  : std_logic;\n'
-        par += 'rready  : std_logic;\n'
-        par += 'wdata   : ' + dataSubType + ';\n'
-        par += 'wstrb   : std_logic_vector((' + dataWidthConstant
-        par += '/8)-1 downto 0);\n'
-        par += 'wvalid  : std_logic;\n'
-        s += indentString(par, 2)
-        s += indentString('end record;\n')
-        s += '\n'
-
-        s += indentString('type t_' + self.busType)
-        s += '_slave_to_interconnect is record\n'
-        par = ''
-        par += 'arready : std_logic;\n'
-        par += 'awready : std_logic;\n'
-        par += 'bresp   : std_logic_vector(1 downto 0);\n'
-        par += 'bvalid  : std_logic;\n'
-        par += 'rdata   : ' + dataSubType + ';\n'
-        par += 'rresp   : std_logic_vector(1 downto 0);\n'
-        par += 'rvalid  : std_logic;\n'
-        par += 'wready  : std_logic;\n'
-        s += indentString(par, 2)
-        s += indentString('end record;\n')
-        s += '\n'
-
-        s += 'end ' + self.busType + '_pkg;'
-        
         return s
 
     def returnModuleVHDL(self):
@@ -622,8 +635,10 @@ class Module:
         par += '-- ' + self.busType.upper() + ' Bus Interface\n'
         par += self.busType + '_clk      : in std_logic;\n'
         par += self.busType + '_areset_n : std_logic;\n'
-        par += self.busType + '_in       : in t_' + self.busType + '_interconnect_to_slave;\n'
-        par += self.busType + '_out      : out t_' + self.busType + '_slave_to_interconnect\n'
+        par += self.busType + '_in       : in t_' + \
+            self.busType + '_interconnect_to_slave;\n'
+        par += self.busType + '_out      : out t_' + \
+            self.busType + '_slave_to_interconnect\n'
         par += ');\n'
         s += indentString(par, 2)
         s += '\n'
@@ -640,7 +655,7 @@ class Module:
 
         # Use list instead of generator, so length can be obtained
         gen = [reg for reg in self.registers if reg.mode == 'ro']
-        
+
         for i, reg in enumerate(gen):
             par = ''
             par += reg.name + ' => '
@@ -648,11 +663,11 @@ class Module:
             # @todo RO default values must be declared
             if reg.regtype == 'default' or reg.regtype == 'slv':
                 par += "(others => '0')"
-                if i < len(gen)-1:
+                if i < len(gen) - 1:
                     par += ','
                 par += '\n'
             elif reg.regtype == 'record':
-                
+
                 par += '(\n'
                 for j, entry in enumerate(reg.entries):
                     par += indentString(entry['name'] + ' => ')
@@ -661,14 +676,14 @@ class Module:
                     elif entry['type'] == 'sl':
                         par += "'0'"
                     else:
-                        raise UndefinedEntryType("Unknown entry type: " + entry['type'])
-                    if j < len(reg.entries)-1:
+                        raise UndefinedEntryType(
+                            "Unknown entry type: " + entry['type'])
+                    if j < len(reg.entries) - 1:
                         par += ','
                     par += '\n'
-                        
 
                 par += ')'
-                if i < len(gen)-1:
+                if i < len(gen) - 1:
                     par += ','
 
             s += indentString(par, 2)
@@ -711,12 +726,13 @@ class Module:
         s += indentString(par, 3)
 
         s += indentString('-- Set unused bus data bits to zero\n')
-        s += indentString(self.busType + '_out.rdata(C_' + self.busType.upper())
+        s += indentString(self.busType +
+                          '_out.rdata(C_' + self.busType.upper())
         s += '_DATA_WIDTH-1 downto C_' + self.name.upper() + '_DATA_WIDTH)'
         s += " <= (others => '0');\n"
         s += '\n'
         s += 'end architecture behavior;'
-        
+
         return s
 
     def printJSON(self, includeAddress=False):
@@ -746,7 +762,7 @@ class Module:
                 string += str(hex(reg.address)) + '",\n'
 
             if (reg.regtype != "default" and reg.regtype != "record" and
-            reg.regtype != "sl") :
+                    reg.regtype != "sl"):
 
                 string += indentString('"length": ', 3)
                 string += str(reg.length) + ',\n'
@@ -756,23 +772,23 @@ class Module:
 
                 for j, entry in enumerate(reg.entries):
                     string += indentString('{"name": "', 4)
-                    string += entry['name'] + '", "type": "' + entry['type'] + '"'
+                    string += entry['name'] + \
+                        '", "type": "' + entry['type'] + '"'
 
                     if entry['type'] == 'slv':
                         string += ', "length": ' + str(entry['length'])
 
-                    if j < len(reg.entries)-1:
+                    if j < len(reg.entries) - 1:
                         string += '},\n'
                     else:
                         string += '}\n'
-                        
 
                 string += indentString('],', 3) + '\n'
-                
+
             string += indentString('"description": "', 3)
             string += reg.description + '"\n'
 
-            if i < len(self.registers)-1:
+            if i < len(self.registers) - 1:
                 string += indentString('},', 3) + '\n'
             else:
                 string += indentString('}', 3) + '\n'
@@ -784,11 +800,10 @@ class Module:
         string += '}'
 
         return string
-        
 
     def getNextAddress(self):
         """! @brief Will get the next address based on the byte-addressed scheme
-        
+
         """
         addr = 0
         foundAddr = False
@@ -799,11 +814,12 @@ class Module:
                 return addr
             else:
                 # force integer division to prevent float
-                addr += self.dataWidth//8
+                addr += self.dataWidth // 8
 
     def isAddressOutOfRange(self, addr):
-        if addr > pow(2, self.addrWidth)-1:
-            raise RuntimeError("Address " + hex(addr) + " is definetely out of range...")
+        if addr > pow(2, self.addrWidth) - 1:
+            raise RuntimeError("Address " + hex(addr) +
+                               " is definetely out of range...")
         return True
 
     def isAddressIsFree(self, addr):
@@ -831,9 +847,8 @@ class Module:
         return string
 
 
-
 class Register:
-    """! @brief
+    """! @brief Managing register information
 
 
     """
@@ -846,9 +861,9 @@ class Register:
         self.regtype = ""
         self.length = 0
         self.entries = []
-        
+
         if reg['type'] == 'default':
-           self.regtype = 'default'
+            self.regtype = 'default'
         elif reg['type'] == 'slv':
             self.regtype = 'slv'
             self.length = reg['length']
@@ -860,7 +875,7 @@ class Register:
             for entry in reg['entries']:
                 if entry['type'] == 'slv':
                     self.entries.append({'name': entry['name'],
-                                        'type': 'slv',
+                                         'type': 'slv',
                                          'length': entry['length']})
                     self.length += entry['length']
                 elif entry['type'] == 'sl':
@@ -874,7 +889,6 @@ class Register:
 
         # Perform check that data bits are not exceeded
         self.checkRegisterDataLength(mod_data_length)
-        
 
     def __str__(self):
         string = "Name: " + self.name + "\n"
@@ -896,7 +910,7 @@ class Register:
     def checkRegisterDataLength(self, module):
         """! @brief Controls that the combined data bits in entries does not 
         exceed data bits of module
-        
+
         """
         if self.length > module:
             raise ModuleDataBitsExceeded(self.name, self.length, module)

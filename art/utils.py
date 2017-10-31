@@ -8,13 +8,14 @@ import os
 
 spacesInTab = 2
 
+
 def indentString(string, tabs=1, breakLine=False):
     """! @brief adds indent spaces to all lines in string
     """
 
-    indent = spacesInTab*tabs * (" ")
+    indent = spacesInTab * tabs * (" ")
     # Add indent to every line and recreate string
-    string = [ indent + line for line in re.split(r"\n", string) ]
+    string = [indent + line for line in re.split(r"\n", string)]
     string = "\n".join(string)
 
     # Remove last string if it only contains indent
@@ -42,9 +43,9 @@ def fixLastIndentOnlyLine(string, tabs):
     empty string
     """
     stringList = re.split(r"\n", string)
-    if stringList[-1] == (spacesInTab*tabs*(" ")):
+    if stringList[-1] == (spacesInTab * tabs * (" ")):
         stringList[-1] = ''
-        
+
     string = "\n".join(stringList)
     return string
 
@@ -63,6 +64,7 @@ def compareJSON(json1, json2, raiseError=False):
 
     return True
 
+
 def writeStringToFile(string, outputFile, outputDir):
     """! @brief Write string to file
 
@@ -70,7 +72,7 @@ def writeStringToFile(string, outputFile, outputDir):
 
     # Create output directory if it does not exist
     os.makedirs(outputDir, 0o777, True)
-    
+
     print('Writing string to ' + os.path.join(outputDir, outputFile))
 
     with open(os.path.join(outputDir, outputFile), 'w') as strfile:
