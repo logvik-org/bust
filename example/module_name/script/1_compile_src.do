@@ -38,6 +38,6 @@ set compdirectives "-2008 -work $lib_name"
 
 eval vcom  $compdirectives  $module_name_part_path/hdl/axi_pkg.vhd
 eval vcom  $compdirectives  $module_name_part_path/hdl/module_name_pkg.vhd
-eval vcom  $compdirectives  $module_name_part_path/hdl/module_name_axi_handler.vhd
+eval vcom  $compdirectives  $module_name_part_path/hdl/module_name_axi_pif.vhd
 eval vcom  $compdirectives  $module_name_part_path/hdl/module_name.vhd
 

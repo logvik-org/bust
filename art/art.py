@@ -23,6 +23,7 @@ from utils import jsonParser
 from utils import writeStringToFile
 from exceptions import *
 from module import Module
+import os
 
 if __name__ == '__main__':
     arguments = docopt(__doc__, version='art version 0.1')
@@ -40,13 +41,16 @@ if __name__ == '__main__':
         if arguments['-o'] == None:
             outputDir = mod.name + "/"
         else:
-            outputDir = arguments['DIR']
+            outputDir = arguments['-o']
 
         print('Creating VHDL files...')
-        outputDirHDL = outputDir + 'hdl/'
-        writeStringToFile(mod.returnRegisterPIFVHDL(), mod.name + '_axi_pif.vhd', outputDirHDL)
-        writeStringToFile(mod.returnBusPkgVHDL(), 'axi_pkg.vhd', outputDirHDL)
-        writeStringToFile(mod.returnModulePkgVHDL(), mod.name + '_pkg.vhd', outputDirHDL)
-        writeStringToFile(mod.returnModuleVHDL(), mod.name + '.vhd', outputDirHDL)
-        
-        
+        outputDirHDL = os.path.join(outputDir, 'hdl/')
+        try:
+            writeStringToFile(mod.returnRegisterPIFVHDL(), mod.name + '_axi_pif.vhd', outputDirHDL)
+            writeStringToFile(mod.returnBusPkgVHDL(), 'axi_pkg.vhd', outputDirHDL)
+            writeStringToFile(mod.returnModulePkgVHDL(), mod.name + '_pkg.vhd', outputDirHDL)
+            writeStringToFile(mod.returnModuleVHDL(), mod.name + '.vhd', outputDirHDL)
+            
+
+        except Exception as e:
+            print(str(e))

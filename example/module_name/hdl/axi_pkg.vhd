@@ -1,23 +1,15 @@
--------------------------------------------------------------------------------
---!@file        axi_pkg.vhd
---!@author      author_name
---!@brief       Package for AXI bus interface
---!
---!
--------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
 
-package axi_pkg is
-  
-  -- Slave data & addr widths
+package axi_pgk is
+
+
   constant C_AXI_DATA_WIDTH : natural := 32;
   constant C_AXI_ADDR_WIDTH : natural := 32;
-
+  
   subtype t_axi_data is std_logic_vector(C_AXI_DATA_WIDTH-1 downto 0);
   subtype t_axi_addr is std_logic_vector(C_AXI_ADDR_WIDTH-1 downto 0);
   
- --! AXI bus record
   type t_axi_interconnect_to_slave is record
     araddr  : t_axi_addr;
     arprot  : std_logic_vector(2 downto 0);
@@ -32,7 +24,6 @@ package axi_pkg is
     wvalid  : std_logic;
   end record;
 
-  --! AXI bus record
   type t_axi_slave_to_interconnect is record
     arready : std_logic;
     awready : std_logic;
@@ -42,6 +33,6 @@ package axi_pkg is
     rresp   : std_logic_vector(1 downto 0);
     rvalid  : std_logic;
     wready  : std_logic;
-  end record;    
-  
+  end record;
+
 end axi_pkg;

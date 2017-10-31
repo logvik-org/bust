@@ -4,7 +4,7 @@
 """
 import re
 import json
-
+import os
 
 spacesInTab = 2
 
@@ -67,4 +67,11 @@ def writeStringToFile(string, outputFile, outputDir):
     """! @brief Write string to file
 
     """
-    print('Writing string to ' + outputDir + outputFile)
+
+    # Create output directory if it does not exist
+    os.makedirs(outputDir, 0o777, True)
+    
+    print('Writing string to ' + os.path.join(outputDir, outputFile))
+
+    with open(os.path.join(outputDir, outputFile), 'w') as strfile:
+        strfile.write(string)
