@@ -69,3 +69,10 @@ class InvalidAddress(RuntimeError):
         msg += "When specifying address for register " + reg + ", address "
         msg += hex(addr) + " is already assigned to other register"
         super().__init__(msg)
+
+class InvalidRegisterFormat(RuntimeError):
+    """! @brief Raised when register has some unspecified format error"""
+
+
+    def __init__(self, msg):
+        super().__init__(msg)

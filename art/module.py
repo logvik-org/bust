@@ -859,8 +859,17 @@ class Register:
         self.description = reg['description']
         self.address = address
         self.regtype = ""
+        self.reset = "0x0"
         self.length = 0
         self.entries = []
+
+        if 'reset' in reg:
+            # Reset value is not allowed if regtype is record
+            if reg['regtype'] == 'record':
+                raise InvalidRegisterFormat(
+                    "Reset value is not allowed for record type register: " + self.name)
+            else:
+                self.reset = reg['reset']
 
         if reg['type'] == 'default':
             self.regtype = 'default'
@@ -878,12 +887,16 @@ class Register:
                                          'type': 'slv',
                                          'length': entry['length']})
                     self.length += entry['length']
+
                 elif entry['type'] == 'sl':
                     self.entries.append({'name': entry['name'],
                                          'type': 'sl', 'length': 1})
                     self.length += 1
                 else:
                     raise UndefinedEntryType(entry['type'])
+
+                if 'reset' in entry:
+                    self.entries[-1]['reset'] = entry['reset']
         else:
             raise UndefinedRegisterType(reg['type'])
 
