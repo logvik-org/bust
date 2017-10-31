@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.module_name.all;
+use work.module_name_pkg.all;
 
 entity module_name_axi_pif is
 
@@ -67,7 +67,7 @@ begin
   rresp   <= rresp_i;
   rvalid  <= rvalid_i;
   
-  p_awready : process(clk);
+  p_awready : process(clk)
   begin
     if rising_edge(clk) then
       if areset_n = '0' then
@@ -80,7 +80,7 @@ begin
     end if;
   end process p_awready;
 
-  p_awaddr : process(clk);
+  p_awaddr : process(clk)
   begin
     if rising_edge(clk) then
       if areset_n = '0' then
@@ -91,7 +91,7 @@ begin
     end if;
   end process p_awaddr;
 
-  p_wready : process(clk);
+  p_wready : process(clk)
   begin
     if rising_edge(clk) then
       if areset_n = '0' then
@@ -106,7 +106,7 @@ begin
 
   slv_reg_wren <= wready_i and wvalid and awready_i and awvalid;
 
-  p_mm_select_write : process(clk);
+  p_mm_select_write : process(clk)
   begin
     if areset_n = '0' then
       axi_rw_regs_i.reg0.run <= '0';
@@ -159,7 +159,7 @@ begin
     if rising_edge(clk) then
       if areset_n = '0' then
         arready_i <= '0';
-        araddr_i  <= (others => '0';
+        araddr_i  <= (others => '0');
       elsif (arready_i = '0' and arvalid = '1') then
         arready_i <= '1';
         araddr_i  <= araddr;
@@ -191,7 +191,7 @@ begin
 
     reg_data_out <= (others => '0');
 
-    case aradrr_i is
+    case araddr_i is
 
       when C_ADDR_REG0 =>
 
@@ -208,12 +208,12 @@ begin
 
       when C_ADDR_REG3 =>
 
-        reg_data_out <= axi_ro_regs_i.reg3;
+        reg_data_out <= axi_ro_regs.reg3;
 
       when C_ADDR_REG4 =>
 
-        reg_data_out(5 downto 0) <= axi_ro_regs_i.reg4.test;
-        reg_data_out(6) <= axi_ro_regs_i.reg4.test2;
+        reg_data_out(5 downto 0) <= axi_ro_regs.reg4.test;
+        reg_data_out(6) <= axi_ro_regs.reg4.test2;
 
       when others =>
         null;
@@ -230,6 +230,6 @@ begin
         rdata_i <= reg_data_out;
       end if;
     end if;
-  end process p_arvalid;
+  end process p_output;
 
 end behavior;

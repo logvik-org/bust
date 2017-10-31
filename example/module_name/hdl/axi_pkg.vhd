@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-package axi_pgk is
+package axi_pkg is
 
 
   constant C_AXI_DATA_WIDTH : natural := 32;

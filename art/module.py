@@ -72,7 +72,7 @@ class Module:
         s += 'use ieee.std_logic_1164.all;\n'
         s += 'use ieee.numeric_std.all;\n'
         s += '\n'
-        s += 'use work.' + self.name + '.all;\n\n'
+        s += 'use work.' + self.name + '_pkg.all;\n\n'
         s += 'entity ' + self.name + '_' + self.busType + '_pif is\n\n'
 
         s += indentString('port (')
@@ -150,7 +150,7 @@ class Module:
         s += indentString(par)
         
 
-        s += indentString('p_awready : process(clk);\n')
+        s += indentString('p_awready : process(clk)\n')
         s += indentString('begin\n')
         s += indentString('if rising_edge(clk) then\n', 2)
         s += indentString("if areset_n = '0' then\n", 3)
@@ -165,7 +165,7 @@ class Module:
         s += indentString('end process p_awready;\n')
         s += '\n'
 
-        s += indentString('p_awaddr : process(clk);\n')
+        s += indentString('p_awaddr : process(clk)\n')
         s += indentString('begin\n')
         s += indentString('if rising_edge(clk) then\n', 2)
         s += indentString("if areset_n = '0' then\n", 3)
@@ -178,7 +178,7 @@ class Module:
         s += indentString('end process p_awaddr;\n')
         s += '\n'
 
-        s += indentString('p_wready : process(clk);\n')
+        s += indentString('p_wready : process(clk)\n')
         s += indentString('begin\n')
         s += indentString('if rising_edge(clk) then\n', 2)
         s += indentString("if areset_n = '0' then\n", 3)
@@ -195,7 +195,7 @@ class Module:
 
         s += indentString('slv_reg_wren <= wready_i and wvalid and awready_i and awvalid;\n')
         s += '\n'
-        s += indentString('p_mm_select_write : process(clk);\n')
+        s += indentString('p_mm_select_write : process(clk)\n')
         s += indentString('begin\n')
         s += indentString("if areset_n = '0' then\n", 2)
 
@@ -303,7 +303,7 @@ class Module:
         s += indentString('if rising_edge(clk) then\n', 2)
         s += indentString("if areset_n = '0' then\n", 3)
         s += indentString("arready_i <= '0';\n", 4)
-        s += indentString("araddr_i  <= (others => '0';\n", 4)
+        s += indentString("araddr_i  <= (others => '0');\n", 4)
         s += indentString("elsif (arready_i = '0' and arvalid = '1') then\n", 3)
         s += indentString("arready_i <= '1';\n", 4)
         s += indentString('araddr_i  <= araddr;\n', 4)
@@ -339,7 +339,7 @@ class Module:
         s += '\n'
         s += indentString("reg_data_out <= (others => '0');\n", 2)
         s += '\n'
-        s += indentString('case aradrr_i is\n', 2)
+        s += indentString('case araddr_i is\n', 2)
         s += '\n'
         # Generator for looping through all "readable registers, rw&ro
         gen = [reg for reg in self.registers
@@ -367,7 +367,7 @@ class Module:
                     if reg.mode == 'rw':
                         par += ') <= axi_rw_regs_i.'
                     elif reg.mode == 'ro':
-                        par += ') <= axi_ro_regs_i.'
+                        par += ') <= axi_ro_regs.'
                     else:
                         raise Exception("Unknown error occurred")
                     par += reg.name + '.' + entry['name'] + ';\n'
@@ -377,7 +377,7 @@ class Module:
                 if reg.mode == 'rw':
                     par += 'axi_rw_regs_i.'
                 elif reg.mode == 'ro':
-                    par += 'axi_ro_regs_i.'
+                    par += 'axi_ro_regs.'
                 else:
                         raise Exception("Unknown error occurred")
                 par += reg.name + ';\n'
@@ -388,7 +388,7 @@ class Module:
                 if reg.mode == 'rw':
                     par += 'axi_rw_regs_i.'
                 elif reg.mode == 'ro':
-                    par += ') <= axi_ro_regs_i.'
+                    par += ') <= axi_ro_regs.'
                 else:
                         raise Exception("Unknown error occurred")
                 par += reg.name + ';\n'
@@ -398,7 +398,7 @@ class Module:
                 if reg.mode == 'rw':
                     par += 'axi_rw_regs_i.'
                 elif reg.mode == 'ro':
-                    par += ') <= axi_ro_regs_i.'
+                    par += ') <= axi_ro_regs.'
                 else:
                         raise Exception("Unknown error occurred")
                 par += reg.name + ';\n'
@@ -424,7 +424,7 @@ class Module:
         s += indentString("rdata_i <= reg_data_out;\n", 4)
         s += indentString('end if;\n', 3)
         s += indentString('end if;\n', 2)
-        s += indentString('end process p_arvalid;\n')
+        s += indentString('end process p_output;\n')
         s += '\n'
 
         s += 'end behavior;'
@@ -434,8 +434,8 @@ class Module:
 
     def returnModulePkgVHDL(self):
         s = 'library ieee;\n'
-        s += 'ieee.std_logic_1164.all;\n'
-        s += 'ieee.numeric_std.all;\n'
+        s += 'use ieee.std_logic_1164.all;\n'
+        s += 'use ieee.numeric_std.all;\n'
         s += '\n'
         s += "package " + self.name + "_pkg is"
         s += "\n\n"
@@ -546,7 +546,7 @@ class Module:
         s += 'use ieee.std_logic_1164.all;\n'
         s += '\n'
 
-        s += 'package ' + self.busType + '_pgk is\n'
+        s += 'package ' + self.busType + '_pkg is\n'
         s += '\n\n'
 
         dataWidthConstant = 'C_' + self.busType.upper() + '_DATA_WIDTH'
@@ -622,8 +622,8 @@ class Module:
         par += '-- ' + self.busType.upper() + ' Bus Interface\n'
         par += self.busType + '_clk      : in std_logic;\n'
         par += self.busType + '_areset_n : std_logic;\n'
-        par += self.busType + '_in       : t_' + self.busType + '_interconnect_to_slave;\n'
-        par += self.busType + '_out      : t_' + self.busType + '_slave_to_interconnect\n'
+        par += self.busType + '_in       : in t_' + self.busType + '_interconnect_to_slave;\n'
+        par += self.busType + '_out      : out t_' + self.busType + '_slave_to_interconnect\n'
         par += ');\n'
         s += indentString(par, 2)
         s += '\n'
@@ -687,26 +687,26 @@ class Module:
         par += self.busType + '_rw_regs => ' + self.busType + '_rw_regs,\n'
         par += 'clk         => ' + self.busType + '_clk,\n'
         par += 'areset_n    => ' + self.busType + '_areset_n,\n'
-        par += 'awaddr      => ' + self.busType + '_awaddr(C_'
+        par += 'awaddr      => ' + self.busType + '_in.awaddr(C_'
         par += self.name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
-        par += 'awvalid     => ' + self.busType + '_awvalid,\n'
-        par += 'awready     => ' + self.busType + '_awready,\n'
-        par += 'wdata       => ' + self.busType + '_wdata(C_'
+        par += 'awvalid     => ' + self.busType + '_in.awvalid,\n'
+        par += 'awready     => ' + self.busType + '_out.awready,\n'
+        par += 'wdata       => ' + self.busType + '_in.wdata(C_'
         par += self.name.upper() + '_DATA_WIDTH-1 downto 0),\n'
-        par += 'wvalid      => ' + self.busType + '_wvalid,\n'
-        par += 'wready      => ' + self.busType + '_wready,\n'
-        par += 'bresp       => ' + self.busType + '_bresp,\n'
-        par += 'bvalid      => ' + self.busType + '_bvalid,\n'
-        par += 'bready      => ' + self.busType + '_bready,\n'
-        par += 'araddr      => ' + self.busType + '_araddr(C_'
+        par += 'wvalid      => ' + self.busType + '_in.wvalid,\n'
+        par += 'wready      => ' + self.busType + '_out.wready,\n'
+        par += 'bresp       => ' + self.busType + '_out.bresp,\n'
+        par += 'bvalid      => ' + self.busType + '_out.bvalid,\n'
+        par += 'bready      => ' + self.busType + '_in.bready,\n'
+        par += 'araddr      => ' + self.busType + '_in.araddr(C_'
         par += self.name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
-        par += 'arvalid     => ' + self.busType + '_arvalid,\n'
-        par += 'arready     => ' + self.busType + '_arready,\n'
-        par += 'rdata       => ' + self.busType + '_rdata(C_'
+        par += 'arvalid     => ' + self.busType + '_in.arvalid,\n'
+        par += 'arready     => ' + self.busType + '_out.arready,\n'
+        par += 'rdata       => ' + self.busType + '_out.rdata(C_'
         par += self.name.upper() + '_DATA_WIDTH-1 downto 0),\n'
-        par += 'rresp       => ' + self.busType + '_rresp,\n'
-        par += 'rvalid      => ' + self.busType + '_rvalid,\n'
-        par += 'rready      => ' + self.busType + '_rready\n'
+        par += 'rresp       => ' + self.busType + '_out.rresp,\n'
+        par += 'rvalid      => ' + self.busType + '_out.rvalid,\n'
+        par += 'rready      => ' + self.busType + '_in.rready\n'
         par += ');\n'
         s += indentString(par, 3)
 
