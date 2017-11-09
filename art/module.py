@@ -1,27 +1,31 @@
 from utils import indentString
-# from utils import jsonParser
+from utils import jsonParser
 # from utils import compareJSON
 # from utils import jsonToString
 from exceptions import *
+import json
+from collections import OrderedDict
 
 
 def test():
-    try:
-        pass
-        # a = jsonParser()
-        # mod = Module(a)
+    #try:
+        a = jsonParser('module2.json')
+        axi = {'bus_type': 'axi', 'data_width': 32, 'addr_width': 32}
+        bus = Bus(axi)
+        mod = Module(a, bus)
         # print(mod)
         # print(mod.returnModulePkgVHDL())
 
         # print(mod.printJSON(False))
+        # print(mod.printJSON(True))
         # print(jsonToString())
         # print(compareJSON(jsonToString(), mod.printJSON(False), True))
         # print(mod.returnRegisterPIFVHDL())
         # print(mod.returnBusPkgVHDL())
         # print(mod.returnModuleVHDL())
 
-    except Exception as e:
-        print(str(e))
+    #except Exception as e:
+        #print(str(e))
 
 
 class Bus(object):
@@ -634,7 +638,7 @@ class Module:
         par = ''
         par += '-- ' + self.busType.upper() + ' Bus Interface\n'
         par += self.busType + '_clk      : in std_logic;\n'
-        par += self.busType + '_areset_n : std_logic;\n'
+        par += self.busType + '_areset_n : in std_logic;\n'
         par += self.busType + '_in       : in t_' + \
             self.busType + '_interconnect_to_slave;\n'
         par += self.busType + '_out      : out t_' + \
@@ -662,29 +666,52 @@ class Module:
 
             # @todo RO default values must be declared
             if reg.regtype == 'default' or reg.regtype == 'slv':
-                par += "(others => '0')"
+                if reg.reset == "0x0":
+                    par += "(others => '0')"
+                else:
+                    par += str(reg.length) + 'X"'
+                    par += format(int(reg.reset, 16), 'X') + '"'
                 if i < len(gen) - 1:
                     par += ','
                 par += '\n'
-            elif reg.regtype == 'record':
 
-                par += '(\n'
+            elif reg.regtype == 'record':
+                
+                if len(reg.entries) > 1:
+                    par += '(\n'
+                else:
+                    par += '('
+
                 for j, entry in enumerate(reg.entries):
-                    par += indentString(entry['name'] + ' => ')
+                    if len(reg.entries) > 1:
+                        par += indentString(entry['name'] + ' => ')
+                    else:
+                        par += entry['name'] + ' => '
+                        
                     if entry['type'] == 'slv':
-                        par += "(others => '0')"
+                        
+                        if entry['reset'] == "0x0":
+                            par += "(others => '0')"
+                        else:
+                            par += str(entry['length']) + 'X"'
+                            par += format(int(entry['reset'], 16), 'X') + '"'
+                            
                     elif entry['type'] == 'sl':
-                        par += "'0'"
+                        par += "'" + format(int(entry['reset'], 16), 'X') + "'"
+
                     else:
                         raise UndefinedEntryType(
                             "Unknown entry type: " + entry['type'])
+
                     if j < len(reg.entries) - 1:
-                        par += ','
-                    par += '\n'
+                        par += ',\n'
 
                 par += ')'
                 if i < len(gen) - 1:
-                    par += ','
+                    par += ',\n'
+
+            elif reg.regtype == 'sl':
+                par += "'" + format(int(reg.reset, 16), 'X') + "'"
 
             s += indentString(par, 2)
         s += ');\n'
@@ -739,67 +766,42 @@ class Module:
         """! @brief Returns JSON string
 
         """
-        string = '{ "name": "'
-        string += self.name + '",\n'
-        string += indentString('"addr_width": ')
-        string += str(self.addrWidth) + ',\n'
-        string += indentString('"data_width": ')
-        string += str(self.dataWidth) + ',\n'
+        dic = OrderedDict()
 
-        string += indentString('"register": [') + '\n'
+        dic["name"] = self.name
+        dic["addr_width"] = self.addrWidth
+        dic["data_width"] = self.dataWidth
+
+        dic["register"] = []
 
         for i, reg in enumerate(self.registers):
-            string += indentString('{\n', 3)
-            string += indentString('"name": "', 3)
-            string += reg.name + '",\n'
-            string += indentString('"mode": "', 3)
-            string += reg.mode + '",\n'
-            string += indentString('"type": "', 3)
-            string += reg.regtype + '",\n'
+            regDic = OrderedDict()
+
+            regDic["name"] = reg.name
+            regDic["mode"] = reg.mode
+            regDic["type"] = reg.regtype
 
             if includeAddress:
-                string += indentString('"address": "', 3)
-                string += str(hex(reg.address)) + '",\n'
+                regDic["address"] = str(hex(reg.address))
 
             if (reg.regtype != "default" and reg.regtype != "record" and
                     reg.regtype != "sl"):
+                regDic["length"] = reg.length
 
-                string += indentString('"length": ', 3)
-                string += str(reg.length) + ',\n'
+            if reg.regtype != "record":
+                regDic["reset"] = reg.reset
 
-            if len(reg.entries) > 0:
-                string += indentString('"entries": [', 3) + '\n'
+            if reg.regtype == "record" and len(reg.entries) > 0:
 
-                for j, entry in enumerate(reg.entries):
-                    string += indentString('{"name": "', 4)
-                    string += entry['name'] + \
-                        '", "type": "' + entry['type'] + '"'
+                regDic["entries"] = reg.entries
 
-                    if entry['type'] == 'slv':
-                        string += ', "length": ' + str(entry['length'])
+            regDic["description"] = reg.description
 
-                    if j < len(reg.entries) - 1:
-                        string += '},\n'
-                    else:
-                        string += '}\n'
+            dic["register"].append(regDic)
 
-                string += indentString('],', 3) + '\n'
+        dic["description"] = self.description
 
-            string += indentString('"description": "', 3)
-            string += reg.description + '"\n'
-
-            if i < len(self.registers) - 1:
-                string += indentString('},', 3) + '\n'
-            else:
-                string += indentString('}', 3) + '\n'
-
-        string += indentString('],', 2) + '\n'
-        string += indentString('"description": "', 2)
-        string += self.description + '"\n'
-
-        string += '}'
-
-        return string
+        return json.dumps(dic, indent=4)
 
     def getNextAddress(self):
         """! @brief Will get the next address based on the byte-addressed scheme
@@ -840,10 +842,10 @@ class Module:
         string = "Name: " + self.name + "\n"
         string += "Address width: " + str(self.addrWidth) + "\n"
         string += "Data width: " + str(self.dataWidth) + "\n"
-        string += "Description: " + self.description + "\n"
+        string += "Description: " + self.description + "\n\n"
+        string += "Registers: \n"
         for i, reg in enumerate(self.registers):
-            string += "Register " + str(i) + "\n"
-            string += indentString(str(reg), 2)
+            string += indentString(str(reg), 1)
         return string
 
 
@@ -863,61 +865,94 @@ class Register:
         self.length = 0
         self.entries = []
 
-        if 'reset' in reg:
-            # Reset value is not allowed if regtype is record
-            if reg['regtype'] == 'record':
-                raise InvalidRegisterFormat(
-                    "Reset value is not allowed for record type register: " + self.name)
-            else:
-                self.reset = reg['reset']
-
+        # Assign the reg type and register data length
         if reg['type'] == 'default':
             self.regtype = 'default'
+            self.length = mod_data_length
+
         elif reg['type'] == 'slv':
             self.regtype = 'slv'
             self.length = reg['length']
+
         elif reg['type'] == 'sl':
             self.regtype = 'sl'
-            self.length = 0
+
+            if 'length' in reg and reg['length'] != 1:
+                raise UndefinedRegisterType("SL cannot have length other than 1")
+            else:
+                self.length = 1
+
         elif reg['type'] == 'record':
             self.regtype = 'record'
+
             for entry in reg['entries']:
                 if entry['type'] == 'slv':
-                    self.entries.append({'name': entry['name'],
-                                         'type': 'slv',
-                                         'length': entry['length']})
+                    entryDic = OrderedDict([('name', entry['name']),
+                                            ('type', 'slv'),
+                                            ('length', entry['length']),
+                                            ('reset', '0x0')])
+                    self.entries.append(entryDic)
                     self.length += entry['length']
 
                 elif entry['type'] == 'sl':
-                    self.entries.append({'name': entry['name'],
-                                         'type': 'sl', 'length': 1})
+                    entryDic = OrderedDict([('name', entry['name']),
+                                            ('type', 'sl'),
+                                            ('length', 1),
+                                            ('reset', '0x0')])
+                    self.entries.append(entryDic)
                     self.length += 1
                 else:
                     raise UndefinedEntryType(entry['type'])
 
                 if 'reset' in entry:
-                    self.entries[-1]['reset'] = entry['reset']
+                    # Check whether reset value matches entry length
+                    # maxvalue is given by 2^length
+                    maxvalue = (2 ** self.entries[-1]['length']) - 1
+                    if maxvalue < int(entry['reset'], 16):
+                        raise InvalidRegisterFormat("Reset value does not match entry: " +
+                                                    self.entries[-1]['name'] +
+                                                    " in reg: " + self.name)
+                    else:
+                        self.entries[-1]['reset'] = entry['reset']
+
         else:
             raise UndefinedRegisterType(reg['type'])
+
+        if 'reset' in reg:
+            # Reset value is not allowed if regtype is record
+            if reg['type'] == 'record':
+                raise InvalidRegisterFormat(
+                    "Reset value is not allowed for record type register: " + self.name)
+            else:
+                # Check whether reset value matches register length
+                # maxvalue is given by 2^length
+                maxvalue = (2 ** self.length) - 1
+                if maxvalue < int(reg['reset'], 16):
+                    raise InvalidRegisterFormat("Reset value does not match register: " +
+                                                self.name)
+                else:
+                    self.reset = reg['reset']
 
         # Perform check that data bits are not exceeded
         self.checkRegisterDataLength(mod_data_length)
 
     def __str__(self):
         string = "Name: " + self.name + "\n"
-        string = "Address: " + hex(self.address) + "\n"
+        string += "Address: " + hex(self.address) + "\n"
         string += "Mode: " + self.mode + "\n"
         string += "Type: " + self.regtype + "\n"
-        string += "Length: " + str(self.length)
+        string += "Length: " + str(self.length) + "\n"
+        string += "Reset: " + self.reset
         if self.regtype == 'record':
 
             for i in self.entries:
                 string += "\n"
-                string += indentString("Name: " + i['name'] +
-                                       " Type: " + i['type'] +
-                                       " Length: " + str(i['length']))
+                string += indentString("Name: " + i['name'] + " Type: " +
+                                       i['type'] + " Length: " +
+                                       str(i['length']) +
+                                       " Reset: " + i['reset'])
 
-        string += "\nDescription: " + self.description
+        string += "\nDescription: " + self.description + "\n\n"
         return string
 
     def checkRegisterDataLength(self, module):

@@ -8,7 +8,8 @@
       "type": "record",
       "entries": [
           {"name": "run", "type": "sl", "reset": "0x1"},
-          {"name": "test_word", "type": "slv", "length": 8, "reset": "0xAD"}
+          {"name": "test_word", "type": "slv", "length": 8, "reset": "0xAD"},
+	  {"name": "another", "type": "sl"}
       ],
       "description": "Register 0. Record of std_logic and std_logic_vector."
       },
@@ -16,7 +17,7 @@
       "name": "reg1",
       "mode": "rw",
       "type": "default",
-      "reset": "0xFF",
+      "reset": "0xFFFF",
       "description": "Register 1. Default data length."
       },
       {
@@ -38,9 +39,16 @@
       "type": "record",
       "entries": [
         {"name": "test", "type": "slv", "length": 6},
-        {"name": "test2", "type": "sl"}
+          {"name": "test2", "type": "sl", "reset": "0x1"},
+	  {"name": "asdfa", "type": "slv", "reset": "0x3", "length": 3}
       ],
       "description": "Register 4. Record of slv[5:0] and sl."
+      },
+      {
+	  "name": "reg5",
+	  "mode": "ro",
+	  "type": "sl",
+	  "description": "Another register"
       }
     ],
     "description": "Module name does things..."

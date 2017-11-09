@@ -73,6 +73,5 @@ class InvalidAddress(RuntimeError):
 class InvalidRegisterFormat(RuntimeError):
     """! @brief Raised when register has some unspecified format error"""
 
-
     def __init__(self, msg):
         super().__init__(msg)
