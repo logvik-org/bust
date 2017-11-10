@@ -33,12 +33,10 @@ The examples folder is currently empty, except for the required Bitvis libraries
 
 ### Virtual Environment
 
-To create a virtual environment with Python3:
+To create a virtual environment with Python3 when located inside the repo:
 
 ```bash
 $ pip install virtualenv
-$ cd axi_slave_gen
-$ virtualenv env
 $ virtualenv -p /usr/bin/python3 env
 ```
 
@@ -48,7 +46,7 @@ To activate the virtual environment:
 $ source env/bin/activate
 ```
 
-When running `python` or `pip` commands, these will now refer to Python 3.
+When running `python` or `pip` commands, these will now refer to Python3 located in env/.
 
 ## Contributing
 
