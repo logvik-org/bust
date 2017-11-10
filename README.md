@@ -27,6 +27,10 @@ View program help by simply running the main file:
 
 `$ python3 art.py -h`
 
+### Examples
+
+The examples folder is currently empty, except for the required Bitvis libraries for testing. However, two JSON files for creating a module is provided in the art/ directory. 
+
 ### Virtual Environment
 
 To create a virtual environment with Python3:
@@ -49,6 +53,10 @@ When running `python` or `pip` commands, these will now refer to Python 3.
 ## Contributing
 
 If you have ideas on how to improve the project, please review [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+### Development Flow
+
+This project uses the dev branch as the root for all feature branches. Please create new feature branches based on the state of this branch.
 
 ## Authors
 
