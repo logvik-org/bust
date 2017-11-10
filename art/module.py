@@ -154,9 +154,11 @@ class Module:
         s += indentString('port (')
 
         par = ''
-        par += '-- register record signals\n'
-        par += 'axi_ro_regs : in  t_' + self.name + '_ro_regs;\n'
-        par += 'axi_rw_regs : out t_' + self.name + '_rw_regs;\n'
+        par += '\n-- register record signals\n'
+        par += 'axi_ro_regs : in  t_' + self.name + '_ro_regs := '
+        par += 'c_' + self.name + '_ro_regs;\n'
+        par += 'axi_rw_regs : out t_' + self.name + '_rw_regs := '
+        par += 'c_' + self.name + '_rw_regs;\n'
         par += '\n'
         par += '-- bus signals\n'
         par += 'clk         : in  std_logic;\n'
@@ -187,7 +189,7 @@ class Module:
         par = ''
         par += '-- internal signal for readback' + '\n'
         par += 'signal axi_rw_regs_i : t_'
-        par += self.name + '_rw_regs;\n\n'
+        par += self.name + '_rw_regs := c_' + self.name + '_rw_regs;\n\n'
 
         par += '-- internal bus signals for readback\n'
         par += 'signal awaddr_i      : t_' + self.name + '_addr;\n'
@@ -274,36 +276,8 @@ class Module:
         s += indentString("if areset_n = '0' then\n", 2)
 
         # Assign default values
-        # @todo Ensure that record entries' and registers' default values are
-        # assigned properly
-        par = ''
-        # create a generator for looping through all rw regs
-        gen = (reg for reg in self.registers if reg.mode == "rw")
-        for reg in gen:
-
-            if reg.regtype == 'record':
-
-                for entry in reg.entries:
-                    par += 'axi_rw_regs_i.'
-                    par += reg.name + '.' + entry['name'] + ' <= '
-                    if entry['type'] == 'slv':
-                        par += "(others => '0');\n"
-                    elif entry['type'] == 'sl':
-                        par += "'0';\n"
-                    else:
-                        raise UndefinedEntryType(
-                            "Unknown entry type: " + entry['type'])
-            elif reg.regtype == 'slv' or reg.regtype == 'default':
-                par += 'axi_rw_regs_i.'
-                par += reg.name + " <= (others => '0');\n"
-            elif reg.regtype == 'sl':
-                par += 'axi_rw_regs_i.'
-                par += reg.name + " <= '0';\n"
-            else:
-                raise UndefinedRegisterType(
-                    "Unknown register type: " + reg.regtype)
-        par += '\n'
-        s += indentString(par, 3)
+        s += indentString('\naxi_rw_regs_i <= c_', 3)
+        s += self.name + '_rw_regs;\n\n'
 
         s += indentString('elsif rising_edge(clk) then\n', 2)
         s += indentString("if (slv_reg_wren = '1') then\n", 3)
@@ -466,7 +440,7 @@ class Module:
                 if reg.mode == 'rw':
                     par += 'axi_rw_regs_i.'
                 elif reg.mode == 'ro':
-                    par += ') <= axi_ro_regs.'
+                    par += 'axi_ro_regs.'
                 else:
                     raise Exception("Unknown error occurred")
                 par += reg.name + ';\n'
@@ -476,7 +450,7 @@ class Module:
                 if reg.mode == 'rw':
                     par += 'axi_rw_regs_i.'
                 elif reg.mode == 'ro':
-                    par += ') <= axi_ro_regs.'
+                    par += 'axi_ro_regs.'
                 else:
                     raise Exception("Unknown error occurred")
                 par += reg.name + ';\n'
@@ -541,6 +515,8 @@ class Module:
         par += '\n'
         s += indentString(par)
 
+        s += indentString("-- RW Register Record Definitions\n\n")
+
         # Create all types for RW registers with records
         for i in self.registers:
             if i.mode == "rw" and i.regtype == "record":
@@ -557,11 +533,10 @@ class Module:
                     else:
                         raise RuntimeError(
                             "Something went wrong..." + j['type'])
-                s += indentString("end record;\n")
-        s += "\n"
+                s += indentString("end record;\n\n")
 
         # The RW register record type
-        s += indentString("type t_" + self.name + "_rw_regs is record")
+        s += indentString("type t_" + self.name + "_rw_regs is record\n")
         for i in self.registers:
             if i.mode == "rw":
                 s += indentString(i.name, 2) + " : "
@@ -575,9 +550,74 @@ class Module:
                 elif i.regtype == "record":
                     s += "t_" + self.name + "_rw_" + i.name + ";\n"
                 else:
-                    raise RuntimeError("Something went wrong... What?")
+                    raise RuntimeError("Something went wrong...")
         s += indentString("end record;\n")
         s += "\n"
+
+        s += indentString("-- RW Register Reset Value Constant\n\n")
+
+        s += indentString("constant c_") + self.name + "_rw_regs : t_"
+        s += self.name + "_rw_regs := (\n"
+        gen = [reg for reg in self.registers if reg.mode == 'rw']
+
+        for i, reg in enumerate(gen):
+            par = ''
+            par += reg.name + ' => '
+
+            # RW default values must be declared
+            if reg.regtype == 'default' or reg.regtype == 'slv':
+                if reg.reset == "0x0":
+                    par += "(others => '0')"
+                else:
+                    par += str(reg.length) + 'X"'
+                    par += format(int(reg.reset, 16), 'X') + '"'
+ 
+            elif reg.regtype == 'record':
+
+                if len(reg.entries) > 1:
+                    par += '(\n'
+                else:
+                    par += '('
+
+                for j, entry in enumerate(reg.entries):
+                    if len(reg.entries) > 1:
+                        par += indentString(entry['name'] + ' => ')
+                    else:
+                        par += entry['name'] + ' => '
+
+                    if entry['type'] == 'slv':
+
+                        if entry['reset'] == "0x0":
+                            par += "(others => '0')"
+                        else:
+                            par += str(entry['length']) + 'X"'
+                            par += format(int(entry['reset'], 16), 'X') + '"'
+
+                    elif entry['type'] == 'sl':
+                        par += "'" + format(int(entry['reset'], 16), 'X') + "'"
+
+                    else:
+                        raise UndefinedEntryType(
+                            "Unknown entry type: " + entry['type'])
+
+                    if j < len(reg.entries) - 1:
+                        par += ',\n'
+
+                par += ')'
+
+            elif reg.regtype == 'sl':
+                par += "'" + format(int(reg.reset, 16), 'X') + "'"
+
+            if i < len(gen) - 1:
+                par += ','
+            else:
+                par += ');'
+            par += '\n'
+
+            s += indentString(par, 2)
+        s += '\n'
+
+        s += indentString("-- RO Register Record Definitions\n\n")
 
         # Create all types for RO registers with records
         for i in self.registers:
@@ -594,12 +634,10 @@ class Module:
                         s += "std_logic;\n"
                     else:
                         raise RuntimeError("Something went wrong... WTF?")
-                s += indentString("end record;\n")
-        s += "\n"
+                s += indentString("end record;\n\n")
 
         # The RO register record type
-        s += indentString("type t_" + self.name + "_ro_regs is record")
-        s += "\n"
+        s += indentString("type t_" + self.name + "_ro_regs is record\n")
         for i in self.registers:
             if i.mode == "ro":
                 s += indentString(i.name, 2) + " : "
@@ -617,6 +655,69 @@ class Module:
                         "Something went wrong... What now?" + i.regtype)
         s += indentString("end record;\n")
         s += "\n"
+
+        s += indentString("-- RO Register Reset Value Constant\n\n")
+
+        s += indentString("constant c_") + self.name + "_ro_regs : t_"
+        s += self.name + "_ro_regs := (\n"
+        gen = [reg for reg in self.registers if reg.mode == 'ro']
+
+        for i, reg in enumerate(gen):
+            par = ''
+            par += reg.name + ' => '
+
+            # RO default values must be declared
+            if reg.regtype == 'default' or reg.regtype == 'slv':
+                if reg.reset == "0x0":
+                    par += "(others => '0')"
+                else:
+                    par += str(reg.length) + 'X"'
+                    par += format(int(reg.reset, 16), 'X') + '"'
+
+            elif reg.regtype == 'record':
+                
+                if len(reg.entries) > 1:
+                    par += '(\n'
+                else:
+                    par += '('
+
+                for j, entry in enumerate(reg.entries):
+                    if len(reg.entries) > 1:
+                        par += indentString(entry['name'] + ' => ')
+                    else:
+                        par += entry['name'] + ' => '
+                        
+                    if entry['type'] == 'slv':
+                        
+                        if entry['reset'] == "0x0":
+                            par += "(others => '0')"
+                        else:
+                            par += str(entry['length']) + 'X"'
+                            par += format(int(entry['reset'], 16), 'X') + '"'
+                            
+                    elif entry['type'] == 'sl':
+                        par += "'" + format(int(entry['reset'], 16), 'X') + "'"
+
+                    else:
+                        raise UndefinedEntryType(
+                            "Unknown entry type: " + entry['type'])
+
+                    if j < len(reg.entries) - 1:
+                        par += ',\n'
+
+                par += ')'
+
+            elif reg.regtype == 'sl':
+                par += "'" + format(int(reg.reset, 16), 'X') + "'"
+
+            if i < len(gen) - 1:
+                par += ','
+            else:
+                par += ');'
+            par += '\n'
+            
+            s += indentString(par, 2)
+        s += '\n'
 
         s += "end package " + self.name + "_pkg;"
 
@@ -653,68 +754,10 @@ class Module:
         s += '\n'
 
         s += indentString('signal ' + self.busType + '_rw_regs : t_')
-        s += self.name + '_rw_regs;\n'
+        s += self.name + '_rw_regs := c_' + self.name + '_rw_regs;\n'
         s += indentString('signal ' + self.busType + '_ro_regs : t_')
-        s += self.name + '_ro_regs := (\n'
+        s += self.name + '_ro_regs := c_' + self.name + '_ro_regs;\n'
 
-        # Use list instead of generator, so length can be obtained
-        gen = [reg for reg in self.registers if reg.mode == 'ro']
-
-        for i, reg in enumerate(gen):
-            par = ''
-            par += reg.name + ' => '
-
-            # @todo RO default values must be declared
-            if reg.regtype == 'default' or reg.regtype == 'slv':
-                if reg.reset == "0x0":
-                    par += "(others => '0')"
-                else:
-                    par += str(reg.length) + 'X"'
-                    par += format(int(reg.reset, 16), 'X') + '"'
-                if i < len(gen) - 1:
-                    par += ','
-                par += '\n'
-
-            elif reg.regtype == 'record':
-                
-                if len(reg.entries) > 1:
-                    par += '(\n'
-                else:
-                    par += '('
-
-                for j, entry in enumerate(reg.entries):
-                    if len(reg.entries) > 1:
-                        par += indentString(entry['name'] + ' => ')
-                    else:
-                        par += entry['name'] + ' => '
-                        
-                    if entry['type'] == 'slv':
-                        
-                        if entry['reset'] == "0x0":
-                            par += "(others => '0')"
-                        else:
-                            par += str(entry['length']) + 'X"'
-                            par += format(int(entry['reset'], 16), 'X') + '"'
-                            
-                    elif entry['type'] == 'sl':
-                        par += "'" + format(int(entry['reset'], 16), 'X') + "'"
-
-                    else:
-                        raise UndefinedEntryType(
-                            "Unknown entry type: " + entry['type'])
-
-                    if j < len(reg.entries) - 1:
-                        par += ',\n'
-
-                par += ')'
-                if i < len(gen) - 1:
-                    par += ',\n'
-
-            elif reg.regtype == 'sl':
-                par += "'" + format(int(reg.reset, 16), 'X') + "'"
-
-            s += indentString(par, 2)
-        s += ');\n'
         s += '\n'
 
         s += 'begin\n'

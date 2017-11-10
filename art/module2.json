@@ -1,4 +1,4 @@
-{ "name": "module_name2",
+{ "name": "module_name",
   "addr_width": 16,
   "data_width": 16,
   "register": [
@@ -49,6 +49,22 @@
 	  "mode": "ro",
 	  "type": "sl",
 	  "description": "Another register"
+      },
+      {
+	  "name": "reg6",
+	  "mode": "rw",
+	  "type": "slv",
+	  "length": 4,
+	  "reset": "0x1",
+	  "description": "asdfasdf"
+      },
+      {
+	  "name": "reg7",
+	  "mode": "ro",
+	  "type": "slv",
+	  "length": 6,
+	  "reset": "0x4",
+	  "description": "asdfasdfad"
       }
     ],
     "description": "Module name does things..."
