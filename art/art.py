@@ -67,3 +67,5 @@ if __name__ == '__main__':
 
         except Exception as e:
             print(str(e))
+    elif arguments['-c'] == True:
+        print("This feature is not yet implemented. Planned for art version 0.2")
