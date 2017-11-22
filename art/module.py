@@ -741,9 +741,9 @@ class Module:
         s += '\n'
         par = ''
         par += '-- ' + self.busType.upper() + ' Bus Interface\n'
-        par += self.busType + '_clk      : in std_logic;\n'
-        par += self.busType + '_areset_n : in std_logic;\n'
-        par += self.busType + '_in       : in t_' + \
+        par += self.busType + '_clk      : in  std_logic;\n'
+        par += self.busType + '_areset_n : in  std_logic;\n'
+        par += self.busType + '_in       : in  t_' + \
             self.busType + '_interconnect_to_slave;\n'
         par += self.busType + '_out      : out t_' + \
             self.busType + '_slave_to_interconnect\n'
@@ -798,11 +798,14 @@ class Module:
         par += ');\n'
         s += indentString(par, 3)
 
-        s += indentString('-- Set unused bus data bits to zero\n')
-        s += indentString(self.busType +
-                          '_out.rdata(C_' + self.busType.upper())
-        s += '_DATA_WIDTH-1 downto C_' + self.name.upper() + '_DATA_WIDTH)'
-        s += " <= (others => '0');\n"
+        # If bus data width is larger than module data width, set the unused bits to zero
+        if self.busDataWitdh > self.dataWidth:
+            s += indentString('-- Set unused bus data bits to zero\n')
+            s += indentString(self.busType +
+                              '_out.rdata(C_' + self.busType.upper())
+            s += '_DATA_WIDTH-1 downto C_' + self.name.upper() + '_DATA_WIDTH)'
+            s += " <= (others => '0');\n"
+
         s += '\n'
         s += 'end architecture behavior;'
 

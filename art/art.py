@@ -27,7 +27,7 @@ from module import Bus
 import os
 
 if __name__ == '__main__':
-    arguments = docopt(__doc__, version='art version 0.1')
+    arguments = docopt(__doc__, version='art version 0.1.1')
 
     if arguments['FILE'] != None:
         jsonFile = arguments['FILE']

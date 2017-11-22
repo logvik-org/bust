@@ -1,6 +1,6 @@
 { "name": "module_name",
-  "addr_width": 16,
-  "data_width": 16,
+  "addr_width": 32,
+  "data_width": 32,
   "register": [
       {
       "name": "reg0",
