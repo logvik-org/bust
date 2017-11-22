@@ -273,16 +273,19 @@ class Module:
         s += '\n'
         s += indentString('p_mm_select_write : process(clk)\n')
         s += indentString('begin\n')
-        s += indentString("if areset_n = '0' then\n", 2)
+
+        s += indentString('if rising_edge(clk) then\n', 2)
+        
+        s += indentString("if areset_n = '0' then\n", 3)
 
         # Assign default values
-        s += indentString('\naxi_rw_regs_i <= c_', 3)
+        s += indentString('\naxi_rw_regs_i <= c_', 4)
         s += self.name + '_rw_regs;\n\n'
 
-        s += indentString('elsif rising_edge(clk) then\n', 2)
-        s += indentString("if (slv_reg_wren = '1') then\n", 3)
+        
+        s += indentString("elsif (slv_reg_wren = '1') then\n", 3)
         s += '\n'
-        s += indentString('case awaddr_i is\n', 4)
+        s += indentString('case awaddr_i is\n\n', 4)
 
         # create a generator for looping through all rw regs
         gen = (reg for reg in self.registers if reg.mode == "rw")
