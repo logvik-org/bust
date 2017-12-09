@@ -5,8 +5,8 @@
       {
       "name": "reg0",
       "mode": "rw",
-      "type": "record",
-      "entries": [
+      "type": "fields",
+      "fields": [
           {"name": "run", "type": "sl", "reset": "0x1"},
           {"name": "test_word", "type": "slv", "length": 8, "reset": "0xAD"},
 	  {"name": "another", "type": "sl"}
@@ -36,8 +36,8 @@
       {
       "name": "reg4",
       "mode": "ro",
-      "type": "record",
-      "entries": [
+      "type": "fields",
+      "fields": [
         {"name": "test", "type": "slv", "length": 6},
           {"name": "test2", "type": "sl", "reset": "0x1"},
 	  {"name": "asdfa", "type": "slv", "reset": "0x3", "length": 3}

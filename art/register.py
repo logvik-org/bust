@@ -1,12 +1,7 @@
 from utils import indentString
 from utils import add_line_breaks
 
-from exceptions import UndefinedRegisterType
-from exceptions import UndefinedEntryType
-from exceptions import InvalidRegisterFormat
-from exceptions import ModuleDataBitsExceeded
-
-from collections import OrderedDict
+from field import Field
 
 
 class Register:
@@ -20,86 +15,42 @@ class Register:
         self.mode = reg['mode']
         self.description = add_line_breaks(reg['description'], 25)
         self.address = address
-        self.sig_type = ""
+        self.sig_type = reg['type']
         self.reset = "0x0"
         self.length = 0
         self.fields = []
+        if 'length' in reg:
+            tmp_length = reg['length']
+        else:
+            tmp_length = 1      # Setting to 1, in case std_logic
 
         # Assign the reg type and register data length
-        if reg['type'] == 'default':
-            self.sig_type = 'default'
+        if self.sig_type == 'default':
             self.length = mod_data_length
 
-        elif reg['type'] == 'slv':
-            self.sig_type = 'slv'
-            self.length = reg['length']
+        elif self.sig_type == 'slv':
+            self.length = tmp_length
 
-        elif reg['type'] == 'sl':
+        elif self.sig_type == 'sl':
             self.sig_type = 'sl'
 
-            if 'length' in reg and reg['length'] != 1:
+            if tmp_length != 1:
                 raise UndefinedRegisterType("SL cannot have length other than 1")
+            self.length = tmp_length
+
+        elif self.sig_type == 'fields':
+            if len(reg['fields']) > 0:
+                for field in reg['fields']:
+                    self.add_field(field)
             else:
-                self.length = 1
-
-        elif reg['type'] == 'record':
-            self.sig_type = 'record'
-
-            for entry in reg['entries']:
-                entryDic = OrderedDict([('name', entry['name']),
-                                        ('type', ''),
-                                        ('length', 0),
-                                        ('pos_high', 0),
-                                        ('pos_low', self.getNextPosLow()),
-                                        ('reset', '0x0'),
-                                        ('description', '')])
-
-                if entry['type'] == 'slv':
-                    entryDic['type'] = 'slv'
-                    entryDic['length'] = entry['length']
-
-                elif entry['type'] == 'sl':
-                    entryDic['type'] = 'sl'
-                    entryDic['length'] = 1
-                else:
-                    raise UndefinedEntryType(entry['type'])
-
-                self.length += entryDic['length']
-
-                posHigh = entryDic['pos_high'] = entryDic['pos_low'] + entryDic['length'] - 1
-                if posHigh > self.length:
-                    raise InvalidRegisterFormat('Entry lengths are longer than register length: ' +
-                                                entryDic['name'] + ' in reg: ' + self.name)
-                else:
-                    entryDic['pos_high'] = posHigh
-
-                if 'reset' in entry:
-                    # Check whether reset value matches entry length
-                    # maxvalue is given by 2^length
-                    maxvalue = (2 ** entryDic['length']) - 1
-                    if maxvalue < int(entry['reset'], 16):
-                        raise InvalidRegisterFormat("Reset value does not match entry: " +
-                                                    entryDic['name'] +
-                                                    " in reg: " + self.name)
-                    else:
-                        entryDic['reset'] = entry['reset']
-                        regReset = int(self.reset, 16)
-                        entryReset = int(entryDic['reset'], 16)
-                        regReset += entryReset << entryDic['pos_low']
-                        self.reset = hex(regReset)
-
-                if 'description' in entry:
-                    entryDic['description'] = entry['description']
-
-                self.fields.append(entryDic)
-
+                InvalidFieldFormat('Fields are missing in reg: ' + self.name)    
 
         else:
-            raise UndefinedRegisterType(reg['type'])
+            raise UndefinedRegisterType(self.sig_type)
 
         if 'reset' in reg:
             # Reset value is not allowed if sig_type is record
-            if reg['type'] == 'record':
+            if self.sig_type == 'record':
                 raise InvalidRegisterFormat(
                     "Reset value is not allowed for record type register: " + self.name)
             else:
@@ -134,6 +85,49 @@ class Register:
         string += "\nDescription: " + self.description + "\n\n"
         return string
 
+    def add_field(self, field):
+        # Check that all required keys exist
+        if not all(key in field for key in ("name", "type")):
+            raise InvalidFieldFormat(self.name)
+
+        if field['type'] == 'slv':
+            if 'length' not in field:
+                raise InvalidFieldFormat(self.name)
+            length = field['length']
+
+        elif field['type'] == 'sl':
+            length = 1
+
+        else:
+            raise UndefinedFieldType(field['type'])
+
+        if 'reset' in field:
+            reset = field['reset']
+            # Check whether reset value matches field length
+            # maxvalue is given by 2^length
+            maxvalue = (2 ** length) - 1
+            if maxvalue < int(field['reset'], 16):
+                raise InvalidFieldFormat("Reset value does not match field: " +
+                                         field['name'] +
+                                         " in reg: " + self.name)
+        else:
+            reset = '0x0'
+
+        if 'description' in field:
+            description = field['description']
+        else:
+            description = ''
+
+        next_low = self.get_next_pos_low()
+        self.fields.append(Field(field['name'], field['type'], length, reset, description,
+                                 next_low))
+
+        # Maintain the register reset value
+        reg_reset_int = int(self.reset, 16)
+        field_reset_int = int(reset, 16)
+        reg_reset_int += field_reset_int << next_low
+        self.reset = hex(reg_reset_int)
+
     def checkRegisterDataLength(self, module):
         """! @brief Controls that the combined data bits in fields does not
         exceed data bits of module
@@ -142,9 +136,56 @@ class Register:
         if self.length > module:
             raise ModuleDataBitsExceeded(self.name, self.length, module)
 
-    def getNextPosLow(self):
+    def get_next_pos_low(self):
         if len(self.fields) > 0:
-            lastPosHigh = self.fields[-1]['pos_high']
+            lastPosHigh = self.fields[-1].pos_high
             return lastPosHigh + 1
         else:
             return 0
+
+
+class ModuleDataBitsExceeded(Exception):
+    """! @brief Raised when the specified module data bits are exceeded
+
+    """
+
+    def __init__(self, register, reglength, mod_data_length):
+        msg = "\nFAILURE:\n"
+        msg += "In register " + register + "\n"
+        msg += "Register length exceeded module data length by "
+        msg += str(reglength - mod_data_length)
+        super().__init__(msg)
+
+
+class UndefinedRegisterType(RuntimeError):
+    """! @brief Raised when trying to parse a register type that is not supported
+
+    """
+
+    def __init__(self, regtype):
+        msg = "\nFAILURE:\n"
+        msg += "Could not parse register type: " + regtype
+        super().__init__(msg)
+
+
+class UndefinedFieldType(RuntimeError):
+    """! @brief Raised when trying to parse an field type that is not supported
+
+    """
+
+    def __init__(self, sig_type):
+        msg = "\nFAILURE:\n"
+        msg += "Could not parse field type: " + sig_type
+        super().__init__(msg)
+
+
+class InvalidRegisterFormat(RuntimeError):
+    """! @brief Raised when register has some unspecified format error"""
+
+    def __init__(self, msg):
+        super().__init__(msg)
+
+
+class InvalidFieldFormat(RuntimeError):
+    def __init__(self, msg):
+        super().__init__(msg)

@@ -4,7 +4,6 @@ from utils import jsonParser
 from utils import cont
 from utils import is_int
 from utils import clearScreen
-from exceptions import UndefinedEntryType
 from module import Module
 from module import Bus
 from collections import OrderedDict
@@ -97,16 +96,8 @@ class Editor(object):
             table_fields.field_names = ['#', 'Name', 'Type', 'Position', 'Length', 'Reset', 'Description']
             for i, field in enumerate(reg.fields):
 
-                # Get the position of the field
-                if field['type'] == 'sl':
-                    pos = str(field['pos_low'])
-                elif field['type'] == 'slv':
-                    pos = str(field['pos_high']) + ':' + str(field['pos_low'])
-                else:
-                    raise UndefinedEntryType("Unknown field type: " + field['type'])
-
-                table_fields.add_row([i, field['name'], field['type'], pos, field['length'],
-                                      field['reset'], field['description']])
+                table_fields.add_row([i, field.name, field.sig_type, field.get_pos_str(), field.length,
+                                      field.reset, field.description])
 
             print(table_fields)
 

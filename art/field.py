@@ -11,13 +11,13 @@ class Field(object):
         self.reset = reset
         self.description = add_line_breaks(description, 25)
         self.pos_low = pos_low
-        self.pos_high = pos_low + length
+        self.pos_high = pos_low + length - 1
 
     def get_pos_str(self):
         if self.sig_type == 'sl':
             return str(self.pos_low)
         elif self.sig_type == 'slv':
-            return str(self.pos_high) + ':' + self.pos_low
+            return str(self.pos_high) + ':' + str(self.pos_low)
 
     def get_pos_vhdl(self):
         if self.sig_type == 'sl':

@@ -1,11 +1,10 @@
 from utils import indentString
 from utils import jsonParser
+from utils import add_line_breaks
 # from utils import compareJSON
 # from utils import jsonToString
 from exceptions import InvalidAddress
 from exceptions import InvalidRegister
-from exceptions import UndefinedEntryType
-from exceptions import UndefinedRegisterType
 
 from register import Register
 
@@ -126,7 +125,7 @@ class Module:
         self.name = mod['name']
         self.addrWidth = mod['addr_width']
         self.dataWidth = mod['data_width']
-        self.description = mod['description']
+        self.description = add_line_breaks(mod['description'], 25)
         for reg in mod['register']:
             self.addRegister(reg)
 
@@ -148,7 +147,6 @@ class Module:
             raise InvalidRegister(reg)
 
     def returnRegisterPIFVHDL(self):
-
         s = 'library ieee;\n'
         s += 'use ieee.std_logic_1164.all;\n'
         s += 'use ieee.numeric_std.all;\n'
@@ -298,24 +296,12 @@ class Module:
             s += indentString('when C_ADDR_', 5)
             s += reg.name.upper() + ' =>\n\n'
             par = ''
-            if reg.sig_type == 'record':
+            if reg.sig_type == 'fields':
 
-                lasthigh = -1
-                for entry in reg.fields:
-                    par += 'axi_rw_regs_i.' + reg.name + '.' + entry['name']
+                for field in reg.fields:
+                    par += 'axi_rw_regs_i.' + reg.name + '.' + field.name
                     par += ' <= wdata('
-                    if entry['type'] == 'sl':
-                        lasthigh += 1
-                        par += str(lasthigh)
-                    elif entry['type'] == 'slv':
-                        lasthigh += 1
-                        par += str(entry['length'] + lasthigh - 1)
-                        par += ' downto '
-                        par += str(lasthigh)
-                        lasthigh += entry['length'] - 1
-                    else:
-                        raise UndefinedEntryType(
-                            "Unknown entry type: " + entry['type'])
+                    par += field.get_pos_vhdl()
                     par += ');\n'
 
             elif reg.sig_type == 'default':
@@ -325,9 +311,7 @@ class Module:
                 par += str(reg.length - 1) + ' downto 0);\n'
             elif reg.sig_type == 'sl':
                 par += 'axi_rw_regs_i.' + reg.name + ' <= wdata(0);\n'
-            else:
-                raise UndefinedRegisterType(
-                    "Unknown register type: " + reg.sig_type)
+
             s += indentString(par, 6)
             s += '\n'
 
@@ -408,29 +392,19 @@ class Module:
             s += reg.name.upper() + ' =>\n\n'
             par = ''
 
-            if reg.sig_type == 'record':
+            if reg.sig_type == 'fields':
 
-                lasthigh = -1
-                for entry in reg.fields:
-                    lasthigh += 1
+                for field in reg.fields:
                     par += 'reg_data_out('
+                    par += field.get_pos_vhdl()
 
-                    if entry['type'] == 'sl':
-                        par += str(lasthigh)
-                    elif entry['type'] == 'slv':
-                        par += str(entry['length'] + lasthigh - 1)
-                        par += ' downto ' + str(lasthigh)
-                        lasthigh += entry['length'] - 1
-                    else:
-                        raise UndefinedEntryType(
-                            'Unknown entry type: ' + entry['type'])
                     if reg.mode == 'rw':
                         par += ') <= axi_rw_regs_i.'
                     elif reg.mode == 'ro':
                         par += ') <= axi_ro_regs.'
                     else:
                         raise Exception("Unknown error occurred")
-                    par += reg.name + '.' + entry['name'] + ';\n'
+                    par += reg.name + '.' + field.name + ';\n'
 
             elif reg.sig_type == 'default':
                 par += 'reg_data_out <= '
@@ -463,9 +437,6 @@ class Module:
                     raise Exception("Unknown error occurred")
                 par += reg.name + ';\n'
 
-            else:
-                raise UndefinedRegisterType(
-                    "Unknown register type: " + reg.sig_type)
             s += indentString(par, 4)
             s += '\n'
 
@@ -527,20 +498,21 @@ class Module:
 
         # Create all types for RW registers with records
         for reg in self.registers:
-            if reg.mode == "rw" and reg.sig_type == "record":
+            if reg.mode == "rw" and reg.sig_type == "fields":
                 s += indentString("type t_" + self.name + "_rw_")
                 s += reg.name + " is record\n"
 
-                for j in reg.fields:
-                    s += indentString(j['name'], 2) + " : "
-                    if j['type'] == "slv":
-                        s += "std_logic_vector(" + str(j['length'] - 1)
+                for field in reg.fields:
+                    s += indentString(field.name, 2) + " : "
+                    if field.sig_type == "slv":
+                        s += "std_logic_vector(" + str(field.length - 1)
                         s += " downto 0);\n"
-                    elif j['type'] == "sl":
+                    elif field.sig_type == "sl":
                         s += "std_logic;\n"
                     else:
+                        import ipdb; ipdb.set_trace()
                         raise RuntimeError(
-                            "Something went wrong..." + j['type'])
+                            "Something went wrong..." + field.sig_type)
                 s += indentString("end record;\n\n")
 
         # The RW register record type
@@ -555,9 +527,10 @@ class Module:
                         str(reg.length - 1) + " downto 0);\n"
                 elif reg.sig_type == "sl":
                     s += "std_logic;\n"
-                elif reg.sig_type == "record":
+                elif reg.sig_type == "fields":
                     s += "t_" + self.name + "_rw_" + reg.name + ";\n"
                 else:
+                    import ipdb; ipdb.set_trace()
                     raise RuntimeError("Something went wrong...")
         s += indentString("end record;\n")
         s += "\n"
@@ -580,33 +553,29 @@ class Module:
                     par += str(reg.length) + 'X"'
                     par += format(int(reg.reset, 16), 'X') + '"'
 
-            elif reg.sig_type == 'record':
+            elif reg.sig_type == 'fields':
 
                 if len(reg.fields) > 1:
                     par += '(\n'
                 else:
                     par += '('
 
-                for j, entry in enumerate(reg.fields):
+                for j, field in enumerate(reg.fields):
                     if len(reg.fields) > 1:
-                        par += indentString(entry['name'] + ' => ')
+                        par += indentString(field.name + ' => ')
                     else:
-                        par += entry['name'] + ' => '
+                        par += field.name + ' => '
 
-                    if entry['type'] == 'slv':
+                    if field.sig_type == 'slv':
 
-                        if entry['reset'] == "0x0":
+                        if field.reset == "0x0":
                             par += "(others => '0')"
                         else:
-                            par += str(entry['length']) + 'X"'
-                            par += format(int(entry['reset'], 16), 'X') + '"'
+                            par += str(field.length) + 'X"'
+                            par += format(int(field.reset, 16), 'X') + '"'
 
-                    elif entry['type'] == 'sl':
-                        par += "'" + format(int(entry['reset'], 16), 'X') + "'"
-
-                    else:
-                        raise UndefinedEntryType(
-                            "Unknown entry type: " + entry['type'])
+                    elif field.sig_type == 'sl':
+                        par += "'" + format(int(field.reset, 16), 'X') + "'"
 
                     if j < len(reg.fields) - 1:
                         par += ',\n'
@@ -629,18 +598,19 @@ class Module:
 
         # Create all types for RO registers with records
         for reg in self.registers:
-            if reg.mode == "ro" and reg.sig_type == "record":
+            if reg.mode == "ro" and reg.sig_type == "fields":
                 s += indentString("type t_" + self.name + "_ro_")
                 s += reg.name + " is record\n"
 
-                for j in reg.fields:
-                    s += indentString(j['name'], 2) + " : "
-                    if j['type'] == "slv":
-                        s += "std_logic_vector(" + str(j['length'] - 1)
+                for field in reg.fields:
+                    s += indentString(field.name, 2) + " : "
+                    if field.sig_type == "slv":
+                        s += "std_logic_vector(" + str(field.length - 1)
                         s += " downto 0);\n"
-                    elif j['type'] == "sl":
+                    elif field.sig_type == "sl":
                         s += "std_logic;\n"
                     else:
+                        import ipdb; ipdb.set_trace()
                         raise RuntimeError("Something went wrong... WTF?")
                 s += indentString("end record;\n\n")
 
@@ -656,9 +626,10 @@ class Module:
                         str(reg.length - 1) + " downto 0);\n"
                 elif reg.sig_type == "sl":
                     s += "std_logic;\n"
-                elif reg.sig_type == "record":
+                elif reg.sig_type == "fields":
                     s += "t_" + self.name + "_ro_" + reg.name + ";\n"
                 else:
+                    import ipdb; ipdb.set_trace()
                     raise RuntimeError(
                         "Something went wrong... What now?" + reg.sig_type)
         s += indentString("end record;\n")
@@ -682,33 +653,28 @@ class Module:
                     par += str(reg.length) + 'X"'
                     par += format(int(reg.reset, 16), 'X') + '"'
 
-            elif reg.sig_type == 'record':
-
+            elif reg.sig_type == 'fields':
                 if len(reg.fields) > 1:
                     par += '(\n'
                 else:
                     par += '('
 
-                for j, entry in enumerate(reg.fields):
+                for j, field in enumerate(reg.fields):
                     if len(reg.fields) > 1:
-                        par += indentString(entry['name'] + ' => ')
+                        par += indentString(field.name + ' => ')
                     else:
-                        par += entry['name'] + ' => '
+                        par += field.name + ' => '
 
-                    if entry['type'] == 'slv':
+                    if field.sig_type == 'slv':
 
-                        if entry['reset'] == "0x0":
+                        if field.reset == "0x0":
                             par += "(others => '0')"
                         else:
-                            par += str(entry['length']) + 'X"'
-                            par += format(int(entry['reset'], 16), 'X') + '"'
+                            par += str(field.length) + 'X"'
+                            par += format(int(field.reset, 16), 'X') + '"'
 
-                    elif entry['type'] == 'sl':
-                        par += "'" + format(int(entry['reset'], 16), 'X') + "'"
-
-                    else:
-                        raise UndefinedEntryType(
-                            "Unknown entry type: " + entry['type'])
+                    elif field.sig_type == 'sl':
+                        par += "'" + format(int(field.reset, 16), 'X') + "'"
 
                     if j < len(reg.fields) - 1:
                         par += ',\n'
@@ -717,6 +683,9 @@ class Module:
 
             elif reg.sig_type == 'sl':
                 par += "'" + format(int(reg.reset, 16), 'X') + "'"
+
+            else:
+                import ipdb; ipdb.set_trace()
 
             if i < len(gen) - 1:
                 par += ','
@@ -838,14 +807,14 @@ class Module:
             if includeAddress:
                 regDic["address"] = str(hex(reg.address))
 
-            if (reg.sig_type != "default" and reg.sig_type != "record" and
+            if (reg.sig_type != "default" and reg.sig_type != "fields" and
                     reg.sig_type != "sl"):
                 regDic["length"] = reg.length
 
-            if reg.sig_type != "record":
+            if reg.sig_type != "fields":
                 regDic["reset"] = reg.reset
 
-            if reg.sig_type == "record" and len(reg.fields) > 0:
+            if reg.sig_type == "fields" and len(reg.fields) > 0:
 
                 regDic["entries"] = reg.fields
 
