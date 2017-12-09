@@ -77,3 +77,31 @@ def writeStringToFile(string, outputFile, outputDir):
 
     with open(os.path.join(outputDir, outputFile), 'w') as strfile:
         strfile.write(string)
+
+
+def cont():
+        try:
+            input("Press enter to continue...")
+        except SyntaxError:
+            pass
+
+
+def isInt(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        pass
+
+    try:
+        import unicodedata
+        unicodedata.numeric(s)
+        return True
+    except (TypeError, ValueError):
+        pass
+
+    return False
+
+
+def clearScreen():
+    os.system('cls' if os.name == 'nt' else 'clear')

@@ -3,13 +3,15 @@
 
 Usage:
   art.py FILE [-o DIR]
-  art.py -c [-o DIR]
+  art.py -c FILE [-o DIR]
+  art.py -e FILE [-o DIR]
   art.py --version
   art.py -h | --help
 
 Options:
   -o DIR         Specify output directory
   -c             Start menu-based creation of JSON file
+  -e             Edit existing JSON file
   -h --help      HELP!
   --version      Show version info
 
@@ -21,16 +23,17 @@ Arguments:
 from docopt import docopt
 from utils import jsonParser
 from utils import writeStringToFile
-from exceptions import *
 from module import Module
 from module import Bus
+from editor import Editor
 import os
+import pdb
 
-if __name__ == '__main__':
-    arguments = docopt(__doc__, version='art version 0.1.1')
 
-    if arguments['FILE'] != None:
-        jsonFile = arguments['FILE']
+def main(args):
+
+    if args['FILE'] is not None and not args['-e'] and not args['-c']:
+        jsonFile = args['FILE']
 
         print('Parsing file: ' + jsonFile + '...')
 
@@ -40,12 +43,12 @@ if __name__ == '__main__':
         axi = {'bus_type': 'axi', 'data_width': 32, 'addr_width': 32}
         bus = Bus(axi)
 
-        mod = Module(json, bus.busType)
+        mod = Module(json, bus)
 
-        if arguments['-o'] == None:
+        if args['-o'] is None:
             outputDir = "output/"
         else:
-            outputDir = arguments['-o']
+            outputDir = args['-o']
 
         print('Creating VHDL files...')
         # Keep all files in the same directory for now, expand when handling multiple modules
@@ -67,5 +70,37 @@ if __name__ == '__main__':
 
         except Exception as e:
             print(str(e))
-    elif arguments['-c'] == True:
+        return
+
+    elif args['-c'] and args['FILE'] is not None:
+        editor = Editor(False, args['FILE'])
+        editor.showMenu()
         print("This feature is not yet implemented. Planned for art version 0.2")
+        return
+
+    elif args['-e'] and args['FILE'] is not None:
+        editor = Editor(True, args['FILE'])
+        editor.showMenu()
+        print("This feature is not yet implemented. Planned for art version 0.2")
+        return
+
+
+if __name__ == '__main__':
+
+    args = docopt(__doc__, help=True, version='art version 0.1.1')
+    main(args)
+
+###################################################################################################
+# Only for debugging convenience!
+###################################################################################################
+dbg_args = {'--help': False,
+            '--version': False,
+            '-c': True,
+            '-e': False,
+            '-o': False,
+            'FILE': 'test'}
+
+
+def dbg():
+    pdb.set_trace()
+    main(dbg_args)

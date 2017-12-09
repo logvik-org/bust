@@ -2,7 +2,13 @@ from utils import indentString
 from utils import jsonParser
 # from utils import compareJSON
 # from utils import jsonToString
-from exceptions import *
+from exceptions import InvalidAddress
+from exceptions import InvalidRegister
+from exceptions import InvalidRegisterFormat
+from exceptions import UndefinedEntryType
+from exceptions import UndefinedRegisterType
+from exceptions import ModuleDataBitsExceeded
+
 import json
 from collections import OrderedDict
 
@@ -109,38 +115,37 @@ class Module:
 
     """
 
-    def __init__(self, mod, busType):
+    def __init__(self, mod, bus):
         """! @brief
         """
+        self.busType = bus.busType
+        self.busAddrWitdh = bus.busAddrWitdh
+        self.busDataWitdh = bus.busDataWitdh
+        self.registers = []
+        self.addresses = []
         self.name = mod['name']
         self.addrWidth = mod['addr_width']
         self.dataWidth = mod['data_width']
         self.description = mod['description']
-        self.busType = busType
-        self.busDataWitdh = 32
-        self.busAddrWitdh = 32
-        self.registers = []
-        self.addresses = []
-        self.addRegisters(mod['register'])
+        for reg in mod['register']:
+            self.addRegister(reg)
 
-    def addRegisters(self, regs):
-        for i in regs:
-            if self.registerValid(i):
-                # Check if size is specified
-                if "address" in i:
-                    addr = int(i['address'], self.addrWidth)
-                    if self.isAddressIsFree(addr):
-                        self.isAddressOutOfRange(addr)
-                        self.addresses.append(addr)
-                        self.registers.append(Register(i, addr,
-                                                       self.dataWidth))
-                    else:
-                        raise InvalidAddress(i['name'], addr)
+    def addRegister(self, reg):
+        if self.registerValid(reg):
+            if "address" in reg:
+                addr = int(reg['address'], self.addrWidth)
+                if self.isAddressFree(addr):
+                    self.isAddressOutOfRange(addr)
+                    self.addresses.append(addr)
+                    self.registers.append(Register(reg, addr, self.dataWidth))
                 else:
-                    self.registers.append(Register(i, self.getNextAddress(),
-                                                   self.dataWidth))
+                    raise InvalidAddress(reg['name'], addr)
             else:
-                raise InvalidRegister(i)
+                addr = self.getNextAddress()
+                self.addresses.append(addr)
+                self.registers.append(Register(reg, addr, self.dataWidth))
+        else:
+            raise InvalidRegister(reg)
 
     def returnRegisterPIFVHDL(self):
 
@@ -574,7 +579,7 @@ class Module:
                 else:
                     par += str(reg.length) + 'X"'
                     par += format(int(reg.reset, 16), 'X') + '"'
- 
+
             elif reg.regtype == 'record':
 
                 if len(reg.entries) > 1:
@@ -678,7 +683,7 @@ class Module:
                     par += format(int(reg.reset, 16), 'X') + '"'
 
             elif reg.regtype == 'record':
-                
+
                 if len(reg.entries) > 1:
                     par += '(\n'
                 else:
@@ -689,15 +694,15 @@ class Module:
                         par += indentString(entry['name'] + ' => ')
                     else:
                         par += entry['name'] + ' => '
-                        
+
                     if entry['type'] == 'slv':
-                        
+
                         if entry['reset'] == "0x0":
                             par += "(others => '0')"
                         else:
                             par += str(entry['length']) + 'X"'
                             par += format(int(entry['reset'], 16), 'X') + '"'
-                            
+
                     elif entry['type'] == 'sl':
                         par += "'" + format(int(entry['reset'], 16), 'X') + "'"
 
@@ -718,7 +723,7 @@ class Module:
             else:
                 par += ');'
             par += '\n'
-            
+
             s += indentString(par, 2)
         s += '\n'
 
@@ -860,7 +865,7 @@ class Module:
         foundAddr = False
         while (not foundAddr):
             self.isAddressOutOfRange(addr)
-            if self.isAddressIsFree(addr):
+            if self.isAddressFree(addr):
                 self.addresses.append(addr)
                 return addr
             else:
@@ -873,7 +878,7 @@ class Module:
                                " is definetely out of range...")
         return True
 
-    def isAddressIsFree(self, addr):
+    def isAddressFree(self, addr):
         for i in self.addresses:
             if i == addr:
                 return False
@@ -935,34 +940,58 @@ class Register:
             self.regtype = 'record'
 
             for entry in reg['entries']:
+                entryDic = OrderedDict([('name', entry['name']),
+                                        ('type', ''),
+                                        ('length', 0),
+                                        ('pos_high', 0),
+                                        ('pos_low', self.getNextPosLow()),
+                                        ('reset', '0x0'),
+                                        ('description', '')])
+
+                                        
                 if entry['type'] == 'slv':
-                    entryDic = OrderedDict([('name', entry['name']),
-                                            ('type', 'slv'),
-                                            ('length', entry['length']),
-                                            ('reset', '0x0')])
-                    self.entries.append(entryDic)
-                    self.length += entry['length']
+                    entryDic['type'] = 'slv'
+                    entryDic['length'] = entry['length']
+                    
 
                 elif entry['type'] == 'sl':
-                    entryDic = OrderedDict([('name', entry['name']),
-                                            ('type', 'sl'),
-                                            ('length', 1),
-                                            ('reset', '0x0')])
-                    self.entries.append(entryDic)
-                    self.length += 1
+                    entryDic['type'] = 'sl'
+                    entryDic['length'] = 1
                 else:
                     raise UndefinedEntryType(entry['type'])
 
+                self.length += entryDic['length']
+                
+                posHigh = entryDic['pos_high'] = entryDic['pos_low'] + entryDic['length'] - 1
+                if posHigh > self.length:
+                    raise InvalidRegisterFormat('Entry lengths are longer than register length: ' +
+                                                entryDic['name'] + ' in reg: ' + self.name)
+                else:
+                    entryDic['pos_high'] = posHigh
+                
                 if 'reset' in entry:
                     # Check whether reset value matches entry length
                     # maxvalue is given by 2^length
-                    maxvalue = (2 ** self.entries[-1]['length']) - 1
+                    maxvalue = (2 ** entryDic['length']) - 1
                     if maxvalue < int(entry['reset'], 16):
                         raise InvalidRegisterFormat("Reset value does not match entry: " +
-                                                    self.entries[-1]['name'] +
+                                                    entryDic['name'] +
                                                     " in reg: " + self.name)
                     else:
-                        self.entries[-1]['reset'] = entry['reset']
+                        entryDic['reset'] = entry['reset']
+                        regReset = int(self.reset, 16)
+                        entryReset = int(entryDic['reset'], 16)
+                        regReset += entryReset << entryDic['pos_low']
+                        self.reset = hex(regReset)
+                        
+
+                if 'description' in entry:
+                    entryDic['description'] = entry['description']
+
+                self.entries.append(entryDic)
+                
+
+                
 
         else:
             raise UndefinedRegisterType(reg['type'])
@@ -1005,9 +1034,16 @@ class Register:
         return string
 
     def checkRegisterDataLength(self, module):
-        """! @brief Controls that the combined data bits in entries does not 
+        """! @brief Controls that the combined data bits in entries does not
         exceed data bits of module
 
         """
         if self.length > module:
             raise ModuleDataBitsExceeded(self.name, self.length, module)
+
+    def getNextPosLow(self):
+        if len(self.entries) > 0:
+            lastPosHigh = self.entries[-1]['pos_high']
+            return lastPosHigh + 1
+        else:
+            return 0
