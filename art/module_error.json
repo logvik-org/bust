@@ -1,0 +1,72 @@
+{ "name": "module_name",
+  "addr_width": 16,
+  "data_width": 16,
+  "register": [
+      {
+      "name": "reg0",
+      "mode": "rw",
+      "type": "record",
+      "entries": [
+          {"name": "run", "type": "sl", "reset": "0x1"},
+          {"name": "test_word", "type": "slv", "length": 8, "reset": "0xAD"},
+	  {"name": "another", "type": "sl"},
+	  {"name": "asdfa", "type": "slv", "length": 8}
+      ],
+      "description": "Register 0. Record of std_logic and std_logic_vector."
+      },
+      {
+      "name": "reg1",
+      "mode": "rw",
+      "type": "default",
+      "reset": "0xFFFF",
+      "description": "Register 1. Default data length."
+      },
+      {
+      "name": "reg2",
+      "mode": "rw",
+      "type": "sl",
+      "description": "Register 2. Single bit."
+      },
+      {
+      "name": "reg3",
+      "mode": "ro",
+      "type": "default",
+      "reset": "0xA",
+      "description": "Register 3. Default data length."
+      },
+      {
+      "name": "reg4",
+      "mode": "ro",
+      "type": "record",
+      "entries": [
+        {"name": "test", "type": "slv", "length": 6},
+          {"name": "test2", "type": "sl", "reset": "0x1"},
+	  {"name": "asdfa", "type": "slv", "reset": "0x3", "length": 3}
+      ],
+      "description": "Register 4. Record of slv[5:0] and sl."
+      },
+      {
+	  "name": "reg5",
+	  "mode": "ro",
+	  "type": "sl",
+	  "description": "Another register"
+      },
+      {
+	  "name": "reg6",
+	  "mode": "rw",
+	  "type": "slv",
+	  "length": 4,
+	  "reset": "0x1",
+	  "description": "asdfasdf"
+      },
+      {
+	  "name": "reg7",
+	  "mode": "ro",
+	  "type": "slv",
+	  "length": 6,
+	  "reset": "0x4",
+	  "description": "asdfasdfad"
+      }
+    ],
+    "description": "Module name does things..."
+}

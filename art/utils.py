@@ -86,7 +86,7 @@ def cont():
             pass
 
 
-def isInt(s):
+def is_int(s):
     try:
         int(s)
         return True
@@ -105,3 +105,21 @@ def isInt(s):
 
 def clearScreen():
     os.system('cls' if os.name == 'nt' else 'clear')
+
+
+def add_line_breaks(string, min_length):
+    """! @brief Adds line breaks on the next space after the minimum length of a line"""
+    requirement = min_length
+    replace = False
+    positions = []
+    for i, char in enumerate(string):
+        if i > requirement:
+            replace = True
+        if replace and char == ' ':
+            positions.append(i)
+            requirement = i + min_length
+            replace = False
+    for rep in positions:
+        string = string[:rep] + '\n' + string[rep + 1:]
+
+    return string

@@ -2,7 +2,7 @@ from cursesmenu import CursesMenu
 from cursesmenu.items import FunctionItem
 from utils import jsonParser
 from utils import cont
-from utils import isInt
+from utils import is_int
 from utils import clearScreen
 from exceptions import UndefinedEntryType
 from module import Module
@@ -71,7 +71,7 @@ class Editor(object):
                 table = PrettyTable()
                 table.field_names = ['#', 'Name', 'Mode', 'Address', 'Type', 'Reset', 'Description']
                 for i, reg in enumerate(self.mod.registers):
-                    table.add_row([i, reg.name, reg.mode, hex(reg.address), reg.regtype,
+                    table.add_row([i, reg.name, reg.mode, hex(reg.address), reg.sig_type,
                                    reg.reset, reg.description])
                 print(table)
 
@@ -92,10 +92,10 @@ class Editor(object):
         reg = self.mod.registers[regNum]
         print(table.get_string(start=regNum, end=(regNum+1)))
         print('\nFields:')
-        if len(reg.entries) > 0:
+        if len(reg.fields) > 0:
             table_fields = PrettyTable()
             table_fields.field_names = ['#', 'Name', 'Type', 'Position', 'Length', 'Reset', 'Description']
-            for i, field in enumerate(reg.entries):
+            for i, field in enumerate(reg.fields):
 
                 # Get the position of the field
                 if field['type'] == 'sl':
@@ -133,7 +133,7 @@ class Editor(object):
     def validInput(self, s):
         if s == 'q':
             return True
-        elif isInt(s):
+        elif is_int(s):
             index = int(s)
             for i,reg in enumerate(self.mod.registers):
                 if index == i:

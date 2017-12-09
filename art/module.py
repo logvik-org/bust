@@ -4,10 +4,10 @@ from utils import jsonParser
 # from utils import jsonToString
 from exceptions import InvalidAddress
 from exceptions import InvalidRegister
-from exceptions import InvalidRegisterFormat
 from exceptions import UndefinedEntryType
 from exceptions import UndefinedRegisterType
-from exceptions import ModuleDataBitsExceeded
+
+from register import Register
 
 import json
 from collections import OrderedDict
@@ -298,10 +298,10 @@ class Module:
             s += indentString('when C_ADDR_', 5)
             s += reg.name.upper() + ' =>\n\n'
             par = ''
-            if reg.regtype == 'record':
+            if reg.sig_type == 'record':
 
                 lasthigh = -1
-                for entry in reg.entries:
+                for entry in reg.fields:
                     par += 'axi_rw_regs_i.' + reg.name + '.' + entry['name']
                     par += ' <= wdata('
                     if entry['type'] == 'sl':
@@ -318,16 +318,16 @@ class Module:
                             "Unknown entry type: " + entry['type'])
                     par += ');\n'
 
-            elif reg.regtype == 'default':
+            elif reg.sig_type == 'default':
                 par += 'axi_rw_regs_i.' + reg.name + ' <= wdata;\n'
-            elif reg.regtype == 'slv':
+            elif reg.sig_type == 'slv':
                 par += 'axi_rw_regs_i.' + reg.name + ' <= wdata('
                 par += str(reg.length - 1) + ' downto 0);\n'
-            elif reg.regtype == 'sl':
+            elif reg.sig_type == 'sl':
                 par += 'axi_rw_regs_i.' + reg.name + ' <= wdata(0);\n'
             else:
                 raise UndefinedRegisterType(
-                    "Unknown register type: " + reg.regtype)
+                    "Unknown register type: " + reg.sig_type)
             s += indentString(par, 6)
             s += '\n'
 
@@ -408,10 +408,10 @@ class Module:
             s += reg.name.upper() + ' =>\n\n'
             par = ''
 
-            if reg.regtype == 'record':
+            if reg.sig_type == 'record':
 
                 lasthigh = -1
-                for entry in reg.entries:
+                for entry in reg.fields:
                     lasthigh += 1
                     par += 'reg_data_out('
 
@@ -432,7 +432,7 @@ class Module:
                         raise Exception("Unknown error occurred")
                     par += reg.name + '.' + entry['name'] + ';\n'
 
-            elif reg.regtype == 'default':
+            elif reg.sig_type == 'default':
                 par += 'reg_data_out <= '
                 if reg.mode == 'rw':
                     par += 'axi_rw_regs_i.'
@@ -442,7 +442,7 @@ class Module:
                     raise Exception("Unknown error occurred")
                 par += reg.name + ';\n'
 
-            elif reg.regtype == 'slv':
+            elif reg.sig_type == 'slv':
                 par += 'reg_data_out('
                 par += str(reg.length - 1) + ' downto 0) <= '
                 if reg.mode == 'rw':
@@ -453,7 +453,7 @@ class Module:
                     raise Exception("Unknown error occurred")
                 par += reg.name + ';\n'
 
-            elif reg.regtype == 'sl':
+            elif reg.sig_type == 'sl':
                 par += 'reg_data_out(0) <= '
                 if reg.mode == 'rw':
                     par += 'axi_rw_regs_i.'
@@ -465,7 +465,7 @@ class Module:
 
             else:
                 raise UndefinedRegisterType(
-                    "Unknown register type: " + reg.regtype)
+                    "Unknown register type: " + reg.sig_type)
             s += indentString(par, 4)
             s += '\n'
 
@@ -516,22 +516,22 @@ class Module:
         par += "downto 0);\n"
         par += "\n"
 
-        for i in self.registers:
-            par += "constant C_ADDR_" + i.name.upper()
+        for reg in self.registers:
+            par += "constant C_ADDR_" + reg.name.upper()
             par += " : t_" + self.name + "_addr := " + str(self.addrWidth)
-            par += 'X"' + '%X' % i.address + '";\n'
+            par += 'X"' + '%X' % reg.address + '";\n'
         par += '\n'
         s += indentString(par)
 
         s += indentString("-- RW Register Record Definitions\n\n")
 
         # Create all types for RW registers with records
-        for i in self.registers:
-            if i.mode == "rw" and i.regtype == "record":
+        for reg in self.registers:
+            if reg.mode == "rw" and reg.sig_type == "record":
                 s += indentString("type t_" + self.name + "_rw_")
-                s += i.name + " is record\n"
+                s += reg.name + " is record\n"
 
-                for j in i.entries:
+                for j in reg.fields:
                     s += indentString(j['name'], 2) + " : "
                     if j['type'] == "slv":
                         s += "std_logic_vector(" + str(j['length'] - 1)
@@ -545,18 +545,18 @@ class Module:
 
         # The RW register record type
         s += indentString("type t_" + self.name + "_rw_regs is record\n")
-        for i in self.registers:
-            if i.mode == "rw":
-                s += indentString(i.name, 2) + " : "
-                if i.regtype == "default" or (i.regtype == "slv" and i.length == self.dataWidth):
+        for reg in self.registers:
+            if reg.mode == "rw":
+                s += indentString(reg.name, 2) + " : "
+                if reg.sig_type == "default" or (reg.sig_type == "slv" and reg.length == self.dataWidth):
                     s += "t_" + self.name + "_data;\n"
-                elif i.regtype == "slv":
+                elif reg.sig_type == "slv":
                     s += "std_logic_vector(" + \
-                        str(i.length - 1) + " downto 0);\n"
-                elif i.regtype == "sl":
+                        str(reg.length - 1) + " downto 0);\n"
+                elif reg.sig_type == "sl":
                     s += "std_logic;\n"
-                elif i.regtype == "record":
-                    s += "t_" + self.name + "_rw_" + i.name + ";\n"
+                elif reg.sig_type == "record":
+                    s += "t_" + self.name + "_rw_" + reg.name + ";\n"
                 else:
                     raise RuntimeError("Something went wrong...")
         s += indentString("end record;\n")
@@ -573,22 +573,22 @@ class Module:
             par += reg.name + ' => '
 
             # RW default values must be declared
-            if reg.regtype == 'default' or reg.regtype == 'slv':
+            if reg.sig_type == 'default' or reg.sig_type == 'slv':
                 if reg.reset == "0x0":
                     par += "(others => '0')"
                 else:
                     par += str(reg.length) + 'X"'
                     par += format(int(reg.reset, 16), 'X') + '"'
 
-            elif reg.regtype == 'record':
+            elif reg.sig_type == 'record':
 
-                if len(reg.entries) > 1:
+                if len(reg.fields) > 1:
                     par += '(\n'
                 else:
                     par += '('
 
-                for j, entry in enumerate(reg.entries):
-                    if len(reg.entries) > 1:
+                for j, entry in enumerate(reg.fields):
+                    if len(reg.fields) > 1:
                         par += indentString(entry['name'] + ' => ')
                     else:
                         par += entry['name'] + ' => '
@@ -608,12 +608,12 @@ class Module:
                         raise UndefinedEntryType(
                             "Unknown entry type: " + entry['type'])
 
-                    if j < len(reg.entries) - 1:
+                    if j < len(reg.fields) - 1:
                         par += ',\n'
 
                 par += ')'
 
-            elif reg.regtype == 'sl':
+            elif reg.sig_type == 'sl':
                 par += "'" + format(int(reg.reset, 16), 'X') + "'"
 
             if i < len(gen) - 1:
@@ -628,12 +628,12 @@ class Module:
         s += indentString("-- RO Register Record Definitions\n\n")
 
         # Create all types for RO registers with records
-        for i in self.registers:
-            if i.mode == "ro" and i.regtype == "record":
+        for reg in self.registers:
+            if reg.mode == "ro" and reg.sig_type == "record":
                 s += indentString("type t_" + self.name + "_ro_")
-                s += i.name + " is record\n"
+                s += reg.name + " is record\n"
 
-                for j in i.entries:
+                for j in reg.fields:
                     s += indentString(j['name'], 2) + " : "
                     if j['type'] == "slv":
                         s += "std_logic_vector(" + str(j['length'] - 1)
@@ -646,21 +646,21 @@ class Module:
 
         # The RO register record type
         s += indentString("type t_" + self.name + "_ro_regs is record\n")
-        for i in self.registers:
-            if i.mode == "ro":
-                s += indentString(i.name, 2) + " : "
-                if i.regtype == "default" or (i.regtype == "slv" and i.length == self.dataWidth):
+        for reg in self.registers:
+            if reg.mode == "ro":
+                s += indentString(reg.name, 2) + " : "
+                if reg.sig_type == "default" or (reg.sig_type == "slv" and reg.length == self.dataWidth):
                     s += "t_" + self.name + "_data;\n"
-                elif i.regtype == "slv":
+                elif reg.sig_type == "slv":
                     s += "std_logic_vector(" + \
-                        str(i.length - 1) + " downto 0);\n"
-                elif i.regtype == "sl":
+                        str(reg.length - 1) + " downto 0);\n"
+                elif reg.sig_type == "sl":
                     s += "std_logic;\n"
-                elif i.regtype == "record":
-                    s += "t_" + self.name + "_ro_" + i.name + ";\n"
+                elif reg.sig_type == "record":
+                    s += "t_" + self.name + "_ro_" + reg.name + ";\n"
                 else:
                     raise RuntimeError(
-                        "Something went wrong... What now?" + i.regtype)
+                        "Something went wrong... What now?" + reg.sig_type)
         s += indentString("end record;\n")
         s += "\n"
 
@@ -675,22 +675,22 @@ class Module:
             par += reg.name + ' => '
 
             # RO default values must be declared
-            if reg.regtype == 'default' or reg.regtype == 'slv':
+            if reg.sig_type == 'default' or reg.sig_type == 'slv':
                 if reg.reset == "0x0":
                     par += "(others => '0')"
                 else:
                     par += str(reg.length) + 'X"'
                     par += format(int(reg.reset, 16), 'X') + '"'
 
-            elif reg.regtype == 'record':
+            elif reg.sig_type == 'record':
 
-                if len(reg.entries) > 1:
+                if len(reg.fields) > 1:
                     par += '(\n'
                 else:
                     par += '('
 
-                for j, entry in enumerate(reg.entries):
-                    if len(reg.entries) > 1:
+                for j, entry in enumerate(reg.fields):
+                    if len(reg.fields) > 1:
                         par += indentString(entry['name'] + ' => ')
                     else:
                         par += entry['name'] + ' => '
@@ -710,12 +710,12 @@ class Module:
                         raise UndefinedEntryType(
                             "Unknown entry type: " + entry['type'])
 
-                    if j < len(reg.entries) - 1:
+                    if j < len(reg.fields) - 1:
                         par += ',\n'
 
                 par += ')'
 
-            elif reg.regtype == 'sl':
+            elif reg.sig_type == 'sl':
                 par += "'" + format(int(reg.reset, 16), 'X') + "'"
 
             if i < len(gen) - 1:
@@ -833,21 +833,21 @@ class Module:
 
             regDic["name"] = reg.name
             regDic["mode"] = reg.mode
-            regDic["type"] = reg.regtype
+            regDic["type"] = reg.sig_type
 
             if includeAddress:
                 regDic["address"] = str(hex(reg.address))
 
-            if (reg.regtype != "default" and reg.regtype != "record" and
-                    reg.regtype != "sl"):
+            if (reg.sig_type != "default" and reg.sig_type != "record" and
+                    reg.sig_type != "sl"):
                 regDic["length"] = reg.length
 
-            if reg.regtype != "record":
+            if reg.sig_type != "record":
                 regDic["reset"] = reg.reset
 
-            if reg.regtype == "record" and len(reg.entries) > 0:
+            if reg.sig_type == "record" and len(reg.fields) > 0:
 
-                regDic["entries"] = reg.entries
+                regDic["entries"] = reg.fields
 
             regDic["description"] = reg.description
 
@@ -879,10 +879,9 @@ class Module:
         return True
 
     def isAddressFree(self, addr):
-        for i in self.addresses:
-            if i == addr:
+        for address in self.addresses:
+            if address == addr:
                 return False
-
         # If loop completes without matching addresses
         return True
 
@@ -903,147 +902,3 @@ class Module:
         return string
 
 
-class Register:
-    """! @brief Managing register information
-
-
-    """
-
-    def __init__(self, reg, address, mod_data_length):
-        self.name = reg['name']
-        self.mode = reg['mode']
-        self.description = reg['description']
-        self.address = address
-        self.regtype = ""
-        self.reset = "0x0"
-        self.length = 0
-        self.entries = []
-
-        # Assign the reg type and register data length
-        if reg['type'] == 'default':
-            self.regtype = 'default'
-            self.length = mod_data_length
-
-        elif reg['type'] == 'slv':
-            self.regtype = 'slv'
-            self.length = reg['length']
-
-        elif reg['type'] == 'sl':
-            self.regtype = 'sl'
-
-            if 'length' in reg and reg['length'] != 1:
-                raise UndefinedRegisterType("SL cannot have length other than 1")
-            else:
-                self.length = 1
-
-        elif reg['type'] == 'record':
-            self.regtype = 'record'
-
-            for entry in reg['entries']:
-                entryDic = OrderedDict([('name', entry['name']),
-                                        ('type', ''),
-                                        ('length', 0),
-                                        ('pos_high', 0),
-                                        ('pos_low', self.getNextPosLow()),
-                                        ('reset', '0x0'),
-                                        ('description', '')])
-
-                                        
-                if entry['type'] == 'slv':
-                    entryDic['type'] = 'slv'
-                    entryDic['length'] = entry['length']
-                    
-
-                elif entry['type'] == 'sl':
-                    entryDic['type'] = 'sl'
-                    entryDic['length'] = 1
-                else:
-                    raise UndefinedEntryType(entry['type'])
-
-                self.length += entryDic['length']
-                
-                posHigh = entryDic['pos_high'] = entryDic['pos_low'] + entryDic['length'] - 1
-                if posHigh > self.length:
-                    raise InvalidRegisterFormat('Entry lengths are longer than register length: ' +
-                                                entryDic['name'] + ' in reg: ' + self.name)
-                else:
-                    entryDic['pos_high'] = posHigh
-                
-                if 'reset' in entry:
-                    # Check whether reset value matches entry length
-                    # maxvalue is given by 2^length
-                    maxvalue = (2 ** entryDic['length']) - 1
-                    if maxvalue < int(entry['reset'], 16):
-                        raise InvalidRegisterFormat("Reset value does not match entry: " +
-                                                    entryDic['name'] +
-                                                    " in reg: " + self.name)
-                    else:
-                        entryDic['reset'] = entry['reset']
-                        regReset = int(self.reset, 16)
-                        entryReset = int(entryDic['reset'], 16)
-                        regReset += entryReset << entryDic['pos_low']
-                        self.reset = hex(regReset)
-                        
-
-                if 'description' in entry:
-                    entryDic['description'] = entry['description']
-
-                self.entries.append(entryDic)
-                
-
-                
-
-        else:
-            raise UndefinedRegisterType(reg['type'])
-
-        if 'reset' in reg:
-            # Reset value is not allowed if regtype is record
-            if reg['type'] == 'record':
-                raise InvalidRegisterFormat(
-                    "Reset value is not allowed for record type register: " + self.name)
-            else:
-                # Check whether reset value matches register length
-                # maxvalue is given by 2^length
-                maxvalue = (2 ** self.length) - 1
-                if maxvalue < int(reg['reset'], 16):
-                    raise InvalidRegisterFormat("Reset value does not match register: " +
-                                                self.name)
-                else:
-                    self.reset = reg['reset']
-
-        # Perform check that data bits are not exceeded
-        self.checkRegisterDataLength(mod_data_length)
-
-    def __str__(self):
-        string = "Name: " + self.name + "\n"
-        string += "Address: " + hex(self.address) + "\n"
-        string += "Mode: " + self.mode + "\n"
-        string += "Type: " + self.regtype + "\n"
-        string += "Length: " + str(self.length) + "\n"
-        string += "Reset: " + self.reset
-        if self.regtype == 'record':
-
-            for i in self.entries:
-                string += "\n"
-                string += indentString("Name: " + i['name'] + " Type: " +
-                                       i['type'] + " Length: " +
-                                       str(i['length']) +
-                                       " Reset: " + i['reset'])
-
-        string += "\nDescription: " + self.description + "\n\n"
-        return string
-
-    def checkRegisterDataLength(self, module):
-        """! @brief Controls that the combined data bits in entries does not
-        exceed data bits of module
-
-        """
-        if self.length > module:
-            raise ModuleDataBitsExceeded(self.name, self.length, module)
-
-    def getNextPosLow(self):
-        if len(self.entries) > 0:
-            lastPosHigh = self.entries[-1]['pos_high']
-            return lastPosHigh + 1
-        else:
-            return 0
