@@ -101,6 +101,9 @@ class Register:
         else:
             raise UndefinedFieldType(field['type'])
 
+        # Increment register length
+        self.length += length
+
         if 'reset' in field:
             reset = field['reset']
             # Check whether reset value matches field length

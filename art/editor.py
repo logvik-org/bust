@@ -68,9 +68,9 @@ class Editor(object):
                 print('No registers created at this point...')
             else:
                 table = PrettyTable()
-                table.field_names = ['#', 'Name', 'Mode', 'Address', 'Type', 'Reset', 'Description']
+                table.field_names = ['#', 'Name', 'Mode', 'Address', 'Type', 'Length', 'Reset', 'Description']
                 for i, reg in enumerate(self.mod.registers):
-                    table.add_row([i, reg.name, reg.mode, hex(reg.address), reg.sig_type,
+                    table.add_row([i, reg.name, reg.mode, hex(reg.address), reg.sig_type, reg.length,
                                    reg.reset, reg.description])
                 print(table)
 
@@ -90,8 +90,9 @@ class Editor(object):
     def printRegister(self, regNum, table):
         reg = self.mod.registers[regNum]
         print(table.get_string(start=regNum, end=(regNum+1)))
-        print('\nFields:')
+        
         if len(reg.fields) > 0:
+            print('\nFields:')
             table_fields = PrettyTable()
             table_fields.field_names = ['#', 'Name', 'Type', 'Position', 'Length', 'Reset', 'Description']
             for i, field in enumerate(reg.fields):
