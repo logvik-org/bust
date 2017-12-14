@@ -5,7 +5,6 @@
       {
       "name": "reg0",
       "mode": "rw",
-      "type": "fields",
       "fields": [
           {"name": "run", "type": "sl", "reset": "0x1"},
           {"name": "test_word", "type": "slv", "length": 8, "reset": "0xAD"},
@@ -36,7 +35,6 @@
       {
       "name": "reg4",
       "mode": "ro",
-      "type": "fields",
       "fields": [
         {"name": "test", "type": "slv", "length": 6},
           {"name": "test2", "type": "sl", "reset": "0x1"},

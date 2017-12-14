@@ -15,14 +15,20 @@ class Register:
         self.mode = reg['mode']
         self.description = add_line_breaks(reg['description'], 25)
         self.address = address
-        self.sig_type = reg['type']
+
         self.reset = "0x0"
         self.length = 0
         self.fields = []
+
         if 'length' in reg:
             tmp_length = reg['length']
         else:
             tmp_length = 1      # Setting to 1, in case std_logic
+
+        if 'type' in reg:
+            self.sig_type = reg['type']
+        else:
+            self.sig_type = 'fields'
 
         # Assign the reg type and register data length
         if self.sig_type == 'default':
@@ -38,7 +44,7 @@ class Register:
                 raise UndefinedRegisterType("SL cannot have length other than 1")
             self.length = tmp_length
 
-        elif self.sig_type == 'fields':
+        elif self.sig_type == 'fields' or 'fields' in reg:
             if len(reg['fields']) > 0:
                 for field in reg['fields']:
                     self.add_field(field)

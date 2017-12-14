@@ -857,6 +857,8 @@ class Module:
     def registerValid(self, reg):
         if set(("name", "mode", "type", "description")).issubset(reg):
             return True
+        elif set(("name", "mode", "fields", "description")).issubset(reg):
+            return True
         else:
             return False
 
