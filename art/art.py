@@ -64,7 +64,7 @@ def main(args):
             writeStringToFile(mod.returnRegisterPIFVHDL(),
                               mod.name + '_axi_pif.vhd', outputDirModHDL)
             writeStringToFile(mod.returnModulePkgVHDL(),
-                              mod.name + '_pkg.vhd', outputDirModHDL)
+                              mod.name + '_pif_pkg.vhd', outputDirModHDL)
             writeStringToFile(mod.returnModuleVHDL(),
                               mod.name + '.vhd', outputDirModHDL)
 

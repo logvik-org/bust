@@ -151,7 +151,7 @@ class Module:
         s += 'use ieee.std_logic_1164.all;\n'
         s += 'use ieee.numeric_std.all;\n'
         s += '\n'
-        s += 'use work.' + self.name + '_pkg.all;\n\n'
+        s += 'use work.' + self.name + '_pif_pkg.all;\n\n'
         s += 'entity ' + self.name + '_' + self.busType + '_pif is\n\n'
 
         s += indentString('port (')
@@ -468,7 +468,7 @@ class Module:
         s += 'use ieee.std_logic_1164.all;\n'
         s += 'use ieee.numeric_std.all;\n'
         s += '\n'
-        s += "package " + self.name + "_pkg is"
+        s += "package " + self.name + "_pif_pkg is"
         s += "\n\n"
 
         par = ''
@@ -696,7 +696,7 @@ class Module:
             s += indentString(par, 2)
         s += '\n'
 
-        s += "end package " + self.name + "_pkg;"
+        s += "end package " + self.name + "_pif_pkg;"
 
         return s
 
@@ -706,7 +706,7 @@ class Module:
         s += 'use ieee.numeric_std.all;\n'
         s += '\n'
         s += 'use work.' + self.busType + '_pkg.all;\n'
-        s += 'use work.' + self.name + '_pkg.all;\n'
+        s += 'use work.' + self.name + '_pif_pkg.all;\n'
         s += '\n'
 
         s += 'entity ' + self.name + ' is\n'
