@@ -4,6 +4,7 @@ from utils import jsonParser
 from utils import cont
 from utils import is_int
 from utils import clearScreen
+from utils import add_line_breaks
 from module import Module
 from module import Bus
 from collections import OrderedDict
@@ -49,6 +50,7 @@ class Editor(object):
         self.menu.append_item(FunctionItem('Edit name', self.editName))
         self.menu.append_item(FunctionItem('List registers', self.listRegisters))
         self.menu.append_item(FunctionItem('Add new register', self.addRegister))
+        self.menu.append_item(FunctionItem('Remove register', self.removeRegister))
         self.menu.append_item(FunctionItem('Save JSON', self.saveJSON))
         self.menu.show()
 
@@ -105,8 +107,175 @@ class Editor(object):
         cont()
 
     def addRegister(self):
+        reg = OrderedDict()
+        print('Input register information (abort with Ctrl-C)')
+        try:
+
+            reg['name'] = input('Name: ')
+            reg['description'] = input('Description: ')
+            while True:
+                try:
+                    mode = int(input('Mode (0 = RW, 1 = RO): '))
+                    if mode == 0:
+                        reg['mode'] = 'rw'
+                        break
+                    elif mode == 1:
+                        reg['mode'] = 'ro'
+                        break
+                    else:
+                        print(str(mode) + ' is not a valid choice...')
+                except Exception:
+                    print('That is not a valid choice...')
+
+            fields = []
+            while True:
+                field_dic = OrderedDict()
+                add_fields = input('Do you want to add a field? (Y/n): ')
+                if add_fields.upper() == 'N':
+                    break
+                elif add_fields.upper() == 'Y' or add_fields == '':
+                    field_dic['name'] = input('Field name: ')
+                    while True:
+                        field_dic['type'] = input('Field type (sl/slv): ')
+                        if field_dic['type'] != 'sl' and field_dic['type'] != 'slv':
+                            print(field_dic['type'] + ' is not a valid choice...')
+                        else:
+                            break
+
+                    if field_dic['type'] == 'slv':
+                        while True:
+                            try:
+                                field_dic['length'] = int(input('Field length: '))
+                                break
+                            except Exception:
+                                print('That is not an integer...')
+
+                    else:
+                        field_dic['length'] = 1
+
+                    while True:
+                        field_dic['reset'] = input('Field reset (default=0x0): ')
+
+                        if field_dic['reset'] == '':
+                            field_dic['reset'] = '0x0'
+                            break
+                        else:
+                            try:
+                                field_dic['reset'] = hex(int(field_dic['reset'], 16))
+                                break
+                            except Exception:
+                                print(field_dic['reset'] + ' is not a valid reset value...')
+
+                    field_dic['description'] = input('Field description: ')
+
+                    fields.append(field_dic)
+
+                else:
+                    print(add_fields + ' is not a valid choice...')
+
+            if len(fields) > 0:
+                print('Register is of type: "fields"')
+                reg['fields'] = fields
+            else:
+                while True:
+
+                    reg['type'] = input('Type (default/slv/sl): ')
+                    if reg['type'] in ['default', 'slv', 'sl']:
+                        break
+                    elif reg['type'] == '':
+                        reg['type'] = 'default'
+                        break
+                    else:
+                        print(reg['type'] + ' is not a valid register type...')
+
+            if reg['type'] == 'slv':
+                while True:
+                    try:
+                        reg['length'] = int(input('Length: '))
+                    except Exception:
+                        print('That is not a valid length...')
+
+            if input('Auto-assign address? (Y/n)').upper() == 'N':
+                while True:
+                    try:
+                        reg['address'] = input('Address (hex): ')
+                        reg['address'] = hex(int(reg['address'], 16))
+                        break
+
+                    except Exception:
+                        print(reg['address'] + ' is not a valid address...')
+
+            if reg['type'] != 'fields':
+                while True:
+                    reg['reset'] = input('Reset (default=0x0): ')
+
+                    if reg['reset'] == '':
+                        reg['reset'] = '0x0'
+                        break
+                    else:
+                        try:
+                            reg['reset'] = hex(int(reg['reset'], 16))
+                            break
+                        except Exception:
+                            print(reg['reset'] + ' is not a valid reset value...')
+
+            table = PrettyTable()
+            table.field_names = ['#', 'Name', 'Mode', 'Address', 'Type', 'Length', 'Reset', 'Description']
+
+            import ipdb; ipdb.set_trace()
+
+            if all(key in reg for key in ('address', 'length')):
+                table.add_row([len(self.mod.registers), reg['name'], reg['mode'], reg['address'], reg['type'],
+                               reg['length'], reg['reset'], add_line_breaks(reg['description'], 25)])
+            elif 'address' in reg:
+                table.add_row([len(self.mod.registers), reg['name'], reg['mode'], reg['address'], reg['type'],
+                               self.mod.busDataWitdh, reg['reset'], add_line_breaks(reg['description'], 25)])
+            elif 'length' in reg:
+                table.add_row([len(self.mod.registers), reg['name'], reg['mode'], 'auto', reg['type'],
+                               reg['length'], reg['reset'], add_line_breaks(reg['description'], 25)])
+            else:
+                table.add_row([len(self.mod.registers), reg['name'], reg['mode'], 'auto', reg['type'],
+                               self.mod.busDataWitdh, reg['reset'], add_line_breaks(reg['description'], 25)])
+
+            print(table)
+
+            if 'fields' in reg:
+                print('\nFields:')
+                table_fields = PrettyTable()
+                table_fields.field_names = ['#', 'Name', 'Type', 'Length', 'Reset', 'Description']
+                for i, field in enumerate(reg['fields']):
+
+                    table_fields.add_row([i, field['name'], field['sig_type'], field['length'],
+                                          field['reset'], field['description']])
+
+                    print(table_fields)
+            
+            if input('Confirm creation of register? (Y/n)').upper() != 'N':
+                self.mod.addRegister(reg)
+                
+
+                self.recently_saved = False
+                self.updateMenu()
+            else:
+                raise KeyboardInterrupt()
+
+        except KeyboardInterrupt:
+            print('Adding register aborted!')
+            cont()
+            
+        except Exception:
+            print('Adding register failed!')
+            cont()
+            
+
+    def removeRegister(self):
+        # choose register
+        
+        # confirm removal
+
         self.recently_saved = False
         self.updateMenu()
+        
 
     def saveJSON(self):
         print('Saving ' + self.jsonfile + ' in ' + self.outputDir + ' ...')

@@ -73,16 +73,20 @@ def main(args):
         return
 
     elif args['-c'] and args['FILE'] is not None:
-        editor = Editor(False, args['FILE'])
-        editor.showMenu()
-        print("This feature is not yet implemented. Planned for art version 0.2")
-        return
+        print("This feature is not yet fully implemented. Planned for art version 0.2")
+        print("Some bugs and errors may occur.", end=' ')
+
+        if input("Continue anyway? (y/N): ").upper() == 'Y':
+            editor = Editor(False, args['FILE'])
+            editor.showMenu()
 
     elif args['-e'] and args['FILE'] is not None:
-        editor = Editor(True, args['FILE'])
-        editor.showMenu()
-        print("This feature is not yet implemented. Planned for art version 0.2")
-        return
+        print("This feature is not yet fully implemented. Planned for art version 0.2")
+        print("Some bugs and errors may occur.", end=' ')
+
+        if input("Continue anyway? (y/N): ").upper() == 'Y':
+            editor = Editor(True, args['FILE'])
+            editor.showMenu()
 
 
 if __name__ == '__main__':
