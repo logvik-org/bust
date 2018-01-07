@@ -115,7 +115,7 @@ class Editor(object):
     def addRegister(self):
         reg = OrderedDict()
 
-        print('Input register information (abort with Ctrl-C)')
+        print('Input register information: ')
         try:
             reg['name'] = input('Name: ')
             reg['description'] = input('Description: ')

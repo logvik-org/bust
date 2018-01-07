@@ -76,45 +76,36 @@ def main(args):
         return
 
     elif args['-c'] and args['FILE'] is not None:
-        print("This feature is not yet fully implemented. Planned for art version 0.2")
-        print("Some bugs and errors may occur.", end=' ')
 
-        if input("Continue anyway? (y/N): ").upper() == 'Y':
+        # Determine if file already exists, if yes ask to overwrite
+        if os.path.isfile(args['FILE']):
+            if input("File already exists. Overwrite? (y/N): ").upper() != 'Y':
+                exit()
 
-            # Determine if file already exists, if yes ask to overwrite
-            if os.path.isfile(args['FILE']):
-                if input("File already exists. Overwrite? (y/N): ").upper() != 'Y':
-                    exit()
-
-            editor = Editor(False, args['FILE'])
-            editor.showMenu()
-            curses.endwin()
+        editor = Editor(False, args['FILE'])
+        editor.showMenu()
+        curses.endwin()
 
     elif args['-e'] and args['FILE'] is not None:
-        print("This feature is not yet fully implemented. Planned for art version 0.2")
-        print("Some bugs and errors may occur.", end=' ')
 
-        if input("Continue anyway? (y/N): ").upper() == 'Y':
+        # Determine if file does not exist, if yes ask to create new
+        if not os.path.isfile(args['FILE']):
+            if input('File does not exist. Create new file? (Y/n): ').upper() != 'N':
 
-            # Determine if file does not exist, if yes ask to create new
-            if not os.path.isfile(args['FILE']):
-                if input('File does not exist. Create new file? (Y/n): ').upper() != 'N':
-
-                    editor = Editor(False, args['FILE'])
-                    editor.showMenu()
-                    curses.endwin()
-                else:
-                    exit()
-            else:
-                editor = Editor(True, args['FILE'])
+                editor = Editor(False, args['FILE'])
                 editor.showMenu()
                 curses.endwin()
-                
+            else:
+                exit()
+        else:
+            editor = Editor(True, args['FILE'])
+            editor.showMenu()
+            curses.endwin()
 
 
 if __name__ == '__main__':
 
-    args = docopt(__doc__, help=True, version='art version 0.1.1')
+    args = docopt(__doc__, help=True, version='art version 0.2')
     try:
         main(args)
     except KeyboardInterrupt:
