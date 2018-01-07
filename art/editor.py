@@ -51,6 +51,7 @@ class Editor(object):
         self.menu.append_item(FunctionItem('List registers', self.listRegisters))
         self.menu.append_item(FunctionItem('Add new register', self.addRegister))
         self.menu.append_item(FunctionItem('Remove register', self.removeRegister))
+        self.menu.append_item(FunctionItem('Update addresses', self.updateAddresses))
         self.menu.append_item(FunctionItem('Save JSON', self.saveJSON))
         self.menu.show()
 
@@ -204,7 +205,7 @@ class Editor(object):
                     except Exception:
                         print('That is not a valid length...')
 
-            if input('Auto-assign address? (Y/n)').upper() == 'N':
+            if input('Auto-assign address? (Y/n): ').upper() == 'N':
                 while True:
                     try:
                         reg['address'] = input('Address (hex): ')
@@ -274,7 +275,7 @@ class Editor(object):
 
                 print(table_fields)
 
-            if input('Confirm creation of register? (Y/n)').upper() != 'N':
+            if input('Confirm creation of register? (Y/n): ').upper() != 'N':
                 self.mod.addRegister(reg)
 
 
@@ -319,6 +320,10 @@ class Editor(object):
         self.recently_saved = False
         self.updateMenu()
 
+    def updateAddresses(self):
+        print('Not yet implemented...')
+        
+        cont()
 
     def saveJSON(self):
         print('Saving ' + self.jsonfile + ' in ' + self.outputDir + ' ...')
