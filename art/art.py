@@ -28,6 +28,8 @@ from module import Bus
 from editor import Editor
 import os
 import pdb
+import traceback
+import sys
 
 
 def main(args):
@@ -77,6 +79,12 @@ def main(args):
         print("Some bugs and errors may occur.", end=' ')
 
         if input("Continue anyway? (y/N): ").upper() == 'Y':
+
+            # Determine if file already exists, if yes ask to overwrite
+            if os.path.isfile(args['FILE']):
+                if input("File already exists. Overwrite? (y/N): ").upper() != 'Y':
+                    exit()
+
             editor = Editor(False, args['FILE'])
             editor.showMenu()
 
@@ -85,14 +93,31 @@ def main(args):
         print("Some bugs and errors may occur.", end=' ')
 
         if input("Continue anyway? (y/N): ").upper() == 'Y':
-            editor = Editor(True, args['FILE'])
-            editor.showMenu()
+
+            # Determine if file does not exist, if yes ask to create new
+            if not os.path.isfile(args['FILE']):
+                if input('File does not exist. Create new file? (Y/n): ').upper() != 'N':
+
+                    editor = Editor(False, args['FILE'])
+                    editor.showMenu()
+                    
+                else:
+                    exit()
+            else:
+                editor = Editor(True, args['FILE'])
+                editor.showMenu()
 
 
 if __name__ == '__main__':
 
     args = docopt(__doc__, help=True, version='art version 0.1.1')
-    main(args)
+    try:
+        main(args)
+    except KeyboardInterrupt:
+        print('\nShutdown requested. Exiting...')
+    except Exception:
+        traceback.print_exc(file=sys.stdout)
+    sys.exit(0)
 
 ###################################################################################################
 # Only for debugging convenience!
