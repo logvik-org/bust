@@ -11,7 +11,7 @@ Usage:
 Options:
   -o DIR         Specify output directory
   -c             Start menu-based creation of JSON file
-  -e             Edit existing JSON file
+  -e             Start menu-based editing of existing JSON file
   -h --help      HELP!
   --version      Show version info
 
@@ -30,6 +30,7 @@ import os
 import pdb
 import traceback
 import sys
+import curses
 
 
 def main(args):
@@ -117,6 +118,7 @@ if __name__ == '__main__':
         print('\nShutdown requested. Exiting...')
     except Exception:
         traceback.print_exc(file=sys.stdout)
+    curses.endwin()
     sys.exit(0)
 
 ###################################################################################################

@@ -92,7 +92,7 @@ class Editor(object):
     def printRegister(self, regNum, table):
         reg = self.mod.registers[regNum]
         print(table.get_string(start=regNum, end=(regNum+1)))
-        
+
         if len(reg.fields) > 0:
             print('\nFields:')
             table_fields = PrettyTable()
@@ -108,9 +108,9 @@ class Editor(object):
 
     def addRegister(self):
         reg = OrderedDict()
+
         print('Input register information (abort with Ctrl-C)')
         try:
-
             reg['name'] = input('Name: ')
             reg['description'] = input('Description: ')
             while True:
@@ -175,7 +175,9 @@ class Editor(object):
 
             if len(fields) > 0:
                 print('Register is of type: "fields"')
+                reg['type'] = 'fields'
                 reg['fields'] = fields
+
             else:
                 while True:
 
@@ -192,6 +194,7 @@ class Editor(object):
                 while True:
                     try:
                         reg['length'] = int(input('Length: '))
+                        break
                     except Exception:
                         print('That is not a valid length...')
 
@@ -222,20 +225,35 @@ class Editor(object):
             table = PrettyTable()
             table.field_names = ['#', 'Name', 'Mode', 'Address', 'Type', 'Length', 'Reset', 'Description']
 
-            import ipdb; ipdb.set_trace()
+            # Table values based on what values exists
+            table_name = reg['name']
+            table_mode = reg['mode']
 
-            if all(key in reg for key in ('address', 'length')):
-                table.add_row([len(self.mod.registers), reg['name'], reg['mode'], reg['address'], reg['type'],
-                               reg['length'], reg['reset'], add_line_breaks(reg['description'], 25)])
-            elif 'address' in reg:
-                table.add_row([len(self.mod.registers), reg['name'], reg['mode'], reg['address'], reg['type'],
-                               self.mod.busDataWitdh, reg['reset'], add_line_breaks(reg['description'], 25)])
-            elif 'length' in reg:
-                table.add_row([len(self.mod.registers), reg['name'], reg['mode'], 'auto', reg['type'],
-                               reg['length'], reg['reset'], add_line_breaks(reg['description'], 25)])
+            if 'address' in reg:
+                table_address = reg['address']
             else:
-                table.add_row([len(self.mod.registers), reg['name'], reg['mode'], 'auto', reg['type'],
-                               self.mod.busDataWitdh, reg['reset'], add_line_breaks(reg['description'], 25)])
+                table_address = 'auto'
+
+            table_type = reg['type']
+
+            if reg['type'] == 'fields':
+                table_length = 'auto'
+            elif 'length' in reg:
+                table_length = reg['length']
+            else:
+                table_length = self.mod.busDataWitdh
+
+            if reg['type'] == 'fields':
+                table_reset = 'auto'
+            elif 'reset' in reg:
+                table_reset = reg['reset']
+            else:
+                table_reset = 'auto'
+
+            table_description = reg['description']
+
+            table.add_row([len(self.mod.registers), table_name, table_mode, table_address, table_type,
+                           table_length, table_reset, table_description])
 
             print(table)
 
@@ -245,14 +263,14 @@ class Editor(object):
                 table_fields.field_names = ['#', 'Name', 'Type', 'Length', 'Reset', 'Description']
                 for i, field in enumerate(reg['fields']):
 
-                    table_fields.add_row([i, field['name'], field['sig_type'], field['length'],
+                    table_fields.add_row([i, field['name'], field['type'], field['length'],
                                           field['reset'], field['description']])
 
-                    print(table_fields)
-            
+                print(table_fields)
+
             if input('Confirm creation of register? (Y/n)').upper() != 'N':
                 self.mod.addRegister(reg)
-                
+
 
                 self.recently_saved = False
                 self.updateMenu()
@@ -260,22 +278,23 @@ class Editor(object):
                 raise KeyboardInterrupt()
 
         except KeyboardInterrupt:
-            print('Adding register aborted!')
+            print('\nAdding register aborted!')
             cont()
-            
-        except Exception:
-            print('Adding register failed!')
+
+        except Exception as e:
+            print('\nAdding register failed!')
+            print(str(e))
             cont()
-            
+
 
     def removeRegister(self):
         # choose register
-        
+
         # confirm removal
 
         self.recently_saved = False
         self.updateMenu()
-        
+
 
     def saveJSON(self):
         print('Saving ' + self.jsonfile + ' in ' + self.outputDir + ' ...')
@@ -290,7 +309,7 @@ class Editor(object):
         else:
             s = ' - NOT SAVED'
         return self.mod.name + ' / ' + str(self.mod.addrWidth) + ' / ' + str(self.mod.dataWidth) + s
-    
+
     def validInput(self, s):
         if s == 'q':
             return True
@@ -300,5 +319,3 @@ class Editor(object):
                 if index == i:
                     return True
         return False
-
-

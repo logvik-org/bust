@@ -159,10 +159,12 @@ class ModuleDataBitsExceeded(Exception):
     """
 
     def __init__(self, register, reglength, mod_data_length):
-        msg = "\nFAILURE:\n"
-        msg += "In register " + register + "\n"
-        msg += "Register length exceeded module data length by "
+        msg = "Register length exceeded module data length by "
         msg += str(reglength - mod_data_length)
+        msg += " in register " + register + "\n"
+        msg += 'Module length: ' + str(mod_data_length) + '\n'
+        msg += 'Register length: ' + str(reglength)
+        
         super().__init__(msg)
 
 
@@ -172,8 +174,7 @@ class UndefinedRegisterType(RuntimeError):
     """
 
     def __init__(self, regtype):
-        msg = "\nFAILURE:\n"
-        msg += "Could not parse register type: " + regtype
+        msg = "Could not parse register type: " + regtype
         super().__init__(msg)
 
 
@@ -183,8 +184,7 @@ class UndefinedFieldType(RuntimeError):
     """
 
     def __init__(self, sig_type):
-        msg = "\nFAILURE:\n"
-        msg += "Could not parse field type: " + sig_type
+        msg = "Could not parse field type: " + sig_type
         super().__init__(msg)
 
 
@@ -192,9 +192,11 @@ class InvalidRegisterFormat(RuntimeError):
     """! @brief Raised when register has some unspecified format error"""
 
     def __init__(self, msg):
+        msg = 'Invalid register format: ' + msg
         super().__init__(msg)
 
 
 class InvalidFieldFormat(RuntimeError):
     def __init__(self, msg):
+        msg = 'Invalid field format: ' + msg
         super().__init__(msg)
