@@ -187,7 +187,7 @@ class Editor(object):
             else:
                 while True:
 
-                    reg['type'] = input('Type (default/slv/sl): ')
+                    reg['type'] = input('Type (DEFAULT/slv/sl): ')
                     if reg['type'] in ['default', 'slv', 'sl']:
                         break
                     elif reg['type'] == '':
@@ -312,20 +312,21 @@ class Editor(object):
             if input('Are you sure you want to delete this register? (y/N): ').upper != 'Y':
                 del self.mod.registers[int(choice)]
 
-        # confirm removal
-
         self.recently_saved = False
         self.updateMenu()
 
     def updateAddresses(self):
-        print('Not yet implemented...')
-
+        self.mod.updateAddresses()
+        print("Addresses are updated..")
+        self.recently_saved = False
+        self.updateMenu()
         cont()
 
     def saveJSON(self):
         print('Saving ' + self.jsonfile + ' ...')
 
-        json = self.mod.printJSON()
+        # Get JSON with addresses
+        json = self.mod.printJSON(True)
         try:
             writeStringToFile(json, self.jsonfile, None)
         except Exception:

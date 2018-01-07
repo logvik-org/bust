@@ -854,6 +854,14 @@ class Module:
         # If loop completes without matching addresses
         return True
 
+    def updateAddresses(self):
+        self.addresses = []
+        for reg in self.registers:
+            addr = self.getNextAddress()
+            self.addresses.append(addr)
+            reg.address = addr
+            
+
     def registerValid(self, reg):
         if set(("name", "mode", "type", "description")).issubset(reg):
             return True
