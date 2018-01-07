@@ -71,11 +71,15 @@ def writeStringToFile(string, outputFile, outputDir):
     """
 
     # Create output directory if it does not exist
-    os.makedirs(outputDir, 0o777, True)
+    if outputDir is not None:
+        os.makedirs(outputDir, 0o777, True)
+        joined = os.path.join(outputDir, outputFile)
+    else:
+        joined = outputFile
 
-    print('Writing string to ' + os.path.join(outputDir, outputFile))
+    print('Writing string to ' + joined)
 
-    with open(os.path.join(outputDir, outputFile), 'w') as strfile:
+    with open(joined, 'w') as strfile:
         strfile.write(string)
 
 

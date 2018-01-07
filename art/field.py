@@ -40,3 +40,15 @@ class Field(object):
         row = [num, self.name, self.sig_type, self.get_pos_str, self.length,
                self.reset, self.description]
         return row
+
+    def returnDic(self):
+        dic = OrderedDict()
+        dic['name'] = self.name
+        dic['type'] = self.sig_type
+        if self.sig_type == 'slv':
+            dic['length'] = self.length
+        if self.reset != '0x0':
+            dic['reset'] = self.reset
+        if self.description != '':
+            dic['description'] = self.description
+        return dic

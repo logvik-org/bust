@@ -815,15 +815,15 @@ class Module:
                 regDic["reset"] = reg.reset
 
             if reg.sig_type == "fields" and len(reg.fields) > 0:
-
-                regDic["entries"] = reg.fields
+                regDic["fields"] = []
+                for field in reg.fields:
+                    regDic["fields"].append(field.returnDic())
 
             regDic["description"] = reg.description
 
             dic["register"].append(regDic)
 
         dic["description"] = self.description
-
         return json.dumps(dic, indent=4)
 
     def getNextAddress(self):

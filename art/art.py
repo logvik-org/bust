@@ -88,6 +88,7 @@ def main(args):
 
             editor = Editor(False, args['FILE'])
             editor.showMenu()
+            curses.endwin()
 
     elif args['-e'] and args['FILE'] is not None:
         print("This feature is not yet fully implemented. Planned for art version 0.2")
@@ -101,12 +102,14 @@ def main(args):
 
                     editor = Editor(False, args['FILE'])
                     editor.showMenu()
-                    
+                    curses.endwin()
                 else:
                     exit()
             else:
                 editor = Editor(True, args['FILE'])
                 editor.showMenu()
+                curses.endwin()
+                
 
 
 if __name__ == '__main__':
@@ -118,7 +121,7 @@ if __name__ == '__main__':
         print('\nShutdown requested. Exiting...')
     except Exception:
         traceback.print_exc(file=sys.stdout)
-    curses.endwin()
+    
     sys.exit(0)
 
 ###################################################################################################

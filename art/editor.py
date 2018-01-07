@@ -4,7 +4,7 @@ from utils import jsonParser
 from utils import cont
 from utils import is_int
 from utils import clearScreen
-from utils import add_line_breaks
+from utils import writeStringToFile
 from module import Module
 from module import Bus
 from collections import OrderedDict
@@ -16,7 +16,6 @@ class Editor(object):
 
     """
     def __init__(self, edit, jsonfile, outputDir='output/', bus=None):
-
         self.jsonfile = jsonfile
         self.outputDir = outputDir
         self.recently_saved = False
@@ -26,7 +25,8 @@ class Editor(object):
         if edit:
             # Load the specified JSON file
             try:
-                self.mod = Module(jsonParser(jsonfile), self.bus)
+                json = jsonParser(jsonfile)
+                self.mod = Module(json, self.bus)
                 self.recently_saved = True
             except Exception as e:
                 print(str(e))
@@ -41,7 +41,6 @@ class Editor(object):
             mod['data_width'] = int(input("Enter the module's data width: "))
             mod['description'] = input('Enter a description for the module: ')
             mod['register'] = []
-            # import ipdb; ipdb.set_trace()
             self.mod = Module(mod, self.bus)
 
     def showMenu(self):
@@ -278,7 +277,6 @@ class Editor(object):
             if input('Confirm creation of register? (Y/n): ').upper() != 'N':
                 self.mod.addRegister(reg)
 
-
                 self.recently_saved = False
                 self.updateMenu()
             else:
@@ -292,7 +290,6 @@ class Editor(object):
             print('\nAdding register failed!')
             print(str(e))
             cont()
-
 
     def removeRegister(self):
         table = self.returnRegisters()
@@ -311,7 +308,7 @@ class Editor(object):
         else:
             clearScreen()
             self.printRegister(int(choice), table)
-            
+
             if input('Are you sure you want to delete this register? (y/N): ').upper != 'Y':
                 del self.mod.registers[int(choice)]
 
@@ -322,13 +319,21 @@ class Editor(object):
 
     def updateAddresses(self):
         print('Not yet implemented...')
-        
+
         cont()
 
     def saveJSON(self):
-        print('Saving ' + self.jsonfile + ' in ' + self.outputDir + ' ...')
+        print('Saving ' + self.jsonfile + ' ...')
+
+        json = self.mod.printJSON()
+        try:
+            writeStringToFile(json, self.jsonfile, None)
+        except Exception:
+            print('Saving failed...')
+            cont()
+            return
+
         self.recently_saved = True
-        print('This does not really save the JSON-file yet...')
         cont()
         self.updateMenu()
 
@@ -344,7 +349,7 @@ class Editor(object):
             return True
         elif is_int(s):
             index = int(s)
-            for i,reg in enumerate(self.mod.registers):
+            for i, reg in enumerate(self.mod.registers):
                 if index == i:
                     return True
         return False
