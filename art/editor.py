@@ -63,31 +63,39 @@ class Editor(object):
         self.recently_saved = False
         self.updateMenu()
 
-    def listRegisters(self):
+    def returnRegisters(self):
         while True:
             clearScreen()
             if len(self.mod.registers) < 1:
                 print('No registers created at this point...')
+                cont()
+                return
             else:
                 table = PrettyTable()
                 table.field_names = ['#', 'Name', 'Mode', 'Address', 'Type', 'Length', 'Reset', 'Description']
                 for i, reg in enumerate(self.mod.registers):
                     table.add_row([i, reg.name, reg.mode, hex(reg.address), reg.sig_type, reg.length,
                                    reg.reset, reg.description])
-                print(table)
+                return(table)
 
-                print('\nEnter the register number for register details, or q to quit...')
-                while True:
-                    choice = input('Choice: ')
-                    if self.validInput(choice):
-                        break
-                    else:
-                        print(choice + ' is not a valid choice')
-                if choice == 'q':
-                    return
-                else:
-                    clearScreen()
-                    self.printRegister(int(choice), table)
+    def listRegisters(self):
+        table = self.returnRegisters()
+        if table is None:
+            return
+        print(table)
+        print('\nEnter the register number for register details, or q to quit...')
+        while True:
+            choice = input('Choice: ')
+            if self.valid_register_input(choice):
+                break
+            else:
+                print(choice + ' is not a valid choice')
+        if choice == 'q':
+            return
+        else:
+            clearScreen()
+            self.printRegister(int(choice), table)
+            cont()
 
     def printRegister(self, regNum, table):
         reg = self.mod.registers[regNum]
@@ -103,8 +111,6 @@ class Editor(object):
                                       field.reset, field.description])
 
             print(table_fields)
-
-        cont()
 
     def addRegister(self):
         reg = OrderedDict()
@@ -275,7 +281,7 @@ class Editor(object):
                 self.recently_saved = False
                 self.updateMenu()
             else:
-                raise KeyboardInterrupt()
+                return
 
         except KeyboardInterrupt:
             print('\nAdding register aborted!')
@@ -288,7 +294,25 @@ class Editor(object):
 
 
     def removeRegister(self):
-        # choose register
+        table = self.returnRegisters()
+        if table is None:
+            return
+        print(table)
+        print('\nEnter the register number for removal, or q to quit...')
+        while True:
+            choice = input('Choice: ')
+            if self.valid_register_input(choice):
+                break
+            else:
+                print(choice + ' is not a valid choice')
+        if choice == 'q':
+            return
+        else:
+            clearScreen()
+            self.printRegister(int(choice), table)
+            
+            if input('Are you sure you want to delete this register? (y/N): ').upper != 'Y':
+                del self.mod.registers[int(choice)]
 
         # confirm removal
 
@@ -310,7 +334,7 @@ class Editor(object):
             s = ' - NOT SAVED'
         return self.mod.name + ' / ' + str(self.mod.addrWidth) + ' / ' + str(self.mod.dataWidth) + s
 
-    def validInput(self, s):
+    def valid_register_input(self, s):
         if s == 'q':
             return True
         elif is_int(s):
