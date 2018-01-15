@@ -19,13 +19,14 @@ class Editor(object):
         self.jsonfile = jsonfile
         self.outputDir = outputDir
         self.recently_saved = False
-        if bus is None:
-            bus = {'bus_type': 'axi', 'data_width': 32, 'addr_width': 32}
-        self.bus = Bus(bus)
+        # if bus is None:
+        #     bus = {'bus_type': 'axi', 'data_width': 32, 'addr_width': 32}
+        # self.bus = Bus(bus)
         if edit:
             # Load the specified JSON file
             try:
                 json = jsonParser(jsonfile)
+                self.bus = Bus(json)
                 self.mod = Module(json, self.bus)
                 self.recently_saved = True
             except Exception as e:

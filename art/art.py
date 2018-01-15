@@ -39,13 +39,9 @@ def main(args):
         jsonFile = args['FILE']
 
         print('Parsing file: ' + jsonFile + '...')
-
+        
         json = jsonParser(jsonFile)
-
-        # AXI BUS FOR NOW
-        axi = {'bus_type': 'axi', 'data_width': 32, 'addr_width': 32}
-        bus = Bus(axi)
-
+        bus = Bus(json)
         mod = Module(json, bus)
 
         if args['-o'] is None:

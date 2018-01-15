@@ -7,9 +7,11 @@ class Bus(object):
     """
 
     def __init__(self, bus):
-        self.busType = bus['bus_type']
+        bus = bus['bus']
+        self.busType = bus['type']
         self.busDataWitdh = bus['data_width']
         self.busAddrWitdh = bus['addr_width']
+        self.busReset = bus['reset']
 
     def returnBusPkgVHDL(self):
         s = 'library ieee;\n'

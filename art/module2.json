@@ -1,5 +1,12 @@
 {
     "name": "module_name",
+    "bus":
+    {
+	"type": "axilite",
+	"addr_width": 32,
+	"data_width": 32,
+	"reset": "async"
+    },
     "addr_width": 16,
     "data_width": 16,
     "register": [
