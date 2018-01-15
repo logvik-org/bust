@@ -10,10 +10,21 @@ class Bus(object):
 
     def __init__(self, bus):
         bus = bus['bus']
-        self.bus_type = bus['type']
+        if bus['type'] in ['axi']:
+            self.bus_type = bus['type']
+        else:
+            raise InvalidBusType(bus['type'])
+
         self.data_width = bus['data_width']
         self.addr_width = bus['addr_width']
-        self.bus_reset = bus['reset']
+
+        if 'reset' not in bus:
+            self.bus_reset = 'async'
+        elif bus['reset'] in ['async', 'sync']:
+            self.bus_reset = bus['reset']
+            
+        else:
+            raise InvalidResetMode(bus['reset'])
 
     def return_JSON(self):
         json = OrderedDict()
@@ -86,3 +97,26 @@ class Bus(object):
         s += 'end ' + self.bus_type + '_pkg;'
 
         return s
+
+
+class InvalidBusType(RuntimeError):
+    """ @brief Raised when trying to parse an unspecified or unsupported bus type
+
+    """
+    def __init__(self, bus_type):
+        msg = "Bus type is not valid: " + bus_type
+        super().__init__(msg)
+
+
+class InvalidResetMode(RuntimeError):
+    """Documentation for InvalidResetMode
+
+    """
+    def __init__(self, reset):
+        msg = "Bus reset mode must be either:\n"
+        msg += "- 'async' - asynchronous (default)\n"
+        msg += "- 'sync'  - synchronous\n"
+        msg += "but was: " + reset
+        super().__init__(msg)
+        
+        

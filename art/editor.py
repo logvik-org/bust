@@ -15,13 +15,11 @@ class Editor(object):
     """Documentation for Editor
 
     """
-    def __init__(self, edit, jsonfile, outputDir='output/', bus=None):
+    def __init__(self, edit, jsonfile, outputDir='output/'):
         self.jsonfile = jsonfile
         self.outputDir = outputDir
         self.recently_saved = False
-        # if bus is None:
-        #     bus = {'bus_type': 'axi', 'data_width': 32, 'addr_width': 32}
-        # self.bus = Bus(bus)
+
         if edit:
             # Load the specified JSON file
             try:
@@ -30,7 +28,10 @@ class Editor(object):
                 self.mod = Module(json, self.bus)
                 self.recently_saved = True
             except Exception as e:
+                print('An unresolvable error has occurred:')
                 print(str(e))
+                print('Exiting...')
+                exit()
         else:
             # Get name, addrWidth, dataWidth and description
             print('Please enter some general information about your module.')

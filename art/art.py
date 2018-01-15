@@ -39,10 +39,17 @@ def main(args):
         jsonFile = args['FILE']
 
         print('Parsing file: ' + jsonFile + '...')
-        
-        json = jsonParser(jsonFile)
-        bus = Bus(json)
-        mod = Module(json, bus)
+
+        try:
+            json = jsonParser(jsonFile)
+            bus = Bus(json)
+            mod = Module(json, bus)
+
+        except Exception as e:
+            print('An unresolvable error has occurred:')
+            print(str(e))
+            print('Exiting...')
+            exit()
 
         if args['-o'] is None:
             outputDir = "output/"
