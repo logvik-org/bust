@@ -1,5 +1,7 @@
 from utils import indentString
 
+from collections import OrderedDict
+
 
 class Bus(object):
     """! @brief Managing bus information
@@ -8,29 +10,37 @@ class Bus(object):
 
     def __init__(self, bus):
         bus = bus['bus']
-        self.busType = bus['type']
-        self.busDataWitdh = bus['data_width']
-        self.busAddrWitdh = bus['addr_width']
-        self.busReset = bus['reset']
+        self.bus_type = bus['type']
+        self.data_width = bus['data_width']
+        self.addr_width = bus['addr_width']
+        self.bus_reset = bus['reset']
+
+    def return_JSON(self):
+        json = OrderedDict()
+        json['type'] = self.bus_type
+        json['addr_width'] = self.addr_width
+        json['data_width'] = self.data_width
+        json['reset'] = self.bus_reset
+        return json
 
     def returnBusPkgVHDL(self):
         s = 'library ieee;\n'
         s += 'use ieee.std_logic_1164.all;\n'
         s += '\n'
 
-        s += 'package ' + self.busType + '_pkg is\n'
+        s += 'package ' + self.bus_type + '_pkg is\n'
         s += '\n\n'
 
-        dataWidthConstant = 'C_' + self.busType.upper() + '_DATA_WIDTH'
-        addrWidthConstant = 'C_' + self.busType.upper() + '_ADDR_WIDTH'
-        dataSubType = 't_' + self.busType + '_data'
-        addrSubType = 't_' + self.busType + '_addr'
+        dataWidthConstant = 'C_' + self.bus_type.upper() + '_DATA_WIDTH'
+        addrWidthConstant = 'C_' + self.bus_type.upper() + '_ADDR_WIDTH'
+        dataSubType = 't_' + self.bus_type + '_data'
+        addrSubType = 't_' + self.bus_type + '_addr'
 
         par = ''
         par += 'constant ' + dataWidthConstant
-        par += ' : natural := ' + str(self.busDataWitdh) + ';\n'
+        par += ' : natural := ' + str(self.data_width) + ';\n'
         par += 'constant ' + addrWidthConstant
-        par += ' : natural := ' + str(self.busAddrWitdh) + ';\n'
+        par += ' : natural := ' + str(self.addr_width) + ';\n'
         par += '\n'
         par += 'subtype ' + dataSubType + ' is std_logic_vector('
         par += dataWidthConstant + '-1 downto 0);\n'
@@ -39,7 +49,7 @@ class Bus(object):
         par += '\n'
         s += indentString(par)
 
-        s += indentString('type t_' + self.busType)
+        s += indentString('type t_' + self.bus_type)
         s += '_interconnect_to_slave is record\n'
         par = ''
         par += 'araddr  : ' + addrSubType + ';\n'
@@ -58,7 +68,7 @@ class Bus(object):
         s += indentString('end record;\n')
         s += '\n'
 
-        s += indentString('type t_' + self.busType)
+        s += indentString('type t_' + self.bus_type)
         s += '_slave_to_interconnect is record\n'
         par = ''
         par += 'arready : std_logic;\n'
@@ -73,6 +83,6 @@ class Bus(object):
         s += indentString('end record;\n')
         s += '\n'
 
-        s += 'end ' + self.busType + '_pkg;'
+        s += 'end ' + self.bus_type + '_pkg;'
 
         return s

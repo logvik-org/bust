@@ -44,9 +44,7 @@ class Module:
     def __init__(self, mod, bus):
         """! @brief
         """
-        self.busType = bus.busType
-        self.busAddrWitdh = bus.busAddrWitdh
-        self.busDataWitdh = bus.busDataWitdh
+        self.bus = bus
         self.registers = []
         self.addresses = []
         self.name = mod['name']
@@ -79,7 +77,7 @@ class Module:
         s += 'use ieee.numeric_std.all;\n'
         s += '\n'
         s += 'use work.' + self.name + '_pif_pkg.all;\n\n'
-        s += 'entity ' + self.name + '_' + self.busType + '_pif is\n\n'
+        s += 'entity ' + self.name + '_' + self.bus.bus_type + '_pif is\n\n'
 
         s += indentString('port (')
 
@@ -632,7 +630,7 @@ class Module:
         s += 'use ieee.std_logic_1164.all;\n'
         s += 'use ieee.numeric_std.all;\n'
         s += '\n'
-        s += 'use work.' + self.busType + '_pkg.all;\n'
+        s += 'use work.' + self.bus.bus_type + '_pkg.all;\n'
         s += 'use work.' + self.name + '_pif_pkg.all;\n'
         s += '\n'
 
@@ -641,13 +639,13 @@ class Module:
         s += indentString('port (\n')
         s += '\n'
         par = ''
-        par += '-- ' + self.busType.upper() + ' Bus Interface\n'
-        par += self.busType + '_clk      : in  std_logic;\n'
-        par += self.busType + '_areset_n : in  std_logic;\n'
-        par += self.busType + '_in       : in  t_' + \
-            self.busType + '_interconnect_to_slave;\n'
-        par += self.busType + '_out      : out t_' + \
-            self.busType + '_slave_to_interconnect\n'
+        par += '-- ' + self.bus.bus_type.upper() + ' Bus Interface\n'
+        par += self.bus.bus_type + '_clk      : in  std_logic;\n'
+        par += self.bus.bus_type + '_areset_n : in  std_logic;\n'
+        par += self.bus.bus_type + '_in       : in  t_' + \
+            self.bus.bus_type + '_interconnect_to_slave;\n'
+        par += self.bus.bus_type + '_out      : out t_' + \
+            self.bus.bus_type + '_slave_to_interconnect\n'
         par += ');\n'
         s += indentString(par, 2)
         s += '\n'
@@ -657,9 +655,9 @@ class Module:
         s += 'architecture behavior of ' + self.name + ' is\n'
         s += '\n'
 
-        s += indentString('signal ' + self.busType + '_rw_regs : t_')
+        s += indentString('signal ' + self.bus.bus_type + '_rw_regs : t_')
         s += self.name + '_rw_regs := c_' + self.name + '_rw_regs;\n'
-        s += indentString('signal ' + self.busType + '_ro_regs : t_')
+        s += indentString('signal ' + self.bus.bus_type + '_ro_regs : t_')
         s += self.name + '_ro_regs := c_' + self.name + '_ro_regs;\n'
 
         s += '\n'
@@ -667,43 +665,43 @@ class Module:
         s += 'begin\n'
         s += '\n'
 
-        s += indentString('i_' + self.name + '_' + self.busType + '_pif ')
-        s += ': entity work.' + self.name + '_' + self.busType + '_pif\n'
+        s += indentString('i_' + self.name + '_' + self.bus.bus_type + '_pif ')
+        s += ': entity work.' + self.name + '_' + self.bus.bus_type + '_pif\n'
         s += indentString('port map (\n', 2)
 
         par = ''
-        par += self.busType + '_ro_regs => ' + self.busType + '_ro_regs,\n'
-        par += self.busType + '_rw_regs => ' + self.busType + '_rw_regs,\n'
-        par += 'clk         => ' + self.busType + '_clk,\n'
-        par += 'areset_n    => ' + self.busType + '_areset_n,\n'
-        par += 'awaddr      => ' + self.busType + '_in.awaddr(C_'
+        par += self.bus.bus_type + '_ro_regs => ' + self.bus.bus_type + '_ro_regs,\n'
+        par += self.bus.bus_type + '_rw_regs => ' + self.bus.bus_type + '_rw_regs,\n'
+        par += 'clk         => ' + self.bus.bus_type + '_clk,\n'
+        par += 'areset_n    => ' + self.bus.bus_type + '_areset_n,\n'
+        par += 'awaddr      => ' + self.bus.bus_type + '_in.awaddr(C_'
         par += self.name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
-        par += 'awvalid     => ' + self.busType + '_in.awvalid,\n'
-        par += 'awready     => ' + self.busType + '_out.awready,\n'
-        par += 'wdata       => ' + self.busType + '_in.wdata(C_'
+        par += 'awvalid     => ' + self.bus.bus_type + '_in.awvalid,\n'
+        par += 'awready     => ' + self.bus.bus_type + '_out.awready,\n'
+        par += 'wdata       => ' + self.bus.bus_type + '_in.wdata(C_'
         par += self.name.upper() + '_DATA_WIDTH-1 downto 0),\n'
-        par += 'wvalid      => ' + self.busType + '_in.wvalid,\n'
-        par += 'wready      => ' + self.busType + '_out.wready,\n'
-        par += 'bresp       => ' + self.busType + '_out.bresp,\n'
-        par += 'bvalid      => ' + self.busType + '_out.bvalid,\n'
-        par += 'bready      => ' + self.busType + '_in.bready,\n'
-        par += 'araddr      => ' + self.busType + '_in.araddr(C_'
+        par += 'wvalid      => ' + self.bus.bus_type + '_in.wvalid,\n'
+        par += 'wready      => ' + self.bus.bus_type + '_out.wready,\n'
+        par += 'bresp       => ' + self.bus.bus_type + '_out.bresp,\n'
+        par += 'bvalid      => ' + self.bus.bus_type + '_out.bvalid,\n'
+        par += 'bready      => ' + self.bus.bus_type + '_in.bready,\n'
+        par += 'araddr      => ' + self.bus.bus_type + '_in.araddr(C_'
         par += self.name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
-        par += 'arvalid     => ' + self.busType + '_in.arvalid,\n'
-        par += 'arready     => ' + self.busType + '_out.arready,\n'
-        par += 'rdata       => ' + self.busType + '_out.rdata(C_'
+        par += 'arvalid     => ' + self.bus.bus_type + '_in.arvalid,\n'
+        par += 'arready     => ' + self.bus.bus_type + '_out.arready,\n'
+        par += 'rdata       => ' + self.bus.bus_type + '_out.rdata(C_'
         par += self.name.upper() + '_DATA_WIDTH-1 downto 0),\n'
-        par += 'rresp       => ' + self.busType + '_out.rresp,\n'
-        par += 'rvalid      => ' + self.busType + '_out.rvalid,\n'
-        par += 'rready      => ' + self.busType + '_in.rready\n'
+        par += 'rresp       => ' + self.bus.bus_type + '_out.rresp,\n'
+        par += 'rvalid      => ' + self.bus.bus_type + '_out.rvalid,\n'
+        par += 'rready      => ' + self.bus.bus_type + '_in.rready\n'
         par += ');\n'
         s += indentString(par, 3)
 
         # If bus data width is larger than module data width, set the unused bits to zero
-        if self.busDataWitdh > self.dataWidth:
+        if self.bus.data_width > self.dataWidth:
             s += indentString('-- Set unused bus data bits to zero\n')
-            s += indentString(self.busType +
-                              '_out.rdata(C_' + self.busType.upper())
+            s += indentString(self.bus.bus_type +
+                              '_out.rdata(C_' + self.bus.bus_type.upper())
             s += '_DATA_WIDTH-1 downto C_' + self.name.upper() + '_DATA_WIDTH)'
             s += " <= (others => '0');\n"
 
@@ -719,6 +717,9 @@ class Module:
         dic = OrderedDict()
 
         dic["name"] = self.name
+
+        dic["bus"] = self.bus.return_JSON()
+        
         dic["addr_width"] = self.addrWidth
         dic["data_width"] = self.dataWidth
 

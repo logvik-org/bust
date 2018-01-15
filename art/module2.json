@@ -1,11 +1,10 @@
 {
     "name": "module_name",
-    "bus":
-    {
-	"type": "axilite",
-	"addr_width": 32,
-	"data_width": 32,
-	"reset": "async"
+    "bus": {
+        "type": "axi",
+        "addr_width": 32,
+        "data_width": 32,
+        "reset": "async"
     },
     "addr_width": 16,
     "data_width": 16,
@@ -32,7 +31,7 @@
                     "type": "sl"
                 }
             ],
-            "description": "Register 0. Record of std_logic\nand std_logic_vector."
+            "description": "Register 0. Record of std_logic\nand\nstd_logic_vector."
         },
         {
             "name": "reg1",
@@ -81,7 +80,7 @@
                     "reset": "0x3"
                 }
             ],
-            "description": "Register 4. Record of slv[5:0]\nand sl."
+            "description": "Register 4. Record of slv[5:0]\nand\nsl."
         },
         {
             "name": "reg5",

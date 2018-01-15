@@ -58,7 +58,7 @@ def main(args):
 
         try:
             writeStringToFile(bus.returnBusPkgVHDL(),
-                              bus.busType + '_pkg.vhd', outputDirModHDL)
+                              bus.bus_type + '_pkg.vhd', outputDirModHDL)
 
             writeStringToFile(mod.returnRegisterPIFVHDL(),
                               mod.name + '_axi_pif.vhd', outputDirModHDL)
