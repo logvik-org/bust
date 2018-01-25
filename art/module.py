@@ -132,7 +132,7 @@ class Module:
     def addRegister(self, reg):
         if self.registerValid(reg):
             if "address" in reg:
-                addr = int(reg['address'], self.addrWidth)
+                addr = int(reg['address'], 16)
                 if self.isAddressFree(addr):
                     self.isAddressOutOfRange(addr)
                     self.addresses.append(addr)
