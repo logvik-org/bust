@@ -26,6 +26,9 @@ class Bus(object):
         else:
             raise InvalidResetMode(bus['reset'])
 
+        # Temporarily force all resets to be active_low
+        self.reset_active_low = True
+
     def return_JSON(self):
         json = OrderedDict()
         json['type'] = self.bus_type
