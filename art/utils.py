@@ -6,51 +6,45 @@ import re
 import json
 import os
 
-spacesInTab = 2
+spaces_in_tab = 2
 
 
-def indentString(string, tabs=1, breakLine=False):
+def indent_string(string, tabs=1, break_line=False):
     """! @brief adds indent spaces to all lines in string
     """
 
-    indent = spacesInTab * tabs * (" ")
+    indent = spaces_in_tab * tabs * (" ")
     # Add indent to every line and recreate string
     string = [indent + line for line in re.split(r"\n", string)]
     string = "\n".join(string)
 
     # Remove last string if it only contains indent
-    string = fixLastIndentOnlyLine(string, tabs)
+    string = fix_last_indent_only_line(string, tabs)
 
-    if breakLine:
+    if break_line:
         string += '\n'
     return string
 
 
-def jsonParser(filename='module.json'):
+def JSON_parser(filename='module.json'):
     with open(filename) as json_data:
         d = json.load(json_data)
         return d
 
 
-def jsonToString(filename='module.json'):
-    with open(filename) as json_data:
-        d = json_data.read()
-        return d
-
-
-def fixLastIndentOnlyLine(string, tabs):
+def fix_last_indent_only_line(string, tabs):
     """! @brief Will edit the last line if it only contains indentation to an 
     empty string
     """
-    stringList = re.split(r"\n", string)
-    if stringList[-1] == (spacesInTab * tabs * (" ")):
-        stringList[-1] = ''
+    string_list = re.split(r"\n", string)
+    if string_list[-1] == (spaces_in_tab * tabs * (" ")):
+        string_list[-1] = ''
 
-    string = "\n".join(stringList)
+    string = "\n".join(string_list)
     return string
 
 
-def compareJSON(json1, json2, raiseError=False):
+def compare_JSON(json1, json2, raise_error=False):
     """! @brief Will compare two JSON strings, and return False if they differ. An
     extra argument can be used to force the function to raise an error with the line
     the difference was observed.
@@ -58,24 +52,24 @@ def compareJSON(json1, json2, raiseError=False):
     for linenumber, (line1, line2) in enumerate(zip(json1.splitlines(),
                                                     json2.splitlines())):
         if (line1 != line2):
-            if raiseError:
+            if raise_error:
                 raise Exception("JSON differs at line: " + str(linenumber))
             return False
 
     return True
 
 
-def writeStringToFile(string, outputFile, outputDir):
+def write_string_to_file(string, output_file, output_dir):
     """! @brief Write string to file
 
     """
 
     # Create output directory if it does not exist
-    if outputDir is not None:
-        os.makedirs(outputDir, 0o777, True)
-        joined = os.path.join(outputDir, outputFile)
+    if output_dir is not None:
+        os.makedirs(output_dir, 0o777, True)
+        joined = os.path.join(output_dir, output_file)
     else:
-        joined = outputFile
+        joined = output_file
 
     print('Writing string to ' + joined)
 
@@ -107,7 +101,7 @@ def is_int(s):
     return False
 
 
-def clearScreen():
+def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 

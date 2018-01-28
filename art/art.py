@@ -21,10 +21,10 @@ Arguments:
 
 """
 from docopt import docopt
-from utils import jsonParser
-from utils import writeStringToFile
+from utils import JSON_parser
+from utils import write_string_to_file
 from module import Module
-from module import Bus
+from bus import Bus
 from editor import Editor
 import os
 import pdb
@@ -36,12 +36,12 @@ import curses
 def main(args):
 
     if args['FILE'] is not None and not args['-e'] and not args['-c']:
-        jsonFile = args['FILE']
+        JSON_file = args['FILE']
 
-        print('Parsing file: ' + jsonFile + '...')
+        print('Parsing file: ' + JSON_file + '...')
 
         try:
-            json = jsonParser(jsonFile)
+            json = JSON_parser(JSON_file)
             bus = Bus(json)
             mod = Module(json, bus)
 
@@ -52,27 +52,27 @@ def main(args):
             exit()
 
         if args['-o'] is None:
-            outputDir = "output/"
+            output_dir = "output/"
         else:
-            outputDir = args['-o']
+            output_dir = args['-o']
 
         print('Creating VHDL files...')
         # Keep all files in the same directory for now, expand when handling multiple modules
-        # outputDirBus = os.path.join(outputDir, bus.busType)
-        # outputDirBusHDL = os.path.join(outputDirBus, 'hdl/')
-        outputDirMod = os.path.join(outputDir, mod.name)
-        outputDirModHDL = os.path.join(outputDirMod, 'hdl/')
+        # output_dir_bus = os.path.join(output_dir, bus.bus_type)
+        # output_dir_bus_hdl = os.path.join(output_dir_bus, 'hdl/')
+        output_dir_mod = os.path.join(output_dir, mod.name)
+        output_dir_mod_hdl = os.path.join(output_dir_mod, 'hdl/')
 
         try:
-            writeStringToFile(bus.returnBusPkgVHDL(),
-                              bus.bus_type + '_pkg.vhd', outputDirModHDL)
+            write_string_to_file(bus.return_bus_pkg_VHDL(),
+                              bus.bus_type + '_pkg.vhd', output_dir_mod_hdl)
 
-            writeStringToFile(mod.returnRegisterPIFVHDL(),
-                              mod.name + '_axi_pif.vhd', outputDirModHDL)
-            writeStringToFile(mod.returnModulePkgVHDL(),
-                              mod.name + '_pif_pkg.vhd', outputDirModHDL)
-            writeStringToFile(mod.returnModuleVHDL(),
-                              mod.name + '.vhd', outputDirModHDL)
+            write_string_to_file(mod.return_bus_pif_VHDL(),
+                              mod.name + '_axi_pif.vhd', output_dir_mod_hdl)
+            write_string_to_file(mod.return_module_pkg_VHDL(),
+                              mod.name + '_pif_pkg.vhd', output_dir_mod_hdl)
+            write_string_to_file(mod.return_module_VHDL(),
+                              mod.name + '.vhd', output_dir_mod_hdl)
 
         except Exception as e:
             print(str(e))
@@ -86,7 +86,7 @@ def main(args):
                 exit()
 
         editor = Editor(False, args['FILE'])
-        editor.showMenu()
+        editor.show_menu()
         curses.endwin()
 
     elif args['-e'] and args['FILE'] is not None:
@@ -96,13 +96,13 @@ def main(args):
             if input('File does not exist. Create new file? (Y/n): ').upper() != 'N':
 
                 editor = Editor(False, args['FILE'])
-                editor.showMenu()
+                editor.show_menu()
                 curses.endwin()
             else:
                 exit()
         else:
             editor = Editor(True, args['FILE'])
-            editor.showMenu()
+            editor.show_menu()
             curses.endwin()
 
 

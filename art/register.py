@@ -1,4 +1,4 @@
-from utils import indentString
+from utils import indent_string
 from utils import add_line_breaks
 
 from field import Field
@@ -70,7 +70,7 @@ class Register:
                     self.reset = reg['reset']
 
         # Perform check that data bits are not exceeded
-        self.checkRegisterDataLength(mod_data_length)
+        self.check_register_data_length(mod_data_length)
 
     def __str__(self):
         string = "Name: " + self.name + "\n"
@@ -83,7 +83,7 @@ class Register:
 
             for i in self.fields:
                 string += "\n"
-                string += indentString("Name: " + i['name'] + " Type: " +
+                string += indent_string("Name: " + i['name'] + " Type: " +
                                        i['type'] + " Length: " +
                                        str(i['length']) +
                                        " Reset: " + i['reset'])
@@ -137,7 +137,7 @@ class Register:
         reg_reset_int += field_reset_int << next_low
         self.reset = hex(reg_reset_int)
 
-    def checkRegisterDataLength(self, module):
+    def check_register_data_length(self, module):
         """! @brief Controls that the combined data bits in fields does not
         exceed data bits of module
 
@@ -147,8 +147,8 @@ class Register:
 
     def get_next_pos_low(self):
         if len(self.fields) > 0:
-            lastPosHigh = self.fields[-1].pos_high
-            return lastPosHigh + 1
+            last_pos_high = self.fields[-1].pos_high
+            return last_pos_high + 1
         else:
             return 0
 

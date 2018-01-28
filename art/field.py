@@ -41,7 +41,7 @@ class Field(object):
                self.reset, self.description]
         return row
 
-    def returnDic(self):
+    def return_dic(self):
         dic = OrderedDict()
         dic['name'] = self.name
         dic['type'] = self.sig_type

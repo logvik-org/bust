@@ -1,12 +1,12 @@
 from cursesmenu import CursesMenu
 from cursesmenu.items import FunctionItem
-from utils import jsonParser
+from utils import JSON_parser
 from utils import cont
 from utils import is_int
-from utils import clearScreen
-from utils import writeStringToFile
+from utils import clear_screen
+from utils import write_string_to_file
 from module import Module
-from module import Bus
+from bus import Bus
 from collections import OrderedDict
 from prettytable import PrettyTable
 
@@ -15,15 +15,15 @@ class Editor(object):
     """Documentation for Editor
 
     """
-    def __init__(self, edit, jsonfile, outputDir='output/'):
+    def __init__(self, edit, jsonfile, output_dir='output/'):
         self.jsonfile = jsonfile
-        self.outputDir = outputDir
+        self.output_dir = output_dir
         self.recently_saved = False
 
         if edit:
             # Load the specified JSON file
             try:
-                json = jsonParser(jsonfile)
+                json = JSON_parser(jsonfile)
                 self.bus = Bus(json)
                 self.mod = Module(json, self.bus)
                 self.recently_saved = True
@@ -33,7 +33,7 @@ class Editor(object):
                 print('Exiting...')
                 exit()
         else:
-            # Get name, addrWidth, dataWidth and description
+            # Get name, addr_width, data_width and description
             print('Please enter some general information about your module.')
             print('All values can be changed at a later stage.')
             mod = OrderedDict()
@@ -45,29 +45,29 @@ class Editor(object):
             mod['register'] = []
             self.mod = Module(mod, self.bus)
 
-    def showMenu(self):
-        self.menu = CursesMenu('art - Module Editor', self.setSubtitle())
+    def show_menu(self):
+        self.menu = CursesMenu('art - Module Editor', self.set_subtitle())
 
-        self.menu.append_item(FunctionItem('Edit name', self.editName))
-        self.menu.append_item(FunctionItem('List registers', self.listRegisters))
-        self.menu.append_item(FunctionItem('Add new register', self.addRegister))
-        self.menu.append_item(FunctionItem('Remove register', self.removeRegister))
-        self.menu.append_item(FunctionItem('Update addresses', self.updateAddresses))
-        self.menu.append_item(FunctionItem('Save JSON', self.saveJSON))
+        self.menu.append_item(FunctionItem('Edit name', self.edit_name))
+        self.menu.append_item(FunctionItem('List registers', self.list_registers))
+        self.menu.append_item(FunctionItem('Add new register', self.add_register))
+        self.menu.append_item(FunctionItem('Remove register', self.remove_register))
+        self.menu.append_item(FunctionItem('Update addresses', self.update_addresses))
+        self.menu.append_item(FunctionItem('Save JSON', self.save_JSON))
         self.menu.show()
 
-    def updateMenu(self):
-        self.menu.subtitle = self.setSubtitle()
+    def update_menu(self):
+        self.menu.subtitle = self.set_subtitle()
 
-    def editName(self):
+    def edit_name(self):
         print('Change the module name from current: ' + self.mod.name)
         self.mod.name = input('Enter new name: ')
         self.recently_saved = False
-        self.updateMenu()
+        self.update_menu()
 
-    def returnRegisters(self):
+    def return_registers(self):
         while True:
-            clearScreen()
+            clear_screen()
             if len(self.mod.registers) < 1:
                 print('No registers created at this point...')
                 cont()
@@ -80,8 +80,8 @@ class Editor(object):
                                    reg.reset, reg.description])
                 return(table)
 
-    def listRegisters(self):
-        table = self.returnRegisters()
+    def list_registers(self):
+        table = self.return_registers()
         if table is None:
             return
         print(table)
@@ -95,13 +95,13 @@ class Editor(object):
         if choice == 'q':
             return
         else:
-            clearScreen()
-            self.printRegister(int(choice), table)
+            clear_screen()
+            self.print_register(int(choice), table)
             cont()
 
-    def printRegister(self, regNum, table):
-        reg = self.mod.registers[regNum]
-        print(table.get_string(start=regNum, end=(regNum+1)))
+    def print_register(self, reg_num, table):
+        reg = self.mod.registers[reg_num]
+        print(table.get_string(start=reg_num, end=(reg_num+1)))
 
         if len(reg.fields) > 0:
             print('\nFields:')
@@ -114,7 +114,7 @@ class Editor(object):
 
             print(table_fields)
 
-    def addRegister(self):
+    def add_register(self):
         reg = OrderedDict()
 
         print('Input register information: ')
@@ -249,7 +249,7 @@ class Editor(object):
             elif 'length' in reg:
                 table_length = reg['length']
             else:
-                table_length = self.mod.busDataWitdh
+                table_length = self.mod.bus.data_width
 
             if reg['type'] == 'fields':
                 table_reset = 'auto'
@@ -277,10 +277,10 @@ class Editor(object):
                 print(table_fields)
 
             if input('Confirm creation of register? (Y/n): ').upper() != 'N':
-                self.mod.addRegister(reg)
+                self.mod.add_register(reg)
 
                 self.recently_saved = False
-                self.updateMenu()
+                self.update_menu()
             else:
                 return
 
@@ -293,8 +293,8 @@ class Editor(object):
             print(str(e))
             cont()
 
-    def removeRegister(self):
-        table = self.returnRegisters()
+    def remove_register(self):
+        table = self.return_registers()
         if table is None:
             return
         print(table)
@@ -308,29 +308,29 @@ class Editor(object):
         if choice == 'q':
             return
         else:
-            clearScreen()
-            self.printRegister(int(choice), table)
+            clear_screen()
+            self.print_register(int(choice), table)
 
             if input('Are you sure you want to delete this register? (y/N): ').upper != 'Y':
                 del self.mod.registers[int(choice)]
 
         self.recently_saved = False
-        self.updateMenu()
+        self.update_menu()
 
-    def updateAddresses(self):
-        self.mod.updateAddresses()
+    def update_addresses(self):
+        self.mod.update_addresses()
         print("Addresses are updated..")
         self.recently_saved = False
-        self.updateMenu()
+        self.update_menu()
         cont()
 
-    def saveJSON(self):
+    def save_JSON(self):
         print('Saving ' + self.jsonfile + ' ...')
 
         # Get JSON with addresses
-        json = self.mod.printJSON(True)
+        json = self.mod.print_JSON(True)
         try:
-            writeStringToFile(json, self.jsonfile, None)
+            write_string_to_file(json, self.jsonfile, None)
         except Exception:
             print('Saving failed...')
             cont()
@@ -338,14 +338,14 @@ class Editor(object):
 
         self.recently_saved = True
         cont()
-        self.updateMenu()
+        self.update_menu()
 
-    def setSubtitle(self):
+    def set_subtitle(self):
         if self.recently_saved:
             s = ' - SAVED'
         else:
             s = ' - NOT SAVED'
-        return self.mod.name + ' / ' + str(self.mod.addrWidth) + ' / ' + str(self.mod.dataWidth) + s
+        return self.mod.name + ' / ' + str(self.mod.addr_width) + ' / ' + str(self.mod.data_width) + s
 
     def valid_register_input(self, s):
         if s == 'q':

@@ -1,4 +1,4 @@
-from utils import indentString
+from utils import indent_string
 
 from collections import OrderedDict
 
@@ -34,64 +34,64 @@ class Bus(object):
         json['reset'] = self.bus_reset
         return json
 
-    def returnBusPkgVHDL(self):
-        s = 'library ieee;\n'
+    def return_bus_pkg_VHDL(self):
+        s = 'library ppieee;\n'
         s += 'use ieee.std_logic_1164.all;\n'
         s += '\n'
 
         s += 'package ' + self.bus_type + '_pkg is\n'
         s += '\n\n'
 
-        dataWidthConstant = 'C_' + self.bus_type.upper() + '_DATA_WIDTH'
-        addrWidthConstant = 'C_' + self.bus_type.upper() + '_ADDR_WIDTH'
-        dataSubType = 't_' + self.bus_type + '_data'
-        addrSubType = 't_' + self.bus_type + '_addr'
+        data_width_constant = 'C_' + self.bus_type.upper() + '_DATA_WIDTH'
+        addr_width_constant = 'C_' + self.bus_type.upper() + '_ADDR_WIDTH'
+        data_sub_type = 't_' + self.bus_type + '_data'
+        addr_sub_type = 't_' + self.bus_type + '_addr'
 
         par = ''
-        par += 'constant ' + dataWidthConstant
+        par += 'constant ' + data_width_constant
         par += ' : natural := ' + str(self.data_width) + ';\n'
-        par += 'constant ' + addrWidthConstant
+        par += 'constant ' + addr_width_constant
         par += ' : natural := ' + str(self.addr_width) + ';\n'
         par += '\n'
-        par += 'subtype ' + dataSubType + ' is std_logic_vector('
-        par += dataWidthConstant + '-1 downto 0);\n'
-        par += 'subtype ' + addrSubType + ' is std_logic_vector('
-        par += addrWidthConstant + '-1 downto 0);\n'
+        par += 'subtype ' + data_sub_type + ' is std_logic_vector('
+        par += data_width_constant + '-1 downto 0);\n'
+        par += 'subtype ' + addr_sub_type + ' is std_logic_vector('
+        par += addr_width_constant + '-1 downto 0);\n'
         par += '\n'
-        s += indentString(par)
+        s += indent_string(par)
 
-        s += indentString('type t_' + self.bus_type)
+        s += indent_string('type t_' + self.bus_type)
         s += '_interconnect_to_slave is record\n'
         par = ''
-        par += 'araddr  : ' + addrSubType + ';\n'
+        par += 'araddr  : ' + addr_sub_type + ';\n'
         par += 'arprot  : std_logic_vector(2 downto 0);\n'
         par += 'arvalid : std_logic;\n'
-        par += 'awaddr  : ' + addrSubType + ';\n'
+        par += 'awaddr  : ' + addr_sub_type + ';\n'
         par += 'awprot  : std_logic_vector(2 downto 0);\n'
         par += 'awvalid : std_logic;\n'
         par += 'bready  : std_logic;\n'
         par += 'rready  : std_logic;\n'
-        par += 'wdata   : ' + dataSubType + ';\n'
-        par += 'wstrb   : std_logic_vector((' + dataWidthConstant
+        par += 'wdata   : ' + data_sub_type + ';\n'
+        par += 'wstrb   : std_logic_vector((' + data_width_constant
         par += '/8)-1 downto 0);\n'
         par += 'wvalid  : std_logic;\n'
-        s += indentString(par, 2)
-        s += indentString('end record;\n')
+        s += indent_string(par, 2)
+        s += indent_string('end record;\n')
         s += '\n'
 
-        s += indentString('type t_' + self.bus_type)
+        s += indent_string('type t_' + self.bus_type)
         s += '_slave_to_interconnect is record\n'
         par = ''
         par += 'arready : std_logic;\n'
         par += 'awready : std_logic;\n'
         par += 'bresp   : std_logic_vector(1 downto 0);\n'
         par += 'bvalid  : std_logic;\n'
-        par += 'rdata   : ' + dataSubType + ';\n'
+        par += 'rdata   : ' + data_sub_type + ';\n'
         par += 'rresp   : std_logic_vector(1 downto 0);\n'
         par += 'rvalid  : std_logic;\n'
         par += 'wready  : std_logic;\n'
-        s += indentString(par, 2)
-        s += indentString('end record;\n')
+        s += indent_string(par, 2)
+        s += indent_string('end record;\n')
         s += '\n'
 
         s += 'end ' + self.bus_type + '_pkg;'
