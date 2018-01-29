@@ -46,5 +46,15 @@ def async_process(clk_name, reset_name, process_name, reset_string, logic_string
     s += "\n"
     s += indent_string("end if;\n")
     s += "end process " + process_name + ";\n"
+    
+    return s
+
+def comb_process(process_name, logic_string):
+    s = process_name + " : process(all)\n"
+    s += "begin\n\n"
+
+    s += indent_string(logic_string)
+
+    s += "end process " + process_name + ";\n"
 
     return s

@@ -29,6 +29,20 @@ class Bus(object):
         # Temporarily force all resets to be active_low
         self.reset_active_low = True
 
+    def get_clk_name(self):
+        return "clk"
+
+    def get_reset_name(self):
+        if self.bus_reset == "async":
+            reset_name = "areset"
+        else:
+            reset_name = "reset"
+
+        if self.reset_active_low is True:
+            reset_name += "_n"
+
+        return reset_name
+
     def return_JSON(self):
         json = OrderedDict()
         json['type'] = self.bus_type

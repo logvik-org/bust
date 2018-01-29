@@ -5,6 +5,10 @@ from exceptions import InvalidRegister
 
 from register import Register
 
+from vhdl import sync_process
+from vhdl import async_process
+from vhdl import comb_process
+
 import json
 from collections import OrderedDict
 
@@ -46,6 +50,9 @@ class Module:
             raise InvalidRegister(reg)
 
     def return_bus_pif_VHDL(self):
+        clk_name = self.bus.get_clk_name()
+        reset_name = self.bus.get_reset_name()
+
         s = 'library ieee;\n'
         s += 'use ieee.std_logic_1164.all;\n'
         s += 'use ieee.numeric_std.all;\n'
@@ -63,8 +70,8 @@ class Module:
         par += 'c_' + self.name + '_rw_regs;\n'
         par += '\n'
         par += '-- bus signals\n'
-        par += 'clk         : in  std_logic;\n'
-        par += 'areset_n    : in  std_logic;\n'
+        par += clk_name + '         : in  std_logic;\n'
+        par += reset_name + '    : in  std_logic;\n'
         par += 'awaddr      : in  t_' + self.name + '_addr;\n'
         par += 'awvalid     : in  std_logic;\n'
         par += 'awready     : out std_logic;\n'
@@ -128,72 +135,76 @@ class Module:
 
         s += indent_string(par)
 
-        s += indent_string('p_awready : process(clk)\n')
-        s += indent_string('begin\n')
-        s += indent_string('if rising_edge(clk) then\n', 2)
-        s += indent_string("if areset_n = '0' then\n", 3)
-        s += indent_string("awready_i <= '0';\n", 4)
-        s += indent_string("elsif (awready_i = '0' and awvalid = '1' ", 3)
-        s += "and wvalid = '1') then\n"
-        s += indent_string("awready_i <= '1';\n", 4)
-        s += indent_string('else\n', 3)
-        s += indent_string("awready_i <= '0';\n", 4)
-        s += indent_string('end if;\n', 3)
-        s += indent_string('end if;\n', 2)
-        s += indent_string('end process p_awready;\n')
-        s += '\n'
+        ####################################################################
+        # p_awready
+        ####################################################################
+        reset_string = "awready_i <= '0';"
 
-        s += indent_string('p_awaddr : process(clk)\n')
-        s += indent_string('begin\n')
-        s += indent_string('if rising_edge(clk) then\n', 2)
-        s += indent_string("if areset_n = '0' then\n", 3)
-        s += indent_string("awaddr_i <= (others => '0');\n", 4)
-        s += indent_string("elsif (awready_i = '0' and awvalid = '1' ", 3)
-        s += "and wvalid = '1') then\n"
-        s += indent_string("awaddr_i <= awaddr;\n", 4)
-        s += indent_string('end if;\n', 3)
-        s += indent_string('end if;\n', 2)
-        s += indent_string('end process p_awaddr;\n')
-        s += '\n'
+        logic_string = "if (awready_i = '0' and awvalid = '1'\n"
+        logic_string += indent_string("awready_i <= '1';\n")
+        logic_string += "else\n"
+        logic_string += indent_string("awready_i <= '0';\n")
+        logic_string += "end if;"
 
-        s += indent_string('p_wready : process(clk)\n')
-        s += indent_string('begin\n')
-        s += indent_string('if rising_edge(clk) then\n', 2)
-        s += indent_string("if areset_n = '0' then\n", 3)
-        s += indent_string("wready_i <= '0';\n", 4)
-        s += indent_string("elsif (wready_i = '0' and awvalid = '1' ", 3)
-        s += "and wvalid = '1') then\n"
-        s += indent_string("wready_i <= '1';\n", 4)
-        s += indent_string('else\n', 3)
-        s += indent_string("wready_i <= '0';\n", 4)
-        s += indent_string('end if;\n', 3)
-        s += indent_string('end if;\n', 2)
-        s += indent_string('end process p_wready;\n')
-        s += '\n'
+        if self.bus.bus_reset == "async":
+            s += indent_string(async_process(clk_name, reset_name, "p_awready", reset_string,
+                                             logic_string, self.bus.reset_active_low))
+
+        elif self.bus.bus_reset == "sync":
+            s += indent_string(sync_process(clk_name, reset_name, "p_awready", reset_string,
+                                            logic_string, self.bus.reset_active_low))
+        s += "\n"
+        
+        ####################################################################
+        # p_awaddr
+        ####################################################################
+        reset_string = "awaddr_i <= (others => '0');"
+
+        logic_string = "if (awready_i = '0' and awvalid = '1' and wvalid = '1') then\n"
+        logic_string += indent_string("awaddr_i <= awaddr;\n")
+        logic_string += "end if;"
+
+        if self.bus.bus_reset == "async":
+            s += indent_string(async_process(clk_name, reset_name, "p_awaddr", reset_string, logic_string))
+
+        elif self.bus.bus_reset == "sync":
+            s += indent_string(sync_process(clk_name, reset_name, "p_awaddr", reset_string, logic_string))
+        s += "\n"
+
+        ####################################################################
+        # p_wready
+        ####################################################################
+        reset_string = "wready_i <= '0';"
+
+        logic_string = "if (wready_i = '0' and awvalid = '1' and wvalid = '1' then\n"
+        logic_string += indent_string("wready_i <= '1';\n")
+        logic_string += 'else\n'
+        logic_string += indent_string("wready_i <= '0';\n")
+        logic_string += "end if;"
+
+        if self.bus.bus_reset == "async":
+            s += indent_string(async_process(clk_name, reset_name, "p_wready", reset_string, logic_string))
+
+        elif self.bus.bus_reset == "sync":
+            s += indent_string(sync_process(clk_name, reset_name, "p_wready", reset_string, logic_string))
+        s += "\n"
 
         s += indent_string('slv_reg_wren <= wready_i and wvalid and awready_i and awvalid;\n')
         s += '\n'
-        s += indent_string('p_mm_select_write : process(clk)\n')
-        s += indent_string('begin\n')
 
-        s += indent_string('if rising_edge(clk) then\n', 2)
+        ###################################################################
+        # p_mm_select_write
+        ###################################################################
+        reset_string = '\naxi_rw_regs_i <= c_' + self.name + '_rw_regs;\n'
+
+        logic_string = "\nif (slv_reg_wren = '1') then\n"
+        logic_string += indent_string('case awaddr_i is\n\n')
         
-        s += indent_string("if areset_n = '0' then\n", 3)
-
-        # Assign default values
-        s += indent_string('\naxi_rw_regs_i <= c_', 4)
-        s += self.name + '_rw_regs;\n\n'
-
-        
-        s += indent_string("elsif (slv_reg_wren = '1') then\n", 3)
-        s += '\n'
-        s += indent_string('case awaddr_i is\n\n', 4)
-
         # create a generator for looping through all rw regs
         gen = (reg for reg in self.registers if reg.mode == "rw")
         for reg in gen:
-            s += indent_string('when C_ADDR_', 5)
-            s += reg.name.upper() + ' =>\n\n'
+            logic_string += indent_string('when C_ADDR_', 2)
+            logic_string += reg.name.upper() + ' =>\n\n'
             par = ''
             if reg.sig_type == 'fields':
 
@@ -211,84 +222,107 @@ class Module:
             elif reg.sig_type == 'sl':
                 par += 'axi_rw_regs_i.' + reg.name + ' <= wdata(0);\n'
 
-            s += indent_string(par, 6)
-            s += '\n'
+            logic_string += indent_string(par, 3)
+            logic_string += '\n'
 
-        s += indent_string('when others =>\n', 5)
-        s += indent_string('null;\n', 6)
-        s += '\n'
-        s += indent_string('end case;\n', 4)
-        s += indent_string('end if;\n', 3)
-        s += indent_string('end if;\n', 2)
-        s += indent_string('end process p_mm_select_write;\n')
-        s += '\n'
+        logic_string += indent_string('when others =>\n', 2)
+        logic_string += indent_string('null;\n', 3)
+        logic_string += '\n'
+        logic_string += indent_string('end case;\n')
+        logic_string += 'end if;\n'
 
-        s += indent_string('p_write_response : process(clk)\n')
-        s += indent_string('begin\n')
-        s += indent_string('if rising_edge(clk) then\n', 2)
-        s += indent_string("if areset_n = '0' then\n", 3)
-        s += indent_string("bvalid_i <= '0';\n", 4)
-        s += indent_string('bresp_i  <= "00";\n', 4)
-        s += indent_string("elsif (awready_i = '1' and awvalid = '1' and ", 3)
-        s += "wready_i = '1' and wvalid = '1' and bvalid_i = '0') then\n"
-        s += indent_string("bvalid_i <= '1';\n", 4)
-        s += indent_string('bresp_i  <= "00";\n', 4)
-        s += indent_string("elsif (bready = '1' and bvalid_i = '1') then\n", 3)
-        s += indent_string("bvalid_i <= '0';\n", 4)
-        s += indent_string('end if;\n', 3)
-        s += indent_string('end if;\n', 2)
-        s += indent_string('end process p_write_response;\n')
-        s += '\n'
+        if self.bus.bus_reset == "async":
+            s += indent_string(async_process(clk_name, reset_name, "p_mm_select_write",
+                                             reset_string, logic_string))
 
-        s += indent_string('p_arready : process(clk)\n')
-        s += indent_string('begin\n')
-        s += indent_string('if rising_edge(clk) then\n', 2)
-        s += indent_string("if areset_n = '0' then\n", 3)
-        s += indent_string("arready_i <= '0';\n", 4)
-        s += indent_string("araddr_i  <= (others => '0');\n", 4)
-        s += indent_string("elsif (arready_i = '0' and arvalid = '1') then\n", 3)
-        s += indent_string("arready_i <= '1';\n", 4)
-        s += indent_string('araddr_i  <= araddr;\n', 4)
-        s += indent_string('else\n', 3)
-        s += indent_string("arready_i <= '0';\n", 4)
-        s += indent_string('end if;\n', 3)
-        s += indent_string('end if;\n', 2)
-        s += indent_string('end process p_arready;\n')
-        s += '\n'
+        elif self.bus.bus_reset == "sync":
+            s += indent_string(sync_process(clk_name, reset_name, "p_mm_select_write",
+                                            reset_string, logic_string))
+        s += "\n"
 
-        s += indent_string('p_arvalid : process(clk)\n')
-        s += indent_string('begin\n')
-        s += indent_string('if rising_edge(clk) then\n', 2)
-        s += indent_string("if areset_n = '0' then\n", 3)
-        s += indent_string("rvalid_i <= '0';\n", 4)
-        s += indent_string('rresp_i  <= "00";\n', 4)
-        s += indent_string("elsif (arready_i = '1' and arvalid = '1' and ", 3)
-        s += "rvalid_i = '0') then\n"
-        s += indent_string("rvalid_i <= '1';\n", 4)
-        s += indent_string('rresp_i  <= "00";\n', 4)
-        s += indent_string("elsif (rvalid_i = '1' and rready = '1') then\n", 3)
-        s += indent_string("rvalid_i <= '0';\n", 4)
-        s += indent_string('end if;\n', 3)
-        s += indent_string('end if;\n', 2)
-        s += indent_string('end process p_arvalid;\n')
-        s += '\n'
+        ####################################################################
+        # p_write_response
+        ####################################################################
+        reset_string = "bvalid_i <= '0';\n"
+        reset_string += 'bresp_i  <= "00";'
+
+        logic_string = "if (awready_i = '1' and awvalid = '1' and wready_i = '1' "
+        logic_string += "and wvalid = '1' and bvalid_i = '0') then\n"
+        logic_string += indent_string("bvalid_i <= '1';\n")
+        logic_string += indent_string('bresp_i  <= "00";\n')
+        logic_string += "elsif (bready = '1' and bvalid_i = '1') then\n"
+        logic_string += indent_string("bvalid_i <= '0';\n")
+        logic_string += "end if;"
+        
+        if self.bus.bus_reset == "async":
+            s += indent_string(async_process(clk_name, reset_name, "p_write_response",
+                                             reset_string, logic_string))
+
+        elif self.bus.bus_reset == "sync":
+            s += indent_string(sync_process(clk_name, reset_name, "p_write_response",
+                                            reset_string, logic_string))
+        s += "\n"
+
+        ####################################################################
+        # p_arready
+        ####################################################################
+        reset_string = "arready_i <= '0';\n"
+        reset_string += "araddr_i  <= (others => '0');"
+
+        logic_string = "if (arready_i = '0' and arvalid = '1') then\n"
+        logic_string += indent_string("arready_i <= '1';\n")
+        logic_string += indent_string('araddr_i  <= araddr;\n')
+        logic_string += 'else\n'
+        logic_string += indent_string("arready_i <= '0';\n")
+        logic_string += "end if;"
+
+        if self.bus.bus_reset == "async":
+            s += indent_string(async_process(clk_name, reset_name, "p_arready",
+                                             reset_string, logic_string))
+
+        elif self.bus.bus_reset == "sync":
+            s += indent_string(sync_process(clk_name, reset_name, "p_arready",
+                                            reset_string, logic_string))
+        s += "\n"
+
+        ####################################################################
+        # p_arvalid
+        ####################################################################
+        reset_string = "rvalid_i <= '0';\n"
+        reset_string += 'rresp_i  <= "00";'
+
+        logic_string = "if (arready_i = '1' and arvalid = '1' and rvalid_i = '0') then\n"
+        logic_string += indent_string("rvalid_i <= '1';\n")
+        logic_string += indent_string('rresp_i  <= "00";\n')
+        logic_string += "elsif (rvalid_i = '1' and rready = '1') then\n"
+        logic_string += indent_string("rvalid_i <= '0';\n")
+        logic_string += "end if;"
+
+        if self.bus.bus_reset == "async":
+            s += indent_string(async_process(clk_name, reset_name, "p_arvalid",
+                                             reset_string, logic_string))
+
+        elif self.bus.bus_reset == "sync":
+            s += indent_string(sync_process(clk_name, reset_name, "p_arvalid",
+                                            reset_string, logic_string))
+        s += "\n"
+
 
         s += indent_string('slv_reg_rden <= arready_i and arvalid and ')
         s += '(not rvalid_i);\n'
         s += '\n'
-        s += indent_string('p_mm_select_read : process (all)\n')
-        s += indent_string('begin\n')
-        s += '\n'
-        s += indent_string("reg_data_out <= (others => '0');\n", 2)
-        s += '\n'
-        s += indent_string('case araddr_i is\n', 2)
-        s += '\n'
-        # Generator for looping through all "readable registers, rw&ro
+
+        ####################################################################
+        # p_mm_select_read
+        ####################################################################
+        logic_string = "reg_data_out <= (others => '0');\n\n"
+        logic_string += 'case araddr_i is\n\n'
+
         gen = [reg for reg in self.registers
                if reg.mode == "ro" or reg.mode == "rw"]
         for reg in gen:
-            s += indent_string('when C_ADDR_', 3)
-            s += reg.name.upper() + ' =>\n\n'
+            logic_string += indent_string('when C_ADDR_')
+            logic_string += reg.name.upper() + ' =>\n\n'
             par = ''
 
             if reg.sig_type == 'fields':
@@ -336,27 +370,34 @@ class Module:
                     raise Exception("Unknown error occurred")
                 par += reg.name + ';\n'
 
-            s += indent_string(par, 4)
-            s += '\n'
+            logic_string += indent_string(par, 2)
+            logic_string += '\n'
 
-        s += indent_string('when others =>\n', 3)
-        s += indent_string('null;\n', 4)
-        s += '\n'
-        s += indent_string('end case;\n', 2)
-        s += indent_string('end process p_mm_select_read;\n')
-        s += '\n'
+        logic_string += indent_string('when others =>\n')
+        logic_string += indent_string('null;\n', 2)
+        logic_string += '\n'
+        logic_string += 'end case;\n'
 
-        s += indent_string('p_output : process(clk)\n')
-        s += indent_string('begin\n')
-        s += indent_string('if rising_edge(clk) then\n', 2)
-        s += indent_string("if areset_n = '0' then\n", 3)
-        s += indent_string("rdata_i <= (others => '0');\n", 4)
-        s += indent_string("elsif (slv_reg_rden = '1') then\n", 3)
-        s += indent_string("rdata_i <= reg_data_out;\n", 4)
-        s += indent_string('end if;\n', 3)
-        s += indent_string('end if;\n', 2)
-        s += indent_string('end process p_output;\n')
-        s += '\n'
+        s += indent_string(comb_process("p_mm_select_read", logic_string))
+        s += "\n"
+
+        ####################################################################
+        # p_output
+        ####################################################################
+        reset_string = "rdata_i <= (others => '0');"
+
+        logic_string = "if (slv_reg_rden = '1') then\n"
+        logic_string += indent_string("rdata_i <= reg_data_out;\n")
+        logic_string += "end if;"
+
+        if self.bus.bus_reset == "async":
+            s += indent_string(async_process(clk_name, reset_name, "p_output", reset_string,
+                                             logic_string, self.bus.reset_active_low))
+
+        elif self.bus.bus_reset == "sync":
+            s += indent_string(sync_process(clk_name, reset_name, "p_output", reset_string,
+                                            logic_string, self.bus.reset_active_low))
+        s += "\n"
 
         s += 'end behavior;'
 
@@ -409,7 +450,6 @@ class Module:
                     elif field.sig_type == "sl":
                         s += "std_logic;\n"
                     else:
-                        import ipdb; ipdb.set_trace()
                         raise RuntimeError(
                             "Something went wrong..." + field.sig_type)
                 s += indent_string("end record;\n\n")
@@ -429,7 +469,6 @@ class Module:
                 elif reg.sig_type == "fields":
                     s += "t_" + self.name + "_rw_" + reg.name + ";\n"
                 else:
-                    import ipdb; ipdb.set_trace()
                     raise RuntimeError("Something went wrong...")
         s += indent_string("end record;\n")
         s += "\n"
@@ -509,8 +548,7 @@ class Module:
                     elif field.sig_type == "sl":
                         s += "std_logic;\n"
                     else:
-                        import ipdb; ipdb.set_trace()
-                        raise RuntimeError("Something went wrong... WTF?")
+                        raise RuntimeError("Something went wrong...")
                 s += indent_string("end record;\n\n")
 
         # The RO register record type
@@ -528,7 +566,6 @@ class Module:
                 elif reg.sig_type == "fields":
                     s += "t_" + self.name + "_ro_" + reg.name + ";\n"
                 else:
-                    import ipdb; ipdb.set_trace()
                     raise RuntimeError(
                         "Something went wrong... What now?" + reg.sig_type)
         s += indent_string("end record;\n")
@@ -584,7 +621,8 @@ class Module:
                 par += "'" + format(int(reg.reset, 16), 'X') + "'"
 
             else:
-                import ipdb; ipdb.set_trace()
+                raise RuntimeError(
+                        "Something went wrong... What now?" + reg.sig_type)
 
             if i < len(gen) - 1:
                 par += ','
@@ -614,8 +652,8 @@ class Module:
         s += '\n'
         par = ''
         par += '-- ' + self.bus.bus_type.upper() + ' Bus Interface\n'
-        par += self.bus.bus_type + '_clk      : in  std_logic;\n'
-        par += self.bus.bus_type + '_areset_n : in  std_logic;\n'
+        par += self.bus.bus_type + '_' + self.bus.get_clk_name() + '      : in  std_logic;\n'
+        par += self.bus.bus_type + '_' + self.bus.get_reset_name() + ' : in  std_logic;\n'
         par += self.bus.bus_type + '_in       : in  t_' + \
             self.bus.bus_type + '_interconnect_to_slave;\n'
         par += self.bus.bus_type + '_out      : out t_' + \
@@ -646,8 +684,8 @@ class Module:
         par = ''
         par += self.bus.bus_type + '_ro_regs => ' + self.bus.bus_type + '_ro_regs,\n'
         par += self.bus.bus_type + '_rw_regs => ' + self.bus.bus_type + '_rw_regs,\n'
-        par += 'clk         => ' + self.bus.bus_type + '_clk,\n'
-        par += 'areset_n    => ' + self.bus.bus_type + '_areset_n,\n'
+        par += self.bus.get_clk_name() + '         => ' + self.bus.bus_type + '_' + self.bus.get_clk_name() + ',\n'
+        par += self.bus.get_reset_name() + '    => ' + self.bus.bus_type + '_' + self.bus.get_reset_name()  + 'areset_n,\n'
         par += 'awaddr      => ' + self.bus.bus_type + '_in.awaddr(C_'
         par += self.name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
         par += 'awvalid     => ' + self.bus.bus_type + '_in.awvalid,\n'
