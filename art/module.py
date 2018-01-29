@@ -140,7 +140,7 @@ class Module:
         ####################################################################
         reset_string = "awready_i <= '0';"
 
-        logic_string = "if (awready_i = '0' and awvalid = '1'\n"
+        logic_string = "if (awready_i = '0' and awvalid = '1'  and wvalid = '1') then\n"
         logic_string += indent_string("awready_i <= '1';\n")
         logic_string += "else\n"
         logic_string += indent_string("awready_i <= '0';\n")
@@ -176,7 +176,7 @@ class Module:
         ####################################################################
         reset_string = "wready_i <= '0';"
 
-        logic_string = "if (wready_i = '0' and awvalid = '1' and wvalid = '1' then\n"
+        logic_string = "if (wready_i = '0' and awvalid = '1' and wvalid = '1') then\n"
         logic_string += indent_string("wready_i <= '1';\n")
         logic_string += 'else\n'
         logic_string += indent_string("wready_i <= '0';\n")
