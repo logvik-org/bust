@@ -311,10 +311,10 @@ class Editor(object):
             clear_screen()
             self.print_register(int(choice), table)
 
-            if input('Are you sure you want to delete this register? (y/N): ').upper != 'Y':
+            if input('Are you sure you want to delete this register? (y/N): ').upper() == 'Y':
                 del self.mod.registers[int(choice)]
-
-        self.recently_saved = False
+                self.recently_saved = False
+        
         self.update_menu()
 
     def update_addresses(self):
