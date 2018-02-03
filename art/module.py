@@ -29,6 +29,10 @@ class Module:
         self.addr_width = mod['addr_width']
         self.data_width = mod['data_width']
         self.description = add_line_breaks(mod['description'], 25)
+        if 'baseaddr' in mod:
+            self.baseaddr = int(mod['baseaddr'], 16)
+        else:
+            self.baseaddr = 0
         for reg in mod['register']:
             self.add_register(reg)
 
@@ -734,6 +738,7 @@ class Module:
         
         dic["addr_width"] = self.addr_width
         dic["data_width"] = self.data_width
+        dic["baseaddr"] = str(hex(self.baseaddr))
 
         dic["register"] = []
 

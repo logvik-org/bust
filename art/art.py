@@ -31,7 +31,7 @@ import pdb
 import traceback
 import sys
 import curses
-
+from header import Header
 
 def main(args):
 
@@ -44,6 +44,7 @@ def main(args):
             json = JSON_parser(JSON_file)
             bus = Bus(json)
             mod = Module(json, bus)
+            header = Header(mod)
 
         except Exception as e:
             print('An unresolvable error has occurred:')
@@ -62,17 +63,22 @@ def main(args):
         # output_dir_bus_hdl = os.path.join(output_dir_bus, 'hdl/')
         output_dir_mod = os.path.join(output_dir, mod.name)
         output_dir_mod_hdl = os.path.join(output_dir_mod, 'hdl/')
+        output_dir_mod_header = os.path.join(output_dir_mod, 'header/')
 
         try:
             write_string_to_file(bus.return_bus_pkg_VHDL(),
-                              bus.bus_type + '_pkg.vhd', output_dir_mod_hdl)
+                                 bus.bus_type + '_pkg.vhd', output_dir_mod_hdl)
 
             write_string_to_file(mod.return_bus_pif_VHDL(),
-                              mod.name + '_axi_pif.vhd', output_dir_mod_hdl)
+                                 mod.name + '_axi_pif.vhd', output_dir_mod_hdl)
             write_string_to_file(mod.return_module_pkg_VHDL(),
-                              mod.name + '_pif_pkg.vhd', output_dir_mod_hdl)
+                                 mod.name + '_pif_pkg.vhd', output_dir_mod_hdl)
             write_string_to_file(mod.return_module_VHDL(),
-                              mod.name + '.vhd', output_dir_mod_hdl)
+                                 mod.name + '.vhd', output_dir_mod_hdl)
+            write_string_to_file(header.return_c_header(),
+                                 mod.name + '.c', output_dir_mod_header)
+            write_string_to_file(header.return_python_header(),
+                                 mod.name + '.py', output_dir_mod_header)
 
         except Exception as e:
             print(str(e))
@@ -108,7 +114,7 @@ def main(args):
 
 if __name__ == '__main__':
 
-    args = docopt(__doc__, help=True, version='art version 0.2.3')
+    args = docopt(__doc__, help=True, version='art version 0.3.0')
     try:
         main(args)
     except KeyboardInterrupt:

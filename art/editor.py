@@ -49,6 +49,7 @@ class Editor(object):
         self.menu = CursesMenu('art - Module Editor', self.set_subtitle())
 
         self.menu.append_item(FunctionItem('Edit name', self.edit_name))
+        self.menu.append_item(FunctionItem('Edit base address', self.edit_baseaddr))
         self.menu.append_item(FunctionItem('List registers', self.list_registers))
         self.menu.append_item(FunctionItem('Add new register', self.add_register))
         self.menu.append_item(FunctionItem('Remove register', self.remove_register))
@@ -65,6 +66,12 @@ class Editor(object):
         self.recently_saved = False
         self.update_menu()
 
+    def edit_baseaddr(self):
+        print('Change the module base address from current: ' + str(hex(self.mod.baseaddr)))
+        self.mod.baseaddr = int(input('Enter new base address (in hex): 0x'), 16)
+        self.recently_saved = False
+        self.update_menu()
+        
     def return_registers(self):
         while True:
             clear_screen()
@@ -345,7 +352,12 @@ class Editor(object):
             s = ' - SAVED'
         else:
             s = ' - NOT SAVED'
-        return self.mod.name + ' / ' + str(self.mod.addr_width) + ' / ' + str(self.mod.data_width) + s
+        string = self.mod.name
+        string += ' / ' + str(self.mod.addr_width)
+        string += ' / ' + str(self.mod.data_width)
+        string += ' / ' + str(hex(self.mod.baseaddr))
+        string += s
+        return string
 
     def valid_register_input(self, s):
         if s == 'q':
