@@ -19,14 +19,14 @@ class Header(object):
         s += "\n\n"
 
         for reg in self.module.registers:
-            s += "/* Register: " + reg.name + "*/\n"
+            s += "/* Register: " + reg.name + " */\n"
             s += "#define " + reg.name.upper() + "_OFFSET " + str(hex(reg.address)) + "\n"
             s += "#define " + reg.name.upper() + "_RESET " + reg.reset + "\n"
             s += "\n"
 
             if reg.sig_type == "fields":
                 for field in reg.fields:
-                    s += "/* Field: " + field.name + "*/\n"
+                    s += "/* Field: " + field.name + " */\n"
                     s += "#define " + reg.name.upper() + "_" + field.name.upper() + "_OFFSET "
                     s += str(field.pos_low) + "\n"
                     s += "#define " + reg.name.upper() + "_" + field.name.upper() + "_WIDTH "
@@ -48,14 +48,14 @@ class Header(object):
         s += "\n\n"
 
         for reg in self.module.registers:
-            s += indent_string('"""" Register: " + reg.name + """""\n', 4)
+            s += indent_string('""" Register: ' + reg.name + ' """\n', 4)
             s += indent_string("self." + reg.name.upper() + "_OFFSET = " + str(hex(reg.address)) + "\n", 4)
             s += indent_string("self." + reg.name.upper() + "_RESET = " + reg.reset + "\n", 4)
             s += "\n"
 
             if reg.sig_type == "fields":
                 for field in reg.fields:
-                    s += indent_string('""" Field: ' + field.name + '"""\n', 4)
+                    s += indent_string('""" Field: ' + field.name + ' """\n', 4)
                     s += indent_string("self." + reg.name.upper() + "_" + field.name.upper() + "_OFFSET = ", 4)
                     s += str(field.pos_low) + "\n"
                     s += indent_string("self." + reg.name.upper() + "_" + field.name.upper() + "_WIDTH = ", 4)
