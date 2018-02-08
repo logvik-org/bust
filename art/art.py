@@ -42,7 +42,7 @@ def main(args):
 
         try:
             json = JSON_parser(JSON_file)
-            bus = Bus(json)
+            bus = Bus(json['bus'])
             mod = Module(json, bus)
             header = Header(mod)
 
@@ -114,7 +114,7 @@ def main(args):
 
 if __name__ == '__main__':
 
-    args = docopt(__doc__, help=True, version='art version 0.3.2')
+    args = docopt(__doc__, help=True, version='art version 0.3.3')
     try:
         main(args)
     except KeyboardInterrupt:

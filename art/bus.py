@@ -9,7 +9,6 @@ class Bus(object):
     """
 
     def __init__(self, bus):
-        bus = bus['bus']
         if bus['type'] in ['axi']:
             self.bus_type = bus['type']
         else:

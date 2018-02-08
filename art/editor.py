@@ -24,7 +24,7 @@ class Editor(object):
             # Load the specified JSON file
             try:
                 json = JSON_parser(jsonfile)
-                self.bus = Bus(json)
+                self.bus = Bus(json['bus'])
                 self.mod = Module(json, self.bus)
                 self.recently_saved = True
             except Exception as e:
@@ -43,6 +43,13 @@ class Editor(object):
             mod['data_width'] = int(input("Enter the module's data width: "))
             mod['description'] = input('Enter a description for the module: ')
             mod['register'] = []
+            bus_dic = OrderedDict()
+            bus_dic['type'] = 'axi'
+            print('art currently only supports the AXI4-lite bus')
+            bus_dic['addr_width'] = int(input("Enter the bus' address width: "))
+            bus_dic['data_width'] = int(input("Enter the bus' data width: "))
+            bus_dic['reset'] = 'async'
+            self.bus = Bus(bus_dic)
             self.mod = Module(mod, self.bus)
 
     def show_menu(self):
