@@ -114,7 +114,7 @@ def main(args):
 
 if __name__ == '__main__':
 
-    args = docopt(__doc__, help=True, version='art version 0.3.1')
+    args = docopt(__doc__, help=True, version='art version 0.3.2')
     try:
         main(args)
     except KeyboardInterrupt:

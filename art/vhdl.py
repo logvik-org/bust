@@ -27,7 +27,7 @@ def sync_process(clk_name, reset_name, process_name, reset_string, logic_string,
 
 
 def async_process(clk_name, reset_name, process_name, reset_string, logic_string, active_low=True):
-    s = process_name + " : process(" + clk_name + ")\n"
+    s = process_name + " : process(" + clk_name + ", " + reset_name  +")\n"
     s += "begin\n"
     s += indent_string("if " + reset_name + " = ")
 
