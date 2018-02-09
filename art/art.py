@@ -68,9 +68,9 @@ def main(args):
         try:
             write_string_to_file(bus.return_bus_pkg_VHDL(),
                                  bus.bus_type + '_pkg.vhd', output_dir_mod_hdl)
-
-            write_string_to_file(mod.return_bus_pif_VHDL(),
-                                 mod.name + '_axi_pif.vhd', output_dir_mod_hdl)
+            write_string_to_file(bus.return_bus_pif_VHDL(mod),
+                                 mod.name + '_' + bus.bus_type + '_pif.vhd',
+                                 output_dir_mod_hdl)
             write_string_to_file(mod.return_module_pkg_VHDL(),
                                  mod.name + '_pif_pkg.vhd', output_dir_mod_hdl)
             write_string_to_file(mod.return_module_VHDL(),
@@ -114,7 +114,7 @@ def main(args):
 
 if __name__ == '__main__':
 
-    args = docopt(__doc__, help=True, version='art version 0.3.3')
+    args = docopt(__doc__, help=True, version='art version 0.3.4')
     try:
         main(args)
     except KeyboardInterrupt:

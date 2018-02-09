@@ -33,23 +33,37 @@ class Editor(object):
                 print('Exiting...')
                 exit()
         else:
+            bus_dic = OrderedDict()
+            while True:
+                try:
+                    # import ipdb; ipdb.set_trace()
+                    print('Choose a bus type: ')
+                    for i, bus in enumerate(Bus.supported_bus):
+                        print(str(i+1) + ': ' + bus)
+                    select = int(input('Select by number: '))
+                    if select < 1 or select > len(Bus.supported_bus):
+                        print(str(i) + ' is not a valid choice...')
+                    else:
+                        break
+                except Exception:
+                    print('That is not a valid choice...')
+                        
+            bus_dic['type'] = 'axi'
+            bus_dic['addr_width'] = 32
+            bus_dic['data_width'] = 32
+            bus_dic['reset'] = 'async'
+            self.bus = Bus(bus_dic)
+            
             # Get name, addr_width, data_width and description
-            print('Please enter some general information about your module.')
-            print('All values can be changed at a later stage.')
             mod = OrderedDict()
             mod['name'] = input('Enter a module name: ')
             '''! @todo Add int check'''
-            mod['addr_width'] = int(input("Enter the module's address width: "))
-            mod['data_width'] = int(input("Enter the module's data width: "))
+            mod['addr_width'] = 32
+            mod['data_width'] = 32
             mod['description'] = input('Enter a description for the module: ')
             mod['register'] = []
-            bus_dic = OrderedDict()
-            bus_dic['type'] = 'axi'
-            print('art currently only supports the AXI4-lite bus')
-            bus_dic['addr_width'] = int(input("Enter the bus' address width: "))
-            bus_dic['data_width'] = int(input("Enter the bus' data width: "))
-            bus_dic['reset'] = 'async'
-            self.bus = Bus(bus_dic)
+
+            
             self.mod = Module(mod, self.bus)
 
     def show_menu(self):
