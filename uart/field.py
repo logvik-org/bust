@@ -1,5 +1,8 @@
 from collections import OrderedDict
-from utils import add_line_breaks
+
+from uart.utils import add_line_breaks
+
+
 class Field(object):
     """Documentation for Field
 

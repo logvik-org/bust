@@ -1,4 +1,4 @@
-from utils import indent_string
+from uart.utils import indent_string
 
 
 def sync_process(clk_name, reset_name, process_name, reset_string, logic_string, active_low=True):

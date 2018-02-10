@@ -1,7 +1,6 @@
-from utils import indent_string
-from utils import add_line_breaks
-
-from field import Field
+from uart.utils import indent_string
+from uart.utils import add_line_breaks
+from uart.field import Field
 
 
 class Register:

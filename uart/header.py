@@ -1,4 +1,4 @@
-from utils import indent_string
+from uart.utils import indent_string
 
 
 class Header(object):

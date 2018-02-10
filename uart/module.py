@@ -1,12 +1,11 @@
-from utils import indent_string
-from utils import add_line_breaks
-from exceptions import InvalidAddress
-from exceptions import InvalidRegister
-
-from register import Register
-
 import json
 from collections import OrderedDict
+
+from uart.utils import indent_string
+from uart.utils import add_line_breaks
+from uart.exceptions import InvalidAddress
+from uart.exceptions import InvalidRegister
+from uart.register import Register
 
 
 class Module:

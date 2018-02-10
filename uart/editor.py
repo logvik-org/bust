@@ -1,14 +1,15 @@
 from cursesmenu import CursesMenu
 from cursesmenu.items import FunctionItem
-from utils import JSON_parser
-from utils import cont
-from utils import is_int
-from utils import clear_screen
-from utils import write_string_to_file
-from module import Module
-from bus import Bus
 from collections import OrderedDict
 from prettytable import PrettyTable
+
+from uart.utils import JSON_parser
+from uart.utils import cont
+from uart.utils import is_int
+from uart.utils import clear_screen
+from uart.utils import write_string_to_file
+from uart.module import Module
+from uart.bus import Bus
 
 
 class Editor(object):
