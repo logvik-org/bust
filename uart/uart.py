@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""art - AXI register tool
+"""uart register tool
 
 Usage:
-  art.py FILE [-o DIR]
-  art.py -c FILE [-o DIR]
-  art.py -e FILE [-o DIR]
-  art.py --version
-  art.py -h | --help
+  uart.py FILE [-o DIR]
+  uart.py -c FILE [-o DIR]
+  uart.py -e FILE [-o DIR]
+  uart.py --version
+  uart.py -h | --help
 
 Options:
   -o DIR         Specify output directory
@@ -114,7 +114,7 @@ def main(args):
 
 if __name__ == '__main__':
 
-    args = docopt(__doc__, help=True, version='art version 0.3.4')
+    args = docopt(__doc__, help=True, version='uart version 0.3.4')
     try:
         main(args)
     except KeyboardInterrupt:

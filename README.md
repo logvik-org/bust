@@ -1,10 +1,16 @@
-# art - AXI register tool
+# uart register tool
 
-Utility for simply creating and modifying AXI Slave modules.
+Utility for simply creating and modifying VHDL bus slave modules.
 
 ## Concept
 
-The main goal of the project is to able to automatically create and modify AXI slave modules based on a simple definition format. By employing VHDL records the handling of the registers can be completely hidden in a module seperate from the rest of the designers logic. All referring to the registers are done via a record which specifies if the register is read-only or read-write, and also includes the name. All AXI-specific signals are also wrapped in records. This increases the readability of the design as a whole.
+The main goal of the project is to able to automatically create and modify VHLD bus slave modules based on a simple definition format. By employing VHDL records the handling of the registers can be completely hidden in a module seperate from the rest of the designers logic. All referring to the registers are done via a record which specifies if the register is read-only or read-write, and also includes the name. All bus-specific signals are also wrapped in records. This increases the readability of the design as a whole.
+
+## Bus support
+
+uart currently supports these bus-types:
+
+- AXI4-lite
   
 
 ## Getting Started
@@ -21,7 +27,7 @@ The utility require Python3 and pip. The requirements for running the utility, a
 
 View program help by simply running the main file:
 
-`$ python3 art.py -h`
+`$ python3 uart.py -h`
 
 ### Examples
 

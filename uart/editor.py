@@ -67,7 +67,7 @@ class Editor(object):
             self.mod = Module(mod, self.bus)
 
     def show_menu(self):
-        self.menu = CursesMenu('art - Module Editor', self.set_subtitle())
+        self.menu = CursesMenu('uart - Module Editor', self.set_subtitle())
 
         self.menu.append_item(FunctionItem('Edit name', self.edit_name))
         self.menu.append_item(FunctionItem('Edit base address', self.edit_baseaddr))
