@@ -1,6 +1,6 @@
 # uart register tool
 
-Utility for simply creating and modifying VHDL bus slave modules.
+Utility for simply creating and modifying VHDL bus slave modules. uart does not refer to the hardware device!
 
 ## Concept
 
@@ -15,19 +15,21 @@ uart currently supports these bus-types:
 
 ## Getting Started
 
-It is highly recommended to employ [virtual environments](http://docs.python-guide.org/en/latest/dev/virtualenvs/) while tinkering with this project.
+`pip install uart`
 
-### Requirements
 
-The utility require Python3 and pip. The requirements for running the utility, and a few more, are listed in `requirements.txt`. To install them in your virtual environment run the following command:
+### Usage
 
-`$ pip install -r requirements.txt`
+`uart.py FILE [-o DIR]`
 
-### Run
+`uart.py -c FILE [-o DIR]`
 
-View program help by simply running the main file:
+`uart.py -e FILE [-o DIR]`
 
-`$ python3 uart.py -h`
+`uart.py --version`
+
+`uart.py -h | --help`
+  
 
 ### Examples
 

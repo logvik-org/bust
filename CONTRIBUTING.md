@@ -6,9 +6,7 @@ Please note we have a code of conduct, please follow it in all your interactions
 
 ## Requirements ##
 
-Using a virtual environment is needed to keep [requirements.txt](requirements.txt) correctly updated. When adding a new module to the project, update the requirements by running:
-
-`$ pip freeze > requirements.txt`
+When adding a new module to the project, update the requirements in [setup.py](setup.py).
 
 ### Development Flow
 
