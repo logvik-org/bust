@@ -1,3 +1,4 @@
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -11,7 +12,6 @@ __pycache__/
 env/
 build/
 develop-eggs/
-docs/
 dist/
 downloads/
 eggs/
@@ -20,7 +20,6 @@ lib/
 lib64/
 parts/
 sdist/
-test/
 var/
 *.egg-info/
 .installed.cfg
