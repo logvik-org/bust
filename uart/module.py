@@ -79,203 +79,206 @@ class Module:
         par += '\n'
         s += indent_string(par)
 
-        s += indent_string("-- RW Register Record Definitions\n\n")
+        if self.count_rw_regs() > 0:
+            s += indent_string("-- RW Register Record Definitions\n\n")
 
-        # Create all types for RW registers with records
-        for reg in self.registers:
-            if reg.mode == "rw" and reg.sig_type == "fields":
-                s += indent_string("type t_" + self.name + "_rw_")
-                s += reg.name + " is record\n"
+            # Create all types for RW registers with records
+            for reg in self.registers:
+                if reg.mode == "rw" and reg.sig_type == "fields":
+                    s += indent_string("type t_" + self.name + "_rw_")
+                    s += reg.name + " is record\n"
 
-                for field in reg.fields:
-                    s += indent_string(field.name, 2) + " : "
-                    if field.sig_type == "slv":
-                        s += "std_logic_vector(" + str(field.length - 1)
-                        s += " downto 0);\n"
-                    elif field.sig_type == "sl":
-                        s += "std_logic;\n"
-                    else:
-                        raise RuntimeError(
-                            "Something went wrong..." + field.sig_type)
-                s += indent_string("end record;\n\n")
-
-        # The RW register record type
-        s += indent_string("type t_" + self.name + "_rw_regs is record\n")
-        for reg in self.registers:
-            if reg.mode == "rw":
-                s += indent_string(reg.name, 2) + " : "
-                if reg.sig_type == "default" or (reg.sig_type == "slv" and reg.length == self.data_width):
-                    s += "t_" + self.name + "_data;\n"
-                elif reg.sig_type == "slv":
-                    s += "std_logic_vector(" + \
-                        str(reg.length - 1) + " downto 0);\n"
-                elif reg.sig_type == "sl":
-                    s += "std_logic;\n"
-                elif reg.sig_type == "fields":
-                    s += "t_" + self.name + "_rw_" + reg.name + ";\n"
-                else:
-                    raise RuntimeError("Something went wrong...")
-        s += indent_string("end record;\n")
-        s += "\n"
-
-        s += indent_string("-- RW Register Reset Value Constant\n\n")
-
-        s += indent_string("constant c_") + self.name + "_rw_regs : t_"
-        s += self.name + "_rw_regs := (\n"
-        gen = [reg for reg in self.registers if reg.mode == 'rw']
-
-        for i, reg in enumerate(gen):
-            par = ''
-            par += reg.name + ' => '
-
-            # RW default values must be declared
-            if reg.sig_type == 'default' or reg.sig_type == 'slv':
-                if reg.reset == "0x0":
-                    par += "(others => '0')"
-                else:
-                    par += str(reg.length) + 'X"'
-                    par += format(int(reg.reset, 16), 'X') + '"'
-
-            elif reg.sig_type == 'fields':
-
-                if len(reg.fields) > 1:
-                    par += '(\n'
-                else:
-                    par += '('
-
-                for j, field in enumerate(reg.fields):
-                    if len(reg.fields) > 1:
-                        par += indent_string(field.name + ' => ')
-                    else:
-                        par += field.name + ' => '
-
-                    if field.sig_type == 'slv':
-
-                        if field.reset == "0x0":
-                            par += "(others => '0')"
+                    for field in reg.fields:
+                        s += indent_string(field.name, 2) + " : "
+                        if field.sig_type == "slv":
+                            s += "std_logic_vector(" + str(field.length - 1)
+                            s += " downto 0);\n"
+                        elif field.sig_type == "sl":
+                            s += "std_logic;\n"
                         else:
-                            par += str(field.length) + 'X"'
-                            par += format(int(field.reset, 16), 'X') + '"'
+                            raise RuntimeError(
+                                "Something went wrong..." + field.sig_type)
+                    s += indent_string("end record;\n\n")
 
-                    elif field.sig_type == 'sl':
-                        par += "'" + format(int(field.reset, 16), 'X') + "'"
-
-                    if j < len(reg.fields) - 1:
-                        par += ',\n'
-
-                par += ')'
-
-            elif reg.sig_type == 'sl':
-                par += "'" + format(int(reg.reset, 16), 'X') + "'"
-
-            if i < len(gen) - 1:
-                par += ','
-            else:
-                par += ');'
-            par += '\n'
-
-            s += indent_string(par, 2)
-        s += '\n'
-
-        s += indent_string("-- RO Register Record Definitions\n\n")
-
-        # Create all types for RO registers with records
-        for reg in self.registers:
-            if reg.mode == "ro" and reg.sig_type == "fields":
-                s += indent_string("type t_" + self.name + "_ro_")
-                s += reg.name + " is record\n"
-
-                for field in reg.fields:
-                    s += indent_string(field.name, 2) + " : "
-                    if field.sig_type == "slv":
-                        s += "std_logic_vector(" + str(field.length - 1)
-                        s += " downto 0);\n"
-                    elif field.sig_type == "sl":
+            # The RW register record type
+            s += indent_string("type t_" + self.name + "_rw_regs is record\n")
+            for reg in self.registers:
+                if reg.mode == "rw":
+                    s += indent_string(reg.name, 2) + " : "
+                    if reg.sig_type == "default" or (reg.sig_type == "slv" and reg.length == self.data_width):
+                        s += "t_" + self.name + "_data;\n"
+                    elif reg.sig_type == "slv":
+                        s += "std_logic_vector(" + \
+                            str(reg.length - 1) + " downto 0);\n"
+                    elif reg.sig_type == "sl":
                         s += "std_logic;\n"
+                    elif reg.sig_type == "fields":
+                        s += "t_" + self.name + "_rw_" + reg.name + ";\n"
                     else:
                         raise RuntimeError("Something went wrong...")
-                s += indent_string("end record;\n\n")
+            s += indent_string("end record;\n")
+            s += "\n"
 
-        # The RO register record type
-        s += indent_string("type t_" + self.name + "_ro_regs is record\n")
-        for reg in self.registers:
-            if reg.mode == "ro":
-                s += indent_string(reg.name, 2) + " : "
-                if reg.sig_type == "default" or (reg.sig_type == "slv" and reg.length == self.data_width):
-                    s += "t_" + self.name + "_data;\n"
-                elif reg.sig_type == "slv":
-                    s += "std_logic_vector(" + \
-                        str(reg.length - 1) + " downto 0);\n"
-                elif reg.sig_type == "sl":
-                    s += "std_logic;\n"
-                elif reg.sig_type == "fields":
-                    s += "t_" + self.name + "_ro_" + reg.name + ";\n"
+            s += indent_string("-- RW Register Reset Value Constant\n\n")
+
+            s += indent_string("constant c_") + self.name + "_rw_regs : t_"
+            s += self.name + "_rw_regs := (\n"
+            gen = [reg for reg in self.registers if reg.mode == 'rw']
+
+            for i, reg in enumerate(gen):
+                par = ''
+                par += reg.name + ' => '
+
+                # RW default values must be declared
+                if reg.sig_type == 'default' or reg.sig_type == 'slv':
+                    if reg.reset == "0x0":
+                        par += "(others => '0')"
+                    else:
+                        par += str(reg.length) + 'X"'
+                        par += format(int(reg.reset, 16), 'X') + '"'
+
+                elif reg.sig_type == 'fields':
+
+                    if len(reg.fields) > 1:
+                        par += '(\n'
+                    else:
+                        par += '('
+
+                    for j, field in enumerate(reg.fields):
+                        if len(reg.fields) > 1:
+                            par += indent_string(field.name + ' => ')
+                        else:
+                            par += field.name + ' => '
+
+                        if field.sig_type == 'slv':
+
+                            if field.reset == "0x0":
+                                par += "(others => '0')"
+                            else:
+                                par += str(field.length) + 'X"'
+                                par += format(int(field.reset, 16), 'X') + '"'
+
+                        elif field.sig_type == 'sl':
+                            par += "'" + format(int(field.reset, 16), 'X') + "'"
+
+                        if j < len(reg.fields) - 1:
+                            par += ',\n'
+
+                    par += ')'
+
+                elif reg.sig_type == 'sl':
+                    par += "'" + format(int(reg.reset, 16), 'X') + "'"
+
+                if i < len(gen) - 1:
+                    par += ','
+                else:
+                    par += ');'
+                par += '\n'
+
+                s += indent_string(par, 2)
+            s += '\n'
+
+        if self.count_ro_regs() > 0:
+
+            s += indent_string("-- RO Register Record Definitions\n\n")
+
+            # Create all types for RO registers with records
+            for reg in self.registers:
+                if reg.mode == "ro" and reg.sig_type == "fields":
+                    s += indent_string("type t_" + self.name + "_ro_")
+                    s += reg.name + " is record\n"
+
+                    for field in reg.fields:
+                        s += indent_string(field.name, 2) + " : "
+                        if field.sig_type == "slv":
+                            s += "std_logic_vector(" + str(field.length - 1)
+                            s += " downto 0);\n"
+                        elif field.sig_type == "sl":
+                            s += "std_logic;\n"
+                        else:
+                            raise RuntimeError("Something went wrong...")
+                    s += indent_string("end record;\n\n")
+
+            # The RO register record type
+            s += indent_string("type t_" + self.name + "_ro_regs is record\n")
+            for reg in self.registers:
+                if reg.mode == "ro":
+                    s += indent_string(reg.name, 2) + " : "
+                    if reg.sig_type == "default" or (reg.sig_type == "slv" and reg.length == self.data_width):
+                        s += "t_" + self.name + "_data;\n"
+                    elif reg.sig_type == "slv":
+                        s += "std_logic_vector(" + \
+                            str(reg.length - 1) + " downto 0);\n"
+                    elif reg.sig_type == "sl":
+                        s += "std_logic;\n"
+                    elif reg.sig_type == "fields":
+                        s += "t_" + self.name + "_ro_" + reg.name + ";\n"
+                    else:
+                        raise RuntimeError(
+                            "Something went wrong... What now?" + reg.sig_type)
+            s += indent_string("end record;\n")
+            s += "\n"
+
+            s += indent_string("-- RO Register Reset Value Constant\n\n")
+
+            s += indent_string("constant c_") + self.name + "_ro_regs : t_"
+            s += self.name + "_ro_regs := (\n"
+            gen = [reg for reg in self.registers if reg.mode == 'ro']
+
+            for i, reg in enumerate(gen):
+                par = ''
+                par += reg.name + ' => '
+
+                # RO default values must be declared
+                if reg.sig_type == 'default' or reg.sig_type == 'slv':
+                    if reg.reset == "0x0":
+                        par += "(others => '0')"
+                    else:
+                        par += str(reg.length) + 'X"'
+                        par += format(int(reg.reset, 16), 'X') + '"'
+
+                elif reg.sig_type == 'fields':
+                    if len(reg.fields) > 1:
+                        par += '(\n'
+                    else:
+                        par += '('
+
+                    for j, field in enumerate(reg.fields):
+                        if len(reg.fields) > 1:
+                            par += indent_string(field.name + ' => ')
+                        else:
+                            par += field.name + ' => '
+
+                        if field.sig_type == 'slv':
+
+                            if field.reset == "0x0":
+                                par += "(others => '0')"
+                            else:
+                                par += str(field.length) + 'X"'
+                                par += format(int(field.reset, 16), 'X') + '"'
+
+                        elif field.sig_type == 'sl':
+                            par += "'" + format(int(field.reset, 16), 'X') + "'"
+
+                        if j < len(reg.fields) - 1:
+                            par += ',\n'
+
+                    par += ')'
+
+                elif reg.sig_type == 'sl':
+                    par += "'" + format(int(reg.reset, 16), 'X') + "'"
+
                 else:
                     raise RuntimeError(
-                        "Something went wrong... What now?" + reg.sig_type)
-        s += indent_string("end record;\n")
-        s += "\n"
+                            "Something went wrong... What now?" + reg.sig_type)
 
-        s += indent_string("-- RO Register Reset Value Constant\n\n")
-
-        s += indent_string("constant c_") + self.name + "_ro_regs : t_"
-        s += self.name + "_ro_regs := (\n"
-        gen = [reg for reg in self.registers if reg.mode == 'ro']
-
-        for i, reg in enumerate(gen):
-            par = ''
-            par += reg.name + ' => '
-
-            # RO default values must be declared
-            if reg.sig_type == 'default' or reg.sig_type == 'slv':
-                if reg.reset == "0x0":
-                    par += "(others => '0')"
+                if i < len(gen) - 1:
+                    par += ','
                 else:
-                    par += str(reg.length) + 'X"'
-                    par += format(int(reg.reset, 16), 'X') + '"'
+                    par += ');'
+                par += '\n'
 
-            elif reg.sig_type == 'fields':
-                if len(reg.fields) > 1:
-                    par += '(\n'
-                else:
-                    par += '('
-
-                for j, field in enumerate(reg.fields):
-                    if len(reg.fields) > 1:
-                        par += indent_string(field.name + ' => ')
-                    else:
-                        par += field.name + ' => '
-
-                    if field.sig_type == 'slv':
-
-                        if field.reset == "0x0":
-                            par += "(others => '0')"
-                        else:
-                            par += str(field.length) + 'X"'
-                            par += format(int(field.reset, 16), 'X') + '"'
-
-                    elif field.sig_type == 'sl':
-                        par += "'" + format(int(field.reset, 16), 'X') + "'"
-
-                    if j < len(reg.fields) - 1:
-                        par += ',\n'
-
-                par += ')'
-
-            elif reg.sig_type == 'sl':
-                par += "'" + format(int(reg.reset, 16), 'X') + "'"
-
-            else:
-                raise RuntimeError(
-                        "Something went wrong... What now?" + reg.sig_type)
-
-            if i < len(gen) - 1:
-                par += ','
-            else:
-                par += ');'
-            par += '\n'
-
-            s += indent_string(par, 2)
+                s += indent_string(par, 2)
         s += '\n'
 
         s += "end package " + self.name + "_pif_pkg;"
@@ -312,12 +315,15 @@ class Module:
         s += 'architecture behavior of ' + self.name + ' is\n'
         s += '\n'
 
-        s += indent_string('signal ' + self.bus.bus_type + '_rw_regs : t_')
-        s += self.name + '_rw_regs := c_' + self.name + '_rw_regs;\n'
-        s += indent_string('signal ' + self.bus.bus_type + '_ro_regs : t_')
-        s += self.name + '_ro_regs := c_' + self.name + '_ro_regs;\n'
+        if self.count_rw_regs() > 0:
+            s += indent_string('signal ' + self.bus.bus_type + '_rw_regs : t_')
+            s += self.name + '_rw_regs := c_' + self.name + '_rw_regs;\n'
+        if self.count_ro_regs() > 0:
+            s += indent_string('signal ' + self.bus.bus_type + '_ro_regs : t_')
+            s += self.name + '_ro_regs := c_' + self.name + '_ro_regs;\n'
 
-        s += '\n'
+        if self.count_rw_regs() > 0 or self.count_ro_regs() > 0:
+            s += '\n'
 
         s += 'begin\n'
         s += '\n'
@@ -327,8 +333,10 @@ class Module:
         s += indent_string('port map (\n', 2)
 
         par = ''
-        par += self.bus.bus_type + '_ro_regs => ' + self.bus.bus_type + '_ro_regs,\n'
-        par += self.bus.bus_type + '_rw_regs => ' + self.bus.bus_type + '_rw_regs,\n'
+        if self.count_rw_regs() > 0:
+            par += self.bus.bus_type + '_rw_regs => ' + self.bus.bus_type + '_rw_regs,\n'
+        if self.count_ro_regs() > 0:
+            par += self.bus.bus_type + '_ro_regs => ' + self.bus.bus_type + '_ro_regs,\n'
         par += self.bus.get_clk_name() + '         => ' + self.bus.bus_type + '_' + self.bus.get_clk_name() + ',\n'
         par += self.bus.get_reset_name() + '    => ' + self.bus.bus_type + '_' + self.bus.get_reset_name()  + 'areset_n,\n'
         par += 'awaddr      => ' + self.bus.bus_type + '_in.awaddr(C_'
@@ -455,6 +463,12 @@ class Module:
             return True
         else:
             return False
+
+    def count_ro_regs(self):
+        return len([reg for reg in self.registers if reg.mode == 'ro'])
+
+    def count_rw_regs(self):
+        return len([reg for reg in self.registers if reg.mode == 'rw'])
 
     def __str__(self):
         string = "Name: " + self.name + "\n"

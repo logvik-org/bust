@@ -1,0 +1,71 @@
+{
+    "name": "example_module_ro",
+    "bus": {
+        "type": "axi",
+        "addr_width": 32,
+        "data_width": 32,
+        "reset": "async"
+    },
+    "addr_width": 32,
+    "data_width": 32,
+    "baseaddr": "0xffaa0000",
+    "register": [
+        {
+            "name": "reg0",
+            "mode": "ro",
+            "type": "sl",
+            "address": "0x0",
+            "reset": "0x0",
+            "description": "RO std_logic register"
+        },
+        {
+            "name": "reg1",
+            "mode": "ro",
+            "type": "slv",
+            "address": "0x4",
+            "length": 14,
+            "reset": "0x0",
+            "description": "RO std_logic_vector[13:0]"
+        },
+        {
+            "name": "reg2",
+            "mode": "ro",
+            "type": "default",
+            "address": "0x8",
+            "reset": "0x0",
+            "description": "Default RO register"
+        },
+        {
+            "name": "reg3",
+            "mode": "ro",
+            "type": "fields",
+            "address": "0xc",
+            "fields": [
+                {
+                    "name": "field0",
+                    "type": "sl",
+                    "description": "std_logic field"
+                },
+                {
+                    "name": "field1",
+                    "type": "slv",
+                    "length": 19,
+                    "description": "std_logic_vector[18:0] register"
+                },
+                {
+                    "name": "field2",
+                    "type": "sl",
+                    "description": "std_logic field"
+                },
+                {
+                    "name": "field3",
+                    "type": "slv",
+                    "length": 3,
+                    "description": "std_logic_vector[2:0] field"
+                }
+            ],
+            "description": "RO register with multiple types\nof fields"
+        }
+    ],
+    "description": "An example module that contain\nexclusively RO registers."
+}

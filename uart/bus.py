@@ -131,11 +131,17 @@ class Bus(object):
         s += indent_string('port (')
 
         par = ''
-        par += '\n-- register record signals\n'
-        par += self.bus_type + '_ro_regs : in  t_' + mod.name + '_ro_regs := '
-        par += 'c_' + mod.name + '_ro_regs;\n'
-        par += self.bus_type + '_rw_regs : out t_' + mod.name + '_rw_regs := '
-        par += 'c_' + mod.name + '_rw_regs;\n'
+        if mod.count_rw_regs() > 0 or mod.count_ro_regs() > 0:
+            par += '\n-- register record signals\n'
+
+        if mod.count_rw_regs() > 0:
+            par += self.bus_type + '_rw_regs : out t_' + mod.name + '_rw_regs := '
+            par += 'c_' + mod.name + '_rw_regs;\n'
+
+        if mod.count_ro_regs() > 0:
+            par += self.bus_type + '_ro_regs : in  t_' + mod.name + '_ro_regs := '
+            par += 'c_' + mod.name + '_ro_regs;\n'
+        
         par += '\n'
         par += '-- bus signals\n'
         par += clk_name + '         : in  std_logic;\n'
@@ -167,16 +173,20 @@ class Bus(object):
 
         s += 'architecture behavior of ' + mod.name + '_axi_pif is\n\n'
 
-        par = ''
-        par += '-- internal signal for readback' + '\n'
-        par += 'signal ' + self.bus_type + '_rw_regs_i : t_'
-        par += mod.name + '_rw_regs := c_' + mod.name + '_rw_regs;\n\n'
-        s += indent_string(par)
+        if mod.count_rw_regs() > 0:
+            par = ''
+            par += '-- internal signal for readback' + '\n'
+            par += 'signal ' + self.bus_type + '_rw_regs_i : t_'
+            par += mod.name + '_rw_regs := c_' + mod.name + '_rw_regs;\n\n'
+            s += indent_string(par)
 
         # Add bus-specific logic
         if self.bus_type == 'axi':
 
             s += self.return_axi_pif_VHDL(mod, clk_name, reset_name)
+
+        else:
+            raise Exception("Bus type " + self.bus_type + " is not supported...")
 
         return s
 
@@ -201,8 +211,10 @@ class Bus(object):
         s += indent_string(par)
 
         s += 'begin\n\n'
-        s += indent_string('axi_rw_regs <= axi_rw_regs_i') + ';\n'
-        s += '\n'
+
+        if mod.count_rw_regs() > 0:
+            s += indent_string('axi_rw_regs <= axi_rw_regs_i') + ';\n'
+            s += '\n'
 
         par = ''
         par += 'awready <= awready_i;\n'
@@ -274,54 +286,56 @@ class Bus(object):
         s += indent_string('slv_reg_wren <= wready_i and wvalid and awready_i and awvalid;\n')
         s += '\n'
 
-        ###################################################################
-        # p_mm_select_write
-        ###################################################################
-        reset_string = '\naxi_rw_regs_i <= c_' + mod.name + '_rw_regs;\n'
+        if mod.count_rw_regs() > 0:
+            ###################################################################
+            # p_mm_select_write
+            ###################################################################
+            reset_string = '\naxi_rw_regs_i <= c_' + mod.name + '_rw_regs;\n'
 
-        logic_string = "\nif (slv_reg_wren = '1') then\n"
-        logic_string += indent_string('case awaddr_i is\n\n')
-        
-        # create a generator for looping through all rw regs
-        gen = (reg for reg in mod.registers if reg.mode == "rw")
-        for reg in gen:
-            logic_string += indent_string('when C_ADDR_', 2)
-            logic_string += reg.name.upper() + ' =>\n\n'
-            par = ''
-            if reg.sig_type == 'fields':
+            logic_string = "\nif (slv_reg_wren = '1') then\n"
+            logic_string += indent_string('case awaddr_i is\n\n')
 
-                for field in reg.fields:
-                    par += 'axi_rw_regs_i.' + reg.name + '.' + field.name
-                    par += ' <= wdata('
-                    par += field.get_pos_vhdl()
-                    par += ');\n'
+            # create a generator for looping through all rw regs
+            gen = (reg for reg in mod.registers if reg.mode == "rw")
+            for reg in gen:
+                logic_string += indent_string('when C_ADDR_', 2)
+                logic_string += reg.name.upper() + ' =>\n\n'
+                par = ''
+                if reg.sig_type == 'fields':
 
-            elif reg.sig_type == 'default':
-                par += 'axi_rw_regs_i.' + reg.name + ' <= wdata;\n'
-            elif reg.sig_type == 'slv':
-                par += 'axi_rw_regs_i.' + reg.name + ' <= wdata('
-                par += str(reg.length - 1) + ' downto 0);\n'
-            elif reg.sig_type == 'sl':
-                par += 'axi_rw_regs_i.' + reg.name + ' <= wdata(0);\n'
+                    for field in reg.fields:
+                        par += 'axi_rw_regs_i.' + reg.name + '.' + field.name
+                        par += ' <= wdata('
+                        par += field.get_pos_vhdl()
+                        par += ');\n'
 
-            logic_string += indent_string(par, 3)
+                elif reg.sig_type == 'default':
+                    par += 'axi_rw_regs_i.' + reg.name + ' <= wdata;\n'
+                elif reg.sig_type == 'slv':
+                    par += 'axi_rw_regs_i.' + reg.name + ' <= wdata('
+                    par += str(reg.length - 1) + ' downto 0);\n'
+                elif reg.sig_type == 'sl':
+                    par += 'axi_rw_regs_i.' + reg.name + ' <= wdata(0);\n'
+
+                logic_string += indent_string(par, 3)
+                logic_string += '\n'
+
+            logic_string += indent_string('when others =>\n', 2)
+            logic_string += indent_string('null;\n', 3)
             logic_string += '\n'
+            logic_string += indent_string('end case;\n')
+            logic_string += 'end if;\n'
 
-        logic_string += indent_string('when others =>\n', 2)
-        logic_string += indent_string('null;\n', 3)
-        logic_string += '\n'
-        logic_string += indent_string('end case;\n')
-        logic_string += 'end if;\n'
+            if self.bus_reset == "async":
+                s += indent_string(async_process(clk_name, reset_name, "p_mm_select_write",
+                                                 reset_string, logic_string))
 
-        if self.bus_reset == "async":
-            s += indent_string(async_process(clk_name, reset_name, "p_mm_select_write",
-                                             reset_string, logic_string))
+            elif self.bus_reset == "sync":
+                s += indent_string(sync_process(clk_name, reset_name, "p_mm_select_write",
+                                                reset_string, logic_string))
+            s += "\n"
 
-        elif self.bus_reset == "sync":
-            s += indent_string(sync_process(clk_name, reset_name, "p_mm_select_write",
-                                            reset_string, logic_string))
-        s += "\n"
-
+        
         ####################################################################
         # p_write_response
         ####################################################################

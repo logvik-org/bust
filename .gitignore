@@ -1,3 +1,11 @@
+# uart build and deploy files
+.bumpversion.cfg
+build.sh
+upload.sh
+docs/doxygen.cfg
+
+# temp backup files
+example/module_name_backup*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
