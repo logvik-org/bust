@@ -101,6 +101,30 @@ def is_int(s):
     return False
 
 
+def get_int(msg, base):
+    while True:
+        try:
+            i = int(input(msg), base)
+            return i
+        except Exception:
+            print("That is not a valid integer...")
+
+
+def get_list_choice(msg, ls):
+    while True:
+        try:
+            print(msg)
+            for i, element in enumerate(ls):
+                print(str(i+1) + ': ' + element)
+            select = int(input('Select by number: '))
+            if select < 1 or select > len(ls):
+                print(str(select) + ' is not a valid choice...')
+            else:
+                return ls[select-1]
+        except Exception:
+            print('That is not a valid choice...')
+
+
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
