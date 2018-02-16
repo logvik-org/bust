@@ -27,8 +27,8 @@ begin
 
   i_example_module_axi_pif : entity work.example_module_axi_pif
     port map (
-      axi_ro_regs => axi_ro_regs,
       axi_rw_regs => axi_rw_regs,
+      axi_ro_regs => axi_ro_regs,
       clk         => axi_clk,
       areset_n    => axi_areset_nareset_n,
       awaddr      => axi_in.awaddr(C_EXAMPLE_MODULE_ADDR_WIDTH-1 downto 0),

@@ -8,8 +8,8 @@ entity example_module_axi_pif is
 
   port (    
     -- register record signals
-    axi_ro_regs : in  t_example_module_ro_regs := c_example_module_ro_regs;
     axi_rw_regs : out t_example_module_rw_regs := c_example_module_rw_regs;
+    axi_ro_regs : in  t_example_module_ro_regs := c_example_module_ro_regs;
     
     -- bus signals
     clk         : in  std_logic;

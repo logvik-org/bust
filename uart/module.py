@@ -36,7 +36,9 @@ class Module:
             if "address" in reg:
                 addr = int(reg['address'], 16)
                 if self.is_address_free(addr):
-                    self.is_address_out_of_range(addr)
+                    if self.is_address_out_of_range(addr):
+                        raise RuntimeError("Address " + hex(addr) +
+                               " is definetely out of range...")
                     self.addresses.append(addr)
                     self.registers.append(Register(reg, addr, self.data_width))
                 else:
@@ -427,7 +429,9 @@ class Module:
         addr = 0
         found_addr = False
         while (not found_addr):
-            self.is_address_out_of_range(addr)
+            if self.is_address_out_of_range(addr):
+                raise RuntimeError("Address " + hex(addr) +
+                                   " is definetely out of range...")
             if self.is_address_free(addr):
                 self.addresses.append(addr)
                 return addr
@@ -436,17 +440,29 @@ class Module:
                 addr += self.data_width // 8
 
     def is_address_out_of_range(self, addr):
+        """ Returns True if address is out of range, False if not"""
+        
         if addr > pow(2, self.addr_width) - 1:
-            raise RuntimeError("Address " + hex(addr) +
-                               " is definetely out of range...")
-        return True
+            return True
+            
+        return False
 
     def is_address_free(self, addr):
+        """Returns True if address is not been used in the module, False if it already taken"""
         for address in self.addresses:
             if address == addr:
                 return False
         # If loop completes without matching addresses
         return True
+
+    def is_address_byte_based(self, addr):
+        """Returns True if address is divisable by number of bytes in module data width"""
+
+        if addr % (self.data_width/8) == 0:
+            return True
+        else:
+            return False
+    
 
     def update_addresses(self):
         self.addresses = []

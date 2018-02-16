@@ -1,3 +1,7 @@
+"""@package editor
+Contains the Editor class
+
+"""
 from cursesmenu import CursesMenu
 from cursesmenu.items import FunctionItem
 from collections import OrderedDict
@@ -8,15 +12,25 @@ from uart.utils import cont
 from uart.utils import is_int
 from uart.utils import clear_screen
 from uart.utils import write_string_to_file
+from uart.utils import get_list_choice
+from uart.utils import get_int
 from uart.module import Module
 from uart.bus import Bus
+from uart.register import Register
+from uart.field import Field
+from uart.vhdl import is_valid_VHDL
+from uart.vhdl import get_identifier
 
 
 class Editor(object):
-    """Documentation for Editor
+    """A console-based menu system for creating and editing module descripting JSON files
 
     """
     def __init__(self, edit, jsonfile, output_dir='output/'):
+        """Constructor
+
+        Either reconstructs a module object from JSON, or create a new based on user input
+        """
         self.jsonfile = jsonfile
         self.output_dir = output_dir
         self.recently_saved = False
@@ -35,21 +49,7 @@ class Editor(object):
                 exit()
         else:
             bus_dic = OrderedDict()
-            while True:
-                try:
-                    # import ipdb; ipdb.set_trace()
-                    print('Choose a bus type: ')
-                    for i, bus in enumerate(Bus.supported_bus):
-                        print(str(i+1) + ': ' + bus)
-                    select = int(input('Select by number: '))
-                    if select < 1 or select > len(Bus.supported_bus):
-                        print(str(i) + ' is not a valid choice...')
-                    else:
-                        break
-                except Exception:
-                    print('That is not a valid choice...')
-                        
-            bus_dic['type'] = 'axi'
+            bus_dic['type'] = get_list_choice('Choose a bus type: ', Bus.supported_bus)
             bus_dic['addr_width'] = 32
             bus_dic['data_width'] = 32
             bus_dic['reset'] = 'async'
@@ -57,14 +57,14 @@ class Editor(object):
             
             # Get name, addr_width, data_width and description
             mod = OrderedDict()
-            mod['name'] = input('Enter a module name: ')
+            mod['name'] = get_identifier('Enter a module name: ')
+            
             '''! @todo Add int check'''
             mod['addr_width'] = 32
             mod['data_width'] = 32
             mod['description'] = input('Enter a description for the module: ')
             mod['register'] = []
 
-            
             self.mod = Module(mod, self.bus)
 
     def show_menu(self):
@@ -84,13 +84,13 @@ class Editor(object):
 
     def edit_name(self):
         print('Change the module name from current: ' + self.mod.name)
-        self.mod.name = input('Enter new name: ')
+        self.mod.name = get_identifier('Enter a new name: ');
         self.recently_saved = False
         self.update_menu()
 
     def edit_baseaddr(self):
         print('Change the module base address from current: ' + str(hex(self.mod.baseaddr)))
-        self.mod.baseaddr = int(input('Enter new base address (in hex): 0x'), 16)
+        self.mod.baseaddr = get_int('Enter a new base address (in hex): ', 16)
         self.recently_saved = False
         self.update_menu()
         
@@ -107,7 +107,7 @@ class Editor(object):
                 for i, reg in enumerate(self.mod.registers):
                     table.add_row([i, reg.name, reg.mode, hex(reg.address), reg.sig_type, reg.length,
                                    reg.reset, reg.description])
-                return(table)
+                return table
 
     def list_registers(self):
         table = self.return_registers()
@@ -144,90 +144,77 @@ class Editor(object):
             print(table_fields)
 
     def add_register(self):
+        """Adds a register to the module object
+        
+        Get user input to create a register that may or may not consists of individual fields
+        """
         reg = OrderedDict()
-
+        reg_names = [reg.name for reg in self.mod.registers]
         print('Input register information: ')
         try:
-            reg['name'] = input('Name: ')
+            reg['name'] = get_identifier('Name: ', reg_names)
             reg['description'] = input('Description: ')
-            while True:
-                try:
-                    mode = int(input('Mode (0 = RW, 1 = RO): '))
-                    if mode == 0:
-                        reg['mode'] = 'rw'
-                        break
-                    elif mode == 1:
-                        reg['mode'] = 'ro'
-                        break
-                    else:
-                        print(str(mode) + ' is not a valid choice...')
-                except Exception:
-                    print('That is not a valid choice...')
+            reg['mode'] = get_list_choice("Choose register mode: ", Register.supported_modes, 'lower', 0)
 
             fields = []
             while True:
                 field_dic = OrderedDict()
                 add_fields = input('Do you want to add a field? (Y/n): ')
+                field_names = [field['name'] for field in fields]
                 if add_fields.upper() == 'N':
                     break
                 elif add_fields.upper() == 'Y' or add_fields == '':
-                    field_dic['name'] = input('Field name: ')
-                    while True:
-                        field_dic['type'] = input('Field type (sl/slv): ')
-                        if field_dic['type'] != 'sl' and field_dic['type'] != 'slv':
-                            print(field_dic['type'] + ' is not a valid choice...')
-                        else:
-                            break
+                    field_dic['name'] = get_identifier('Field name: ', field_names)
+                    field_dic['type'] = get_list_choice('Field type: ', Field.supported_types)
 
                     if field_dic['type'] == 'slv':
-                        while True:
-                            try:
-                                field_dic['length'] = int(input('Field length: '))
-                                break
-                            except Exception:
-                                print('That is not an integer...')
+                        width_consumed = 0
+                        for field in fields:
+                            width_consumed += field['length']
+                        max_width = self.mod.data_width - width_consumed
+                        field_dic['length'] = get_int('Field length: ', 10, 1, max_width,
+                                                      "The minimum width of a field is 1!",
+                                                      "The maximum width of this field cannot extend" +
+                                                      " the module data width minus the width already" +
+                                                      " consumed by other fields: " + str(max_width))
 
                     else:
                         field_dic['length'] = 1
 
-                    while True:
-                        field_dic['reset'] = input('Field reset (default=0x0): ')
-
-                        if field_dic['reset'] == '':
-                            field_dic['reset'] = '0x0'
-                            break
-                        else:
-                            try:
-                                field_dic['reset'] = hex(int(field_dic['reset'], 16))
-                                break
-                            except Exception:
-                                print(field_dic['reset'] + ' is not a valid reset value...')
+                    max_reset = 2**field_dic['length']-1
+                    field_dic['reset'] = hex(get_int('Field reset in hex (default=0x0): ',
+                                                     16, 0x0, max_reset,
+                                                     "The minimum reset value is 0x0",
+                                                     "The maximum reset value is based on the field width, " +
+                                                     "and is " + str(hex(max_reset)), 0x0))
 
                     field_dic['description'] = input('Field description: ')
 
                     fields.append(field_dic)
+                    # Check if all available data bits are use
+                    width_consumed2 = width_consumed + field_dic['length']
+                    if width_consumed2 >= self.mod.data_width:
+                        print("All available bits (" + str(self.mod.data_width) + ") is consumed.\n" +
+                              "No more fields can be added to this register.\n")
+                        break
 
                 else:
                     print(add_fields + ' is not a valid choice...')
 
             if len(fields) > 0:
-                print('Register is of type: "fields"')
                 reg['type'] = 'fields'
                 reg['fields'] = fields
 
             else:
-                while True:
+                reg['type'] = get_list_choice('Register type: ', Register.supported_types, None, 0)
 
-                    reg['type'] = input('Type (DEFAULT/slv/sl): ')
-                    if reg['type'] in ['default', 'slv', 'sl']:
-                        break
-                    elif reg['type'] == '':
-                        reg['type'] = 'default'
-                        break
-                    else:
-                        print(reg['type'] + ' is not a valid register type...')
-
-            if reg['type'] == 'slv':
+            # Make sure reg length is set to help calculate max reset later
+            # Registers of field type will get an auto reset based on the field resets
+            if reg['type'] == 'default':
+                reg['length'] = self.mod.data_width
+            elif reg['type'] == 'sl':
+                reg['length'] = 1
+            elif reg['type'] == 'slv':
                 while True:
                     try:
                         reg['length'] = int(input('Length: '))
@@ -236,28 +223,40 @@ class Editor(object):
                         print('That is not a valid length...')
 
             if input('Auto-assign address? (Y/n): ').upper() == 'N':
-                while True:
-                    try:
-                        reg['address'] = input('Address (hex): ')
-                        reg['address'] = hex(int(reg['address'], 16))
-                        break
+                # Make sure the address is not out of range and that it is free
+                max_address = 2**self.mod.addr_width-1
 
-                    except Exception:
-                        print(reg['address'] + ' is not a valid address...')
+                while True:
+                    reg['address'] = get_int("Address in hex: ",
+                                             16, 0x0, max_address,
+                                             "The minimum address is 0x0",
+                                             "The maximum address is based on the module address width, " +
+                                             "and is " + str(hex(max_address)), 0x0)
+                    # Perform an extra check of address range, although redundant
+                    if self.mod.is_address_out_of_range(reg['address']):
+                        print("Address is out of range...")
+                        continue
+
+                    # Check if the address has not been taken
+                    if not self.mod.is_address_free(reg['address']):
+                        print("The chosen address is already assigned to another register...")
+                        continue
+
+                    # Check whether the address is not byte-addressed, and give the user a choice to continue
+                    if not self.mod.is_address_byte_based(reg['address']):
+                        choice = input("The selected address is not byte-based. Continue? (y/N): ")
+                        if not choice.upper() == 'Y':
+                            continue
+                    break
 
             if reg['type'] != 'fields':
-                while True:
-                    reg['reset'] = input('Reset (default=0x0): ')
 
-                    if reg['reset'] == '':
-                        reg['reset'] = '0x0'
-                        break
-                    else:
-                        try:
-                            reg['reset'] = hex(int(reg['reset'], 16))
-                            break
-                        except Exception:
-                            print(reg['reset'] + ' is not a valid reset value...')
+                max_reset = 2**reg['length']-1
+                reg['reset'] = hex(get_int('Register reset in hex (default=0x0): ',
+                                           16, 0x0, max_reset,
+                                           "The minimum reset value is 0x0",
+                                           "The maximum reset value is based on the register width, " +
+                                           "and is " + str(hex(max_reset)), 0x0))
 
             table = PrettyTable()
             table.field_names = ['#', 'Name', 'Mode', 'Address', 'Type', 'Length', 'Reset', 'Description']
@@ -382,7 +381,12 @@ class Editor(object):
         return string
 
     def valid_register_input(self, s):
-        if s == 'q':
+        """ Returns boolean determining if a choice of register is valid
+
+        The input is first checked against the quit-character, and then checked if it matches any
+        valid indexes of the mod.registers list.
+        """
+        if s.upper() == 'Q':
             return True
         elif is_int(s):
             index = int(s)

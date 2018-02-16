@@ -1,7 +1,7 @@
 import re
 
 from uart.utils import indent_string
-
+from uart.utils import is_mixed
 
 def sync_process(clk_name, reset_name, process_name, reset_string, logic_string, active_low=True):
     s = process_name + " : process(" + clk_name + ")\n"
@@ -63,11 +63,13 @@ def comb_process(process_name, logic_string):
     return s
 
 
-def get_identifier(msg):
+def get_identifier(msg, ls=None):
     while True:
         try:
             identifier = input(msg)
             is_valid_VHDL(identifier)
+            if ls is not None:
+                is_unique(identifier, ls)
             return identifier
         except Exception as e:
             print(e)
@@ -116,6 +118,8 @@ def is_only_alpfanum_(string):
 
 
 def is_valid_VHDL(string):
+    if len(string) < 1:
+        raise InvalidVHDLIdentifier(string + " - identifier cannot be empty.")
     if is_VHDL_keyword(string):
         raise InvalidVHDLIdentifier(string + " - identifier cannot contain VHDL keywords.")
     if contain_spaces(string):
@@ -127,7 +131,21 @@ def is_valid_VHDL(string):
     if contain_two_successive_underscores(string):
         raise InvalidVHDLIdentifier(string + " - identifiers cannot contain two successive underscores.")
     if not is_only_alpfanum_(string):
-        raise InvalidVHDLIdentifier(string + " - identifiers may only contain alphabetic letters (‘A’ to ‘Z’ and ‘a’ to ‘z’), decimal digits (‘0’ to ‘9’) and the underline character (‘_’)")
+        raise InvalidVHDLIdentifier(string + " - identifiers may only contain \n\n- alphabetic letters " +
+                                    "(‘A’ to ‘Z’ and ‘a’ to ‘z’), \n- decimal digits (‘0’ to ‘9’) " +
+                                    "\n- the underline character (‘_’)")
+    if len(string) > 16:
+        print('\nWarning - ' + string + ' - identifier should probably not be longer than 16 characters.')
+    if is_mixed(string):
+        print('\nWarning - ' + string + ' - identifier should probably not contain a mix of uppercase' +
+              ' and lowercase letters.')
+    return True
+
+
+def is_unique(string, ls):
+    if string in ls:
+        raise NonUniqueIdentifer(string + " - identifier is already used in the same namespace.")
+    return True
 
 
 class InvalidVHDLIdentifier(Exception):
@@ -135,3 +153,10 @@ class InvalidVHDLIdentifier(Exception):
     def __init__(self, msg):
         s = "\nError in parsing identifier: " + msg
         super().__init__(s)
+
+
+class NonUniqueIdentifer(Exception):
+    def __init__(self, msg):
+        s = "\nError in parsing identifier: " + msg
+        super().__init__(s)
+        

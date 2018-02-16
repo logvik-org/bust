@@ -8,6 +8,8 @@ class Register:
 
 
     """
+    supported_types = ['default', 'slv', 'sl']
+    supported_modes = ['RW', 'RO']
 
     def __init__(self, reg, address, mod_data_length):
         self.name = reg['name']

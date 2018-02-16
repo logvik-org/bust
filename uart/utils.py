@@ -101,27 +101,55 @@ def is_int(s):
     return False
 
 
-def get_int(msg, base):
+def get_int(msg, base=10, range_min=None, range_max=None, range_min_msg=None, range_max_msg=None,
+            default=None):
     while True:
         try:
-            i = int(input(msg), base)
-            return i
+            s = input(msg)
+            if s == '' and default is not None:
+                i = default
+            else:
+                i = int(s, base)
+            if range_min is not None and i < range_min:
+                if range_min_msg is None:
+                    print("Integer must be at least " + str(range_min))
+                else:
+                    print(range_min_msg)
+            elif range_max is not None and i > range_max:
+                if range_max_msg is None:
+                    print("Integer can't be larger than " + str(range_max))
+                else:
+                    print(range_max_msg)
+            else:
+                return i
         except Exception:
             print("That is not a valid integer...")
 
 
-def get_list_choice(msg, ls):
+def get_list_choice(msg, ls, case=None, default=None):
     while True:
         try:
             print(msg)
             for i, element in enumerate(ls):
-                print(str(i+1) + ': ' + element)
-            select = int(input('Select by number: '))
+                if default is not None and i == default:
+                    print(str(i+1) + ': ' + element.upper() + ' - default')
+                else:
+                    print(str(i+1) + ': ' + element)
+            tmp = input('Select by number: ')
+            if default is not None and tmp == '':
+                select = default+1
+            else:
+                select = int(tmp)
             if select < 1 or select > len(ls):
                 print(str(select) + ' is not a valid choice...')
             else:
-                return ls[select-1]
-        except Exception:
+                if case == 'lower':
+                    return ls[select-1].lower()
+                elif case == 'upper':
+                    return ls[select-1].upper()
+                else:
+                    return ls[select-1]
+        except Exception as e:
             print('That is not a valid choice...')
 
 
@@ -145,3 +173,15 @@ def add_line_breaks(string, min_length):
         string = string[:rep] + '\n' + string[rep + 1:]
 
     return string
+
+
+def is_mixed(string):
+    upper = False
+    lower = False
+    for letter in string:
+        if letter.isupper():
+            upper = True
+        elif letter.islower():
+            lower = True
+
+    return upper and lower
