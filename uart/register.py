@@ -1,6 +1,8 @@
 from uart.utils import indent_string
 from uart.utils import add_line_breaks
 from uart.field import Field
+from uart.vhdl import is_valid_VHDL
+from uart.vhdl import is_unique
 
 
 class Register:
@@ -97,6 +99,13 @@ class Register:
         if not all(key in field for key in ("name", "type")):
             raise InvalidFieldFormat(self.name)
 
+        # Make sure field name is valid VHDL
+        is_valid_VHDL(field['name'])
+
+        # Make sure the field name is unique in this register
+        field_names = [field.name for field in self.fields]
+        is_unique(field['name'], field_names)
+        
         if field['type'] == 'slv':
             if 'length' not in field:
                 raise InvalidFieldFormat(self.name)

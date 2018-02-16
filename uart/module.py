@@ -1,3 +1,8 @@
+"""@package module
+Contains the Module class and relevant exceptions
+
+"""
+
 import json
 from collections import OrderedDict
 
@@ -6,6 +11,8 @@ from uart.utils import add_line_breaks
 from uart.exceptions import InvalidAddress
 from uart.exceptions import InvalidRegister
 from uart.register import Register
+from uart.vhdl import is_valid_VHDL
+from uart.vhdl import is_unique
 
 
 class Module:
@@ -17,19 +24,26 @@ class Module:
     def __init__(self, mod, bus):
         """! @brief
         """
-        self.bus = bus
-        self.registers = []
-        self.addresses = []
-        self.name = mod['name']
-        self.addr_width = mod['addr_width']
-        self.data_width = mod['data_width']
-        self.description = add_line_breaks(mod['description'], 25)
-        if 'baseaddr' in mod:
-            self.baseaddr = int(mod['baseaddr'], 16)
-        else:
-            self.baseaddr = 0
-        for reg in mod['register']:
-            self.add_register(reg)
+        try:
+            self.bus = bus
+            self.registers = []
+            self.addresses = []
+            
+            is_valid_VHDL(mod['name'])
+            self.name = mod['name']
+            self.addr_width = mod['addr_width']
+            self.data_width = mod['data_width']
+            self.description = add_line_breaks(mod['description'], 25)
+            if 'baseaddr' in mod:
+                self.baseaddr = int(mod['baseaddr'], 16)
+            else:
+                self.baseaddr = 0
+            for reg in mod['register']:
+                self.add_register(reg)
+
+        except Exception as e:
+            print(e)
+            exit(2)
 
     def add_register(self, reg):
         if self.register_valid(reg):
@@ -462,7 +476,6 @@ class Module:
             return True
         else:
             return False
-    
 
     def update_addresses(self):
         self.addresses = []
@@ -470,15 +483,25 @@ class Module:
             addr = self.get_next_address()
             self.addresses.append(addr)
             reg.address = addr
-            
 
     def register_valid(self, reg):
-        if set(("name", "mode", "type", "description")).issubset(reg):
-            return True
-        elif set(("name", "mode", "fields", "description")).issubset(reg):
-            return True
-        else:
+        """Returns True if register is semi-valid. May raise exceptions which must be catched"""
+
+        # Check if all required register keys exists
+        if not (set(("name", "mode", "type", "description")).issubset(reg) or
+                set(("name", "mode", "fields", "description")).issubset(reg)):
             return False
+
+        """Check if name is valid VHDL, if not it will raise an exception which must be
+        catched in calling function"""
+        is_valid_VHDL(reg['name'])
+
+        """Get a list of the currently used reg names and compare the chosen reg names to this list
+        If it is already taken it will raise an exception which must be catched in calling function"""
+        reg_names = [reg.name for reg in self.registers]
+        is_unique(reg['name'], reg_names)
+
+        return True
 
     def count_ro_regs(self):
         return len([reg for reg in self.registers if reg.mode == 'ro'])
