@@ -18,7 +18,8 @@ from uart.vhdl import is_unique
 class Module:
     """! @brief Managing module information
 
-
+    Contain the name of the module, the bus type and addr and data width specification +
+    description of the module.
     """
 
     def __init__(self, mod, bus):
@@ -498,7 +499,7 @@ class Module:
 
         """Get a list of the currently used reg names and compare the chosen reg names to this list
         If it is already taken it will raise an exception which must be catched in calling function"""
-        reg_names = [reg.name for reg in self.registers]
+        reg_names = [r.name for r in self.registers]
         is_unique(reg['name'], reg_names)
 
         return True
