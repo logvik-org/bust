@@ -170,3 +170,8 @@ flycheck_*.el
 
 # directory configuration
 .dir-locals.el
+
+
+# LaTeX temp files
+.aux
+.rdf

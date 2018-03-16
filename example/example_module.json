@@ -117,7 +117,7 @@
                     "name": "field1",
                     "type": "slv",
                     "length": 19,
-                    "description": "std_logic_vector[18:0] register"
+                    "description": "std_logic_vector[18:0] field"
                 },
                 {
                     "name": "field2",
@@ -134,5 +134,5 @@
             "description": "RO register with multiple types\nof fields"
         }
     ],
-    "description": "An example module that contain\nall the register types that\nare currently supported by\nart."
+    "description": "An example module that contain\nall the register types that\nare currently supported by\nuart."
 }
