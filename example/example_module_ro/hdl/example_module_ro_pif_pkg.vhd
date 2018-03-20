@@ -34,8 +34,8 @@ package example_module_ro_pif_pkg is
   -- RO Register Reset Value Constant
   
   constant c_example_module_ro_ro_regs : t_example_module_ro_ro_regs := (
-    reg0 => '0',
-    reg1 => (others => '0'),
+    reg0 => '1',
+    reg1 => 14X"F",
     reg2 => (others => '0'),
     reg3 => (
       field0 => '0',

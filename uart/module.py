@@ -34,7 +34,8 @@ class Module:
             self.name = mod['name']
             self.addr_width = mod['addr_width']
             self.data_width = mod['data_width']
-            self.description = add_line_breaks(mod['description'], 25)
+            self.description = mod['description']
+            self.description_with_breaks = add_line_breaks(mod['description'], 25)
             if 'baseaddr' in mod:
                 self.baseaddr = int(mod['baseaddr'], 16)
             else:

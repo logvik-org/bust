@@ -5,11 +5,11 @@ class EXAMPLE_MODULE_RO_H():
 
         """ Register: reg0 """
         self.REG0_OFFSET = 0x0
-        self.REG0_RESET = 0x0
+        self.REG0_RESET = 0x1
 
         """ Register: reg1 """
         self.REG1_OFFSET = 0x4
-        self.REG1_RESET = 0x0
+        self.REG1_RESET = 0xF
 
         """ Register: reg2 """
         self.REG2_OFFSET = 0x8

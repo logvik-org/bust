@@ -14,6 +14,7 @@ from uart.utils import clear_screen
 from uart.utils import write_string_to_file
 from uart.utils import get_list_choice
 from uart.utils import get_int
+from uart.utils import add_line_breaks
 from uart.module import Module
 from uart.bus import Bus
 from uart.register import Register
@@ -106,7 +107,7 @@ class Editor(object):
                 table.field_names = ['#', 'Name', 'Mode', 'Address', 'Type', 'Length', 'Reset', 'Description']
                 for i, reg in enumerate(self.mod.registers):
                     table.add_row([i, reg.name, reg.mode, hex(reg.address), reg.sig_type, reg.length,
-                                   reg.reset, reg.description])
+                                   reg.reset, add_line_breaks(reg.description, 25)])
                 return table
 
     def list_registers(self):
@@ -139,7 +140,7 @@ class Editor(object):
             for i, field in enumerate(reg.fields):
 
                 table_fields.add_row([i, field.name, field.sig_type, field.get_pos_str(), field.length,
-                                      field.reset, field.description])
+                                      field.reset, add_line_breaks(field.description, 25)])
 
             print(table_fields)
 
@@ -286,7 +287,7 @@ class Editor(object):
             else:
                 table_reset = 'auto'
 
-            table_description = reg['description']
+            table_description = add_line_breaks(reg['description'], 25)
 
             table.add_row([len(self.mod.registers), table_name, table_mode, table_address, table_type,
                            table_length, table_reset, table_description])

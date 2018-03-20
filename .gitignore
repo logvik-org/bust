@@ -2,7 +2,9 @@
 .bumpversion.cfg
 build.sh
 upload.sh
+local_upgrade.sh
 docs/doxygen.cfg
+*example_identifier*
 
 # temp backup files
 example/module_name_backup*
@@ -173,5 +175,5 @@ flycheck_*.el
 
 
 # LaTeX temp files
-.aux
-.rdf
+*.aux
+*.rdf

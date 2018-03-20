@@ -16,7 +16,7 @@
             "type": "sl",
             "address": "0x0",
             "reset": "0x0",
-            "description": "RW std_logic register that\nresets to 0x0"
+            "description": "RW std_logic register that resets to 0x0"
         },
         {
             "name": "reg1",
@@ -24,7 +24,7 @@
             "type": "sl",
             "address": "0x4",
             "reset": "0x1",
-            "description": "RW std_logic register that\nresets to 0x1"
+            "description": "RW std_logic register that resets to 0x1"
         },
         {
             "name": "reg2",
@@ -41,7 +41,7 @@
             "address": "0xc",
             "length": 8,
             "reset": "0x3",
-            "description": "RW std_logic_vector[7:0] register\nthat resets to 0x3"
+            "description": "RW std_logic_vector[7:0] register that resets to 0x3"
         },
         {
             "name": "reg4",
@@ -58,7 +58,7 @@
             "type": "default",
             "address": "0x14",
             "reset": "0xffffffff",
-            "description": "Default RW register that resets\nto 0xFFFFFFFF"
+            "description": "Default RW register that resets to 0xFFFFFFFF"
         },
         {
             "name": "reg6",
@@ -85,7 +85,7 @@
                     "type": "slv",
                     "length": 4,
                     "reset": "0xb",
-                    "description": "std_logic_vector[3:0] that\nresets to 0xb is not a valid\nreset value"
+                    "description": "std_logic_vector[3:0] that resets to 0xb is not a valid reset value"
                 },
                 {
                     "name": "field2",
@@ -97,10 +97,10 @@
                     "type": "slv",
                     "length": 15,
                     "reset": "0x2b",
-                    "description": "std_logic_vector[14:0] that\nresets to 0x2b"
+                    "description": "std_logic_vector[14:0] that resets to 0x2b"
                 }
             ],
-            "description": "RW register that have multiple\nfields"
+            "description": "RW register that have multiple fields"
         },
         {
             "name": "reg8",
@@ -131,8 +131,8 @@
                     "description": "std_logic_vector[2:0] field"
                 }
             ],
-            "description": "RO register with multiple types\nof fields"
+            "description": "RO register with multiple types of fields"
         }
     ],
-    "description": "An example module that contain\nall the register types that\nare currently supported by\nuart."
+    "description": "An example module that contain all the register types that are currently supported by uart."
 }

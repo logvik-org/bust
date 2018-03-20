@@ -5,11 +5,11 @@
 
 /* Register: reg0 */
 #define REG0_OFFSET 0x0
-#define REG0_RESET 0x0
+#define REG0_RESET 0x1
 
 /* Register: reg1 */
 #define REG1_OFFSET 0x4
-#define REG1_RESET 0x0
+#define REG1_RESET 0xF
 
 /* Register: reg2 */
 #define REG2_OFFSET 0x8
