@@ -22,31 +22,33 @@ architecture behavior of example_module is
 
   signal axi_rw_regs : t_example_module_rw_regs := c_example_module_rw_regs;
   signal axi_ro_regs : t_example_module_ro_regs := c_example_module_ro_regs;
+  signal axi_pulse_regs : t_example_module_pulse_regs := c_example_module_pulse_regs;
 
 begin
 
   i_example_module_axi_pif : entity work.example_module_axi_pif
     port map (
-      axi_rw_regs => axi_rw_regs,
-      axi_ro_regs => axi_ro_regs,
-      clk         => axi_clk,
-      areset_n    => axi_areset_nareset_n,
-      awaddr      => axi_in.awaddr(C_EXAMPLE_MODULE_ADDR_WIDTH-1 downto 0),
-      awvalid     => axi_in.awvalid,
-      awready     => axi_out.awready,
-      wdata       => axi_in.wdata(C_EXAMPLE_MODULE_DATA_WIDTH-1 downto 0),
-      wvalid      => axi_in.wvalid,
-      wready      => axi_out.wready,
-      bresp       => axi_out.bresp,
-      bvalid      => axi_out.bvalid,
-      bready      => axi_in.bready,
-      araddr      => axi_in.araddr(C_EXAMPLE_MODULE_ADDR_WIDTH-1 downto 0),
-      arvalid     => axi_in.arvalid,
-      arready     => axi_out.arready,
-      rdata       => axi_out.rdata(C_EXAMPLE_MODULE_DATA_WIDTH-1 downto 0),
-      rresp       => axi_out.rresp,
-      rvalid      => axi_out.rvalid,
-      rready      => axi_in.rready
+      axi_rw_regs    => axi_rw_regs,
+      axi_ro_regs    => axi_ro_regs,
+      axi_pulse_regs => axi_pulse_regs,
+      clk            => axi_clk,
+      areset_n       => axi_areset_n,
+      awaddr         => axi_in.awaddr(C_EXAMPLE_MODULE_ADDR_WIDTH-1 downto 0),
+      awvalid        => axi_in.awvalid,
+      awready        => axi_out.awready,
+      wdata          => axi_in.wdata(C_EXAMPLE_MODULE_DATA_WIDTH-1 downto 0),
+      wvalid         => axi_in.wvalid,
+      wready         => axi_out.wready,
+      bresp          => axi_out.bresp,
+      bvalid         => axi_out.bvalid,
+      bready         => axi_in.bready,
+      araddr         => axi_in.araddr(C_EXAMPLE_MODULE_ADDR_WIDTH-1 downto 0),
+      arvalid        => axi_in.arvalid,
+      arready        => axi_out.arready,
+      rdata          => axi_out.rdata(C_EXAMPLE_MODULE_DATA_WIDTH-1 downto 0),
+      rresp          => axi_out.rresp,
+      rvalid         => axi_out.rvalid,
+      rready         => axi_in.rready
       );
 
 end architecture behavior;

@@ -132,7 +132,7 @@ class Bus(object):
         s += indent_string('port (')
 
         par = ''
-        if mod.count_rw_regs() > 0 or mod.count_ro_regs() > 0:
+        if mod.count_rw_regs() + mod.count_ro_regs() + mod.count_pulse_regs() > 0:
             par += '\n-- register record signals\n'
 
         if mod.count_rw_regs() > 0:
@@ -142,31 +142,36 @@ class Bus(object):
         if mod.count_ro_regs() > 0:
             par += self.bus_type + '_ro_regs : in  t_' + mod.name + '_ro_regs := '
             par += 'c_' + mod.name + '_ro_regs;\n'
+
+        if mod.count_pulse_regs() > 0:
+            par += self.bus_type + '_pulse_regs : out t_' + mod.name + '_pulse_regs := '
+            par += 'c_' + mod.name + '_pulse_regs;\n'
+            
         
         par += '\n'
         par += '-- bus signals\n'
-        par += clk_name + '         : in  std_logic;\n'
-        par += reset_name + '    : in  std_logic;\n'
+        par += clk_name + '            : in  std_logic;\n'
+        par += reset_name + '       : in  std_logic;\n'
 
         # Add bus-specific signals
         if self.bus_type == 'axi':
             
-            par += 'awaddr      : in  t_' + mod.name + '_addr;\n'
-            par += 'awvalid     : in  std_logic;\n'
-            par += 'awready     : out std_logic;\n'
-            par += 'wdata       : in  t_' + mod.name + '_data;\n'
-            par += 'wvalid      : in  std_logic;\n'
-            par += 'wready      : out std_logic;\n'
-            par += 'bresp       : out std_logic_vector(1 downto 0);\n'
-            par += 'bvalid      : out std_logic;\n'
-            par += 'bready      : in  std_logic;\n'
-            par += 'araddr      : in  t_' + mod.name + '_addr;\n'
-            par += 'arvalid     : in  std_logic;\n'
-            par += 'arready     : out std_logic;\n'
-            par += 'rdata       : out t_' + mod.name + '_data;\n'
-            par += 'rresp       : out std_logic_vector(1 downto 0);\n'
-            par += 'rvalid      : out std_logic;\n'
-            par += 'rready      : in  std_logic\n'
+            par += 'awaddr         : in  t_' + mod.name + '_addr;\n'
+            par += 'awvalid        : in  std_logic;\n'
+            par += 'awready        : out std_logic;\n'
+            par += 'wdata          : in  t_' + mod.name + '_data;\n'
+            par += 'wvalid         : in  std_logic;\n'
+            par += 'wready         : out std_logic;\n'
+            par += 'bresp          : out std_logic_vector(1 downto 0);\n'
+            par += 'bvalid         : out std_logic;\n'
+            par += 'bready         : in  std_logic;\n'
+            par += 'araddr         : in  t_' + mod.name + '_addr;\n'
+            par += 'arvalid        : in  std_logic;\n'
+            par += 'arready        : out std_logic;\n'
+            par += 'rdata          : out t_' + mod.name + '_data;\n'
+            par += 'rresp          : out std_logic_vector(1 downto 0);\n'
+            par += 'rvalid         : out std_logic;\n'
+            par += 'rready         : in  std_logic\n'
             par += ');\n'
             s += indent_string(par, 2)
 
@@ -174,12 +179,20 @@ class Bus(object):
 
         s += 'architecture behavior of ' + mod.name + '_axi_pif is\n\n'
 
-        if mod.count_rw_regs() > 0:
+        if mod.count_rw_regs() + mod.count_pulse_regs() > 0:
             par = ''
             par += '-- internal signal for readback' + '\n'
-            par += 'signal ' + self.bus_type + '_rw_regs_i : t_'
-            par += mod.name + '_rw_regs := c_' + mod.name + '_rw_regs;\n\n'
             s += indent_string(par)
+            if mod.count_rw_regs() > 0:
+                par = 'signal ' + self.bus_type + '_rw_regs_i : t_'
+                par += mod.name + '_rw_regs := c_' + mod.name + '_rw_regs;\n'
+                s += indent_string(par)
+            if mod.count_pulse_regs() > 0:
+                par = 'signal ' + self.bus_type + '_pulse_regs_i : t_'
+                par += mod.name + '_pulse_regs := c_' + mod.name + '_pulse_regs;\n'
+                s += indent_string(par)
+            s += '\n'
+        
 
         # Add bus-specific logic
         if self.bus_type == 'axi':
@@ -215,6 +228,9 @@ class Bus(object):
 
         if mod.count_rw_regs() > 0:
             s += indent_string('axi_rw_regs <= axi_rw_regs_i') + ';\n'
+        if mod.count_pulse_regs() > 0:
+            s += indent_string('axi_pulse_regs <= axi_pulse_regs_i') + ';\n'
+        if mod.count_rw_regs() + mod.count_pulse_regs() > 0:
             s += '\n'
 
         par = ''
@@ -287,36 +303,51 @@ class Bus(object):
         s += indent_string('slv_reg_wren <= wready_i and wvalid and awready_i and awvalid;\n')
         s += '\n'
 
-        if mod.count_rw_regs() > 0:
+        if mod.count_rw_regs() + mod.count_pulse_regs() > 0:
             ###################################################################
             # p_mm_select_write
             ###################################################################
-            reset_string = '\naxi_rw_regs_i <= c_' + mod.name + '_rw_regs;\n'
+            reset_string = ""
+            if mod.count_rw_regs() > 0:
+                reset_string += '\naxi_rw_regs_i <= c_' + mod.name + '_rw_regs;\n'
+            if mod.count_pulse_regs() > 0:
+                reset_string += '\naxi_pulse_regs_i <= c_' + mod.name + '_pulse_regs;\n'
 
-            logic_string = "\nif (slv_reg_wren = '1') then\n"
+            logic_string = ""
+            # create a generator for looping through all pulse regs
+            if mod.count_pulse_regs() > 0:
+                logic_string += "\n-- Return PULSE registers to reset value every clock cycle\n"
+                logic_string += 'axi_pulse_regs_i <= c_' + mod.name + '_pulse_regs;\n\n'
+
+            logic_string += "\nif (slv_reg_wren = '1') then\n"
             logic_string += indent_string('case awaddr_i is\n\n')
 
-            # create a generator for looping through all rw regs
-            gen = (reg for reg in mod.registers if reg.mode == "rw")
+            # create a generator for looping through all rw and pulse regs
+            gen = (reg for reg in mod.registers if reg.mode == "rw" or reg.mode == "pulse")
             for reg in gen:
+                if reg.mode == 'rw':
+                    sig_name = 'axi_rw_regs_i.'
+                elif reg.mode == 'pulse':
+                    sig_name = 'axi_pulse_regs_i.'
+            
                 logic_string += indent_string('when C_ADDR_', 2)
                 logic_string += reg.name.upper() + ' =>\n\n'
                 par = ''
                 if reg.sig_type == 'fields':
 
                     for field in reg.fields:
-                        par += 'axi_rw_regs_i.' + reg.name + '.' + field.name
+                        par += sig_name + reg.name + '.' + field.name
                         par += ' <= wdata('
                         par += field.get_pos_vhdl()
                         par += ');\n'
 
                 elif reg.sig_type == 'default':
-                    par += 'axi_rw_regs_i.' + reg.name + ' <= wdata;\n'
+                    par += sig_name + reg.name + ' <= wdata;\n'
                 elif reg.sig_type == 'slv':
-                    par += 'axi_rw_regs_i.' + reg.name + ' <= wdata('
+                    par += sig_name + reg.name + ' <= wdata('
                     par += str(reg.length - 1) + ' downto 0);\n'
                 elif reg.sig_type == 'sl':
-                    par += 'axi_rw_regs_i.' + reg.name + ' <= wdata(0);\n'
+                    par += sig_name + reg.name + ' <= wdata(0);\n'
 
                 logic_string += indent_string(par, 3)
                 logic_string += '\n'

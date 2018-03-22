@@ -79,3 +79,25 @@ class EXAMPLE_MODULE_H():
         self.REG8_FIELD3_WIDTH = 3
         self.REG8_FIELD3_RESET = 0x0
 
+        """ Register: reg9 """
+        self.REG9_OFFSET = 0x24
+        self.REG9_RESET = 0x1
+
+        """ Register: reg10 """
+        self.REG10_OFFSET = 0x28
+        self.REG10_RESET = 0xa
+
+        """ Register: reg11 """
+        self.REG11_OFFSET = 0x2c
+        self.REG11_RESET = 0x3
+
+        """ Field: field0 """
+        self.REG11_FIELD0_OFFSET = 0
+        self.REG11_FIELD0_WIDTH = 15
+        self.REG11_FIELD0_RESET = 0x3
+
+        """ Field: field1 """
+        self.REG11_FIELD1_OFFSET = 15
+        self.REG11_FIELD1_WIDTH = 1
+        self.REG11_FIELD1_RESET = 0x0
+

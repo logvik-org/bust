@@ -11,24 +11,24 @@ entity example_module_ro_axi_pif is
     axi_ro_regs : in  t_example_module_ro_ro_regs := c_example_module_ro_ro_regs;
     
     -- bus signals
-    clk         : in  std_logic;
-    areset_n    : in  std_logic;
-    awaddr      : in  t_example_module_ro_addr;
-    awvalid     : in  std_logic;
-    awready     : out std_logic;
-    wdata       : in  t_example_module_ro_data;
-    wvalid      : in  std_logic;
-    wready      : out std_logic;
-    bresp       : out std_logic_vector(1 downto 0);
-    bvalid      : out std_logic;
-    bready      : in  std_logic;
-    araddr      : in  t_example_module_ro_addr;
-    arvalid     : in  std_logic;
-    arready     : out std_logic;
-    rdata       : out t_example_module_ro_data;
-    rresp       : out std_logic_vector(1 downto 0);
-    rvalid      : out std_logic;
-    rready      : in  std_logic
+    clk            : in  std_logic;
+    areset_n       : in  std_logic;
+    awaddr         : in  t_example_module_ro_addr;
+    awvalid        : in  std_logic;
+    awready        : out std_logic;
+    wdata          : in  t_example_module_ro_data;
+    wvalid         : in  std_logic;
+    wready         : out std_logic;
+    bresp          : out std_logic_vector(1 downto 0);
+    bvalid         : out std_logic;
+    bready         : in  std_logic;
+    araddr         : in  t_example_module_ro_addr;
+    arvalid        : in  std_logic;
+    arready        : out std_logic;
+    rdata          : out t_example_module_ro_data;
+    rresp          : out std_logic_vector(1 downto 0);
+    rvalid         : out std_logic;
+    rready         : in  std_logic
     );
 end example_module_ro_axi_pif;
 

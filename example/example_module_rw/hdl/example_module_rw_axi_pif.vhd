@@ -11,24 +11,24 @@ entity example_module_rw_axi_pif is
     axi_rw_regs : out t_example_module_rw_rw_regs := c_example_module_rw_rw_regs;
     
     -- bus signals
-    clk         : in  std_logic;
-    areset_n    : in  std_logic;
-    awaddr      : in  t_example_module_rw_addr;
-    awvalid     : in  std_logic;
-    awready     : out std_logic;
-    wdata       : in  t_example_module_rw_data;
-    wvalid      : in  std_logic;
-    wready      : out std_logic;
-    bresp       : out std_logic_vector(1 downto 0);
-    bvalid      : out std_logic;
-    bready      : in  std_logic;
-    araddr      : in  t_example_module_rw_addr;
-    arvalid     : in  std_logic;
-    arready     : out std_logic;
-    rdata       : out t_example_module_rw_data;
-    rresp       : out std_logic_vector(1 downto 0);
-    rvalid      : out std_logic;
-    rready      : in  std_logic
+    clk            : in  std_logic;
+    areset_n       : in  std_logic;
+    awaddr         : in  t_example_module_rw_addr;
+    awvalid        : in  std_logic;
+    awready        : out std_logic;
+    wdata          : in  t_example_module_rw_data;
+    wvalid         : in  std_logic;
+    wready         : out std_logic;
+    bresp          : out std_logic_vector(1 downto 0);
+    bvalid         : out std_logic;
+    bready         : in  std_logic;
+    araddr         : in  t_example_module_rw_addr;
+    arvalid        : in  std_logic;
+    arready        : out std_logic;
+    rdata          : out t_example_module_rw_data;
+    rresp          : out std_logic_vector(1 downto 0);
+    rvalid         : out std_logic;
+    rready         : in  std_logic
     );
 end example_module_rw_axi_pif;
 
@@ -36,7 +36,7 @@ architecture behavior of example_module_rw_axi_pif is
 
   -- internal signal for readback
   signal axi_rw_regs_i : t_example_module_rw_rw_regs := c_example_module_rw_rw_regs;
-  
+
   -- internal bus signals for readback
   signal awaddr_i      : t_example_module_rw_addr;
   signal awready_i     : std_logic;

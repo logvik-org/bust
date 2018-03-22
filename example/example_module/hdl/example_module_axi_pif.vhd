@@ -10,26 +10,27 @@ entity example_module_axi_pif is
     -- register record signals
     axi_rw_regs : out t_example_module_rw_regs := c_example_module_rw_regs;
     axi_ro_regs : in  t_example_module_ro_regs := c_example_module_ro_regs;
+    axi_pulse_regs : out t_example_module_pulse_regs := c_example_module_pulse_regs;
     
     -- bus signals
-    clk         : in  std_logic;
-    areset_n    : in  std_logic;
-    awaddr      : in  t_example_module_addr;
-    awvalid     : in  std_logic;
-    awready     : out std_logic;
-    wdata       : in  t_example_module_data;
-    wvalid      : in  std_logic;
-    wready      : out std_logic;
-    bresp       : out std_logic_vector(1 downto 0);
-    bvalid      : out std_logic;
-    bready      : in  std_logic;
-    araddr      : in  t_example_module_addr;
-    arvalid     : in  std_logic;
-    arready     : out std_logic;
-    rdata       : out t_example_module_data;
-    rresp       : out std_logic_vector(1 downto 0);
-    rvalid      : out std_logic;
-    rready      : in  std_logic
+    clk            : in  std_logic;
+    areset_n       : in  std_logic;
+    awaddr         : in  t_example_module_addr;
+    awvalid        : in  std_logic;
+    awready        : out std_logic;
+    wdata          : in  t_example_module_data;
+    wvalid         : in  std_logic;
+    wready         : out std_logic;
+    bresp          : out std_logic_vector(1 downto 0);
+    bvalid         : out std_logic;
+    bready         : in  std_logic;
+    araddr         : in  t_example_module_addr;
+    arvalid        : in  std_logic;
+    arready        : out std_logic;
+    rdata          : out t_example_module_data;
+    rresp          : out std_logic_vector(1 downto 0);
+    rvalid         : out std_logic;
+    rready         : in  std_logic
     );
 end example_module_axi_pif;
 
@@ -37,7 +38,8 @@ architecture behavior of example_module_axi_pif is
 
   -- internal signal for readback
   signal axi_rw_regs_i : t_example_module_rw_regs := c_example_module_rw_regs;
-  
+  signal axi_pulse_regs_i : t_example_module_pulse_regs := c_example_module_pulse_regs;
+
   -- internal bus signals for readback
   signal awaddr_i      : t_example_module_addr;
   signal awready_i     : std_logic;
@@ -58,6 +60,7 @@ architecture behavior of example_module_axi_pif is
 begin
 
   axi_rw_regs <= axi_rw_regs_i;
+  axi_pulse_regs <= axi_pulse_regs_i;
 
   awready <= awready_i;
   wready  <= wready_i;
@@ -112,8 +115,14 @@ begin
     if areset_n = '0' then
       
       axi_rw_regs_i <= c_example_module_rw_regs;
+      
+      axi_pulse_regs_i <= c_example_module_pulse_regs;
   
     elsif rising_edge(clk) then
+      
+      -- Return PULSE registers to reset value every clock cycle
+      axi_pulse_regs_i <= c_example_module_pulse_regs;
+      
       
       if (slv_reg_wren = '1') then
         case awaddr_i is
@@ -140,6 +149,19 @@ begin
             axi_rw_regs_i.reg7.field1 <= wdata(4 downto 1);
             axi_rw_regs_i.reg7.field2 <= wdata(5);
             axi_rw_regs_i.reg7.field3 <= wdata(20 downto 6);
+      
+          when C_ADDR_REG9 =>
+      
+            axi_pulse_regs_i.reg9 <= wdata(0);
+      
+          when C_ADDR_REG10 =>
+      
+            axi_pulse_regs_i.reg10 <= wdata(3 downto 0);
+      
+          when C_ADDR_REG11 =>
+      
+            axi_pulse_regs_i.reg11.field0 <= wdata(14 downto 0);
+            axi_pulse_regs_i.reg11.field1 <= wdata(15);
       
           when others =>
             null;

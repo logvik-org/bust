@@ -19,6 +19,9 @@ package example_module_pif_pkg is
   constant C_ADDR_REG6 : t_example_module_addr := 32X"18";
   constant C_ADDR_REG7 : t_example_module_addr := 32X"1C";
   constant C_ADDR_REG8 : t_example_module_addr := 32X"20";
+  constant C_ADDR_REG9 : t_example_module_addr := 32X"24";
+  constant C_ADDR_REG10 : t_example_module_addr := 32X"28";
+  constant C_ADDR_REG11 : t_example_module_addr := 32X"2C";
   
   -- RW Register Record Definitions
   
@@ -77,5 +80,27 @@ package example_module_pif_pkg is
       field1 => (others => '0'),
       field2 => '0',
       field3 => (others => '0')));
+  -- PULSE Register Record Definitions
+  
+  type t_example_module_pulse_reg11 is record
+    field0 : std_logic_vector(14 downto 0);
+    field1 : std_logic;
+  end record;
+  
+  type t_example_module_pulse_regs is record
+    reg9 : std_logic;
+    reg10 : std_logic_vector(3 downto 0);
+    reg11 : t_example_module_pulse_reg11;
+  end record;
+
+  -- PULSE Register Reset Value Constant
+  
+  constant c_example_module_pulse_regs : t_example_module_pulse_regs := (
+    reg9 => '1',
+    reg10 => 4X"A",
+    reg11 => (
+      field0 => 15X"3",
+      field1 => '0'));
+
 
 end package example_module_pif_pkg;

@@ -79,4 +79,26 @@
 #define REG8_FIELD3_WIDTH 3
 #define REG8_FIELD3_RESET 0x0
 
+/* Register: reg9 */
+#define REG9_OFFSET 0x24
+#define REG9_RESET 0x1
+
+/* Register: reg10 */
+#define REG10_OFFSET 0x28
+#define REG10_RESET 0xa
+
+/* Register: reg11 */
+#define REG11_OFFSET 0x2c
+#define REG11_RESET 0x3
+
+/* Field: field0 */
+#define REG11_FIELD0_OFFSET 0
+#define REG11_FIELD0_WIDTH 15
+#define REG11_FIELD0_RESET 0x3
+
+/* Field: field1 */
+#define REG11_FIELD1_OFFSET 15
+#define REG11_FIELD1_WIDTH 1
+#define REG11_FIELD1_RESET 0x0
+
 #endif
