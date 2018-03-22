@@ -356,7 +356,7 @@ class Module:
         if self.count_ro_regs() > 0:
             par += self.bus.bus_type + '_ro_regs => ' + self.bus.bus_type + '_ro_regs,\n'
         par += self.bus.get_clk_name() + '         => ' + self.bus.bus_type + '_' + self.bus.get_clk_name() + ',\n'
-        par += self.bus.get_reset_name() + '    => ' + self.bus.bus_type + '_' + self.bus.get_reset_name()  + 'areset_n,\n'
+        par += self.bus.get_reset_name() + '    => ' + self.bus.bus_type + '_' + self.bus.get_reset_name()  + ',\n'
         par += 'awaddr      => ' + self.bus.bus_type + '_in.awaddr(C_'
         par += self.name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
         par += 'awvalid     => ' + self.bus.bus_type + '_in.awvalid,\n'

@@ -15,7 +15,7 @@ class Register:
 
     def __init__(self, reg, address, mod_data_length):
         self.name = reg['name']
-        self.mode = reg['mode']
+        self.mode = reg['mode'].lower()
         self.description = reg['description']
         self.description_with_breaks = add_line_breaks(reg['description'], 25)
         self.address = address
