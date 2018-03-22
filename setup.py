@@ -11,7 +11,7 @@ long_description = re.sub(
 
 setup(
     name='uart',
-    version='0.4.0',
+    version='0.4.1',
     packages=['uart'],
     license='MIT',
     install_requires=[
