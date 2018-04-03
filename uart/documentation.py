@@ -56,7 +56,7 @@ class Documentation(object):
             s += reg.mode.upper() + "}{" + '0x{0:0{1}X}'.format(reg.address, int(self.module.addr_width/4))
             s += "}\n"
             s += indent_string(r"\par " + utf8tolatex(reg.description) + r" \regnewline" + "\n")
-            s += indent_string(r"\label{" + utf8tolatex(reg.name) + "}\n")
+            s += indent_string(r"\label{" + reg.name + "}\n")
 
             if reg.length < self.module.data_width:
                 p = r"\regfield{unused}{"
