@@ -1,9 +1,9 @@
 # uart build and deploy files
-.bumpversion.cfg
 build.sh
 upload.sh
 local_upgrade.sh
 docs/doxygen.cfg
+workflow.txt
 *example_identifier*
 
 # temp backup files
