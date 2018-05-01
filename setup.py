@@ -11,7 +11,7 @@ except (IOError, ImportError):
 
 setup(
     name='uart',
-    version='0.5.6-dev',
+    version='0.5.6-alpha',
     packages=['uart'],
     license='MIT',
     install_requires=[
