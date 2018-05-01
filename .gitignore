@@ -100,7 +100,11 @@ ENV/
 .ropeproject
 
 # Modelsim
-[_@]*
+_info
+*.qdb
+*.qpg
+*.qtl
+_vmake
 
 # ignore compilation output of ModelSim
 *.mti
