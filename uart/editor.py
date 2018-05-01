@@ -131,7 +131,7 @@ class Editor(object):
 
     def print_register(self, reg_num, table):
         reg = self.mod.registers[reg_num]
-        print(table.get_string(start=reg_num, end=(reg_num+1)))
+        print(table.get_string(start=reg_num, end=(reg_num + 1)))
 
         if len(reg.fields) > 0:
             print('\nFields:')
@@ -146,11 +146,11 @@ class Editor(object):
 
     def add_register(self):
         """Adds a register to the module object
-        
+
         Get user input to create a register that may or may not consists of individual fields
         """
         reg = OrderedDict()
-        reg_names = [reg.name for reg in self.mod.registers]
+        reg_names = [regs.name for regs in self.mod.registers]
         print('Input register information: ')
         try:
             reg['name'] = get_identifier('Name: ', reg_names)
@@ -158,6 +158,8 @@ class Editor(object):
             reg['mode'] = get_list_choice("Choose register mode: ", Register.supported_modes, 'lower', 0)
 
             fields = []
+
+            width_consumed = 0
             while True:
                 field_dic = OrderedDict()
                 add_fields = input('Do you want to add a field? (Y/n): ')
@@ -169,20 +171,20 @@ class Editor(object):
                     field_dic['type'] = get_list_choice('Field type: ', Field.supported_types)
 
                     if field_dic['type'] == 'slv':
-                        width_consumed = 0
-                        for field in fields:
-                            width_consumed += field['length']
                         max_width = self.mod.data_width - width_consumed
+
                         field_dic['length'] = get_int('Field length: ', 10, 1, max_width,
                                                       "The minimum width of a field is 1!",
                                                       "The maximum width of this field cannot extend" +
                                                       " the module data width minus the width already" +
                                                       " consumed by other fields: " + str(max_width))
+                        width_consumed += field_dic['length']
 
                     else:
+                        width_consumed += 1
                         field_dic['length'] = 1
 
-                    max_reset = 2**field_dic['length']-1
+                    max_reset = 2**field_dic['length'] - 1
                     field_dic['reset'] = hex(get_int('Field reset in hex (default=0x0): ',
                                                      16, 0x0, max_reset,
                                                      "The minimum reset value is 0x0",
@@ -193,11 +195,12 @@ class Editor(object):
 
                     fields.append(field_dic)
                     # Check if all available data bits are use
-                    width_consumed2 = width_consumed + field_dic['length']
-                    if width_consumed2 >= self.mod.data_width:
+                    if width_consumed == self.mod.data_width:
                         print("All available bits (" + str(self.mod.data_width) + ") is consumed.\n" +
                               "No more fields can be added to this register.\n")
                         break
+                    elif width_consumed > self.mod.data_width:
+                        raise RuntimeError("More bits used by fields than available...")
 
                 else:
                     print(add_fields + ' is not a valid choice...')
