@@ -2,14 +2,20 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.axi_pkg.all;
 use work.example_module_pif_pkg.all;
 
 entity example_module_axi_pif is
 
+  generic (
+    -- AXI Bus Interface Generics
+    g_axi_baseaddr        : std_logic_vector(31 downto 0) := 32X"FFAA0000";
+    g_axi_baseaddr_offset : std_logic_vector(31 downto 0) := 32X"1000";
+    g_instance_num        : natural                       := 0);
   port (    
-    -- register record signals
-    axi_rw_regs : out t_example_module_rw_regs := c_example_module_rw_regs;
-    axi_ro_regs : in  t_example_module_ro_regs := c_example_module_ro_regs;
+    -- AXI Bus Interface Ports
+    axi_rw_regs    : out t_example_module_rw_regs    := c_example_module_rw_regs;
+    axi_ro_regs    : in  t_example_module_ro_regs    := c_example_module_ro_regs;
     axi_pulse_regs : out t_example_module_pulse_regs := c_example_module_pulse_regs;
     
     -- bus signals
@@ -36,8 +42,13 @@ end example_module_axi_pif;
 
 architecture behavior of example_module_axi_pif is
 
+  constant C_BASEADDR_OFFSET : t_axi_addr :=
+    std_logic_vector(resize(unsigned(g_axi_baseaddr_offset) * to_unsigned(g_instance_num, 32), 32));
+  constant C_BASEADDR : t_axi_addr :=
+    std_logic_vector(unsigned(g_axi_baseaddr) + unsigned(C_BASEADDR_OFFSET));
+
   -- internal signal for readback
-  signal axi_rw_regs_i : t_example_module_rw_regs := c_example_module_rw_regs;
+  signal axi_rw_regs_i    : t_example_module_rw_regs := c_example_module_rw_regs;
   signal axi_pulse_regs_i : t_example_module_pulse_regs := c_example_module_pulse_regs;
 
   -- internal bus signals for readback
@@ -125,48 +136,59 @@ begin
       
       
       if (slv_reg_wren = '1') then
-        case awaddr_i is
-        
-          when C_ADDR_REG0 =>
       
+          if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG0), 32) then
+          
             axi_rw_regs_i.reg0 <= wdata(0);
+          
+          end if;
       
-          when C_ADDR_REG1 =>
-      
+          if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG1), 32) then
+          
             axi_rw_regs_i.reg1 <= wdata(0);
+          
+          end if;
       
-          when C_ADDR_REG3 =>
-      
+          if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG3), 32) then
+          
             axi_rw_regs_i.reg3 <= wdata(7 downto 0);
+          
+          end if;
       
-          when C_ADDR_REG5 =>
-      
+          if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG5), 32) then
+          
             axi_rw_regs_i.reg5 <= wdata;
+          
+          end if;
       
-          when C_ADDR_REG7 =>
-      
+          if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG7), 32) then
+          
             axi_rw_regs_i.reg7.field0 <= wdata(0);
             axi_rw_regs_i.reg7.field1 <= wdata(4 downto 1);
             axi_rw_regs_i.reg7.field2 <= wdata(5);
             axi_rw_regs_i.reg7.field3 <= wdata(20 downto 6);
+          
+          end if;
       
-          when C_ADDR_REG9 =>
-      
+          if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG9), 32) then
+          
             axi_pulse_regs_i.reg9 <= wdata(0);
+          
+          end if;
       
-          when C_ADDR_REG10 =>
-      
+          if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG10), 32) then
+          
             axi_pulse_regs_i.reg10 <= wdata(3 downto 0);
+          
+          end if;
       
-          when C_ADDR_REG11 =>
-      
+          if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG11), 32) then
+          
             axi_pulse_regs_i.reg11.field0 <= wdata(14 downto 0);
             axi_pulse_regs_i.reg11.field1 <= wdata(15);
+          
+          end if;
       
-          when others =>
-            null;
-      
-        end case;
       end if;
   
     end if;
@@ -224,54 +246,66 @@ begin
   
     reg_data_out <= (others => '0');
     
-    case araddr_i is
+    if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG0), 32) then
     
-      when C_ADDR_REG0 =>
+      reg_data_out(0) <= axi_rw_regs_i.reg0;
     
-        reg_data_out(0) <= axi_rw_regs_i.reg0;
+    end if;
     
-      when C_ADDR_REG1 =>
+    if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG1), 32) then
     
-        reg_data_out(0) <= axi_rw_regs_i.reg1;
+      reg_data_out(0) <= axi_rw_regs_i.reg1;
     
-      when C_ADDR_REG2 =>
+    end if;
     
-        reg_data_out(0) <= axi_ro_regs.reg2;
+    if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG2), 32) then
     
-      when C_ADDR_REG3 =>
+      reg_data_out(0) <= axi_ro_regs.reg2;
     
-        reg_data_out(7 downto 0) <= axi_rw_regs_i.reg3;
+    end if;
     
-      when C_ADDR_REG4 =>
+    if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG3), 32) then
     
-        reg_data_out(13 downto 0) <= axi_ro_regs.reg4;
+      reg_data_out(7 downto 0) <= axi_rw_regs_i.reg3;
     
-      when C_ADDR_REG5 =>
+    end if;
     
-        reg_data_out <= axi_rw_regs_i.reg5;
+    if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG4), 32) then
     
-      when C_ADDR_REG6 =>
+      reg_data_out(13 downto 0) <= axi_ro_regs.reg4;
     
-        reg_data_out <= axi_ro_regs.reg6;
+    end if;
     
-      when C_ADDR_REG7 =>
+    if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG5), 32) then
     
-        reg_data_out(0) <= axi_rw_regs_i.reg7.field0;
-        reg_data_out(4 downto 1) <= axi_rw_regs_i.reg7.field1;
-        reg_data_out(5) <= axi_rw_regs_i.reg7.field2;
-        reg_data_out(20 downto 6) <= axi_rw_regs_i.reg7.field3;
+      reg_data_out <= axi_rw_regs_i.reg5;
     
-      when C_ADDR_REG8 =>
+    end if;
     
-        reg_data_out(0) <= axi_ro_regs.reg8.field0;
-        reg_data_out(19 downto 1) <= axi_ro_regs.reg8.field1;
-        reg_data_out(20) <= axi_ro_regs.reg8.field2;
-        reg_data_out(23 downto 21) <= axi_ro_regs.reg8.field3;
+    if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG6), 32) then
     
-      when others =>
-        null;
+      reg_data_out <= axi_ro_regs.reg6;
     
-    end case;
+    end if;
+    
+    if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG7), 32) then
+    
+      reg_data_out(0) <= axi_rw_regs_i.reg7.field0;
+      reg_data_out(4 downto 1) <= axi_rw_regs_i.reg7.field1;
+      reg_data_out(5) <= axi_rw_regs_i.reg7.field2;
+      reg_data_out(20 downto 6) <= axi_rw_regs_i.reg7.field3;
+    
+    end if;
+    
+    if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG8), 32) then
+    
+      reg_data_out(0) <= axi_ro_regs.reg8.field0;
+      reg_data_out(19 downto 1) <= axi_ro_regs.reg8.field1;
+      reg_data_out(20) <= axi_ro_regs.reg8.field2;
+      reg_data_out(23 downto 21) <= axi_ro_regs.reg8.field3;
+    
+    end if;
+    
   end process p_mm_select_read;
 
   p_output : process(clk, areset_n)

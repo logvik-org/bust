@@ -1,103 +1,102 @@
-class EXAMPLE_MODULE_H():
-    def __init__(self):
-    
-        self.EXAMPLE_MODULE_BASEADDR = 0xffaa0000
+class EXAMPLE_MODULE_H:
 
-        """ Register: reg0 """
-        self.REG0_OFFSET = 0x0
-        self.REG0_RESET = 0x0
+    EXAMPLE_MODULE_BASEADDR = 0xffaa0000
 
-        """ Register: reg1 """
-        self.REG1_OFFSET = 0x4
-        self.REG1_RESET = 0x1
+    """ Register: reg0 """
+    REG0_OFFSET = 0x0
+    REG0_RESET = 0x0
 
-        """ Register: reg2 """
-        self.REG2_OFFSET = 0x8
-        self.REG2_RESET = 0x0
+    """ Register: reg1 """
+    REG1_OFFSET = 0x4
+    REG1_RESET = 0x1
 
-        """ Register: reg3 """
-        self.REG3_OFFSET = 0xc
-        self.REG3_RESET = 0x3
+    """ Register: reg2 """
+    REG2_OFFSET = 0x8
+    REG2_RESET = 0x0
 
-        """ Register: reg4 """
-        self.REG4_OFFSET = 0x10
-        self.REG4_RESET = 0x0
+    """ Register: reg3 """
+    REG3_OFFSET = 0xc
+    REG3_RESET = 0x3
 
-        """ Register: reg5 """
-        self.REG5_OFFSET = 0x14
-        self.REG5_RESET = 0xffffffff
+    """ Register: reg4 """
+    REG4_OFFSET = 0x10
+    REG4_RESET = 0x0
 
-        """ Register: reg6 """
-        self.REG6_OFFSET = 0x18
-        self.REG6_RESET = 0x0
+    """ Register: reg5 """
+    REG5_OFFSET = 0x14
+    REG5_RESET = 0xffffffff
 
-        """ Register: reg7 """
-        self.REG7_OFFSET = 0x1c
-        self.REG7_RESET = 0xad7
+    """ Register: reg6 """
+    REG6_OFFSET = 0x18
+    REG6_RESET = 0x0
 
-        """ Field: field0 """
-        self.REG7_FIELD0_OFFSET = 0
-        self.REG7_FIELD0_WIDTH = 1
-        self.REG7_FIELD0_RESET = 0x1
+    """ Register: reg7 """
+    REG7_OFFSET = 0x1c
+    REG7_RESET = 0xad7
 
-        """ Field: field1 """
-        self.REG7_FIELD1_OFFSET = 1
-        self.REG7_FIELD1_WIDTH = 4
-        self.REG7_FIELD1_RESET = 0xb
+    """ Field: field0 """
+    REG7_FIELD0_OFFSET = 0
+    REG7_FIELD0_WIDTH = 1
+    REG7_FIELD0_RESET = 0x1
 
-        """ Field: field2 """
-        self.REG7_FIELD2_OFFSET = 5
-        self.REG7_FIELD2_WIDTH = 1
-        self.REG7_FIELD2_RESET = 0x0
+    """ Field: field1 """
+    REG7_FIELD1_OFFSET = 1
+    REG7_FIELD1_WIDTH = 4
+    REG7_FIELD1_RESET = 0xb
 
-        """ Field: field3 """
-        self.REG7_FIELD3_OFFSET = 6
-        self.REG7_FIELD3_WIDTH = 15
-        self.REG7_FIELD3_RESET = 0x2b
+    """ Field: field2 """
+    REG7_FIELD2_OFFSET = 5
+    REG7_FIELD2_WIDTH = 1
+    REG7_FIELD2_RESET = 0x0
 
-        """ Register: reg8 """
-        self.REG8_OFFSET = 0x20
-        self.REG8_RESET = 0x0
+    """ Field: field3 """
+    REG7_FIELD3_OFFSET = 6
+    REG7_FIELD3_WIDTH = 15
+    REG7_FIELD3_RESET = 0x2b
 
-        """ Field: field0 """
-        self.REG8_FIELD0_OFFSET = 0
-        self.REG8_FIELD0_WIDTH = 1
-        self.REG8_FIELD0_RESET = 0x0
+    """ Register: reg8 """
+    REG8_OFFSET = 0x20
+    REG8_RESET = 0x0
 
-        """ Field: field1 """
-        self.REG8_FIELD1_OFFSET = 1
-        self.REG8_FIELD1_WIDTH = 19
-        self.REG8_FIELD1_RESET = 0x0
+    """ Field: field0 """
+    REG8_FIELD0_OFFSET = 0
+    REG8_FIELD0_WIDTH = 1
+    REG8_FIELD0_RESET = 0x0
 
-        """ Field: field2 """
-        self.REG8_FIELD2_OFFSET = 20
-        self.REG8_FIELD2_WIDTH = 1
-        self.REG8_FIELD2_RESET = 0x0
+    """ Field: field1 """
+    REG8_FIELD1_OFFSET = 1
+    REG8_FIELD1_WIDTH = 19
+    REG8_FIELD1_RESET = 0x0
 
-        """ Field: field3 """
-        self.REG8_FIELD3_OFFSET = 21
-        self.REG8_FIELD3_WIDTH = 3
-        self.REG8_FIELD3_RESET = 0x0
+    """ Field: field2 """
+    REG8_FIELD2_OFFSET = 20
+    REG8_FIELD2_WIDTH = 1
+    REG8_FIELD2_RESET = 0x0
 
-        """ Register: reg9 """
-        self.REG9_OFFSET = 0x24
-        self.REG9_RESET = 0x1
+    """ Field: field3 """
+    REG8_FIELD3_OFFSET = 21
+    REG8_FIELD3_WIDTH = 3
+    REG8_FIELD3_RESET = 0x0
 
-        """ Register: reg10 """
-        self.REG10_OFFSET = 0x28
-        self.REG10_RESET = 0xa
+    """ Register: reg9 """
+    REG9_OFFSET = 0x24
+    REG9_RESET = 0x1
 
-        """ Register: reg11 """
-        self.REG11_OFFSET = 0x2c
-        self.REG11_RESET = 0x3
+    """ Register: reg10 """
+    REG10_OFFSET = 0x28
+    REG10_RESET = 0xa
 
-        """ Field: field0 """
-        self.REG11_FIELD0_OFFSET = 0
-        self.REG11_FIELD0_WIDTH = 15
-        self.REG11_FIELD0_RESET = 0x3
+    """ Register: reg11 """
+    REG11_OFFSET = 0x2c
+    REG11_RESET = 0x3
 
-        """ Field: field1 """
-        self.REG11_FIELD1_OFFSET = 15
-        self.REG11_FIELD1_WIDTH = 1
-        self.REG11_FIELD1_RESET = 0x0
+    """ Field: field0 """
+    REG11_FIELD0_OFFSET = 0
+    REG11_FIELD0_WIDTH = 15
+    REG11_FIELD0_RESET = 0x3
+
+    """ Field: field1 """
+    REG11_FIELD1_OFFSET = 15
+    REG11_FIELD1_WIDTH = 1
+    REG11_FIELD1_RESET = 0x0
 

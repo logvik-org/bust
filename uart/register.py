@@ -53,7 +53,7 @@ class Register:
                 for field in reg['fields']:
                     self.add_field(field)
             else:
-                InvalidFieldFormat('Fields are missing in reg: ' + self.name)    
+                InvalidFieldFormat('Fields are missing in reg: ' + self.name)
 
         else:
             raise UndefinedRegisterType(self.sig_type)

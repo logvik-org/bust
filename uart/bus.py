@@ -24,9 +24,13 @@ class Bus(object):
             self.bus_reset = 'async'
         elif bus['reset'] in ['async', 'sync']:
             self.bus_reset = bus['reset']
-            
         else:
             raise InvalidResetMode(bus['reset'])
+
+        if 'comp_library' in bus:
+            self.comp_library = bus['comp_library']
+        else:
+            self.comp_library = "work"
 
         # Temporarily force all resets to be active_low
         self.reset_active_low = True
@@ -54,7 +58,7 @@ class Bus(object):
         return json
 
     def return_bus_pkg_VHDL(self):
-        
+
         s = 'library ieee;\n'
         s += 'use ieee.std_logic_1164.all;\n'
         s += '\n'
@@ -126,28 +130,46 @@ class Bus(object):
         s += 'use ieee.std_logic_1164.all;\n'
         s += 'use ieee.numeric_std.all;\n'
         s += '\n'
+        if self.comp_library != "work":
+            s += "library " + self.comp_library + ";\n"
+        s += "use " + self.comp_library + "." + self.bus_type + "_pkg.all;\n"
         s += 'use work.' + mod.name + '_pif_pkg.all;\n\n'
         s += 'entity ' + mod.name + '_' + self.bus_type + '_pif is\n\n'
+        s += indent_string('generic (\n')
+        par = '-- ' + self.bus_type.upper() + ' Bus Interface Generics\n'
+        par += 'g_' + self.bus_type + '_baseaddr        : std_logic_vector(' + str(self.addr_width - 1)
+        par += ' downto 0) := ' + str(self.addr_width) + 'X"'
+        par += format(mod.baseaddr, 'X') + '"'
+
+        if mod.enable_baseaddr_offset is True:
+            par += ";\n"
+            par += 'g_' + self.bus_type + '_baseaddr_offset : std_logic_vector(' + str(self.addr_width - 1)
+            par += ' downto 0) := ' + str(self.addr_width) + 'X"'
+            par += format(mod.baseaddr_offset, 'X') + '";\n'
+            par += 'g_instance_num        : natural                       := 0'
+
+        par += ');\n'
+        s += indent_string(par, 2)
 
         s += indent_string('port (')
 
         par = ''
         if mod.count_rw_regs() + mod.count_ro_regs() + mod.count_pulse_regs() > 0:
-            par += '\n-- register record signals\n'
+            par += '\n-- ' + self.bus_type.upper() + ' Bus Interface Ports\n'
 
         if mod.count_rw_regs() > 0:
-            par += self.bus_type + '_rw_regs : out t_' + mod.name + '_rw_regs := '
+            par += self.bus_type + '_rw_regs    : out t_' + mod.name + '_rw_regs    := '
             par += 'c_' + mod.name + '_rw_regs;\n'
 
         if mod.count_ro_regs() > 0:
-            par += self.bus_type + '_ro_regs : in  t_' + mod.name + '_ro_regs := '
+            par += self.bus_type + '_ro_regs    : in  t_' + mod.name + '_ro_regs    := '
             par += 'c_' + mod.name + '_ro_regs;\n'
 
         if mod.count_pulse_regs() > 0:
             par += self.bus_type + '_pulse_regs : out t_' + mod.name + '_pulse_regs := '
             par += 'c_' + mod.name + '_pulse_regs;\n'
-            
-        
+
+
         par += '\n'
         par += '-- bus signals\n'
         par += clk_name + '            : in  std_logic;\n'
@@ -155,7 +177,7 @@ class Bus(object):
 
         # Add bus-specific signals
         if self.bus_type == 'axi':
-            
+
             par += 'awaddr         : in  t_' + mod.name + '_addr;\n'
             par += 'awvalid        : in  std_logic;\n'
             par += 'awready        : out std_logic;\n'
@@ -179,12 +201,32 @@ class Bus(object):
 
         s += 'architecture behavior of ' + mod.name + '_axi_pif is\n\n'
 
+        if mod.enable_baseaddr_offset is True:
+
+            par = "constant C_BASEADDR_OFFSET : t_" + self.bus_type + "_addr :=\n"
+            s += indent_string(par)
+            par = "std_logic_vector(resize(unsigned(g_" + self.bus_type + "_baseaddr_offset) * "
+            par += "to_unsigned(g_instance_num, " + str(self.addr_width) + "), " + str(self.addr_width)
+            par += "));\n"
+            s += indent_string(par, 2)
+
+            par = "constant C_BASEADDR : t_" + self.bus_type + "_addr :=\n"
+            s += indent_string(par)
+            par = "std_logic_vector(unsigned(g_" + self.bus_type + "_baseaddr) + unsigned(C_BASEADDR_OFFSET));\n"
+            s += indent_string(par, 2)
+
+        else:
+            par = "constant C_BASEADDR : t_" + self.bus_type + "_addr := g_" + self.bus_type + "_baseaddr;\n"
+            s += indent_string(par)
+
+        s += "\n"
+        
         if mod.count_rw_regs() + mod.count_pulse_regs() > 0:
             par = ''
             par += '-- internal signal for readback' + '\n'
             s += indent_string(par)
             if mod.count_rw_regs() > 0:
-                par = 'signal ' + self.bus_type + '_rw_regs_i : t_'
+                par = 'signal ' + self.bus_type + '_rw_regs_i    : t_'
                 par += mod.name + '_rw_regs := c_' + mod.name + '_rw_regs;\n'
                 s += indent_string(par)
             if mod.count_pulse_regs() > 0:
@@ -192,7 +234,7 @@ class Bus(object):
                 par += mod.name + '_pulse_regs := c_' + mod.name + '_pulse_regs;\n'
                 s += indent_string(par)
             s += '\n'
-        
+
 
         # Add bus-specific logic
         if self.bus_type == 'axi':
@@ -265,7 +307,7 @@ class Bus(object):
             s += indent_string(sync_process(clk_name, reset_name, "p_awready", reset_string,
                                             logic_string, self.reset_active_low))
         s += "\n"
-        
+
         ####################################################################
         # p_awaddr
         ####################################################################
@@ -319,8 +361,7 @@ class Bus(object):
                 logic_string += "\n-- Return PULSE registers to reset value every clock cycle\n"
                 logic_string += 'axi_pulse_regs_i <= c_' + mod.name + '_pulse_regs;\n\n'
 
-            logic_string += "\nif (slv_reg_wren = '1') then\n"
-            logic_string += indent_string('case awaddr_i is\n\n')
+            logic_string += "\nif (slv_reg_wren = '1') then\n\n"
 
             # create a generator for looping through all rw and pulse regs
             gen = (reg for reg in mod.registers if reg.mode == "rw" or reg.mode == "pulse")
@@ -329,9 +370,10 @@ class Bus(object):
                     sig_name = 'axi_rw_regs_i.'
                 elif reg.mode == 'pulse':
                     sig_name = 'axi_pulse_regs_i.'
-            
-                logic_string += indent_string('when C_ADDR_', 2)
-                logic_string += reg.name.upper() + ' =>\n\n'
+
+                par = "if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_"
+                par += reg.name.upper() + "), " + str(self.addr_width) + ") then\n\n"
+                logic_string += indent_string(par, 2)
                 par = ''
                 if reg.sig_type == 'fields':
 
@@ -350,12 +392,9 @@ class Bus(object):
                     par += sig_name + reg.name + ' <= wdata(0);\n'
 
                 logic_string += indent_string(par, 3)
+                logic_string += indent_string("\nend if;\n", 2)
                 logic_string += '\n'
 
-            logic_string += indent_string('when others =>\n', 2)
-            logic_string += indent_string('null;\n', 3)
-            logic_string += '\n'
-            logic_string += indent_string('end case;\n')
             logic_string += 'end if;\n'
 
             if self.bus_reset == "async":
@@ -367,7 +406,7 @@ class Bus(object):
                                                 reset_string, logic_string))
             s += "\n"
 
-        
+
         ####################################################################
         # p_write_response
         ####################################################################
@@ -381,7 +420,7 @@ class Bus(object):
         logic_string += "elsif (bready = '1' and bvalid_i = '1') then\n"
         logic_string += indent_string("bvalid_i <= '0';\n")
         logic_string += "end if;"
-        
+
         if self.bus_reset == "async":
             s += indent_string(async_process(clk_name, reset_name, "p_write_response",
                                              reset_string, logic_string))
@@ -444,13 +483,13 @@ class Bus(object):
         # p_mm_select_read
         ####################################################################
         logic_string = "reg_data_out <= (others => '0');\n\n"
-        logic_string += 'case araddr_i is\n\n'
 
         gen = [reg for reg in mod.registers
                if reg.mode == "ro" or reg.mode == "rw"]
         for reg in gen:
-            logic_string += indent_string('when C_ADDR_')
-            logic_string += reg.name.upper() + ' =>\n\n'
+            par = "if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_"
+            par += reg.name.upper() + "), " + str(self.addr_width) + ") then\n\n"
+            logic_string += par
             par = ''
 
             if reg.sig_type == 'fields':
@@ -498,13 +537,10 @@ class Bus(object):
                     raise Exception("Unknown error occurred")
                 par += reg.name + ';\n'
 
-            logic_string += indent_string(par, 2)
+            logic_string += indent_string(par)
+            logic_string += "\nend if;\n"
             logic_string += '\n'
 
-        logic_string += indent_string('when others =>\n')
-        logic_string += indent_string('null;\n', 2)
-        logic_string += '\n'
-        logic_string += 'end case;\n'
 
         s += indent_string(comb_process("p_mm_select_read", logic_string))
         s += "\n"
@@ -551,5 +587,3 @@ class InvalidResetMode(RuntimeError):
         msg += "- 'sync'  - synchronous\n"
         msg += "but was: " + reset
         super().__init__(msg)
-        
-        

@@ -92,6 +92,9 @@ class Editor(object):
     def edit_baseaddr(self):
         print('Change the module base address from current: ' + str(hex(self.mod.baseaddr)))
         self.mod.baseaddr = get_int('Enter a new base address (in hex): ', 16)
+        # TODO full functionality
+        print("Add base address offset feature? (Enables possibility for adding multiple instances of the same module with a fixed base address offset): ")
+        
         self.recently_saved = False
         self.update_menu()
         
@@ -360,7 +363,7 @@ class Editor(object):
         print('Saving ' + self.jsonfile + ' ...')
 
         # Get JSON with addresses
-        json = self.mod.print_JSON(True)
+        json = self.mod.return_JSON(True)
         try:
             write_string_to_file(json, self.jsonfile, None)
         except Exception:

@@ -36,6 +36,10 @@ Install the latest relase by using pip (preferably pip3):
 
 `uart.py -h | --help`
 
+### Output
+
+The output VHDL files must be compiled with VHDL 2008.
+
 ## Latest Development Version (Bleeding Edge)
 
 The latest development version can be found in the [dev branch](https://github.com/olagrottvik/uart/tree/dev) on Github. Clone the repo and checkout the branch.

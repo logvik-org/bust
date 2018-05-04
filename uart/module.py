@@ -29,17 +29,31 @@ class Module:
             self.bus = bus
             self.registers = []
             self.addresses = []
-            
+
             is_valid_VHDL(mod['name'])
             self.name = mod['name']
-            self.addr_width = mod['addr_width']
-            self.data_width = mod['data_width']
+            self.addr_width = bus.addr_width
+            self.data_width = bus.data_width
             self.description = mod['description']
             self.description_with_breaks = add_line_breaks(mod['description'], 25)
             if 'baseaddr' in mod:
                 self.baseaddr = int(mod['baseaddr'], 16)
+                # Check if the base address is beyond the address width...
+                if self.baseaddr > pow(2, self.addr_width) - 1:
+                    raise RuntimeError("Base address is beyond the bus address width...")
             else:
                 self.baseaddr = 0
+            # Check if we should add the baseaddr offset feature
+            if 'baseaddr_offset' in mod:
+                self.baseaddr_offset = int(mod['baseaddr_offset'], 16)
+                # Check if the offset is beyond the baseaddress
+                if self.baseaddr_offset > self.baseaddr:
+                    raise RuntimeError("Base address offset cannot be larger than base address...")
+                self.enable_baseaddr_offset = True
+            else:
+                self.baseaddr_offset = 0
+                self.enable_baseaddr_offset = False
+
             for reg in mod['register']:
                 self.add_register(reg)
 
@@ -54,7 +68,7 @@ class Module:
                 if self.is_address_free(addr):
                     if self.is_address_out_of_range(addr):
                         raise RuntimeError("Address " + hex(addr) +
-                               " is definetely out of range...")
+                                           " is definitely out of range...")
                     self.addresses.append(addr)
                     self.registers.append(Register(reg, addr, self.data_width))
                 else:
@@ -69,7 +83,7 @@ class Module:
     def return_module_pkg_VHDL(self):
         s = 'library ieee;\n'
         s += 'use ieee.std_logic_1164.all;\n'
-        s += 'use ieee.numeric_std.all;\n'
+        s += 'use ieee.numeric_std.all;\n\n'
         s += '\n'
         s += "package " + self.name + "_pif_pkg is"
         s += "\n\n"
@@ -288,7 +302,7 @@ class Module:
 
                 else:
                     raise RuntimeError(
-                            "Something went wrong... What now?" + reg.sig_type)
+                        "Something went wrong... What now?" + reg.sig_type)
 
                 if i < len(gen) - 1:
                     par += ','
@@ -396,7 +410,7 @@ class Module:
 
                 s += indent_string(par, 2)
             s += '\n'
-            
+
         s += '\n'
 
         s += "end package " + self.name + "_pif_pkg;"
@@ -406,18 +420,42 @@ class Module:
     def return_module_VHDL(self):
         s = 'library ieee;\n'
         s += 'use ieee.std_logic_1164.all;\n'
-        s += 'use ieee.numeric_std.all;\n'
+        s += 'use ieee.numeric_std.all;\n\n'
+        s += '-- User Libraries Start\n\n'
+        s += '-- User Libraries End\n'
         s += '\n'
-        s += 'use work.' + self.bus.bus_type + '_pkg.all;\n'
+        if self.bus.comp_library != "work":
+            s += "library " + self.bus.comp_library + ";\n"
+        s += 'use ' + self.bus.comp_library + '.' + self.bus.bus_type + '_pkg.all;\n'
         s += 'use work.' + self.name + '_pif_pkg.all;\n'
         s += '\n'
 
         s += 'entity ' + self.name + ' is\n'
         s += '\n'
+        s += indent_string('generic (\n')
+        par = '-- User Generics Start\n\n'
+        par += '-- User Generics End\n'
+        par += '-- ' + self.bus.bus_type.upper() + ' Bus Interface Generics\n'
+        par += 'g_' + self.bus.bus_type + '_baseaddr        : std_logic_vector(' + str(self.bus.addr_width - 1)
+        par += ' downto 0) := ' + str(self.bus.addr_width) + 'X"'
+        par += format(self.baseaddr, 'X') + '"'
+        
+
+        if self.enable_baseaddr_offset is True:
+            par += ";\n"
+            par += 'g_' + self.bus.bus_type + '_baseaddr_offset : std_logic_vector(' + str(self.bus.addr_width - 1)
+            par += ' downto 0) := ' + str(self.bus.addr_width) + 'X"'
+            par += format(self.baseaddr_offset, 'X') + '";\n'
+            par += 'g_instance_num        : natural                       := 0'
+
+        par += ');\n'
+
+        s += indent_string(par, 2)
+
         s += indent_string('port (\n')
-        s += '\n'
-        par = ''
-        par += '-- ' + self.bus.bus_type.upper() + ' Bus Interface\n'
+        par = '-- User Ports Start\n\n'
+        par += '-- User Ports End\n'
+        par += '-- ' + self.bus.bus_type.upper() + ' Bus Interface Ports\n'
         par += self.bus.bus_type + '_' + self.bus.get_clk_name() + '      : in  std_logic;\n'
         par += self.bus.bus_type + '_' + self.bus.get_reset_name() + ' : in  std_logic;\n'
         par += self.bus.bus_type + '_in       : in  t_' + \
@@ -432,13 +470,22 @@ class Module:
 
         s += 'architecture behavior of ' + self.name + ' is\n'
         s += '\n'
+        par = '-- User Architecture Start\n\n'
+        par += '-- User Architecture End\n\n'
+        s += indent_string(par)
 
+        s += indent_string("-- " + self.bus.bus_type.upper() + " output signal for user readback\n")
+        par = "signal " + self.bus.bus_type + "_out_i : t_" + self.bus.bus_type
+        par += "_slave_to_interconnect;\n"
+        s += indent_string(par)
+        
+        s += indent_string("-- Register Signals\n")
         if self.count_rw_regs() > 0:
-            s += indent_string('signal ' + self.bus.bus_type + '_rw_regs : t_')
-            s += self.name + '_rw_regs := c_' + self.name + '_rw_regs;\n'
+            s += indent_string('signal ' + self.bus.bus_type + '_rw_regs    : t_')
+            s += self.name + '_rw_regs    := c_' + self.name + '_rw_regs;\n'
         if self.count_ro_regs() > 0:
-            s += indent_string('signal ' + self.bus.bus_type + '_ro_regs : t_')
-            s += self.name + '_ro_regs := c_' + self.name + '_ro_regs;\n'
+            s += indent_string('signal ' + self.bus.bus_type + '_ro_regs    : t_')
+            s += self.name + '_ro_regs    := c_' + self.name + '_ro_regs;\n'
         if self.count_pulse_regs() > 0:
             s += indent_string('signal ' + self.bus.bus_type + '_pulse_regs : t_')
             s += self.name + '_pulse_regs := c_' + self.name + '_pulse_regs;\n'
@@ -449,57 +496,68 @@ class Module:
         s += 'begin\n'
         s += '\n'
 
+        par = '-- User Logic Start\n\n'
+        par += '-- User Logic End\n\n'
+        s += indent_string(par)
+
+        s += indent_string(self.bus.bus_type + "_out <= " + self.bus.bus_type + "_out_i;\n\n")
+
         s += indent_string('i_' + self.name + '_' + self.bus.bus_type + '_pif ')
         s += ': entity work.' + self.name + '_' + self.bus.bus_type + '_pif\n'
+
+        s += indent_string('generic map (\n', 2)
+
+        par = 'g_' + self.bus.bus_type + '_baseaddr        => g_' + self.bus.bus_type + '_baseaddr'
+
+        if self.enable_baseaddr_offset is True:
+            par += ',\n'
+            par += 'g_' + self.bus.bus_type + '_baseaddr_offset => g_' + self.bus.bus_type + '_baseaddr_offset,\n'
+            par += 'g_instance_num        => g_instance_num'
+
+        par += ')\n'
+        s += indent_string(par, 2)
+
         s += indent_string('port map (\n', 2)
 
         par = ''
         if self.count_rw_regs() > 0:
-            par += self.bus.bus_type + '_rw_regs    => ' + self.bus.bus_type + '_rw_regs,\n'
+            par += self.bus.bus_type + '_rw_regs         => ' + self.bus.bus_type + '_rw_regs,\n'
         if self.count_ro_regs() > 0:
-            par += self.bus.bus_type + '_ro_regs    => ' + self.bus.bus_type + '_ro_regs,\n'
+            par += self.bus.bus_type + '_ro_regs         => ' + self.bus.bus_type + '_ro_regs,\n'
         if self.count_pulse_regs() > 0:
-            par += self.bus.bus_type + '_pulse_regs => ' + self.bus.bus_type + '_pulse_regs,\n'
-            
-        par += self.bus.get_clk_name() + '            => ' + self.bus.bus_type + '_' + self.bus.get_clk_name() + ',\n'
-        par += self.bus.get_reset_name() + '       => ' + self.bus.bus_type + '_' + self.bus.get_reset_name()  + ',\n'
-        par += 'awaddr         => ' + self.bus.bus_type + '_in.awaddr(C_'
+            par += self.bus.bus_type + '_pulse_regs      => ' + self.bus.bus_type + '_pulse_regs,\n'
+
+        par += self.bus.get_clk_name() + '                 => ' + self.bus.bus_type + '_' + self.bus.get_clk_name() + ',\n'
+        par += self.bus.get_reset_name() + '            => ' + self.bus.bus_type + '_' + self.bus.get_reset_name()  + ',\n'
+        par += 'awaddr              => ' + self.bus.bus_type + '_in.awaddr(C_'
         par += self.name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
-        par += 'awvalid        => ' + self.bus.bus_type + '_in.awvalid,\n'
-        par += 'awready        => ' + self.bus.bus_type + '_out.awready,\n'
-        par += 'wdata          => ' + self.bus.bus_type + '_in.wdata(C_'
+        par += 'awvalid             => ' + self.bus.bus_type + '_in.awvalid,\n'
+        par += 'awready             => ' + self.bus.bus_type + '_out_i.awready,\n'
+        par += 'wdata               => ' + self.bus.bus_type + '_in.wdata(C_'
         par += self.name.upper() + '_DATA_WIDTH-1 downto 0),\n'
-        par += 'wvalid         => ' + self.bus.bus_type + '_in.wvalid,\n'
-        par += 'wready         => ' + self.bus.bus_type + '_out.wready,\n'
-        par += 'bresp          => ' + self.bus.bus_type + '_out.bresp,\n'
-        par += 'bvalid         => ' + self.bus.bus_type + '_out.bvalid,\n'
-        par += 'bready         => ' + self.bus.bus_type + '_in.bready,\n'
-        par += 'araddr         => ' + self.bus.bus_type + '_in.araddr(C_'
+        par += 'wvalid              => ' + self.bus.bus_type + '_in.wvalid,\n'
+        par += 'wready              => ' + self.bus.bus_type + '_out_i.wready,\n'
+        par += 'bresp               => ' + self.bus.bus_type + '_out_i.bresp,\n'
+        par += 'bvalid              => ' + self.bus.bus_type + '_out_i.bvalid,\n'
+        par += 'bready              => ' + self.bus.bus_type + '_in.bready,\n'
+        par += 'araddr              => ' + self.bus.bus_type + '_in.araddr(C_'
         par += self.name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
-        par += 'arvalid        => ' + self.bus.bus_type + '_in.arvalid,\n'
-        par += 'arready        => ' + self.bus.bus_type + '_out.arready,\n'
-        par += 'rdata          => ' + self.bus.bus_type + '_out.rdata(C_'
+        par += 'arvalid             => ' + self.bus.bus_type + '_in.arvalid,\n'
+        par += 'arready             => ' + self.bus.bus_type + '_out_i.arready,\n'
+        par += 'rdata               => ' + self.bus.bus_type + '_out_i.rdata(C_'
         par += self.name.upper() + '_DATA_WIDTH-1 downto 0),\n'
-        par += 'rresp          => ' + self.bus.bus_type + '_out.rresp,\n'
-        par += 'rvalid         => ' + self.bus.bus_type + '_out.rvalid,\n'
-        par += 'rready         => ' + self.bus.bus_type + '_in.rready\n'
+        par += 'rresp               => ' + self.bus.bus_type + '_out_i.rresp,\n'
+        par += 'rvalid              => ' + self.bus.bus_type + '_out_i.rvalid,\n'
+        par += 'rready              => ' + self.bus.bus_type + '_in.rready\n'
         par += ');\n'
         s += indent_string(par, 3)
-
-        # If bus data width is larger than module data width, set the unused bits to zero
-        if self.bus.data_width > self.data_width:
-            s += indent_string('-- Set unused bus data bits to zero\n')
-            s += indent_string(self.bus.bus_type +
-                              '_out.rdata(C_' + self.bus.bus_type.upper())
-            s += '_DATA_WIDTH-1 downto C_' + self.name.upper() + '_DATA_WIDTH)'
-            s += " <= (others => '0');\n"
 
         s += '\n'
         s += 'end architecture behavior;'
 
         return s
 
-    def print_JSON(self, include_address=False):
+    def return_JSON(self, include_address=False):
         """! @brief Returns JSON string
 
         """
@@ -508,10 +566,10 @@ class Module:
         dic["name"] = self.name
 
         dic["bus"] = self.bus.return_JSON()
-        
-        dic["addr_width"] = self.addr_width
-        dic["data_width"] = self.data_width
+
         dic["baseaddr"] = str(hex(self.baseaddr))
+        if self.enable_baseaddr_offset is True:
+            dic["baseaddr_offset"] = str(hex(self.baseaddr_offset))
 
         dic["register"] = []
 
@@ -563,10 +621,10 @@ class Module:
 
     def is_address_out_of_range(self, addr):
         """ Returns True if address is out of range, False if not"""
-        
+
         if addr > pow(2, self.addr_width) - 1:
             return True
-            
+
         return False
 
     def is_address_free(self, addr):
@@ -580,7 +638,7 @@ class Module:
     def is_address_byte_based(self, addr):
         """Returns True if address is divisable by number of bytes in module data width"""
 
-        if addr % (self.data_width/8) == 0:
+        if addr % (self.data_width / 8) == 0:
             return True
         else:
             return False
@@ -629,5 +687,3 @@ class Module:
         for i, reg in enumerate(self.registers):
             string += indent_string(str(reg), 1)
         return string
-
-

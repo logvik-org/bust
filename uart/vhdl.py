@@ -3,6 +3,7 @@ import re
 from uart.utils import indent_string
 from uart.utils import is_mixed
 
+
 def sync_process(clk_name, reset_name, process_name, reset_string, logic_string, active_low=True):
     s = process_name + " : process(" + clk_name + ")\n"
     s += "begin\n"
@@ -29,7 +30,7 @@ def sync_process(clk_name, reset_name, process_name, reset_string, logic_string,
 
 
 def async_process(clk_name, reset_name, process_name, reset_string, logic_string, active_low=True):
-    s = process_name + " : process(" + clk_name + ", " + reset_name  +")\n"
+    s = process_name + " : process(" + clk_name + ", " + reset_name  + ")\n"
     s += "begin\n"
     s += indent_string("if " + reset_name + " = ")
 
@@ -94,7 +95,7 @@ def is_VHDL_keyword(string):
                 'with', 'xnor', 'xor']
 
     return string in keywords
-    
+
 
 def contain_spaces(string):
     return ' ' in string
@@ -159,4 +160,3 @@ class NonUniqueIdentifer(Exception):
     def __init__(self, msg):
         s = "\nError in parsing identifier: " + msg
         super().__init__(s)
-        
