@@ -2,6 +2,10 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+-- User Libraries Start
+
+-- User Libraries End
+
 use work.axi_pkg.all;
 use work.example_module_pif_pkg.all;
 
@@ -34,20 +38,21 @@ architecture behavior of example_module is
   
   -- User Architecture End
   
-  -- AXIoutput signal for user readback
-  signalaxi_out_i : t_axi_slave_to_interconnect;
-  -- Register Signals  signal axi_rw_regs    : t_example_module_rw_regs    := c_example_module_rw_regs;
+  -- AXI output signal for user readback
+  signal axi_out_i : t_axi_slave_to_interconnect;
+  -- Register Signals
+  signal axi_rw_regs    : t_example_module_rw_regs    := c_example_module_rw_regs;
   signal axi_ro_regs    : t_example_module_ro_regs    := c_example_module_ro_regs;
   signal axi_pulse_regs : t_example_module_pulse_regs := c_example_module_pulse_regs;
 
 begin
 
-    -- User Logic Start
-    
-    -- User Logic End
-    
-    axi_out <= axi_out_i;
-    
+  -- User Logic Start
+  
+  -- User Logic End
+  
+  axi_out <= axi_out_i;
+  
   i_example_module_axi_pif : entity work.example_module_axi_pif
     generic map (
     g_axi_baseaddr        => g_axi_baseaddr,

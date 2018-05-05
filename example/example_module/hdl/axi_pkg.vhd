@@ -12,15 +12,12 @@ package axi_pkg is
   
   type t_axi_interconnect_to_slave is record
     araddr  : t_axi_addr;
-    arprot  : std_logic_vector(2 downto 0);
     arvalid : std_logic;
     awaddr  : t_axi_addr;
-    awprot  : std_logic_vector(2 downto 0);
     awvalid : std_logic;
     bready  : std_logic;
     rready  : std_logic;
     wdata   : t_axi_data;
-    wstrb   : std_logic_vector((C_AXI_DATA_WIDTH/8)-1 downto 0);
     wvalid  : std_logic;
   end record;
 

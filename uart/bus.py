@@ -88,16 +88,12 @@ class Bus(object):
         s += '_interconnect_to_slave is record\n'
         par = ''
         par += 'araddr  : ' + addr_sub_type + ';\n'
-        par += 'arprot  : std_logic_vector(2 downto 0);\n'
         par += 'arvalid : std_logic;\n'
         par += 'awaddr  : ' + addr_sub_type + ';\n'
-        par += 'awprot  : std_logic_vector(2 downto 0);\n'
         par += 'awvalid : std_logic;\n'
         par += 'bready  : std_logic;\n'
         par += 'rready  : std_logic;\n'
         par += 'wdata   : ' + data_sub_type + ';\n'
-        par += 'wstrb   : std_logic_vector((' + data_width_constant
-        par += '/8)-1 downto 0);\n'
         par += 'wvalid  : std_logic;\n'
         s += indent_string(par, 2)
         s += indent_string('end record;\n')
