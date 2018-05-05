@@ -39,21 +39,25 @@
 #define REG7_FIELD0_OFFSET 0
 #define REG7_FIELD0_WIDTH 1
 #define REG7_FIELD0_RESET 0x1
+#define REG7_FIELD0_MASK 0x1
 
 /* Field: field1 */
 #define REG7_FIELD1_OFFSET 1
 #define REG7_FIELD1_WIDTH 4
 #define REG7_FIELD1_RESET 0xb
+#define REG7_FIELD1_MASK 0x1e
 
 /* Field: field2 */
 #define REG7_FIELD2_OFFSET 5
 #define REG7_FIELD2_WIDTH 1
 #define REG7_FIELD2_RESET 0x0
+#define REG7_FIELD2_MASK 0x20
 
 /* Field: field3 */
 #define REG7_FIELD3_OFFSET 6
 #define REG7_FIELD3_WIDTH 15
 #define REG7_FIELD3_RESET 0x2b
+#define REG7_FIELD3_MASK 0x1fffc0
 
 /* Register: reg8 */
 #define REG8_OFFSET 0x20
@@ -63,21 +67,25 @@
 #define REG8_FIELD0_OFFSET 0
 #define REG8_FIELD0_WIDTH 1
 #define REG8_FIELD0_RESET 0x0
+#define REG8_FIELD0_MASK 0x1
 
 /* Field: field1 */
 #define REG8_FIELD1_OFFSET 1
 #define REG8_FIELD1_WIDTH 19
 #define REG8_FIELD1_RESET 0x0
+#define REG8_FIELD1_MASK 0xffffe
 
 /* Field: field2 */
 #define REG8_FIELD2_OFFSET 20
 #define REG8_FIELD2_WIDTH 1
 #define REG8_FIELD2_RESET 0x0
+#define REG8_FIELD2_MASK 0x100000
 
 /* Field: field3 */
 #define REG8_FIELD3_OFFSET 21
 #define REG8_FIELD3_WIDTH 3
 #define REG8_FIELD3_RESET 0x0
+#define REG8_FIELD3_MASK 0xe00000
 
 /* Register: reg9 */
 #define REG9_OFFSET 0x24
@@ -95,10 +103,12 @@
 #define REG11_FIELD0_OFFSET 0
 #define REG11_FIELD0_WIDTH 15
 #define REG11_FIELD0_RESET 0x3
+#define REG11_FIELD0_MASK 0x7fff
 
 /* Field: field1 */
 #define REG11_FIELD1_OFFSET 15
 #define REG11_FIELD1_WIDTH 1
 #define REG11_FIELD1_RESET 0x0
+#define REG11_FIELD1_MASK 0x8000
 
 #endif

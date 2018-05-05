@@ -33,6 +33,8 @@ class Header(object):
                     s += str(field.length) + "\n"
                     s += "#define " + reg.name.upper() + "_" + field.name.upper() + "_RESET "
                     s += field.reset + "\n"
+                    s += "#define " + reg.name.upper() + "_" + field.name.upper() + "_MASK "
+                    s += str(hex(pow(2, field.length) - 1 << field.pos_low)) + "\n"
                     s += "\n"
 
         s += "#endif"
@@ -61,6 +63,8 @@ class Header(object):
                     s += str(field.length) + "\n"
                     s += indent_string(reg.name.upper() + "_" + field.name.upper() + "_RESET = ", 2)
                     s += field.reset + "\n"
+                    s += indent_string(reg.name.upper() + "_" + field.name.upper() + "_MASK = ", 2)
+                    s += str(hex(pow(2, field.length) - 1 << field.pos_low)) + "\n"
                     s += "\n"
 
         return s
