@@ -10,6 +10,7 @@ class Bus(object):
 
     """
     supported_bus = ['axi']
+    default_comp_library = "work"
 
     def __init__(self, bus):
         if bus['type'] in Bus.supported_bus:
@@ -30,7 +31,7 @@ class Bus(object):
         if 'comp_library' in bus:
             self.comp_library = bus['comp_library']
         else:
-            self.comp_library = "work"
+            self.comp_library = Bus.default_comp_library
 
         # Temporarily force all resets to be active_low
         self.reset_active_low = True
@@ -55,6 +56,8 @@ class Bus(object):
         json['addr_width'] = self.addr_width
         json['data_width'] = self.data_width
         json['reset'] = self.bus_reset
+        if self.comp_library != Bus.default_comp_library:
+            json['comp_library'] = self.comp_library
         return json
 
     def return_bus_pkg_VHDL(self):
