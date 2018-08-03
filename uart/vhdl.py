@@ -4,8 +4,11 @@ from uart.utils import indent_string
 from uart.utils import is_mixed
 
 
-def sync_process(clk_name, reset_name, process_name, reset_string, logic_string, active_low=True):
+def sync_process(clk_name, reset_name, process_name, reset_string, logic_string,
+                 active_low=True, variables=None):
     s = process_name + " : process(" + clk_name + ")\n"
+    for var in variables:
+        s += "variable " + var + ";\n"
     s += "begin\n"
     s += indent_string("if rising_edge(" + clk_name + ") then\n")
     s += indent_string("if " + reset_name + " = ", 2)
@@ -122,7 +125,7 @@ def is_valid_VHDL(string):
     if len(string) < 1:
         raise InvalidVHDLIdentifier(string + " - identifier cannot be empty.")
     if is_VHDL_keyword(string):
-        raise InvalidVHDLIdentifier(string + " - identifier cannot contain VHDL keywords.")
+        raise InvalidVHDLIdentifier(string + " - identifier cannot be identical to VHDL keyword.")
     if contain_spaces(string):
         raise InvalidVHDLIdentifier(string + " - identifiers cannot contain spaces.")
     if not start_with_alphabetic_letter(string):

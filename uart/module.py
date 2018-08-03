@@ -578,6 +578,8 @@ class Module:
 
             reg_dic["name"] = reg.name
             reg_dic["mode"] = reg.mode
+            if reg.mode == 'pulse':
+                reg_dic["num_cycles"] = reg.num_cycles
             reg_dic["type"] = reg.sig_type
 
             if include_address:

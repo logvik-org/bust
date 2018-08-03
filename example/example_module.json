@@ -135,6 +135,7 @@
         {
             "name": "reg9",
             "mode": "pulse",
+            "num_cycles": 4,
             "type": "sl",
             "address": "0x24",
             "reset": "0x1",
@@ -152,6 +153,7 @@
         {
             "name": "reg11",
             "mode": "pulse",
+            "num_cycles": 50,
             "type": "fields",
             "address": "0x2c",
             "fields": [

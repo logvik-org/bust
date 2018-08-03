@@ -53,9 +53,15 @@ class Documentation(object):
         for reg in self.module.registers:
 
             s += r"\begin{register}{H}{" + utf8tolatex(reg.name) + " - "
-            s += reg.mode.upper() + "}{" + '0x{0:0{1}X}'.format(reg.address, int(self.module.addr_width/4))
-            s += "}\n"
-            s += indent_string(r"\par " + utf8tolatex(reg.description) + r" \regnewline" + "\n")
+            s += reg.mode.upper()
+            if reg.mode.lower() == "pulse":
+                s += " for " + str(reg.num_cycles) + " cycles - "
+            s += "}{" + '0x{0:0{1}X}'.format(reg.address, int(self.module.addr_width/4))
+            s += "}"
+            
+            s += indent_string(r"\par ")
+            
+            s += utf8tolatex(reg.description) + r" \regnewline" + "\n"
             s += indent_string(r"\label{" + reg.name + "}\n")
 
             if reg.length < self.module.data_width:

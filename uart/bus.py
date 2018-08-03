@@ -232,9 +232,12 @@ class Bus(object):
                 par = 'signal ' + self.bus_type + '_pulse_regs_i : t_'
                 par += mod.name + '_pulse_regs := c_' + mod.name + '_pulse_regs;\n'
                 s += indent_string(par)
-            s += '\n'
-
-
+                par = 'signal ' + self.bus_type + '_pulse_regs_cycle : t_'
+                par += mod.name + '_pulse_regs := c_' + mod.name + '_pulse_regs;\n'
+                s += indent_string(par)
+            
+        s += '\n'
+            
         # Add bus-specific logic
         if self.bus_type == 'axi':
 
@@ -352,13 +355,13 @@ class Bus(object):
             if mod.count_rw_regs() > 0:
                 reset_string += '\naxi_rw_regs_i <= c_' + mod.name + '_rw_regs;\n'
             if mod.count_pulse_regs() > 0:
-                reset_string += '\naxi_pulse_regs_i <= c_' + mod.name + '_pulse_regs;\n'
+                reset_string += '\naxi_pulse_regs_cycle <= c_' + mod.name + '_pulse_regs;\n'
 
             logic_string = ""
             # create a generator for looping through all pulse regs
             if mod.count_pulse_regs() > 0:
                 logic_string += "\n-- Return PULSE registers to reset value every clock cycle\n"
-                logic_string += 'axi_pulse_regs_i <= c_' + mod.name + '_pulse_regs;\n\n'
+                logic_string += 'axi_pulse_regs_cycle <= c_' + mod.name + '_pulse_regs;\n\n'
 
             logic_string += "\nif (slv_reg_wren = '1') then\n\n"
 
@@ -368,7 +371,7 @@ class Bus(object):
                 if reg.mode == 'rw':
                     sig_name = 'axi_rw_regs_i.'
                 elif reg.mode == 'pulse':
-                    sig_name = 'axi_pulse_regs_i.'
+                    sig_name = 'axi_pulse_regs_cycle.'
 
                 par = "if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_"
                 par += reg.name.upper() + "), " + str(self.addr_width) + ") then\n\n"
@@ -405,7 +408,13 @@ class Bus(object):
                                                 reset_string, logic_string))
             s += "\n"
 
-
+        # Pulse reg process
+        # create a generator for looping through all rw and pulse regs
+        gen = (reg for reg in mod.registers if reg.mode == "pulse")
+        for reg in gen:
+            s += self.pulse_reg_process(mod, reg)
+            s += '\n'
+            
         ####################################################################
         # p_write_response
         ####################################################################
@@ -565,6 +574,37 @@ class Bus(object):
         s += 'end behavior;'
 
         return s
+
+
+    def pulse_reg_process(self, mod, reg):
+        clk_name = self.get_clk_name()
+        reset_name = self.get_reset_name()
+        proc_name = "p_pulse_" + reg.name
+        const_name = "c_" + mod.name + "_pulse_regs." + reg.name
+        reg_name = self.bus_type + "_pulse_regs_i." + reg.name
+        reg_tmp_name = self.bus_type + "_pulse_regs_cycle." + reg.name
+        variables = ["cnt : natural range 0 to " + str(reg.num_cycles-1) + " := 0"]
+            
+        reset_string = reg_name + " <= " + const_name + ";"
+
+        logic_string = "if " + reg_tmp_name
+        logic_string += " /= " + const_name
+        logic_string += " then\n"
+
+        par = "cnt := " + str(reg.num_cycles-1) + ";\n"
+        par += reg_name + " <= " + reg_tmp_name + ";\n"
+        logic_string += indent_string(par)
+
+        logic_string += "else\n"
+        logic_string += indent_string("if cnt > 0 then\n")
+        logic_string += indent_string("cnt := cnt - 1;\n", 2)
+        logic_string += indent_string("else\n")
+
+        par = reg_name + " <= " + const_name + ";\n"
+        logic_string += indent_string(par, 2)
+        logic_string += indent_string("end if;\n")
+        logic_string += "end if;\n"
+        return sync_process(clk_name, reset_name, proc_name, reset_string, logic_string, True, variables)
 
 
 class InvalidBusType(RuntimeError):

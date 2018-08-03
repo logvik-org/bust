@@ -20,6 +20,13 @@ class Register:
         self.description_with_breaks = add_line_breaks(reg['description'], 25)
         self.address = address
 
+        if self.mode == 'pulse':
+            # Check if num_cycles is set
+            if "num_cycles" in reg:
+                self.num_cycles = reg['num_cycles']
+            else:
+                self.num_cycles = 1
+
         self.reset = "0x0"
         self.length = 0
         self.fields = []

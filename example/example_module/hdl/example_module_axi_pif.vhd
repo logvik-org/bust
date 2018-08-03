@@ -50,6 +50,7 @@ architecture behavior of example_module_axi_pif is
   -- internal signal for readback
   signal axi_rw_regs_i    : t_example_module_rw_regs := c_example_module_rw_regs;
   signal axi_pulse_regs_i : t_example_module_pulse_regs := c_example_module_pulse_regs;
+  signal axi_pulse_regs_cycle : t_example_module_pulse_regs := c_example_module_pulse_regs;
 
   -- internal bus signals for readback
   signal awaddr_i      : t_example_module_addr;
@@ -127,12 +128,12 @@ begin
       
       axi_rw_regs_i <= c_example_module_rw_regs;
       
-      axi_pulse_regs_i <= c_example_module_pulse_regs;
+      axi_pulse_regs_cycle <= c_example_module_pulse_regs;
   
     elsif rising_edge(clk) then
       
       -- Return PULSE registers to reset value every clock cycle
-      axi_pulse_regs_i <= c_example_module_pulse_regs;
+      axi_pulse_regs_cycle <= c_example_module_pulse_regs;
       
       
       if (slv_reg_wren = '1') then
@@ -172,20 +173,20 @@ begin
       
           if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG9), 32) then
           
-            axi_pulse_regs_i.reg9 <= wdata(0);
+            axi_pulse_regs_cycle.reg9 <= wdata(0);
           
           end if;
       
           if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG10), 32) then
           
-            axi_pulse_regs_i.reg10 <= wdata(3 downto 0);
+            axi_pulse_regs_cycle.reg10 <= wdata(3 downto 0);
           
           end if;
       
           if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG11), 32) then
           
-            axi_pulse_regs_i.reg11.field0 <= wdata(14 downto 0);
-            axi_pulse_regs_i.reg11.field1 <= wdata(15);
+            axi_pulse_regs_cycle.reg11.field0 <= wdata(14 downto 0);
+            axi_pulse_regs_cycle.reg11.field1 <= wdata(15);
           
           end if;
       
@@ -193,6 +194,72 @@ begin
   
     end if;
   end process p_mm_select_write;
+
+p_pulse_reg9 : process(clk)
+variable cnt : natural range 0 to 3 := 0;
+begin
+  if rising_edge(clk) then
+    if areset_n = '0' then
+      axi_pulse_regs_i.reg9 <= c_example_module_pulse_regs.reg9;
+    else
+      if axi_pulse_regs_cycle.reg9 /= c_example_module_pulse_regs.reg9 then
+        cnt := 3;
+        axi_pulse_regs_i.reg9 <= axi_pulse_regs_cycle.reg9;
+      else
+        if cnt > 0 then
+          cnt := cnt - 1;
+        else
+          axi_pulse_regs_i.reg9 <= c_example_module_pulse_regs.reg9;
+        end if;
+      end if;
+
+    end if;
+  end if;
+end process p_pulse_reg9;
+
+p_pulse_reg10 : process(clk)
+variable cnt : natural range 0 to 0 := 0;
+begin
+  if rising_edge(clk) then
+    if areset_n = '0' then
+      axi_pulse_regs_i.reg10 <= c_example_module_pulse_regs.reg10;
+    else
+      if axi_pulse_regs_cycle.reg10 /= c_example_module_pulse_regs.reg10 then
+        cnt := 0;
+        axi_pulse_regs_i.reg10 <= axi_pulse_regs_cycle.reg10;
+      else
+        if cnt > 0 then
+          cnt := cnt - 1;
+        else
+          axi_pulse_regs_i.reg10 <= c_example_module_pulse_regs.reg10;
+        end if;
+      end if;
+
+    end if;
+  end if;
+end process p_pulse_reg10;
+
+p_pulse_reg11 : process(clk)
+variable cnt : natural range 0 to 49 := 0;
+begin
+  if rising_edge(clk) then
+    if areset_n = '0' then
+      axi_pulse_regs_i.reg11 <= c_example_module_pulse_regs.reg11;
+    else
+      if axi_pulse_regs_cycle.reg11 /= c_example_module_pulse_regs.reg11 then
+        cnt := 49;
+        axi_pulse_regs_i.reg11 <= axi_pulse_regs_cycle.reg11;
+      else
+        if cnt > 0 then
+          cnt := cnt - 1;
+        else
+          axi_pulse_regs_i.reg11 <= c_example_module_pulse_regs.reg11;
+        end if;
+      end if;
+
+    end if;
+  end if;
+end process p_pulse_reg11;
 
   p_write_response : process(clk, areset_n)
   begin
