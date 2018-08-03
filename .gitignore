@@ -2,7 +2,8 @@
 build.sh
 upload.sh
 local_upgrade.sh
-docs/doxygen.cfg
+local_upgrade_global.sh
+docs/
 workflow.txt
 *example_identifier*
 

@@ -5,6 +5,7 @@
 import re
 import json
 import os
+from functools import reduce
 
 spaces_in_tab = 2
 
@@ -59,22 +60,115 @@ def compare_JSON(json1, json2, raise_error=False):
     return True
 
 
-def write_string_to_file(string, output_file, output_dir):
+def write_string_to_file(string, output_file, output_dir, force_overwrite=False):
     """! @brief Write string to file
 
     """
 
     # Create output directory if it does not exist
-    if output_dir is not None:
+    if not os.path.isdir(output_dir):
         os.makedirs(output_dir, 0o777, True)
-        joined = os.path.join(output_dir, output_file)
-    else:
-        joined = output_file
+
+    joined = os.path.join(output_dir, output_file)
+
+    # Check if file exist
+    if os.path.isfile(joined):
+        if not force_overwrite and input("Do you want to overwrite " + joined + "? (y/N):").upper() != "Y":
+            print("Did not write " + joined)
+            return
 
     print('Writing string to ' + joined)
 
     with open(joined, 'w') as strfile:
         strfile.write(string)
+
+
+def update_module_top_level(existing_file, new_top_level):
+    # Check if file exists at all...
+    if os.path.isfile(existing_file):
+        # Read the file and get the user edited parts...
+        string_list = analyze_top_level_file(existing_file)
+        string = restore_user_in_top_level(string_list, new_top_level)
+        if input("Preview updated top-level before writing to file? (y/N): ").upper() == 'Y':
+            print(string)
+
+        if input("Are you sure want to update " + existing_file + "? (Y/n): ").upper() == 'N':
+            raise Exception("Cancelled update. Will keep existing top-level module.")
+        else:
+            return string
+    else:
+        print("Top-level file does not exist. Cannot update...")
+        return new_top_level
+
+
+def analyze_top_level_file(existing_file):
+    string_list = [""] * 5
+    list_num = 0
+    with open(existing_file) as infile:
+        copy = False
+        for line in infile:
+            if line.strip() == "-- User Libraries Start":
+                copy = True
+                list_num = 0
+            elif line.strip() == "-- User Libraries End":
+                copy = False
+            elif line.strip() == "-- User Generics Start":
+                copy = True
+                list_num = 1
+            elif line.strip() == "-- User Generics End":
+                copy = False
+            elif line.strip() == "-- User Ports Start":
+                copy = True
+                list_num = 2
+            elif line.strip() == "-- User Ports End":
+                copy = False
+            elif line.strip() == "-- User Architecture Start":
+                copy = True
+                list_num = 3
+            elif line.strip() == "-- User Architecture End":
+                copy = False
+            elif line.strip() == "-- User Logic Start":
+                copy = True
+                list_num = 4
+            elif line.strip() == "-- User Logic End":
+                copy = False
+            elif copy:
+                string_list[list_num] = string_list[list_num] + line
+
+    return string_list
+
+
+def restore_user_in_top_level(user, new_top_level):
+
+    new_top_lines = splitkeepsep(new_top_level, "\n")
+
+    top_lines_with_user = []
+    last_was_marker = False
+    for line in new_top_lines:
+        if not last_was_marker:
+            top_lines_with_user.append(line)
+        last_was_marker = False
+        if line.strip() == "-- User Libraries Start":
+            top_lines_with_user += splitkeepsep(user[0], "\n")
+            last_was_marker = True
+        if line.strip() == "-- User Generics Start":
+            top_lines_with_user += splitkeepsep(user[1], "\n")
+            last_was_marker = True
+        if line.strip() == "-- User Ports Start":
+            top_lines_with_user += splitkeepsep(user[2], "\n")
+            last_was_marker = True
+        if line.strip() == "-- User Architecture Start":
+            top_lines_with_user += splitkeepsep(user[3], "\n")
+            last_was_marker = True
+        if line.strip() == "-- User Logic Start":
+            top_lines_with_user += splitkeepsep(user[4], "\n")
+            last_was_marker = True
+
+    return "".join(top_lines_with_user)
+
+
+def splitkeepsep(s, sep):
+    return reduce(lambda acc, elem: acc[:-1] + [acc[-1] + elem] if elem == sep else acc + [elem], re.split("(%s)" % re.escape(sep), s), [])
 
 
 def cont():
