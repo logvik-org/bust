@@ -365,9 +365,10 @@ class Editor(object):
         # Get JSON with addresses
         json = self.mod.return_JSON(True)
         try:
-            write_string_to_file(json, self.jsonfile, None)
-        except Exception:
+            write_string_to_file(json, self.jsonfile, ".")
+        except Exception as e:
             print('Saving failed...')
+            print(e)
             cont()
             return
 

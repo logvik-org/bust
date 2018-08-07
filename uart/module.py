@@ -32,10 +32,14 @@ class Module:
 
             is_valid_VHDL(mod['name'])
             self.name = mod['name']
-            self.addr_width = bus.addr_width
-            self.data_width = bus.data_width
             self.description = mod['description']
             self.description_with_breaks = add_line_breaks(mod['description'], 25)
+            self.version = None
+            self.git_hash = None
+            
+            self.addr_width = bus.addr_width
+            self.data_width = bus.data_width
+            
             if 'baseaddr' in mod:
                 self.baseaddr = int(mod['baseaddr'], 16)
                 # Check if the base address is beyond the address width...
@@ -564,6 +568,11 @@ class Module:
         dic = OrderedDict()
 
         dic["name"] = self.name
+        dic["description"] = self.description
+        if self.version is not None:
+            dic["version"] = self.version
+        if self.git_hash is not None:
+            dic["git_hash"] = self.git_hash
 
         dic["bus"] = self.bus.return_JSON()
 
@@ -600,8 +609,6 @@ class Module:
             reg_dic["description"] = reg.description
 
             dic["register"].append(reg_dic)
-
-        dic["description"] = self.description
         return json.dumps(dic, indent=4)
 
     def get_next_address(self):
