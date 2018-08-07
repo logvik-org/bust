@@ -11,12 +11,12 @@ except (IOError, ImportError):
 
 setup(
     name='uart',
-    version='0.6.1-dev',
+    version='0.6.1',
     packages=['uart'],
     license='MIT',
     install_requires=[
         'curses-menu==0.5.0',
-        'docopt==0.6.1-dev.2',
+        'docopt==0.6.2',
         'prettytable==0.7.2',
         'pylatexenc==1.2',
         'pypandoc==1.4',
