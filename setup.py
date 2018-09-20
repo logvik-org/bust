@@ -16,7 +16,7 @@ setup(
     license='MIT',
     install_requires=[
         'curses-menu==0.5.0',
-        'docopt==0.6.3-dev',
+        'docopt==0.6.2',
         'prettytable==0.7.2',
         'pylatexenc==1.2',
         'pypandoc==1.4',
@@ -28,6 +28,6 @@ setup(
     },
     author='Ola Groettvik',
     author_email='olagrottvik@gmail.com',
-    url='http://github.com/olagrottvik/art',
+    url='http://github.com/olagrottvik/uart',
     keywords=['vhdl', 'bus', 'axi'],
 )

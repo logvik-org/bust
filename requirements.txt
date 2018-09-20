@@ -19,5 +19,4 @@ pypandoc==1.4
 simplegeneric==0.8.1
 six==1.11.0
 traitlets==4.3.2
-uart==0.5.7.dev0
 wcwidth==0.1.7

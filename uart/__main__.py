@@ -131,7 +131,9 @@ def main():
 
                 print('\nCreating Header files...')
                 write_string_to_file(header.return_c_header(),
-                                     mod.name + '.c', output_dir_mod_header, force_overwrite)
+                                     mod.name + '.h', output_dir_mod_header, force_overwrite)
+                write_string_to_file(header.return_cpp_header(),
+                                     mod.name + '.hpp', output_dir_mod_header, force_overwrite)
                 write_string_to_file(header.return_python_header(),
                                      mod.name + '.py', output_dir_mod_header, force_overwrite)
                 print('\nCreating Documentation files...')

@@ -40,12 +40,50 @@ class Header(object):
         s += "#endif"
         return s
 
+    def return_cpp_header(self):
+        s = ''
+
+        s += "#ifndef " + self.module.name.upper() + "_H\n"
+        s += "#define " + self.module.name.upper() + "_H\n"
+        s += "\n"
+
+        s += "#include <cstdint>\n\n"
+
+        s += "namespace " + self.module.name.upper() + "\n"
+        s += "{\n"
+
+        s += "static const uint32_t BASEADDR = " + str(hex(self.module.baseaddr)) + ";\n"
+        s += "\n"
+
+        for reg in self.module.registers:
+            s += "/* Register: " + reg.name + " */\n"
+            s += "static const uint32_t " + reg.name.upper() + "_OFFSET = " + str(hex(reg.address)) + ";\n"
+            s += "static const uint32_t " + reg.name.upper() + "_RESET = " + reg.reset + ";\n"
+            s += "\n"
+
+            if reg.sig_type == "fields":
+                for field in reg.fields:
+                    s += "/* Field: " + field.name + " */\n"
+                    s += "static const uint32_t " + reg.name.upper() + "_" + field.name.upper() + "_OFFSET = "
+                    s += str(field.pos_low) + ";\n"
+                    s += "static const uint32_t " + reg.name.upper() + "_" + field.name.upper() + "_WIDTH = "
+                    s += str(field.length) + ";\n"
+                    s += "static const uint32_t " + reg.name.upper() + "_" + field.name.upper() + "_RESET = "
+                    s += field.reset + ";\n"
+                    s += "static const uint32_t " + reg.name.upper() + "_" + field.name.upper() + "_MASK = "
+                    s += str(hex(pow(2, field.length) - 1 << field.pos_low)) + ";\n"
+                    s += "\n"
+        s += "};\n\n"
+
+        s += "#endif"
+        return s
+
     def return_python_header(self):
         s = ''
 
         s += "class " + self.module.name.upper() + "_H:\n\n"
 
-        s += indent_string(self.module.name.upper() + "_BASEADDR = " + str(hex(self.module.baseaddr)), 2)
+        s += indent_string("BASEADDR = " + str(hex(self.module.baseaddr)), 2)
         s += "\n\n"
 
         for reg in self.module.registers:

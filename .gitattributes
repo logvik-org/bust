@@ -1,0 +1,7 @@
+# Set the default behavior, in case people don't have core.autocrlf set.
+*.vhd text eol=lf
+*.sh text eol=lf
+*.tcl text eol=lf
+*.py text eol=lf
+*.h text eol=lf
+*.hpp text eol=lf

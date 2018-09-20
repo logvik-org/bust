@@ -1,6 +1,7 @@
 # uart build and deploy files
 build.sh
 upload.sh
+test_upload.sh
 local_upgrade.sh
 local_upgrade_global.sh
 docs/
