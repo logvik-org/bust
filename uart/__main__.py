@@ -40,7 +40,7 @@ from uart.editor import Editor
 from uart.header import Header
 from uart.documentation import Documentation
 
-__VERSION__ = '0.6.3-dev'
+__VERSION__ = '0.6.3'
 
 def main():
 
