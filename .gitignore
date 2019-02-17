@@ -90,8 +90,7 @@ celerybeat-schedule
 
 # dotenv
 .env
-
-# virtualenv
+.env_win
 venv/
 ENV/
 
@@ -107,6 +106,7 @@ _info
 *.qpg
 *.qtl
 _vmake
+_opt__lock
 
 # ignore compilation output of ModelSim
 *.mti
@@ -128,6 +128,9 @@ cov*/
 transcript*
 sc_dpiheader.h
 vsim.dbg
+_Alert.txt
+_Log.txt
+modelsim.ini
 
 #
 .dropbox.attr
@@ -183,3 +186,9 @@ flycheck_*.el
 # LaTeX temp files
 *.aux
 *.rdf
+
+# PyCharm
+.idea
+
+# VS Code
+.vscode

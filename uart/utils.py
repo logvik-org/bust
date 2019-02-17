@@ -6,8 +6,11 @@ import re
 import json
 import os
 from functools import reduce
+import logging
 
 spaces_in_tab = 2
+
+logger = logging.getLogger(__name__)
 
 
 def indent_string(string, tabs=1, break_line=False):
@@ -17,6 +20,11 @@ def indent_string(string, tabs=1, break_line=False):
     indent = spaces_in_tab * tabs * (" ")
     # Add indent to every line and recreate string
     string = [indent + line for line in re.split(r"\n", string)]
+
+    # Remove indent in empty lines
+    for i, s in enumerate(string):
+        if s == indent:
+            string[i] = ""
     string = "\n".join(string)
 
     # Remove last string if it only contains indent
@@ -27,7 +35,7 @@ def indent_string(string, tabs=1, break_line=False):
     return string
 
 
-def JSON_parser(filename='module.json'):
+def json_parser(filename='module.json'):
     with open(filename) as json_data:
         d = json.load(json_data)
         return d
@@ -65,19 +73,19 @@ def write_string_to_file(string, output_file, output_dir, force_overwrite=False)
 
     """
 
-    # Create output directory if it does not exist
+    # Make sure output directory exists
     if not os.path.isdir(output_dir):
-        os.makedirs(output_dir, 0o777, True)
+        raise RuntimeError("Output dir does not exist: {}".format(output_dir))
 
     joined = os.path.join(output_dir, output_file)
 
     # Check if file exist
     if os.path.isfile(joined):
         if not force_overwrite and input("Do you want to overwrite " + joined + "? (y/N):").upper() != "Y":
-            print("Did not write " + joined)
+            logger.warning("Did not write " + joined)
             return
 
-    print('Writing string to ' + joined)
+    logger.debug('Writing string to ' + joined)
 
     with open(joined, 'w') as strfile:
         strfile.write(string)
@@ -97,7 +105,7 @@ def update_module_top_level(existing_file, new_top_level):
         else:
             return string
     else:
-        print("Top-level file does not exist. Cannot update...")
+        logger.warning("Top-level file does not exist. Cannot update...")
         return new_top_level
 
 

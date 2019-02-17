@@ -22,11 +22,12 @@ class Module:
     description of the module.
     """
 
-    def __init__(self, mod, bus):
+    def __init__(self, mod, bus, settings):
         """! @brief
         """
         try:
             self.bus = bus
+            self.settings = settings
             self.registers = []
             self.addresses = []
 
@@ -506,12 +507,18 @@ class Module:
 
         s += indent_string(self.bus.bus_type + "_out <= " + self.bus.bus_type + "_out_i;\n\n")
 
-        s += indent_string('i_' + self.name + '_' + self.bus.bus_type + '_pif ')
+        s += indent_string(self.get_instantiation("i_{}_{}_pif".format(self.name, self.bus.bus_type)))
+
+        s += '\n'
+        s += 'end architecture behavior;'
+
+        return s
+
+    def get_instantiation(self, instance_name, intern_out=True):
+        s = instance_name + ' '
         s += ': entity work.' + self.name + '_' + self.bus.bus_type + '_pif\n'
-
-        s += indent_string('generic map (\n', 2)
-
-        par = 'g_' + self.bus.bus_type + '_baseaddr        => g_' + self.bus.bus_type + '_baseaddr'
+        s += indent_string('generic map (\n')
+        par = 'g_' + self.bus.bus_type + '_baseaddr      => g_' + self.bus.bus_type + '_baseaddr'
 
         if self.enable_baseaddr_offset is True:
             par += ',\n'
@@ -521,7 +528,11 @@ class Module:
         par += ')\n'
         s += indent_string(par, 2)
 
-        s += indent_string('port map (\n', 2)
+        s += indent_string('port map (\n')
+        if intern_out:
+            inter = '_i'
+        else:
+            inter = ''
 
         par = ''
         if self.count_rw_regs() > 0:
@@ -532,33 +543,29 @@ class Module:
             par += self.bus.bus_type + '_pulse_regs      => ' + self.bus.bus_type + '_pulse_regs,\n'
 
         par += self.bus.get_clk_name() + '                 => ' + self.bus.bus_type + '_' + self.bus.get_clk_name() + ',\n'
-        par += self.bus.get_reset_name() + '            => ' + self.bus.bus_type + '_' + self.bus.get_reset_name()  + ',\n'
+        par += self.bus.get_reset_name() + '            => ' + self.bus.bus_type + '_' + self.bus.get_reset_name() + ',\n'
         par += 'awaddr              => ' + self.bus.bus_type + '_in.awaddr(C_'
         par += self.name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
         par += 'awvalid             => ' + self.bus.bus_type + '_in.awvalid,\n'
-        par += 'awready             => ' + self.bus.bus_type + '_out_i.awready,\n'
+        par += 'awready             => ' + self.bus.bus_type + '_out{0}.awready,\n'.format(inter)
         par += 'wdata               => ' + self.bus.bus_type + '_in.wdata(C_'
         par += self.name.upper() + '_DATA_WIDTH-1 downto 0),\n'
         par += 'wvalid              => ' + self.bus.bus_type + '_in.wvalid,\n'
-        par += 'wready              => ' + self.bus.bus_type + '_out_i.wready,\n'
-        par += 'bresp               => ' + self.bus.bus_type + '_out_i.bresp,\n'
-        par += 'bvalid              => ' + self.bus.bus_type + '_out_i.bvalid,\n'
+        par += 'wready              => ' + self.bus.bus_type + '_out{0}.wready,\n'.format(inter)
+        par += 'bresp               => ' + self.bus.bus_type + '_out{0}.bresp,\n'.format(inter)
+        par += 'bvalid              => ' + self.bus.bus_type + '_out{0}.bvalid,\n'.format(inter)
         par += 'bready              => ' + self.bus.bus_type + '_in.bready,\n'
         par += 'araddr              => ' + self.bus.bus_type + '_in.araddr(C_'
         par += self.name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
         par += 'arvalid             => ' + self.bus.bus_type + '_in.arvalid,\n'
-        par += 'arready             => ' + self.bus.bus_type + '_out_i.arready,\n'
-        par += 'rdata               => ' + self.bus.bus_type + '_out_i.rdata(C_'
+        par += 'arready             => ' + self.bus.bus_type + '_out{0}.arready,\n'.format(inter)
+        par += 'rdata               => ' + self.bus.bus_type + '_out{0}.rdata(C_'.format(inter)
         par += self.name.upper() + '_DATA_WIDTH-1 downto 0),\n'
-        par += 'rresp               => ' + self.bus.bus_type + '_out_i.rresp,\n'
-        par += 'rvalid              => ' + self.bus.bus_type + '_out_i.rvalid,\n'
+        par += 'rresp               => ' + self.bus.bus_type + '_out{0}.rresp,\n'.format(inter)
+        par += 'rvalid              => ' + self.bus.bus_type + '_out{0}.rvalid,\n'.format(inter)
         par += 'rready              => ' + self.bus.bus_type + '_in.rready\n'
         par += ');\n'
-        s += indent_string(par, 3)
-
-        s += '\n'
-        s += 'end architecture behavior;'
-
+        s += indent_string(par, 2)
         return s
 
     def return_JSON(self, include_address=False):
@@ -566,21 +573,25 @@ class Module:
 
         """
         dic = OrderedDict()
-
-        dic["name"] = self.name
-        dic["description"] = self.description
-        if self.version is not None:
-            dic["version"] = self.version
-        if self.git_hash is not None:
-            dic["git_hash"] = self.git_hash
-
+        mod = OrderedDict()
+        dic["settings"] = self.settings.return_JSON()
         dic["bus"] = self.bus.return_JSON()
+        dic["module"] = OrderedDict()
 
-        dic["baseaddr"] = str(hex(self.baseaddr))
+        mod["name"] = self.name
+        mod["description"] = self.description
+        if self.version is not None:
+            mod["version"] = self.version
+        if self.git_hash is not None:
+            mod["git_hash"] = self.git_hash
+
+        
+
+        mod["baseaddr"] = str(hex(self.baseaddr))
         if self.enable_baseaddr_offset is True:
-            dic["baseaddr_offset"] = str(hex(self.baseaddr_offset))
+            mod["baseaddr_offset"] = str(hex(self.baseaddr_offset))
 
-        dic["register"] = []
+        mod["register"] = []
 
         for i, reg in enumerate(self.registers):
             reg_dic = OrderedDict()
@@ -608,7 +619,9 @@ class Module:
 
             reg_dic["description"] = reg.description
 
-            dic["register"].append(reg_dic)
+            mod["register"].append(reg_dic)
+        
+        dic["module"] = mod
         return json.dumps(dic, indent=4)
 
     def get_next_address(self):

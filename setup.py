@@ -26,6 +26,7 @@ setup(
     entry_points={
         'console_scripts': ['uart = uart.__main__:main'],
     },
+    test_suite='tests',
     author='Ola Groettvik',
     author_email='olagrottvik@gmail.com',
     url='http://github.com/olagrottvik/uart',

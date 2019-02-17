@@ -25,7 +25,6 @@ def sync_process(clk_name, reset_name, process_name, reset_string, logic_string,
     s += indent_string("else\n", 2)
 
     s += indent_string(logic_string, 3)
-    s += "\n"
     s += indent_string("end if;\n", 2)
     s += indent_string("end if;\n")
     s += "end process " + process_name + ";\n"

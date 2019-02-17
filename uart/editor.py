@@ -7,7 +7,7 @@ from cursesmenu.items import FunctionItem
 from collections import OrderedDict
 from prettytable import PrettyTable
 
-from uart.utils import JSON_parser
+from uart.utils import json_parser
 from uart.utils import cont
 from uart.utils import is_int
 from uart.utils import clear_screen
@@ -21,6 +21,7 @@ from uart.register import Register
 from uart.field import Field
 from uart.vhdl import is_valid_VHDL
 from uart.vhdl import get_identifier
+from uart.settings import Settings
 
 
 class Editor(object):
@@ -39,9 +40,10 @@ class Editor(object):
         if edit:
             # Load the specified JSON file
             try:
-                json = JSON_parser(jsonfile)
+                json = json_parser(jsonfile)
+                self.settings = Settings(jsonfile, json['settings'])
                 self.bus = Bus(json['bus'])
-                self.mod = Module(json, self.bus)
+                self.mod = Module(json['module'], self.bus, self.settings)
                 self.recently_saved = True
             except Exception as e:
                 print('An unresolvable error has occurred:')
@@ -66,7 +68,8 @@ class Editor(object):
             mod['description'] = input('Enter a description for the module: ')
             mod['register'] = []
 
-            self.mod = Module(mod, self.bus)
+            self.settings = Settings(None, None)
+            self.mod = Module(mod, self.bus, self.settings)
 
     def show_menu(self):
         self.menu = CursesMenu('uart - Module Editor', self.set_subtitle())

@@ -577,13 +577,17 @@ class Bus(object):
 
 
     def pulse_reg_process(self, mod, reg):
+        
         clk_name = self.get_clk_name()
         reset_name = self.get_reset_name()
         proc_name = "p_pulse_" + reg.name
         const_name = "c_" + mod.name + "_pulse_regs." + reg.name
         reg_name = self.bus_type + "_pulse_regs_i." + reg.name
         reg_tmp_name = self.bus_type + "_pulse_regs_cycle." + reg.name
-        variables = ["cnt : natural range 0 to " + str(reg.num_cycles-1) + " := 0"]
+        if reg.num_cycles > 1:
+            variables = ["cnt : natural range 0 to " + str(reg.num_cycles-1) + " := 0"]
+        else:
+            variables = []
             
         reset_string = reg_name + " <= " + const_name + ";"
 
@@ -591,20 +595,154 @@ class Bus(object):
         logic_string += " /= " + const_name
         logic_string += " then\n"
 
-        par = "cnt := " + str(reg.num_cycles-1) + ";\n"
+        par = ""
+        if reg.num_cycles > 1 :
+            par = "cnt := " + str(reg.num_cycles-1) + ";\n"
         par += reg_name + " <= " + reg_tmp_name + ";\n"
         logic_string += indent_string(par)
 
         logic_string += "else\n"
-        logic_string += indent_string("if cnt > 0 then\n")
-        logic_string += indent_string("cnt := cnt - 1;\n", 2)
-        logic_string += indent_string("else\n")
+        if reg.num_cycles > 1:
+            logic_string += indent_string("if cnt > 0 then\n")
+            logic_string += indent_string("cnt := cnt - 1;\n", 2)
+            logic_string += indent_string("else\n")
 
         par = reg_name + " <= " + const_name + ";\n"
-        logic_string += indent_string(par, 2)
-        logic_string += indent_string("end if;\n")
+        if reg.num_cycles > 1:
+            logic_string += indent_string(par, 2)
+        else:
+            logic_string += indent_string(par, 1)
+        if reg.num_cycles > 1:
+            logic_string += indent_string("end if;\n")
         logic_string += "end if;\n"
         return sync_process(clk_name, reset_name, proc_name, reset_string, logic_string, True, variables)
+
+    def get_uvvm_lib(self):
+        if self.bus_type == 'axi':
+            s = ('library bitvis_vip_axilite;\n'
+                 'use bitvis_vip_axilite.axilite_bfm_pkg.all;\n')
+        else:
+            raise Exception('Invalid bustype')
+        return s
+
+    def get_uvvm_signals(self):
+        s = ''
+        if self.bus_type == 'axi':
+            s += '-- Bitvis UVVM AXILITE BFM\n'
+        else:
+            raise Exception('Invalid bustype')
+
+        s += ('constant data_width : natural := {};\n'
+              'constant addr_width : natural := {};\n'
+              '').format(self.data_width, self.addr_width)
+
+        if self.bus_type == 'axi':
+            s += ('signal axilite_if : t_axilite_if(write_address_channel(awaddr(addr_width -1 downto 0)),\n'
+                  '                                 write_data_channel(wdata(data_width -1 downto 0),\n'
+                  '                                                    wstrb((data_width/8) -1 downto 0)),\n'
+                  '                                 read_address_channel(araddr(addr_width -1 downto 0)),\n'
+                  '                                 read_data_channel(rdata(data_width -1 downto 0))) '
+                  ':= init_axilite_if_signals(data_width, addr_width);\n\n')
+            s += ('-- Unused AXILITE signals\n'
+                  'signal dummy_arprot : std_logic_vector(2 downto 0);\n'
+                  'signal dummy_awprot : std_logic_vector(2 downto 0);\n'
+                  'signal dummy_wstrb  : std_logic_vector((data_width/8)-1 downto 0);\n')
+        else:
+            raise Exception('Invalid bustype')
+
+        return s
+
+    def get_uvvm_signal_assignment(self):
+        s = ('axi_in.araddr  <= axilite_if.read_address_channel.araddr;\n'
+             'dummy_arprot   <= axilite_if.read_address_channel.arprot;\n'
+             'axi_in.arvalid <= axilite_if.read_address_channel.arvalid;\n'
+             'axi_in.awaddr  <= axilite_if.write_address_channel.awaddr;\n'
+             'dummy_awprot   <= axilite_if.write_address_channel.awprot;\n'
+             'axi_in.awvalid <= axilite_if.write_address_channel.awvalid;\n'
+             'axi_in.bready  <= axilite_if.write_response_channel.bready;\n'
+             'axi_in.rready  <= axilite_if.read_data_channel.rready;\n'
+             'axi_in.wdata   <= axilite_if.write_data_channel.wdata;\n'
+             'dummy_wstrb    <= axilite_if.write_data_channel.wstrb;\n'
+             'axi_in.wvalid  <= axilite_if.write_data_channel.wvalid;\n\n'
+             'axilite_if.read_address_channel.arready  <= axi_out.arready;\n'
+             'axilite_if.write_address_channel.awready <= axi_out.awready;\n'
+             'axilite_if.write_response_channel.bresp  <= axi_out.bresp;\n'
+             'axilite_if.write_response_channel.bvalid <= axi_out.bvalid;\n'
+             'axilite_if.read_data_channel.rdata       <= axi_out.rdata;\n'
+             'axilite_if.read_data_channel.rresp       <= axi_out.rresp;\n'
+             'axilite_if.read_data_channel.rvalid      <= axi_out.rvalid;\n'
+             'axilite_if.write_data_channel.wready     <= axi_out.wready;\n')
+        return s
+
+
+    def get_uvvm_overloads(self):
+        s = ''
+        if self.bus_type == 'axi':
+            s += ('procedure axilite_write(\n'
+                  '  constant addr_value : in unsigned;\n'
+                  '  constant data_value : in std_logic_vector;\n'
+                  '  constant msg        : in string) is\n'
+                  'begin\n'
+                  '  axilite_write(addr_value,\n'
+                  '                data_value,\n'
+                  '                msg,\n'
+                  '                {}_{},\n'
+                  '                axilite_if,\n'
+                  '                C_SCOPE,\n'
+                  '                shared_msg_id_panel,\n'
+                  '                C_AXILITE_BFM_CONFIG_DEFAULT);\n'
+                  'end;\n\n').format(self.bus_type, self.get_clk_name())
+
+            s += ('procedure axilite_read(\n'
+                  '  constant addr_value : in  unsigned;\n'
+                  '  variable data_value : out std_logic_vector;\n'
+                  '  constant msg        : in  string) is\n'
+                  'begin\n'
+                  '  axilite_read(addr_value,\n'
+                  '               data_value,\n'
+                  '               msg,\n'
+                  '               {}_{},\n'
+                  '               axilite_if,\n'
+                  '               C_SCOPE,\n'
+                  '               shared_msg_id_panel,\n'
+                  '               C_AXILITE_BFM_CONFIG_DEFAULT);\n'
+                  'end;\n\n').format(self.bus_type, self.get_clk_name())
+
+            s += ('procedure axilite_check(\n'
+                  '  constant addr_value : in unsigned;\n'
+                  '  constant data_exp   : in std_logic_vector;\n'
+                  '  constant msg        : in string) is\n'
+                  'begin\n'
+                  '  axilite_check(addr_value,\n'
+                  '                data_exp,\n'
+                  '                msg,\n'
+                  '                {}_{},\n'
+                  '                axilite_if,\n'
+                  '                error,\n'
+                  '                C_SCOPE,\n'
+                  '                shared_msg_id_panel,\n'
+                  '                C_AXILITE_BFM_CONFIG_DEFAULT);\n'
+                  'end;\n\n').format(self.bus_type, self.get_clk_name())
+
+        return s
+
+    def uvvm_write(self, reg_addr, value, string):
+        if self.bus_type == 'axi':
+            s = 'axilite_write(f_addr(g_axi_baseaddr, {}), {}, "{}");\n'.format(reg_addr,
+                                                                                value,
+                                                                                string)
+        else:
+            raise Exception('Invalid bustype')
+        return s
+
+    def uvvm_check(self, reg_addr, data_exp, string):
+        if self.bus_type == 'axi':
+            s = 'axilite_check(f_addr(g_axi_baseaddr, {}), {}, "{}");\n'.format(reg_addr,
+                                                                                data_exp,
+                                                                                string)
+        else:
+            raise Exception('Invalid bustype')
+        return s
 
 
 class InvalidBusType(RuntimeError):
