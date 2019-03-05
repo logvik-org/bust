@@ -1,9 +1,8 @@
 {
     "settings": {
-        "proj_dir": "~/files/",
         "mod_subdir": true,
         "bus_subdir": false,
-        "uvvm_relative_path": "UVVM",
+        "uvvm_relative_path": "../../UVVM",
         "coverage": true
     },
     "bus": {

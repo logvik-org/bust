@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/olagrottvik/uart.svg?branch=master)](https://travis-ci.com/olagrottvik/uart)
+
 # uart register tool
 
 Utility for simply creating and modifying VHDL bus slave modules. uart does not refer to the hardware device!
