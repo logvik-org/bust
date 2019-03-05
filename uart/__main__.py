@@ -46,7 +46,7 @@ from uart.settings import Settings
 from uart.testbench import Testbench
 from uart.generation import generate_output
 
-__VERSION__ = '0.6.4'
+__VERSION__ = '0.7.0-dev'
 
 
 def main():
