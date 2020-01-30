@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, Command
 import re
 import os
 
@@ -8,6 +8,16 @@ try:
     long_description = pypandoc.convert('README.md', 'rst')
 except (IOError, ImportError):
     long_description = 'Utility for simply creating and modifying VHDL bus slave modules'
+
+class CleanCommand(Command):
+    """Custom clean command to tidy up the project root."""
+    user_options = []
+    def initialize_options(self):
+        pass
+    def finalize_options(self):
+        pass
+    def run(self):
+        os.system('rm -vrf ./build ./dist ./*.pyc ./*.tgz ./*.egg-info')
 
 setup(
     name='bust',
@@ -31,4 +41,7 @@ setup(
     author_email='olagrottvik@gmail.com',
     url='http://github.com/olagrottvik/bust',
     keywords=['vhdl', 'bus', 'axi'],
+    cmdclass={
+        'clean': CleanCommand,
+    }
 )
