@@ -137,17 +137,7 @@ class Bus(object):
         s += indent_string('generic (\n')
         par = '-- ' + self.bus_type.upper() + ' Bus Interface Generics\n'
         par += 'g_' + self.bus_type + '_baseaddr        : std_logic_vector(' + str(self.addr_width - 1)
-        par += ' downto 0) := ' + str(self.addr_width) + 'X"'
-        par += format(mod.baseaddr, 'X') + '"'
-
-        if mod.enable_baseaddr_offset is True:
-            par += ";\n"
-            par += 'g_' + self.bus_type + '_baseaddr_offset : std_logic_vector(' + str(self.addr_width - 1)
-            par += ' downto 0) := ' + str(self.addr_width) + 'X"'
-            par += format(mod.baseaddr_offset, 'X') + '";\n'
-            par += 'g_instance_num        : natural                       := 0'
-
-        par += ');\n'
+        par += " downto 0) := (others => '0'));\n"
         s += indent_string(par, 2)
 
         s += indent_string('port (')
@@ -200,23 +190,8 @@ class Bus(object):
 
         s += 'architecture behavior of ' + mod.name + '_axi_pif is\n\n'
 
-        if mod.enable_baseaddr_offset is True:
-
-            par = "constant C_BASEADDR_OFFSET : t_" + self.bus_type + "_addr :=\n"
-            s += indent_string(par)
-            par = "std_logic_vector(resize(unsigned(g_" + self.bus_type + "_baseaddr_offset) * "
-            par += "to_unsigned(g_instance_num, " + str(self.addr_width) + "), " + str(self.addr_width)
-            par += "));\n"
-            s += indent_string(par, 2)
-
-            par = "constant C_BASEADDR : t_" + self.bus_type + "_addr :=\n"
-            s += indent_string(par)
-            par = "std_logic_vector(unsigned(g_" + self.bus_type + "_baseaddr) + unsigned(C_BASEADDR_OFFSET));\n"
-            s += indent_string(par, 2)
-
-        else:
-            par = "constant C_BASEADDR : t_" + self.bus_type + "_addr := g_" + self.bus_type + "_baseaddr;\n"
-            s += indent_string(par)
+        par = "constant C_BASEADDR : t_" + self.bus_type + "_addr := g_" + self.bus_type + "_baseaddr;\n"
+        s += indent_string(par)
 
         s += "\n"
 
@@ -682,7 +657,7 @@ class Bus(object):
     def get_uvvm_overloads(self):
         s = ''
         if self.bus_type == 'axi':
-            s += ('procedure axilite_write(\n'
+            s += ('procedure write(\n'
                   '  constant addr_value : in unsigned;\n'
                   '  constant data_value : in std_logic_vector;\n'
                   '  constant msg        : in string) is\n'
@@ -697,7 +672,7 @@ class Bus(object):
                   '                axilite_bfm_config);\n'
                   'end;\n\n').format(self.bus_type, self.get_clk_name())
 
-            s += ('procedure axilite_read(\n'
+            s += ('procedure read(\n'
                   '  constant addr_value : in  unsigned;\n'
                   '  variable data_value : out std_logic_vector;\n'
                   '  constant msg        : in  string) is\n'
@@ -712,7 +687,7 @@ class Bus(object):
                   '               axilite_bfm_config);\n'
                   'end;\n\n').format(self.bus_type, self.get_clk_name())
 
-            s += ('procedure axilite_check(\n'
+            s += ('procedure check(\n'
                   '  constant addr_value : in unsigned;\n'
                   '  constant data_exp   : in std_logic_vector;\n'
                   '  constant msg        : in string) is\n'
@@ -731,21 +706,12 @@ class Bus(object):
         return s
 
     def uvvm_write(self, reg_addr, value, string):
-        if self.bus_type == 'axi':
-            s = 'axilite_write(f_addr(g_axi_baseaddr, {}), {}, "{}");\n'.format(reg_addr,
-                                                                                value,
-                                                                                string)
-        else:
-            raise Exception('Invalid bustype')
+
+        s = 'write(f_addr(C_BASEADDR, {}), {}, "{}");\n'.format(reg_addr, value, string)
         return s
 
     def uvvm_check(self, reg_addr, data_exp, string):
-        if self.bus_type == 'axi':
-            s = 'axilite_check(f_addr(g_axi_baseaddr, {}), {}, "{}");\n'.format(reg_addr,
-                                                                                data_exp,
-                                                                                string)
-        else:
-            raise Exception('Invalid bustype')
+        s = 'check(f_addr(C_BASEADDR, {}), {}, "{}");\n'.format(reg_addr, data_exp, string)
         return s
 
 

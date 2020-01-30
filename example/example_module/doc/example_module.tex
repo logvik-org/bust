@@ -28,13 +28,6 @@
 
 \maketitle
 
-\begin{description}[leftmargin=!,labelwidth=\widthof{\bfseries Address width: }]
-\item [Address width: ] 32
-\item [Data width: ] 32
-\item [Base address: ] 0xFFAA0000
-\end{description}
-
-
 An example module that contain all the register types that are currently supported by bust.
 
 \section{Register List}
@@ -171,20 +164,5 @@ An example module that contain all the register types that are currently support
   \begin{regdesc}\begin{reglist}[field0]
     \item [field0] std{\_}logic{\_}vector[14:0] field that resets to 0x3    \item [field1] std{\_}logic field that resets to 0x0  \end{reglist}\end{regdesc}
 \end{register}
-
-\section{Example VHDL Register Access}
-
-\par
-All registers are bundled in records based on their mode. E.g. all RW registers are accessed through the record \textit{bustype\_rw\_regs}. Access is also dependent on the type of register. All register of type SL, SLV and DEFAULT are all directly accessed by just specifying the mode record signal. E.g. the RW register \textit{reg0} can be assigned a value like this (assuming AXI-bus):
-
-\begin{lstlisting}[style=vhdl]
-axi_rw_regs.reg0 <= (others => '0');
-\end{lstlisting}
-
-\par Registers of type FIELD cannot be directly accessed without specification of a certain field. This is because the registers are implemented as a record in VHDL (thus a record of records). E.g. if the RO register \textit{reg1} contains the field \textit{field3} it can be accessed like this (assuming AXI-bus):
-
-\begin{lstlisting}[style=vhdl]
-axi_ro_regs.reg1.field3 <= (others => '0');
-\end{lstlisting}
 
 \end{document}

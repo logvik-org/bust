@@ -41,31 +41,13 @@ class Module:
             self.addr_width = bus.addr_width
             self.data_width = bus.data_width
 
-            if 'baseaddr' in mod:
-                self.baseaddr = int(mod['baseaddr'], 16)
-                # Check if the base address is beyond the address width...
-                if self.baseaddr > pow(2, self.addr_width) - 1:
-                    raise RuntimeError("Base address is beyond the bus address width...")
-            else:
-                self.baseaddr = 0
-            # Check if we should add the baseaddr offset feature
-            if 'baseaddr_offset' in mod:
-                self.baseaddr_offset = int(mod['baseaddr_offset'], 16)
-                # Check if the offset is beyond the baseaddress
-                if self.baseaddr_offset > self.baseaddr:
-                    raise RuntimeError("Base address offset cannot be larger than base address...")
-                self.enable_baseaddr_offset = True
-            else:
-                self.baseaddr_offset = 0
-                self.enable_baseaddr_offset = False
-
             if 'byte_addressable' in mod:
-                if mod['baseaddr_offset'] == 'True':
+                if mod['byte_addressable'] == 'True':
                     self.byte_addressable = True
                 else:
                     self.byte_addressable = False
             else:
-                if self.bus.bus_type == 'axi':
+                if self.bus.bus_type == 'axi': # axi usually is byte addressable
                     self.byte_addressable = True
                 else:
                     self.byte_addressable = False
@@ -454,18 +436,7 @@ class Module:
         par += '-- User Generics End\n'
         par += '-- ' + self.bus.bus_type.upper() + ' Bus Interface Generics\n'
         par += 'g_' + self.bus.bus_type + '_baseaddr        : std_logic_vector(' + str(self.bus.addr_width - 1)
-        par += ' downto 0) := ' + str(self.bus.addr_width) + 'X"'
-        par += format(self.baseaddr, 'X') + '"'
-
-
-        if self.enable_baseaddr_offset is True:
-            par += ";\n"
-            par += 'g_' + self.bus.bus_type + '_baseaddr_offset : std_logic_vector(' + str(self.bus.addr_width - 1)
-            par += ' downto 0) := ' + str(self.bus.addr_width) + 'X"'
-            par += format(self.baseaddr_offset, 'X') + '";\n'
-            par += 'g_instance_num        : natural                       := 0'
-
-        par += ');\n'
+        par += " downto 0) := (others => '0'));\n"
 
         s += indent_string(par, 2)
 
@@ -530,14 +501,7 @@ class Module:
         s = instance_name + ' '
         s += ': entity work.' + self.name + '_' + self.bus.bus_type + '_pif\n'
         s += indent_string('generic map (\n')
-        par = 'g_' + self.bus.bus_type + '_baseaddr      => g_' + self.bus.bus_type + '_baseaddr'
-
-        if self.enable_baseaddr_offset is True:
-            par += ',\n'
-            par += 'g_' + self.bus.bus_type + '_baseaddr_offset => g_' + self.bus.bus_type + '_baseaddr_offset,\n'
-            par += 'g_instance_num        => g_instance_num'
-
-        par += ')\n'
+        par = 'g_' + self.bus.bus_type + '_baseaddr      => C_BASEADDR)\n'
         s += indent_string(par, 2)
 
         s += indent_string('port map (\n')
@@ -597,11 +561,6 @@ class Module:
         if self.git_hash is not None:
             mod["git_hash"] = self.git_hash
 
-
-
-        mod["baseaddr"] = str(hex(self.baseaddr))
-        if self.enable_baseaddr_offset is True:
-            mod["baseaddr_offset"] = str(hex(self.baseaddr_offset))
 
         mod["register"] = []
 

@@ -1,7 +1,6 @@
 #ifndef EXAMPLE_MODULE_H
 #define EXAMPLE_MODULE_H
 
-#define EXAMPLE_MODULE_BASEADDR 0xffaa0000
 
 /* Register: reg0 */
 #define REG0_OFFSET 0x0

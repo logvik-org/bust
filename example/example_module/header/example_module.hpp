@@ -5,8 +5,6 @@
 
 namespace EXAMPLE_MODULE
 {
-static const uint32_t BASEADDR = 0xffaa0000;
-
 /* Register: reg0 */
 static const uint32_t REG0_OFFSET = 0x0;
 static const uint32_t REG0_RESET = 0x0;

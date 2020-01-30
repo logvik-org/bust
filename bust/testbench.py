@@ -182,7 +182,7 @@ class Testbench(object):
                            'constant C_CLK_PERIOD : time   := 10 ns;\n')
         s += '\n'
         s += indent_string('-- component generics\n'
-                           'constant g_{}_baseaddr : std_logic_vector(31 downto 0) := 32X"FFAA0000";\n'
+                           'constant C_BASEADDR : std_logic_vector(31 downto 0) := 32X"FFAA0000";\n'
                            'constant g_instance_num : natural                       := 0;\n'
                            '').format(self.bus.bus_type)
         s += '\n'

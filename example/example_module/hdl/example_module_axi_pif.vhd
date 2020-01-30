@@ -10,7 +10,7 @@ entity example_module_axi_pif is
 
   generic (
     -- AXI Bus Interface Generics
-    g_axi_baseaddr        : std_logic_vector(31 downto 0) := 32X"FFAA0000");
+    g_axi_baseaddr        : std_logic_vector(31 downto 0) := (others => '0'));
   port (
     -- AXI Bus Interface Ports
     axi_rw_regs    : out t_example_module_rw_regs    := c_example_module_rw_regs;

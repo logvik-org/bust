@@ -17,7 +17,7 @@ entity example_module is
 
     -- User Generics End
     -- AXI Bus Interface Generics
-    g_axi_baseaddr        : std_logic_vector(31 downto 0) := 32X"FFAA0000");
+    g_axi_baseaddr        : std_logic_vector(31 downto 0) := (others => '0'));
   port (
     -- User Ports Start
 

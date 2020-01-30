@@ -13,9 +13,7 @@ class Header(object):
 
         s += "#ifndef " + self.module.name.upper() + "_H\n"
         s += "#define " + self.module.name.upper() + "_H\n"
-        s += "\n"
 
-        s += "#define " + self.module.name.upper() + "_BASEADDR " + str(hex(self.module.baseaddr))
         s += "\n\n"
 
         for reg in self.module.registers:
@@ -52,8 +50,6 @@ class Header(object):
         s += "namespace " + self.module.name.upper() + "\n"
         s += "{\n"
 
-        s += "static const uint32_t BASEADDR = " + str(hex(self.module.baseaddr)) + ";\n"
-        s += "\n"
 
         for reg in self.module.registers:
             s += "/* Register: " + reg.name + " */\n"
@@ -82,9 +78,6 @@ class Header(object):
         s = ''
 
         s += "class " + self.module.name.upper() + "_H:\n\n"
-
-        s += indent_string("BASEADDR = " + str(hex(self.module.baseaddr)), 2)
-        s += "\n\n"
 
         for reg in self.module.registers:
             s += indent_string('""" Register: ' + reg.name + ' """\n', 2)

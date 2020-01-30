@@ -75,7 +75,6 @@ class Editor(object):
         self.menu = CursesMenu('bust - Module Editor', self.set_subtitle())
 
         self.menu.append_item(FunctionItem('Edit name', self.edit_name))
-        self.menu.append_item(FunctionItem('Edit base address', self.edit_baseaddr))
         self.menu.append_item(FunctionItem('List registers', self.list_registers))
         self.menu.append_item(FunctionItem('Add new register', self.add_register))
         self.menu.append_item(FunctionItem('Remove register', self.remove_register))
@@ -88,16 +87,7 @@ class Editor(object):
 
     def edit_name(self):
         print('Change the module name from current: ' + self.mod.name)
-        self.mod.name = get_identifier('Enter a new name: ');
-        self.recently_saved = False
-        self.update_menu()
-
-    def edit_baseaddr(self):
-        print('Change the module base address from current: ' + str(hex(self.mod.baseaddr)))
-        self.mod.baseaddr = get_int('Enter a new base address (in hex): ', 16)
-        # TODO full functionality
-        print("Add base address offset feature? (Enables possibility for adding multiple instances of the same module with a fixed base address offset): ")
-
+        self.mod.name = get_identifier('Enter a new name: ')
         self.recently_saved = False
         self.update_menu()
 
