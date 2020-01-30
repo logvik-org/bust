@@ -21,7 +21,7 @@ class CleanCommand(Command):
 
 setup(
     name='bust',
-    version='0.7.0-dev',
+    version='0.7',
     packages=['bust'],
     license='MIT',
     install_requires=[

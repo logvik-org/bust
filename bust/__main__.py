@@ -39,7 +39,7 @@ from bust.settings import Settings
 from bust.testbench import Testbench
 from bust.generation import generate_output
 
-__VERSION__ = '0.7.0-dev'
+__VERSION__ = '0.7'
 
 
 def main():
