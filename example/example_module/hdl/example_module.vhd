@@ -6,22 +6,21 @@ use ieee.numeric_std.all;
 
 -- User Libraries End
 
-use work.axi_pkg.all;
+library bust;
+use bust.axi_pkg.all;
 use work.example_module_pif_pkg.all;
 
 entity example_module is
 
   generic (
     -- User Generics Start
-    
+
     -- User Generics End
     -- AXI Bus Interface Generics
-    g_axi_baseaddr        : std_logic_vector(31 downto 0) := 32X"FFAA0000";
-    g_axi_baseaddr_offset : std_logic_vector(31 downto 0) := 32X"1000";
-    g_instance_num        : natural                       := 0);
+    g_axi_baseaddr        : std_logic_vector(31 downto 0) := 32X"FFAA0000");
   port (
     -- User Ports Start
-    
+
     -- User Ports End
     -- AXI Bus Interface Ports
     axi_clk      : in  std_logic;
@@ -35,9 +34,9 @@ end entity example_module;
 architecture behavior of example_module is
 
   -- User Architecture Start
-  
+
   -- User Architecture End
-  
+
   -- AXI output signal for user readback
   signal axi_out_i : t_axi_slave_to_interconnect;
   -- Register Signals
@@ -48,16 +47,14 @@ architecture behavior of example_module is
 begin
 
   -- User Logic Start
-  
+
   -- User Logic End
-  
+
   axi_out <= axi_out_i;
-  
+
   i_example_module_axi_pif : entity work.example_module_axi_pif
     generic map (
-    g_axi_baseaddr        => g_axi_baseaddr,
-    g_axi_baseaddr_offset => g_axi_baseaddr_offset,
-    g_instance_num        => g_instance_num)
+      g_axi_baseaddr      => g_axi_baseaddr)
     port map (
       axi_rw_regs         => axi_rw_regs,
       axi_ro_regs         => axi_ro_regs,

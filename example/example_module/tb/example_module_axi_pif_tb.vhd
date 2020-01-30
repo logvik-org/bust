@@ -2,7 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.axi_pkg.all;
+library bust;
+use bust.axi_pkg.all;
 use work.example_module_pif_pkg.all;
 
 library uvvm_util;
@@ -45,6 +46,7 @@ architecture tb of example_module_axi_pif_tb is
                                                       wstrb((data_width/8) -1 downto 0)),
                                    read_address_channel(araddr(addr_width -1 downto 0)),
                                    read_data_channel(rdata(data_width -1 downto 0))) := init_axilite_if_signals(data_width, addr_width);
+  signal axilite_bfm_config : t_axilite_bfm_config := C_AXILITE_BFM_CONFIG_DEFAULT;
 
   -- Unused AXILITE signals
   signal dummy_arprot : std_logic_vector(2 downto 0);
@@ -63,6 +65,10 @@ architecture tb of example_module_axi_pif_tb is
   end function f_addr;
 
 begin  -- architecture tb
+
+  axilite_bfm_config.clock_period <= C_CLK_PERIOD;
+  axilite_bfm_config.setup_time   <= C_CLK_PERIOD/8;
+  axilite_bfm_config.hold_time    <= C_CLK_PERIOD/8;
 
   axi_in.araddr  <= axilite_if.read_address_channel.araddr;
   dummy_arprot   <= axilite_if.read_address_channel.arprot;
@@ -145,7 +151,7 @@ begin  -- architecture tb
                     axilite_if,
                     C_SCOPE,
                     shared_msg_id_panel,
-                    C_AXILITE_BFM_CONFIG_DEFAULT);
+                    axilite_bfm_config);
     end;
 
     procedure axilite_read(
@@ -160,7 +166,7 @@ begin  -- architecture tb
                    axilite_if,
                    C_SCOPE,
                    shared_msg_id_panel,
-                   C_AXILITE_BFM_CONFIG_DEFAULT);
+                   axilite_bfm_config);
     end;
 
     procedure axilite_check(
@@ -176,7 +182,7 @@ begin  -- architecture tb
                     error,
                     C_SCOPE,
                     shared_msg_id_panel,
-                    C_AXILITE_BFM_CONFIG_DEFAULT);
+                    axilite_bfm_config);
     end;
 
   begin

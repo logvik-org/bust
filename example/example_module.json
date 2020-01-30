@@ -1,8 +1,8 @@
 {
     "settings": {
-        "mod_subdir": false,
+        "mod_subdir": true,
         "bus_subdir": false,
-        "uvvm_relative_path": "../../UVVM",
+        "uvvm_relative_path": "../../../UVVM",
         "coverage": true
     },
     "bus": {
@@ -10,12 +10,12 @@
         "addr_width": 32,
         "data_width": 32,
         "reset": "async",
-        "comp_library": "work"
+        "comp_library": "bust"
     },
     "module": {
         "name": "example_module",
+        "description": "An example module that contain all the register types that are currently supported by uart.",
         "baseaddr": "0xffaa0000",
-        "addr_range": "0xffaa0fff",
         "register": [
             {
                 "name": "reg0",
@@ -152,6 +152,7 @@
             {
                 "name": "reg10",
                 "mode": "pulse",
+                "num_cycles": 1,
                 "type": "slv",
                 "address": "0x28",
                 "length": 4,
@@ -180,7 +181,6 @@
                 ],
                 "description": "PULSE register with two fields"
             }
-        ],
-        "description": "An example module that contain all the register types that are currently supported by uart."
+        ]
     }
 }

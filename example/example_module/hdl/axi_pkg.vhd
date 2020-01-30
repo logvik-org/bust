@@ -6,10 +6,10 @@ package axi_pkg is
 
   constant C_AXI_DATA_WIDTH : natural := 32;
   constant C_AXI_ADDR_WIDTH : natural := 32;
-  
+
   subtype t_axi_data is std_logic_vector(C_AXI_DATA_WIDTH-1 downto 0);
   subtype t_axi_addr is std_logic_vector(C_AXI_ADDR_WIDTH-1 downto 0);
-  
+
   type t_axi_interconnect_to_slave is record
     araddr  : t_axi_addr;
     arvalid : std_logic;

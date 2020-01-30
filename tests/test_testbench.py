@@ -23,9 +23,9 @@ class TestTestbench(unittest.TestCase):
 
     def test_scripts(self):
         self.logger.info("Testing TB Script generation...")
-        with open('example/example_module_manual/scripts/simulate_axi_pif.do') as script_file:
+        with open('example/example_module/scripts/simulate_axi_pif.do') as script_file:
             script_string = script_file.read()
-        with open('example/example_module_manual/scripts/component_list.txt') as component_file:
+        with open('example/example_module/scripts/component_list.txt') as component_file:
             component_string = component_file.read()
 
         testbench = tb.Testbench(self.mod, self.bus, self.set)
@@ -35,7 +35,7 @@ class TestTestbench(unittest.TestCase):
 
     def test_tb(self):
         self.logger.info("Testing TB Sequencer generation...")
-        with open('example/example_module_manual/tb/example_module_axi_pif_tb.vhd') as tb_file:
+        with open('example/example_module/tb/example_module_axi_pif_tb.vhd') as tb_file:
             tb_string = tb_file.read()
 
         testbench = tb.Testbench(self.mod, self.bus, self.set)

@@ -2,22 +2,21 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.axi_pkg.all;
+library bust;
+use bust.axi_pkg.all;
 use work.example_module_pif_pkg.all;
 
 entity example_module_axi_pif is
 
   generic (
     -- AXI Bus Interface Generics
-    g_axi_baseaddr        : std_logic_vector(31 downto 0) := 32X"FFAA0000";
-    g_axi_baseaddr_offset : std_logic_vector(31 downto 0) := 32X"1000";
-    g_instance_num        : natural                       := 0);
-  port (    
+    g_axi_baseaddr        : std_logic_vector(31 downto 0) := 32X"FFAA0000");
+  port (
     -- AXI Bus Interface Ports
     axi_rw_regs    : out t_example_module_rw_regs    := c_example_module_rw_regs;
     axi_ro_regs    : in  t_example_module_ro_regs    := c_example_module_ro_regs;
     axi_pulse_regs : out t_example_module_pulse_regs := c_example_module_pulse_regs;
-    
+
     -- bus signals
     clk            : in  std_logic;
     areset_n       : in  std_logic;
@@ -42,10 +41,7 @@ end example_module_axi_pif;
 
 architecture behavior of example_module_axi_pif is
 
-  constant C_BASEADDR_OFFSET : t_axi_addr :=
-    std_logic_vector(resize(unsigned(g_axi_baseaddr_offset) * to_unsigned(g_instance_num, 32), 32));
-  constant C_BASEADDR : t_axi_addr :=
-    std_logic_vector(unsigned(g_axi_baseaddr) + unsigned(C_BASEADDR_OFFSET));
+  constant C_BASEADDR : t_axi_addr := g_axi_baseaddr;
 
   -- internal signal for readback
   signal axi_rw_regs_i    : t_example_module_rw_regs := c_example_module_rw_regs;
@@ -63,12 +59,12 @@ architecture behavior of example_module_axi_pif is
   signal rdata_i       : t_example_module_data;
   signal rresp_i       : std_logic_vector(1 downto 0);
   signal rvalid_i      : std_logic;
-  
+
   signal slv_reg_rden : std_logic;
   signal slv_reg_wren : std_logic;
   signal reg_data_out : t_example_module_data;
   -- signal byte_index   : integer; -- unused
-  
+
 begin
 
   axi_rw_regs <= axi_rw_regs_i;
@@ -82,7 +78,7 @@ begin
   rdata   <= rdata_i;
   rresp   <= rresp_i;
   rvalid  <= rvalid_i;
-  
+
   p_awready : process(clk, areset_n)
   begin
     if areset_n = '0' then
@@ -125,73 +121,73 @@ begin
   p_mm_select_write : process(clk, areset_n)
   begin
     if areset_n = '0' then
-      
+
       axi_rw_regs_i <= c_example_module_rw_regs;
-      
+
       axi_pulse_regs_cycle <= c_example_module_pulse_regs;
-  
+
     elsif rising_edge(clk) then
-      
+
       -- Return PULSE registers to reset value every clock cycle
       axi_pulse_regs_cycle <= c_example_module_pulse_regs;
-      
-      
+
+
       if (slv_reg_wren = '1') then
-      
+
           if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG0), 32) then
-          
+
             axi_rw_regs_i.reg0 <= wdata(0);
-          
+
           end if;
-      
+
           if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG1), 32) then
-          
+
             axi_rw_regs_i.reg1 <= wdata(0);
-          
+
           end if;
-      
+
           if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG3), 32) then
-          
+
             axi_rw_regs_i.reg3 <= wdata(7 downto 0);
-          
+
           end if;
-      
+
           if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG5), 32) then
-          
+
             axi_rw_regs_i.reg5 <= wdata;
-          
+
           end if;
-      
+
           if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG7), 32) then
-          
+
             axi_rw_regs_i.reg7.field0 <= wdata(0);
             axi_rw_regs_i.reg7.field1 <= wdata(4 downto 1);
             axi_rw_regs_i.reg7.field2 <= wdata(5);
             axi_rw_regs_i.reg7.field3 <= wdata(20 downto 6);
-          
+
           end if;
-      
+
           if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG9), 32) then
-          
+
             axi_pulse_regs_cycle.reg9 <= wdata(0);
-          
+
           end if;
-      
+
           if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG10), 32) then
-          
+
             axi_pulse_regs_cycle.reg10 <= wdata(3 downto 0);
-          
+
           end if;
-      
+
           if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG11), 32) then
-          
+
             axi_pulse_regs_cycle.reg11.field0 <= wdata(14 downto 0);
             axi_pulse_regs_cycle.reg11.field1 <= wdata(15);
-          
+
           end if;
-      
+
       end if;
-  
+
     end if;
   end process p_mm_select_write;
 
@@ -301,69 +297,69 @@ end process p_pulse_reg11;
 
   p_mm_select_read : process(all)
   begin
-  
+
     reg_data_out <= (others => '0');
-    
+
     if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG0), 32) then
-    
+
       reg_data_out(0) <= axi_rw_regs_i.reg0;
-    
+
     end if;
-    
+
     if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG1), 32) then
-    
+
       reg_data_out(0) <= axi_rw_regs_i.reg1;
-    
+
     end if;
-    
+
     if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG2), 32) then
-    
+
       reg_data_out(0) <= axi_ro_regs.reg2;
-    
+
     end if;
-    
+
     if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG3), 32) then
-    
+
       reg_data_out(7 downto 0) <= axi_rw_regs_i.reg3;
-    
+
     end if;
-    
+
     if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG4), 32) then
-    
+
       reg_data_out(13 downto 0) <= axi_ro_regs.reg4;
-    
+
     end if;
-    
+
     if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG5), 32) then
-    
+
       reg_data_out <= axi_rw_regs_i.reg5;
-    
+
     end if;
-    
+
     if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG6), 32) then
-    
+
       reg_data_out <= axi_ro_regs.reg6;
-    
+
     end if;
-    
+
     if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG7), 32) then
-    
+
       reg_data_out(0) <= axi_rw_regs_i.reg7.field0;
       reg_data_out(4 downto 1) <= axi_rw_regs_i.reg7.field1;
       reg_data_out(5) <= axi_rw_regs_i.reg7.field2;
       reg_data_out(20 downto 6) <= axi_rw_regs_i.reg7.field3;
-    
+
     end if;
-    
+
     if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG8), 32) then
-    
+
       reg_data_out(0) <= axi_ro_regs.reg8.field0;
       reg_data_out(19 downto 1) <= axi_ro_regs.reg8.field1;
       reg_data_out(20) <= axi_ro_regs.reg8.field2;
       reg_data_out(23 downto 21) <= axi_ro_regs.reg8.field3;
-    
+
     end if;
-    
+
   end process p_mm_select_read;
 
   p_output : process(clk, areset_n)

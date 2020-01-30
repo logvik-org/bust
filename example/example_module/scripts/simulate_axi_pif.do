@@ -11,13 +11,35 @@ quit -sim
 # Set project paths
 quietly set example_module_path "../"
 quietly set bus_path "../"
-quietly set UVVM_path "../../../../UVVM"
+quietly set UVVM_path "../../../../../UVVM"
 
 # Compile UVVM Dependencies
 do $UVVM_path/script/compile_all.do $UVVM_path/script $example_module_path/sim $example_module_path/scripts/component_list.txt
 
 # Set vcom args
 quietly set vcom_args "-pedanticerrors -fsmverbose -quiet -check_synthesis +cover=sbt"
+
+###########################################################################
+# Compile bus source files into library
+###########################################################################
+
+# Set up library and sim path
+quietly set lib_name "bust"
+quietly set bus_sim_path "$bus_path/sim"
+
+# (Re-)Generate library and Compile source files
+echo "\nRe-gen lib and compile $lib_name source\n"
+if {[file exists $bus_sim_path/$lib_name]} {
+  file delete -force $bus_sim_path/$lib_name
+}
+
+vlib $bus_sim_path/$lib_name
+vmap $lib_name $bus_sim_path/$lib_name
+
+quietly set vhdldirectives "-2008 -work $lib_name"
+
+eval vcom $vcom_args $vhdldirectives $bus_path/hdl/axi_pkg.vhd
+
 
 ###########################################################################
 # Compile source files into library
@@ -38,7 +60,6 @@ vmap $lib_name $example_module_sim_path/$lib_name
 
 quietly set vhdldirectives "-2008 -work $lib_name"
 
-eval vcom $vcom_args $vhdldirectives $bus_path/hdl/axi_pkg.vhd
 eval vcom $vcom_args $vhdldirectives $example_module_path/hdl/example_module_pif_pkg.vhd
 eval vcom $vcom_args $vhdldirectives $example_module_path/hdl/example_module_axi_pif.vhd
 
