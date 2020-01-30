@@ -25,8 +25,8 @@ entity example_module is
     -- AXI Bus Interface Ports
     axi_clk      : in  std_logic;
     axi_areset_n : in  std_logic;
-    axi_in       : in  t_axi_interconnect_to_slave;
-    axi_out      : out t_axi_slave_to_interconnect
+    axi_in       : in  t_axi_mosi;
+    axi_out      : out t_axi_miso
     );
 
 end entity example_module;
@@ -38,7 +38,7 @@ architecture behavior of example_module is
   -- User Architecture End
 
   -- AXI output signal for user readback
-  signal axi_out_i : t_axi_slave_to_interconnect;
+  signal axi_out_i : t_axi_miso;
   -- Register Signals
   signal axi_rw_regs    : t_example_module_rw_regs    := c_example_module_rw_regs;
   signal axi_ro_regs    : t_example_module_ro_regs    := c_example_module_ro_regs;
@@ -54,7 +54,7 @@ begin
 
   i_example_module_axi_pif : entity work.example_module_axi_pif
     generic map (
-      g_axi_baseaddr      => g_axi_baseaddr)
+      g_axi_baseaddr      => C_BASEADDR)
     port map (
       axi_rw_regs         => axi_rw_regs,
       axi_ro_regs         => axi_ro_regs,

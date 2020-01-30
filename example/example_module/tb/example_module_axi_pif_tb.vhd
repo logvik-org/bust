@@ -35,8 +35,8 @@ architecture tb of example_module_axi_pif_tb is
   signal axi_pulse_regs : t_example_module_pulse_regs := c_example_module_pulse_regs;
   signal axi_clk        : std_logic                   := '1';
   signal axi_areset_n   : std_logic                   := '1';
-  signal axi_in         : t_axi_interconnect_to_slave;
-  signal axi_out        : t_axi_slave_to_interconnect;
+  signal axi_in         : t_axi_mosi;
+  signal axi_out        : t_axi_miso;
 
   -- Bitvis UVVM AXILITE BFM
   constant data_width : natural := 32;
@@ -94,7 +94,7 @@ begin  -- architecture tb
   -- component instantiation
   DUT : entity work.example_module_axi_pif
     generic map (
-      g_axi_baseaddr      => g_axi_baseaddr)
+      g_axi_baseaddr      => C_BASEADDR)
     port map (
       axi_rw_regs         => axi_rw_regs,
       axi_ro_regs         => axi_ro_regs,

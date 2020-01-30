@@ -199,8 +199,8 @@ class Testbench(object):
                            'signal {0}_pulse_regs : t_{1}_pulse_regs := c_{1}_pulse_regs;\n'
                            'signal {0}_{2}        : std_logic                   := \'1\';\n'
                            'signal {0}_{3}   : std_logic                   := {4};\n'
-                           'signal axi_in         : t_axi_interconnect_to_slave;\n'
-                           'signal axi_out        : t_axi_slave_to_interconnect;\n'
+                           'signal axi_in         : t_axi_mosi;\n'
+                           'signal axi_out        : t_axi_miso;\n'
                            '').format(self.bus.bus_type,
                                       self.module.name,
                                       self.bus.get_clk_name(),

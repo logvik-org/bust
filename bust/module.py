@@ -447,9 +447,9 @@ class Module:
         par += self.bus.bus_type + '_' + self.bus.get_clk_name() + '      : in  std_logic;\n'
         par += self.bus.bus_type + '_' + self.bus.get_reset_name() + ' : in  std_logic;\n'
         par += self.bus.bus_type + '_in       : in  t_' + \
-            self.bus.bus_type + '_interconnect_to_slave;\n'
+            self.bus.bus_type + '_mosi;\n'
         par += self.bus.bus_type + '_out      : out t_' + \
-            self.bus.bus_type + '_slave_to_interconnect\n'
+            self.bus.bus_type + '_miso\n'
         par += ');\n'
         s += indent_string(par, 2)
         s += '\n'
@@ -464,7 +464,7 @@ class Module:
 
         s += indent_string("-- " + self.bus.bus_type.upper() + " output signal for user readback\n")
         par = "signal " + self.bus.bus_type + "_out_i : t_" + self.bus.bus_type
-        par += "_slave_to_interconnect;\n"
+        par += "_miso;\n"
         s += indent_string(par)
 
         s += indent_string("-- Register Signals\n")

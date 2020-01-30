@@ -88,7 +88,7 @@ class Bus(object):
         s += indent_string(par)
 
         s += indent_string('type t_' + self.bus_type)
-        s += '_interconnect_to_slave is record\n'
+        s += '_mosi is record\n'
         par = ''
         par += 'araddr  : ' + addr_sub_type + ';\n'
         par += 'arvalid : std_logic;\n'
@@ -103,7 +103,7 @@ class Bus(object):
         s += '\n'
 
         s += indent_string('type t_' + self.bus_type)
-        s += '_slave_to_interconnect is record\n'
+        s += '_miso is record\n'
         par = ''
         par += 'arready : std_logic;\n'
         par += 'awready : std_logic;\n'
