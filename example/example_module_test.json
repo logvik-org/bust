@@ -2,7 +2,7 @@
     "settings": {
         "mod_subdir": true,
         "bus_subdir": true,
-        "uvvm_relative_path": "../UVVM",
+        "uvvm_relative_path": "../../../UVVM",
         "coverage": true
     },
     "bus": {

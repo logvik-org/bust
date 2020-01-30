@@ -219,7 +219,7 @@ class Bus(object):
             s += indent_string(par)
 
         s += "\n"
-        
+
         if mod.count_rw_regs() + mod.count_pulse_regs() > 0:
             par = ''
             par += '-- internal signal for readback' + '\n'
@@ -235,9 +235,9 @@ class Bus(object):
                 par = 'signal ' + self.bus_type + '_pulse_regs_cycle : t_'
                 par += mod.name + '_pulse_regs := c_' + mod.name + '_pulse_regs;\n'
                 s += indent_string(par)
-            
+
         s += '\n'
-            
+
         # Add bus-specific logic
         if self.bus_type == 'axi':
 
@@ -414,7 +414,7 @@ class Bus(object):
         for reg in gen:
             s += self.pulse_reg_process(mod, reg)
             s += '\n'
-            
+
         ####################################################################
         # p_write_response
         ####################################################################
@@ -577,7 +577,7 @@ class Bus(object):
 
 
     def pulse_reg_process(self, mod, reg):
-        
+
         clk_name = self.get_clk_name()
         reset_name = self.get_reset_name()
         proc_name = "p_pulse_" + reg.name
@@ -588,7 +588,7 @@ class Bus(object):
             variables = ["cnt : natural range 0 to " + str(reg.num_cycles-1) + " := 0"]
         else:
             variables = []
-            
+
         reset_string = reg_name + " <= " + const_name + ";"
 
         logic_string = "if " + reg_tmp_name
@@ -642,7 +642,8 @@ class Bus(object):
                   '                                                    wstrb((data_width/8) -1 downto 0)),\n'
                   '                                 read_address_channel(araddr(addr_width -1 downto 0)),\n'
                   '                                 read_data_channel(rdata(data_width -1 downto 0))) '
-                  ':= init_axilite_if_signals(data_width, addr_width);\n\n')
+                  ':= init_axilite_if_signals(data_width, addr_width);\n')
+            s += ('signal axilite_bfm_config : t_axilite_bfm_config := C_AXILITE_BFM_CONFIG_DEFAULT;\n\n')
             s += ('-- Unused AXILITE signals\n'
                   'signal dummy_arprot : std_logic_vector(2 downto 0);\n'
                   'signal dummy_awprot : std_logic_vector(2 downto 0);\n'
@@ -653,7 +654,10 @@ class Bus(object):
         return s
 
     def get_uvvm_signal_assignment(self):
-        s = ('axi_in.araddr  <= axilite_if.read_address_channel.araddr;\n'
+        s = ('axilite_bfm_config.clock_period <= C_CLK_PERIOD;\n'
+             'axilite_bfm_config.setup_time   <= C_CLK_PERIOD/8;\n'
+             'axilite_bfm_config.hold_time    <= C_CLK_PERIOD/8;\n\n'
+             'axi_in.araddr  <= axilite_if.read_address_channel.araddr;\n'
              'dummy_arprot   <= axilite_if.read_address_channel.arprot;\n'
              'axi_in.arvalid <= axilite_if.read_address_channel.arvalid;\n'
              'axi_in.awaddr  <= axilite_if.write_address_channel.awaddr;\n'
@@ -690,7 +694,7 @@ class Bus(object):
                   '                axilite_if,\n'
                   '                C_SCOPE,\n'
                   '                shared_msg_id_panel,\n'
-                  '                C_AXILITE_BFM_CONFIG_DEFAULT);\n'
+                  '                axilite_bfm_config);\n'
                   'end;\n\n').format(self.bus_type, self.get_clk_name())
 
             s += ('procedure axilite_read(\n'
@@ -705,7 +709,7 @@ class Bus(object):
                   '               axilite_if,\n'
                   '               C_SCOPE,\n'
                   '               shared_msg_id_panel,\n'
-                  '               C_AXILITE_BFM_CONFIG_DEFAULT);\n'
+                  '               axilite_bfm_config);\n'
                   'end;\n\n').format(self.bus_type, self.get_clk_name())
 
             s += ('procedure axilite_check(\n'
@@ -721,7 +725,7 @@ class Bus(object):
                   '                error,\n'
                   '                C_SCOPE,\n'
                   '                shared_msg_id_panel,\n'
-                  '                C_AXILITE_BFM_CONFIG_DEFAULT);\n'
+                  '                axilite_bfm_config);\n'
                   'end;\n\n').format(self.bus_type, self.get_clk_name())
 
         return s

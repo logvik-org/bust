@@ -17,7 +17,7 @@ uart currently supports these bus-types:
 ## Requirements
 
 uart is currently only tested with Python 3.5.2
-  
+
 
 ## Getting Started
 
@@ -47,9 +47,13 @@ The output VHDL files must be compiled with VHDL 2008.
 The latest development version can be found in the [dev branch](https://github.com/olagrottvik/uart/tree/dev) on Github. Clone the repo and checkout the branch.
 
 `git clone https://github.com/olagrottvik/uart.git`
+
 `cd uart`
+
 `git checkout dev`
+
 `pip3 install -r requirements.txt`
+
 `python3 -m uart`
 
 ### Examples
@@ -64,7 +68,7 @@ Release notes can be found at the [Releases page](https://github.com/olagrottvik
 
 ## Contributing
 
-If you have ideas on how to improve the project, please review [CONTRIBUTING.md](CONTRIBUTING.md) for details. Note that we also have a [Code of Conduct](CODE_OF_CONDUCT.md). 
+If you have ideas on how to improve the project, please review [CONTRIBUTING.md](CONTRIBUTING.md) for details. Note that we also have a [Code of Conduct](CODE_OF_CONDUCT.md).
 
 
 ## License

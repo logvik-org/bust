@@ -1,7 +1,7 @@
 import logging
 from uart.utils import indent_string
 from uart.module import Module
-
+from uart.bus import Bus
 
 class Testbench(object):
     """ Class for generating testbenches and tcl scripts for Model/Questa Sim"""
@@ -29,6 +29,7 @@ class Testbench(object):
         self.logger.debug('Generating UVVM Component List')
         string = "uvvm_util\n"
         string += "uvvm_vvc_framework\n"
+        string += "bitvis_vip_scoreboard\n"
         if self.bus.bus_type == 'axi':
             string += "bitvis_vip_axilite"
         return string
@@ -63,6 +64,27 @@ class Testbench(object):
             s += ' +cover=sbt'
         s += '"\n\n'
 
+        if self.bus.comp_library != Bus.default_comp_library:
+            s += ('###########################################################################\n'
+              '# Compile bus source files into library\n'
+              '###########################################################################\n\n'
+              '# Set up library and sim path\n'
+              'quietly set lib_name "')
+            s += self.bus.comp_library
+            s += '"\n'
+            s += 'quietly set bus_sim_path "$bus_path/{0}"\n\n'.format(self.settings.sim_dir)
+            s += ('# (Re-)Generate library and Compile source files\n'
+                  'echo "\\nRe-gen lib and compile $lib_name source\\n"\n'
+                  'if {{[file exists $bus_sim_path/$lib_name]}} {{\n'
+                  '  file delete -force $bus_sim_path/$lib_name\n'
+                  '}}\n\n').format()
+
+            s += 'vlib $bus_sim_path/$lib_name\n'
+            s += 'vmap $lib_name $bus_sim_path/$lib_name\n\n'
+
+            s += 'quietly set vhdldirectives "-2008 -work $lib_name"\n\n'
+            s += 'eval vcom $vcom_args $vhdldirectives $bus_path/hdl/{}_pkg.vhd\n\n\n'.format(self.bus.bus_type)
+
         s += ('###########################################################################\n'
               '# Compile source files into library\n'
               '###########################################################################\n\n'
@@ -79,11 +101,12 @@ class Testbench(object):
               '}}\n\n'.format(self.module.name))
 
         s += 'vlib ${}_sim_path/$lib_name\n'.format(self.module.name)
-        s += 'vmap $lib_name ${}_sim_path/$lib_name\n\n'.format((self.module.name))
+        s += 'vmap $lib_name ${}_sim_path/$lib_name\n\n'.format(self.module.name)
 
         s += 'quietly set vhdldirectives "-2008 -work $lib_name"\n\n'
 
-        s += 'eval vcom $vcom_args $vhdldirectives $bus_path/hdl/{}_pkg.vhd\n'.format(self.bus.bus_type)
+        if self.bus.comp_library == Bus.default_comp_library:
+            s += 'eval vcom $vcom_args $vhdldirectives $bus_path/hdl/{}_pkg.vhd\n'.format(self.bus.bus_type)
         s += ('eval vcom $vcom_args $vhdldirectives ${0}_path/hdl/{0}_pif_pkg.vhd\n'
               'eval vcom $vcom_args $vhdldirectives ${0}_path/hdl/{0}_{1}_pif.vhd\n\n').format(self.module.name,
                                                                                                self.bus.bus_type)
@@ -133,6 +156,8 @@ class Testbench(object):
              'use ieee.std_logic_1164.all;\n'
              'use ieee.numeric_std.all;\n\n')
 
+        if self.bus.comp_library != Bus.default_comp_library:
+            s += 'library {};\n'.format(self.bus.comp_library)
         s += 'use {}.{}_pkg.all;\n'.format(self.bus.comp_library, self.bus.bus_type)
         s += 'use work.{}_pif_pkg.all;\n\n'.format(self.module.name)
 

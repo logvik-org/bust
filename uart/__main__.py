@@ -63,6 +63,7 @@ def main():
     logger = logging.getLogger(__name__)
 
     if args['-a']:
+        # TODO
         raise NotImplementedError("The address update feature is not yet implemented")
 
     try:

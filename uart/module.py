@@ -37,10 +37,10 @@ class Module:
             self.description_with_breaks = add_line_breaks(mod['description'], 25)
             self.version = None
             self.git_hash = None
-            
+
             self.addr_width = bus.addr_width
             self.data_width = bus.data_width
-            
+
             if 'baseaddr' in mod:
                 self.baseaddr = int(mod['baseaddr'], 16)
                 # Check if the base address is beyond the address width...
@@ -58,6 +58,18 @@ class Module:
             else:
                 self.baseaddr_offset = 0
                 self.enable_baseaddr_offset = False
+
+            if 'byte_addressable' in mod:
+                if mod['baseaddr_offset'] == 'True':
+                    self.byte_addressable = True
+                else:
+                    self.byte_addressable = False
+            else:
+                if self.bus.bus_type == 'axi':
+                    self.byte_addressable = True
+                else:
+                    self.byte_addressable = False
+
 
             for reg in mod['register']:
                 self.add_register(reg)
@@ -444,7 +456,7 @@ class Module:
         par += 'g_' + self.bus.bus_type + '_baseaddr        : std_logic_vector(' + str(self.bus.addr_width - 1)
         par += ' downto 0) := ' + str(self.bus.addr_width) + 'X"'
         par += format(self.baseaddr, 'X') + '"'
-        
+
 
         if self.enable_baseaddr_offset is True:
             par += ";\n"
@@ -483,7 +495,7 @@ class Module:
         par = "signal " + self.bus.bus_type + "_out_i : t_" + self.bus.bus_type
         par += "_slave_to_interconnect;\n"
         s += indent_string(par)
-        
+
         s += indent_string("-- Register Signals\n")
         if self.count_rw_regs() > 0:
             s += indent_string('signal ' + self.bus.bus_type + '_rw_regs    : t_')
@@ -585,7 +597,7 @@ class Module:
         if self.git_hash is not None:
             mod["git_hash"] = self.git_hash
 
-        
+
 
         mod["baseaddr"] = str(hex(self.baseaddr))
         if self.enable_baseaddr_offset is True:
@@ -620,7 +632,7 @@ class Module:
             reg_dic["description"] = reg.description
 
             mod["register"].append(reg_dic)
-        
+
         dic["module"] = mod
         return json.dumps(dic, indent=4)
 
@@ -632,14 +644,15 @@ class Module:
         found_addr = False
         while (not found_addr):
             if self.is_address_out_of_range(addr):
-                raise RuntimeError("Address " + hex(addr) +
-                                   " is definetely out of range...")
+                raise RuntimeError("Address " + hex(addr) + " is definitely out of range...")
             if self.is_address_free(addr):
                 self.addresses.append(addr)
                 return addr
             else:
-                # force integer division to prevent float
-                addr += self.data_width // 8
+                if self.byte_addressable:
+                    addr += self.data_width // 8  # force integer division to prevent float
+                else:
+                    addr += 1
 
     def is_address_out_of_range(self, addr):
         """ Returns True if address is out of range, False if not"""

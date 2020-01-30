@@ -36,6 +36,7 @@ def generate_output(settings, bus, module, header, documentation, testbench, gen
     mod_header = os.path.join(mod_dir, settings.header_dir)
     mod_sim = os.path.join(mod_dir, settings.sim_dir)
     bus_hdl = os.path.join(bus_dir, settings.hdl_dir)
+    bus_sim = os.path.join(bus_dir, settings.sim_dir)
 
     logger.debug("Creating all output directories")
     try:
@@ -49,6 +50,7 @@ def generate_output(settings, bus, module, header, documentation, testbench, gen
         os.makedirs(mod_header, exist_ok=True)
         os.makedirs(mod_sim, exist_ok=True)
         os.makedirs(bus_hdl, exist_ok=True)
+        os.makedirs(bus_sim, exist_ok=True)
 
     except Exception:
         logger.exception("Could not create output directories")
