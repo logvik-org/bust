@@ -1,6 +1,5 @@
 import logging
 from bust.utils import indent_string
-from bust.module import Module
 from bust.bus import Bus
 
 class Testbench(object):
@@ -12,7 +11,8 @@ class Testbench(object):
         self.bus = bus
         self.settings = settings
 
-    def get_addr_func(self):
+    @staticmethod
+    def get_addr_func():
         s = ('function f_addr (\n'
              '  BASE : std_logic_vector(31 downto 0);\n'
              '  REG  : std_logic_vector(31 downto 0))\n'
@@ -571,7 +571,8 @@ class Testbench(object):
         par = 'Checking Register {} - {} {}'.format(reg.name, reg.mode.upper(), reg_type)
         return self.log_hdr_large(par)
 
-    def get_uvvm_gen_overloads(self):
+    @staticmethod
+    def get_uvvm_gen_overloads():
         s = ('-- Overloads for convenience\n'
              'procedure log_hdr (\n'
              '  constant msg : in string) is\n'
@@ -588,21 +589,26 @@ class Testbench(object):
 
         return s
 
-    def log_hdr_large(self, string):
+    @staticmethod
+    def log_hdr_large(string):
         return 'log_hdr_large("{}");\n'.format(string)
 
-    def log_hdr(self, string):
+    @staticmethod
+    def log_hdr(string):
         return 'log_hdr("{}");\n'.format(string)
 
-    def check_value(self, signal, value, msg):
+    @staticmethod
+    def check_value(signal, value, msg):
         s = 'check_value({}, {}, error, "{}");\n'.format(signal, value, msg)
         return s
 
-    def await_value(self, signal, value, msg):
+    @staticmethod
+    def await_value(signal, value, msg):
         s = 'await_value({}, {}, 0 ps, 1 ps, error, "{}");\n'.format(signal, value, msg)
         return s
 
-    def await_stable(self, signal, clk_cycles, msg):
+    @staticmethod
+    def await_stable(signal, clk_cycles, msg):
         s = 'await_stable({0}, {1}*C_CLK_PERIOD, FROM_LAST_EVENT, {1}*C_CLK_PERIOD, FROM_LAST_EVENT, error, "{2}");\n'.format(signal, clk_cycles, msg)
         return s
 
@@ -618,7 +624,8 @@ class Testbench(object):
             raise Exception("Invalid signal type")
         return s
 
-    def to_zero(self, sig_type):
+    @staticmethod
+    def to_zero(sig_type):
         if sig_type == 'sl':
             return "'0'"
         elif sig_type == 'slv':

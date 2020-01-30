@@ -16,7 +16,7 @@ class CleanCommand(Command):
         pass
     def finalize_options(self):
         pass
-    def run(self):
+    def run():
         os.system('rm -vrf ./build ./dist ./*.pyc ./*.tgz ./*.egg-info')
 
 setup(

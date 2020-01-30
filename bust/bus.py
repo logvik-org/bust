@@ -629,28 +629,30 @@ class Bus(object):
         return s
 
     def get_uvvm_signal_assignment(self):
-        s = ('axilite_bfm_config.clock_period <= C_CLK_PERIOD;\n'
-             'axilite_bfm_config.setup_time   <= C_CLK_PERIOD/8;\n'
-             'axilite_bfm_config.hold_time    <= C_CLK_PERIOD/8;\n\n'
-             'axi_in.araddr  <= axilite_if.read_address_channel.araddr;\n'
-             'dummy_arprot   <= axilite_if.read_address_channel.arprot;\n'
-             'axi_in.arvalid <= axilite_if.read_address_channel.arvalid;\n'
-             'axi_in.awaddr  <= axilite_if.write_address_channel.awaddr;\n'
-             'dummy_awprot   <= axilite_if.write_address_channel.awprot;\n'
-             'axi_in.awvalid <= axilite_if.write_address_channel.awvalid;\n'
-             'axi_in.bready  <= axilite_if.write_response_channel.bready;\n'
-             'axi_in.rready  <= axilite_if.read_data_channel.rready;\n'
-             'axi_in.wdata   <= axilite_if.write_data_channel.wdata;\n'
-             'dummy_wstrb    <= axilite_if.write_data_channel.wstrb;\n'
-             'axi_in.wvalid  <= axilite_if.write_data_channel.wvalid;\n\n'
-             'axilite_if.read_address_channel.arready  <= axi_out.arready;\n'
-             'axilite_if.write_address_channel.awready <= axi_out.awready;\n'
-             'axilite_if.write_response_channel.bresp  <= axi_out.bresp;\n'
-             'axilite_if.write_response_channel.bvalid <= axi_out.bvalid;\n'
-             'axilite_if.read_data_channel.rdata       <= axi_out.rdata;\n'
-             'axilite_if.read_data_channel.rresp       <= axi_out.rresp;\n'
-             'axilite_if.read_data_channel.rvalid      <= axi_out.rvalid;\n'
-             'axilite_if.write_data_channel.wready     <= axi_out.wready;\n')
+        s = ''
+        if self.bus_type == 'axi':
+            s = ('axilite_bfm_config.clock_period <= C_CLK_PERIOD;\n'
+                 'axilite_bfm_config.setup_time   <= C_CLK_PERIOD/8;\n'
+                 'axilite_bfm_config.hold_time    <= C_CLK_PERIOD/8;\n\n'
+                 'axi_in.araddr  <= axilite_if.read_address_channel.araddr;\n'
+                 'dummy_arprot   <= axilite_if.read_address_channel.arprot;\n'
+                 'axi_in.arvalid <= axilite_if.read_address_channel.arvalid;\n'
+                 'axi_in.awaddr  <= axilite_if.write_address_channel.awaddr;\n'
+                 'dummy_awprot   <= axilite_if.write_address_channel.awprot;\n'
+                 'axi_in.awvalid <= axilite_if.write_address_channel.awvalid;\n'
+                 'axi_in.bready  <= axilite_if.write_response_channel.bready;\n'
+                 'axi_in.rready  <= axilite_if.read_data_channel.rready;\n'
+                 'axi_in.wdata   <= axilite_if.write_data_channel.wdata;\n'
+                 'dummy_wstrb    <= axilite_if.write_data_channel.wstrb;\n'
+                 'axi_in.wvalid  <= axilite_if.write_data_channel.wvalid;\n\n'
+                 'axilite_if.read_address_channel.arready  <= axi_out.arready;\n'
+                 'axilite_if.write_address_channel.awready <= axi_out.awready;\n'
+                 'axilite_if.write_response_channel.bresp  <= axi_out.bresp;\n'
+                 'axilite_if.write_response_channel.bvalid <= axi_out.bvalid;\n'
+                 'axilite_if.read_data_channel.rdata       <= axi_out.rdata;\n'
+                 'axilite_if.read_data_channel.rresp       <= axi_out.rresp;\n'
+                 'axilite_if.read_data_channel.rvalid      <= axi_out.rvalid;\n'
+                 'axilite_if.write_data_channel.wready     <= axi_out.wready;\n')
         return s
 
 
@@ -705,12 +707,13 @@ class Bus(object):
 
         return s
 
-    def uvvm_write(self, reg_addr, value, string):
-
+    @staticmethod
+    def uvvm_write(reg_addr, value, string):
         s = 'write(f_addr(C_BASEADDR, {}), {}, "{}");\n'.format(reg_addr, value, string)
         return s
 
-    def uvvm_check(self, reg_addr, data_exp, string):
+    @staticmethod
+    def uvvm_check(reg_addr, data_exp, string):
         s = 'check(f_addr(C_BASEADDR, {}), {}, "{}");\n'.format(reg_addr, data_exp, string)
         return s
 
