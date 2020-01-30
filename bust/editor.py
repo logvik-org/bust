@@ -7,21 +7,21 @@ from cursesmenu.items import FunctionItem
 from collections import OrderedDict
 from prettytable import PrettyTable
 
-from uart.utils import json_parser
-from uart.utils import cont
-from uart.utils import is_int
-from uart.utils import clear_screen
-from uart.utils import write_string_to_file
-from uart.utils import get_list_choice
-from uart.utils import get_int
-from uart.utils import add_line_breaks
-from uart.module import Module
-from uart.bus import Bus
-from uart.register import Register
-from uart.field import Field
-from uart.vhdl import is_valid_VHDL
-from uart.vhdl import get_identifier
-from uart.settings import Settings
+from bust.utils import json_parser
+from bust.utils import cont
+from bust.utils import is_int
+from bust.utils import clear_screen
+from bust.utils import write_string_to_file
+from bust.utils import get_list_choice
+from bust.utils import get_int
+from bust.utils import add_line_breaks
+from bust.module import Module
+from bust.bus import Bus
+from bust.register import Register
+from bust.field import Field
+from bust.vhdl import is_valid_VHDL
+from bust.vhdl import get_identifier
+from bust.settings import Settings
 
 
 class Editor(object):
@@ -57,11 +57,11 @@ class Editor(object):
             bus_dic['data_width'] = 32
             bus_dic['reset'] = 'async'
             self.bus = Bus(bus_dic)
-            
+
             # Get name, addr_width, data_width and description
             mod = OrderedDict()
             mod['name'] = get_identifier('Enter a module name: ')
-            
+
             '''! @todo Add int check'''
             mod['addr_width'] = 32
             mod['data_width'] = 32
@@ -72,7 +72,7 @@ class Editor(object):
             self.mod = Module(mod, self.bus, self.settings)
 
     def show_menu(self):
-        self.menu = CursesMenu('uart - Module Editor', self.set_subtitle())
+        self.menu = CursesMenu('bust - Module Editor', self.set_subtitle())
 
         self.menu.append_item(FunctionItem('Edit name', self.edit_name))
         self.menu.append_item(FunctionItem('Edit base address', self.edit_baseaddr))
@@ -97,10 +97,10 @@ class Editor(object):
         self.mod.baseaddr = get_int('Enter a new base address (in hex): ', 16)
         # TODO full functionality
         print("Add base address offset feature? (Enables possibility for adding multiple instances of the same module with a fixed base address offset): ")
-        
+
         self.recently_saved = False
         self.update_menu()
-        
+
     def return_registers(self):
         while True:
             clear_screen()
@@ -352,7 +352,7 @@ class Editor(object):
             if input('Are you sure you want to delete this register? (y/N): ').upper() == 'Y':
                 del self.mod.registers[int(choice)]
                 self.recently_saved = False
-        
+
         self.update_menu()
 
     def update_addresses(self):

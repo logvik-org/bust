@@ -14,7 +14,7 @@
     },
     "module": {
         "name": "example_module",
-        "description": "An example module that contain all the register types that are currently supported by uart.",
+        "description": "An example module that contain all the register types that are currently supported by bust.",
         "baseaddr": "0xffaa0000",
         "register": [
             {

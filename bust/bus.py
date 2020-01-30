@@ -1,9 +1,9 @@
 from collections import OrderedDict
 
-from uart.utils import indent_string
-from uart.vhdl import async_process
-from uart.vhdl import comb_process
-from uart.vhdl import sync_process
+from bust.utils import indent_string
+from bust.vhdl import async_process
+from bust.vhdl import comb_process
+from bust.vhdl import sync_process
 
 class Bus(object):
     """! @brief Managing bus information

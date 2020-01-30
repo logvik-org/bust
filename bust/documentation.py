@@ -1,5 +1,5 @@
 from pylatexenc.latexencode import utf8tolatex
-from uart.utils import indent_string
+from bust.utils import indent_string
 
 
 class Documentation(object):
@@ -7,9 +7,9 @@ class Documentation(object):
 
     """
 
-    
 
-    
+
+
     def __init__(self, module):
         self.module = module
 
@@ -58,9 +58,9 @@ class Documentation(object):
                 s += " for " + str(reg.num_cycles) + " cycles - "
             s += "}{" + '0x{0:0{1}X}'.format(reg.address, int(self.module.addr_width/4))
             s += "}"
-            
+
             s += indent_string(r"\par ")
-            
+
             s += utf8tolatex(reg.description) + r" \regnewline" + "\n"
             s += indent_string(r"\label{" + reg.name + "}\n")
 
@@ -78,7 +78,7 @@ class Documentation(object):
                 else:
                     p += '{0x' + format(int(reg.reset, 16), 'X') + "}"
                 p += "}\n"
-                
+
                 s += indent_string(p)
 
             else:
@@ -92,7 +92,7 @@ class Documentation(object):
                         p += '{0x' + format(int(field.reset, 16), 'X') + "}"
                     p += "}\n"
                     s += indent_string(p)
-    
+
             s += r"\reglabel{Reset}\regnewline" + "\n"
 
             if reg.sig_type == "fields":
@@ -133,7 +133,7 @@ tex_top = r"""\documentclass{article}
    },
    morecomment=[l]--
 }
- 
+
 \lstdefinestyle{vhdl}{
    language     = VHDL,
    basicstyle   = \ttfamily,

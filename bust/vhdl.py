@@ -1,7 +1,7 @@
 import re
 
-from uart.utils import indent_string
-from uart.utils import is_mixed
+from bust.utils import indent_string
+from bust.utils import is_mixed
 
 
 def sync_process(clk_name, reset_name, process_name, reset_string, logic_string,

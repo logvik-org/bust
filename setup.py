@@ -10,9 +10,9 @@ except (IOError, ImportError):
     long_description = 'Utility for simply creating and modifying VHDL bus slave modules'
 
 setup(
-    name='uart',
+    name='bust',
     version='0.7.0-dev',
-    packages=['uart'],
+    packages=['bust'],
     license='MIT',
     install_requires=[
         'curses-menu==0.5.0',
@@ -24,11 +24,11 @@ setup(
     description=description,
     long_description=long_description,
     entry_points={
-        'console_scripts': ['uart = uart.__main__:main'],
+        'console_scripts': ['bust = bust.__main__:main'],
     },
     test_suite='tests',
     author='Ola Groettvik',
     author_email='olagrottvik@gmail.com',
-    url='http://github.com/olagrottvik/uart',
+    url='http://github.com/olagrottvik/bust',
     keywords=['vhdl', 'bus', 'axi'],
 )

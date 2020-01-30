@@ -1,7 +1,7 @@
 import logging
-from uart.utils import indent_string
-from uart.module import Module
-from uart.bus import Bus
+from bust.utils import indent_string
+from bust.module import Module
+from bust.bus import Bus
 
 class Testbench(object):
     """ Class for generating testbenches and tcl scripts for Model/Questa Sim"""

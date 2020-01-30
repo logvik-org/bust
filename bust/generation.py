@@ -2,13 +2,13 @@ import os
 import logging
 import subprocess
 
-from uart.utils import write_string_to_file, update_module_top_level
-from uart.module import Module
-from uart.bus import Bus
-from uart.header import Header
-from uart.documentation import Documentation
-from uart.settings import Settings
-from uart.testbench import Testbench
+from bust.utils import write_string_to_file, update_module_top_level
+from bust.module import Module
+from bust.bus import Bus
+from bust.header import Header
+from bust.documentation import Documentation
+from bust.settings import Settings
+from bust.testbench import Testbench
 
 logger = logging.getLogger(__name__)
 

@@ -1,10 +1,10 @@
 import unittest
 import logging.config
-from uart.utils import json_parser
-import uart.module as mod
-import uart.bus as bus
-import uart.settings as set
-import uart.testbench as tb
+from bust.utils import json_parser
+import bust.module as mod
+import bust.bus as bus
+import bust.settings as set
+import bust.testbench as tb
 
 
 class TestTestbench(unittest.TestCase):

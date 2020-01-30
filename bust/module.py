@@ -6,13 +6,13 @@ Contains the Module class and relevant exceptions
 import json
 from collections import OrderedDict
 
-from uart.utils import indent_string
-from uart.utils import add_line_breaks
-from uart.exceptions import InvalidAddress
-from uart.exceptions import InvalidRegister
-from uart.register import Register
-from uart.vhdl import is_valid_VHDL
-from uart.vhdl import is_unique
+from bust.utils import indent_string
+from bust.utils import add_line_breaks
+from bust.exceptions import InvalidAddress
+from bust.exceptions import InvalidRegister
+from bust.register import Register
+from bust.vhdl import is_valid_VHDL
+from bust.vhdl import is_unique
 
 
 class Module:

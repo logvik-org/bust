@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""uart register tool
+"""bust register tool
 
 Usage:
-  uart.py FILE [-o DIR] [-F | -f] [-u] [-d | -p] [-b] [-t] [-i] [-m] [-a]
-  uart.py --version
-  uart.py -h | --help
+  bust.py FILE [-o DIR] [-F | -f] [-u] [-d | -p] [-b] [-t] [-i] [-m] [-a]
+  bust.py --version
+  bust.py -h | --help
 
 Options:
   -o DIR         Specify output directory. Overrides settings (either JSON dir, or specified project dir in JSON)
@@ -36,21 +36,21 @@ import curses
 import pkg_resources
 import logging
 
-from uart.utils import json_parser, write_string_to_file, update_module_top_level
-from uart.module import Module
-from uart.bus import Bus
-from uart.editor import Editor
-from uart.header import Header
-from uart.documentation import Documentation
-from uart.settings import Settings
-from uart.testbench import Testbench
-from uart.generation import generate_output
+from bust.utils import json_parser, write_string_to_file, update_module_top_level
+from bust.module import Module
+from bust.bus import Bus
+from bust.editor import Editor
+from bust.header import Header
+from bust.documentation import Documentation
+from bust.settings import Settings
+from bust.testbench import Testbench
+from bust.generation import generate_output
 
 __VERSION__ = '0.7.0-dev'
 
 
 def main():
-    args = docopt(__doc__, help=True, version="uart " + __VERSION__)
+    args = docopt(__doc__, help=True, version="bust " + __VERSION__)
     logging.basicConfig(filename='debug.log', filemode='w', datefmt='%a, %d %b %Y %H:%M:%S',
                         format='%(asctime)s %(name)-15s %(levelname)-8s %(message)s', level=logging.DEBUG)
     # Define a handler which writes INFO or higher to sys.stderr

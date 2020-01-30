@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from uart.utils import add_line_breaks
+from bust.utils import add_line_breaks
 
 
 class Field(object):
@@ -8,7 +8,7 @@ class Field(object):
 
     """
     supported_types = ['slv', 'sl']
-    
+
     def __init__(self, name, sig_type, length, reset, description, pos_low):
         self.name = name
         self.sig_type = sig_type

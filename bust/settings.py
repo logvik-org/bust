@@ -1,6 +1,6 @@
 import os
 import logging
-import uart.bus as bus
+import bust.bus as bus
 from collections import OrderedDict
 
 

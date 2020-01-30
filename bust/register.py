@@ -1,8 +1,8 @@
-from uart.utils import indent_string
-from uart.utils import add_line_breaks
-from uart.field import Field
-from uart.vhdl import is_valid_VHDL
-from uart.vhdl import is_unique
+from bust.utils import indent_string
+from bust.utils import add_line_breaks
+from bust.field import Field
+from bust.vhdl import is_valid_VHDL
+from bust.vhdl import is_unique
 
 
 class Register:
@@ -113,7 +113,7 @@ class Register:
         # Make sure the field name is unique in this register
         field_names = [field.name for field in self.fields]
         is_unique(field['name'], field_names)
-        
+
         if field['type'] == 'slv':
             if 'length' not in field:
                 raise InvalidFieldFormat(self.name)
@@ -182,7 +182,7 @@ class ModuleDataBitsExceeded(Exception):
         msg += " in register " + register + "\n"
         msg += 'Module length: ' + str(mod_data_length) + '\n'
         msg += 'Register length: ' + str(reglength)
-        
+
         super().__init__(msg)
 
 

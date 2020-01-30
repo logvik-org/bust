@@ -1,4 +1,4 @@
-# uart build and deploy files
+# bust build and deploy files
 build.sh
 upload.sh
 test_upload.sh
