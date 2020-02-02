@@ -9,14 +9,14 @@ try:
 except (IOError, ImportError):
     long_description = 'Utility for simply creating and modifying VHDL bus slave modules'
 
-class CleanCommand(Command):
+class clean(Command):
     """Custom clean command to tidy up the project root."""
     user_options = []
     def initialize_options(self):
         pass
     def finalize_options(self):
         pass
-    def run():
+    def run(self):
         os.system('rm -vrf ./build ./dist ./*.pyc ./*.tgz ./*.egg-info')
 
 setup(
@@ -27,7 +27,7 @@ setup(
     install_requires=[
         'curses-menu==0.5.0',
         'docopt==0.6.2',
-        'prettytable==0.8.0-dev.2',
+        'prettytable==0.7.2',
         'pylatexenc==1.2',
         'pypandoc==1.4',
       ],
@@ -42,6 +42,6 @@ setup(
     url='http://github.com/olagrottvik/bust',
     keywords=['vhdl', 'bus', 'axi'],
     cmdclass={
-        'clean': CleanCommand,
+        'clean': clean,
     }
 )
