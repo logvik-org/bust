@@ -1,13 +1,10 @@
-from setuptools import setup, Command
+from setuptools import setup, Command, find_packages
 import re
 import os
 
 description = 'Utility for simply creating and modifying VHDL bus slave modules'
-try:
-    import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst')
-except (IOError, ImportError):
-    long_description = 'Utility for simply creating and modifying VHDL bus slave modules'
+with open("README.md", "r") as fh:
+    long_description = fh.read()
 
 class clean(Command):
     """Custom clean command to tidy up the project root."""
@@ -17,22 +14,21 @@ class clean(Command):
     def finalize_options(self):
         pass
     def run(self):
-        os.system('rm -vrf ./build ./dist ./*.pyc ./*.tgz ./*.egg-info')
+        os.system('rm -vrf ./build ./dist ./*.pyc ./*.tgz ./*.egg-info ./.pytest_cache ./.eggs ./__pycache__')
 
 setup(
     name='bust',
     version='0.8.0-dev',
-    packages=['bust'],
+    packages=find_packages(),
     license='MIT',
     install_requires=[
-        'curses-menu==0.5.0',
-        'docopt==0.6.2',
-        'prettytable==0.7.2',
-        'pylatexenc==1.2',
-        'pypandoc==1.4',
+        'docopt>=0.6.2',
+        'pylatexenc>=1.2',
       ],
+    python_requires='~=3.4', # For Python 3.4 and up, but not yet Python 4
     description=description,
     long_description=long_description,
+    long_description_content_type="text/markdown",
     entry_points={
         'console_scripts': ['bust = bust.__main__:main'],
     },
