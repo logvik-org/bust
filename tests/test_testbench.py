@@ -15,7 +15,7 @@ class TestTestbench(unittest.TestCase):
         self.logger = logging.getLogger(__name__)
 
         # Load the example JSON file
-        json_file = "example/example_module.json"
+        json_file = "example/example_axi.json"
         json = json_parser(json_file)
         self.sett = sett.Settings(json_file, json['settings'])
         self.bus = bus.Bus(json['bus'])
@@ -23,9 +23,9 @@ class TestTestbench(unittest.TestCase):
 
     def test_scripts(self):
         self.logger.info("Testing TB Script generation...")
-        with open('example/example_module/scripts/simulate_axi_pif.do') as script_file:
+        with open('example/example_axi/scripts/simulate_axi_pif.do') as script_file:
             script_string = script_file.read()
-        with open('example/example_module/scripts/component_list.txt') as component_file:
+        with open('example/example_axi/scripts/component_list.txt') as component_file:
             component_string = component_file.read()
 
         testbench = tb.Testbench(self.mod, self.bus, self.sett)
@@ -35,7 +35,7 @@ class TestTestbench(unittest.TestCase):
 
     def test_tb(self):
         self.logger.info("Testing TB Sequencer generation...")
-        with open('example/example_module/tb/example_module_axi_pif_tb.vhd') as tb_file:
+        with open('example/example_axi/tb/example_axi_axi_pif_tb.vhd') as tb_file:
             tb_string = tb_file.read()
 
         testbench = tb.Testbench(self.mod, self.bus, self.sett)

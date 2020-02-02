@@ -1,5 +1,5 @@
-#ifndef EXAMPLE_MODULE_H
-#define EXAMPLE_MODULE_H
+#ifndef EXAMPLE_AXI_H
+#define EXAMPLE_AXI_H
 
 
 /* Register: reg0 */

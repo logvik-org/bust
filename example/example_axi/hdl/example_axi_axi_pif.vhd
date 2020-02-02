@@ -4,65 +4,65 @@ use ieee.numeric_std.all;
 
 library bust;
 use bust.axi_pkg.all;
-use work.example_module_pif_pkg.all;
+use work.example_axi_pif_pkg.all;
 
-entity example_module_axi_pif is
+entity example_axi_axi_pif is
 
   generic (
     -- AXI Bus Interface Generics
     g_axi_baseaddr        : std_logic_vector(31 downto 0) := (others => '0'));
   port (
     -- AXI Bus Interface Ports
-    axi_rw_regs    : out t_example_module_rw_regs    := c_example_module_rw_regs;
-    axi_ro_regs    : in  t_example_module_ro_regs    := c_example_module_ro_regs;
-    axi_pulse_regs : out t_example_module_pulse_regs := c_example_module_pulse_regs;
+    axi_rw_regs    : out t_example_axi_rw_regs    := c_example_axi_rw_regs;
+    axi_ro_regs    : in  t_example_axi_ro_regs    := c_example_axi_ro_regs;
+    axi_pulse_regs : out t_example_axi_pulse_regs := c_example_axi_pulse_regs;
 
     -- bus signals
     clk            : in  std_logic;
     areset_n       : in  std_logic;
-    awaddr         : in  t_example_module_addr;
+    awaddr         : in  t_example_axi_addr;
     awvalid        : in  std_logic;
     awready        : out std_logic;
-    wdata          : in  t_example_module_data;
+    wdata          : in  t_example_axi_data;
     wvalid         : in  std_logic;
     wready         : out std_logic;
     bresp          : out std_logic_vector(1 downto 0);
     bvalid         : out std_logic;
     bready         : in  std_logic;
-    araddr         : in  t_example_module_addr;
+    araddr         : in  t_example_axi_addr;
     arvalid        : in  std_logic;
     arready        : out std_logic;
-    rdata          : out t_example_module_data;
+    rdata          : out t_example_axi_data;
     rresp          : out std_logic_vector(1 downto 0);
     rvalid         : out std_logic;
     rready         : in  std_logic
     );
-end example_module_axi_pif;
+end example_axi_axi_pif;
 
-architecture behavior of example_module_axi_pif is
+architecture behavior of example_axi_axi_pif is
 
   constant C_BASEADDR : t_axi_addr := g_axi_baseaddr;
 
   -- internal signal for readback
-  signal axi_rw_regs_i    : t_example_module_rw_regs := c_example_module_rw_regs;
-  signal axi_pulse_regs_i : t_example_module_pulse_regs := c_example_module_pulse_regs;
-  signal axi_pulse_regs_cycle : t_example_module_pulse_regs := c_example_module_pulse_regs;
+  signal axi_rw_regs_i    : t_example_axi_rw_regs := c_example_axi_rw_regs;
+  signal axi_pulse_regs_i : t_example_axi_pulse_regs := c_example_axi_pulse_regs;
+  signal axi_pulse_regs_cycle : t_example_axi_pulse_regs := c_example_axi_pulse_regs;
 
   -- internal bus signals for readback
-  signal awaddr_i      : t_example_module_addr;
+  signal awaddr_i      : t_example_axi_addr;
   signal awready_i     : std_logic;
   signal wready_i      : std_logic;
   signal bresp_i       : std_logic_vector(1 downto 0);
   signal bvalid_i      : std_logic;
-  signal araddr_i      : t_example_module_addr;
+  signal araddr_i      : t_example_axi_addr;
   signal arready_i     : std_logic;
-  signal rdata_i       : t_example_module_data;
+  signal rdata_i       : t_example_axi_data;
   signal rresp_i       : std_logic_vector(1 downto 0);
   signal rvalid_i      : std_logic;
 
   signal slv_reg_rden : std_logic;
   signal slv_reg_wren : std_logic;
-  signal reg_data_out : t_example_module_data;
+  signal reg_data_out : t_example_axi_data;
   -- signal byte_index   : integer; -- unused
 
 begin
@@ -122,14 +122,14 @@ begin
   begin
     if areset_n = '0' then
 
-      axi_rw_regs_i <= c_example_module_rw_regs;
+      axi_rw_regs_i <= c_example_axi_rw_regs;
 
-      axi_pulse_regs_cycle <= c_example_module_pulse_regs;
+      axi_pulse_regs_cycle <= c_example_axi_pulse_regs;
 
     elsif rising_edge(clk) then
 
       -- Return PULSE registers to reset value every clock cycle
-      axi_pulse_regs_cycle <= c_example_module_pulse_regs;
+      axi_pulse_regs_cycle <= c_example_axi_pulse_regs;
 
 
       if (slv_reg_wren = '1') then
@@ -196,16 +196,16 @@ variable cnt : natural range 0 to 3 := 0;
 begin
   if rising_edge(clk) then
     if areset_n = '0' then
-      axi_pulse_regs_i.reg9 <= c_example_module_pulse_regs.reg9;
+      axi_pulse_regs_i.reg9 <= c_example_axi_pulse_regs.reg9;
     else
-      if axi_pulse_regs_cycle.reg9 /= c_example_module_pulse_regs.reg9 then
+      if axi_pulse_regs_cycle.reg9 /= c_example_axi_pulse_regs.reg9 then
         cnt := 3;
         axi_pulse_regs_i.reg9 <= axi_pulse_regs_cycle.reg9;
       else
         if cnt > 0 then
           cnt := cnt - 1;
         else
-          axi_pulse_regs_i.reg9 <= c_example_module_pulse_regs.reg9;
+          axi_pulse_regs_i.reg9 <= c_example_axi_pulse_regs.reg9;
         end if;
       end if;
     end if;
@@ -216,12 +216,12 @@ p_pulse_reg10 : process(clk)
 begin
   if rising_edge(clk) then
     if areset_n = '0' then
-      axi_pulse_regs_i.reg10 <= c_example_module_pulse_regs.reg10;
+      axi_pulse_regs_i.reg10 <= c_example_axi_pulse_regs.reg10;
     else
-      if axi_pulse_regs_cycle.reg10 /= c_example_module_pulse_regs.reg10 then
+      if axi_pulse_regs_cycle.reg10 /= c_example_axi_pulse_regs.reg10 then
         axi_pulse_regs_i.reg10 <= axi_pulse_regs_cycle.reg10;
       else
-        axi_pulse_regs_i.reg10 <= c_example_module_pulse_regs.reg10;
+        axi_pulse_regs_i.reg10 <= c_example_axi_pulse_regs.reg10;
       end if;
     end if;
   end if;
@@ -232,16 +232,16 @@ variable cnt : natural range 0 to 49 := 0;
 begin
   if rising_edge(clk) then
     if areset_n = '0' then
-      axi_pulse_regs_i.reg11 <= c_example_module_pulse_regs.reg11;
+      axi_pulse_regs_i.reg11 <= c_example_axi_pulse_regs.reg11;
     else
-      if axi_pulse_regs_cycle.reg11 /= c_example_module_pulse_regs.reg11 then
+      if axi_pulse_regs_cycle.reg11 /= c_example_axi_pulse_regs.reg11 then
         cnt := 49;
         axi_pulse_regs_i.reg11 <= axi_pulse_regs_cycle.reg11;
       else
         if cnt > 0 then
           cnt := cnt - 1;
         else
-          axi_pulse_regs_i.reg11 <= c_example_module_pulse_regs.reg11;
+          axi_pulse_regs_i.reg11 <= c_example_axi_pulse_regs.reg11;
         end if;
       end if;
     end if;

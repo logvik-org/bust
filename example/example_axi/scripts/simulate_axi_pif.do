@@ -46,34 +46,34 @@ eval vcom $vcom_args $vhdldirectives $bus_path/hdl/axi_pkg.vhd
 ###########################################################################
 
 # Set up library and sim path
-quietly set lib_name "example_module"
-quietly set example_module_sim_path "$example_module_path/sim"
+quietly set lib_name "example_axi"
+quietly set example_axi_sim_path "$example_axi_path/sim"
 
 # (Re-)Generate library and Compile source files
 echo "\nRe-gen lib and compile $lib_name source\n"
-if {[file exists $example_module_sim_path/$lib_name]} {
-  file delete -force $example_module_sim_path/$lib_name
+if {[file exists $example_axi_sim_path/$lib_name]} {
+  file delete -force $example_axi_sim_path/$lib_name
 }
 
-vlib $example_module_sim_path/$lib_name
-vmap $lib_name $example_module_sim_path/$lib_name
+vlib $example_axi_sim_path/$lib_name
+vmap $lib_name $example_axi_sim_path/$lib_name
 
 quietly set vhdldirectives "-2008 -work $lib_name"
 
-eval vcom $vcom_args $vhdldirectives $example_module_path/hdl/example_module_pif_pkg.vhd
-eval vcom $vcom_args $vhdldirectives $example_module_path/hdl/example_module_axi_pif.vhd
+eval vcom $vcom_args $vhdldirectives $example_axi_path/hdl/example_axi_pif_pkg.vhd
+eval vcom $vcom_args $vhdldirectives $example_axi_path/hdl/example_axi_axi_pif.vhd
 
 ###########################################################################
 # Compile testbench files into library
 ###########################################################################
 quietly set vcom_args "-quiet"
-eval vcom $vcom_args $vhdldirectives $example_module_path/tb/example_module_axi_pif_tb.vhd
+eval vcom $vcom_args $vhdldirectives $example_axi_path/tb/example_axi_axi_pif_tb.vhd
 
 ###########################################################################
 # Simulate
 ###########################################################################
-vsim -quiet -coverage -t 1ps example_module.example_module_axi_pif_tb
-add wave -position insertpoint sim:/example_module_axi_pif_tb/*
+vsim -quiet -coverage -t 1ps example_axi.example_axi_axi_pif_tb
+add wave -position insertpoint sim:/example_axi_axi_pif_tb/*
 
 # Trick to avoid metastability warnings
 quietly set NumericStdNoWarnings 1
@@ -81,13 +81,13 @@ run 1 ps;
 quietly set NumericStdNoWarnings 0
 run -all
 
-coverage exclude -du example_module_axi_pif -togglenode araddr
-coverage exclude -du example_module_axi_pif -togglenode araddr_i
-coverage exclude -du example_module_axi_pif -togglenode awaddr
-coverage exclude -du example_module_axi_pif -togglenode awaddr_i
-coverage exclude -du example_module_axi_pif -togglenode bresp
-coverage exclude -du example_module_axi_pif -togglenode bresp_i
-coverage exclude -du example_module_axi_pif -togglenode rresp
-coverage exclude -du example_module_axi_pif -togglenode rresp_i
+coverage exclude -du example_axi_axi_pif -togglenode araddr
+coverage exclude -du example_axi_axi_pif -togglenode araddr_i
+coverage exclude -du example_axi_axi_pif -togglenode awaddr
+coverage exclude -du example_axi_axi_pif -togglenode awaddr_i
+coverage exclude -du example_axi_axi_pif -togglenode bresp
+coverage exclude -du example_axi_axi_pif -togglenode bresp_i
+coverage exclude -du example_axi_axi_pif -togglenode rresp
+coverage exclude -du example_axi_axi_pif -togglenode rresp_i
 coverage report
 coverage report -html -htmldir covhtmlreport -code bcefst

@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 
 library bust;
 use bust.axi_pkg.all;
-use work.example_module_pif_pkg.all;
+use work.example_axi_pif_pkg.all;
 
 library uvvm_util;
 context uvvm_util.uvvm_util_context;
@@ -14,13 +14,13 @@ use bitvis_vip_axilite.axilite_bfm_pkg.all;
 
 -------------------------------------------------------------------------------
 
-entity example_module_axi_pif_tb is
+entity example_axi_axi_pif_tb is
 
-end entity example_module_axi_pif_tb;
+end entity example_axi_axi_pif_tb;
 
 -------------------------------------------------------------------------------
 
-architecture tb of example_module_axi_pif_tb is
+architecture tb of example_axi_axi_pif_tb is
 
   constant C_SCOPE      : string := C_TB_SCOPE_DEFAULT;
   constant C_CLK_PERIOD : time   := 10 ns;
@@ -30,9 +30,9 @@ architecture tb of example_module_axi_pif_tb is
   constant g_instance_num : natural                       := 0;
 
   -- component ports
-  signal axi_rw_regs    : t_example_module_rw_regs    := c_example_module_rw_regs;
-  signal axi_ro_regs    : t_example_module_ro_regs    := c_example_module_ro_regs;
-  signal axi_pulse_regs : t_example_module_pulse_regs := c_example_module_pulse_regs;
+  signal axi_rw_regs    : t_example_axi_rw_regs    := c_example_axi_rw_regs;
+  signal axi_ro_regs    : t_example_axi_ro_regs    := c_example_axi_ro_regs;
+  signal axi_pulse_regs : t_example_axi_pulse_regs := c_example_axi_pulse_regs;
   signal axi_clk        : std_logic                   := '1';
   signal axi_areset_n   : std_logic                   := '1';
   signal axi_in         : t_axi_mosi;
@@ -92,7 +92,7 @@ begin  -- architecture tb
   axilite_if.write_data_channel.wready     <= axi_out.wready;
 
   -- component instantiation
-  DUT : entity work.example_module_axi_pif
+  DUT : entity work.example_axi_axi_pif
     generic map (
       g_axi_baseaddr      => C_BASEADDR)
     port map (
@@ -101,19 +101,19 @@ begin  -- architecture tb
       axi_pulse_regs      => axi_pulse_regs,
       clk                 => axi_clk,
       areset_n            => axi_areset_n,
-      awaddr              => axi_in.awaddr(C_EXAMPLE_MODULE_ADDR_WIDTH-1 downto 0),
+      awaddr              => axi_in.awaddr(C_EXAMPLE_AXI_ADDR_WIDTH-1 downto 0),
       awvalid             => axi_in.awvalid,
       awready             => axi_out.awready,
-      wdata               => axi_in.wdata(C_EXAMPLE_MODULE_DATA_WIDTH-1 downto 0),
+      wdata               => axi_in.wdata(C_EXAMPLE_AXI_DATA_WIDTH-1 downto 0),
       wvalid              => axi_in.wvalid,
       wready              => axi_out.wready,
       bresp               => axi_out.bresp,
       bvalid              => axi_out.bvalid,
       bready              => axi_in.bready,
-      araddr              => axi_in.araddr(C_EXAMPLE_MODULE_ADDR_WIDTH-1 downto 0),
+      araddr              => axi_in.araddr(C_EXAMPLE_AXI_ADDR_WIDTH-1 downto 0),
       arvalid             => axi_in.arvalid,
       arready             => axi_out.arready,
-      rdata               => axi_out.rdata(C_EXAMPLE_MODULE_DATA_WIDTH-1 downto 0),
+      rdata               => axi_out.rdata(C_EXAMPLE_AXI_DATA_WIDTH-1 downto 0),
       rresp               => axi_out.rresp,
       rvalid              => axi_out.rvalid,
       rready              => axi_in.rready

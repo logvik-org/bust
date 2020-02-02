@@ -1,4 +1,4 @@
-class EXAMPLE_MODULE_H:
+class EXAMPLE_AXI_H:
 
     """ Register: reg0 """
     REG0_OFFSET = 0x0

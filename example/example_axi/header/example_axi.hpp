@@ -1,9 +1,9 @@
-#ifndef EXAMPLE_MODULE_H
-#define EXAMPLE_MODULE_H
+#ifndef EXAMPLE_AXI_H
+#define EXAMPLE_AXI_H
 
 #include <cstdint>
 
-namespace EXAMPLE_MODULE
+namespace EXAMPLE_AXI
 {
 /* Register: reg0 */
 static const uint32_t REG0_OFFSET = 0x0;
