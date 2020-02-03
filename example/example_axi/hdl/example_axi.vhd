@@ -54,7 +54,7 @@ begin
 
   i_example_axi_axi_pif : entity work.example_axi_axi_pif
     generic map (
-      g_axi_baseaddr      => C_BASEADDR)
+      g_axi_baseaddr      => g_axi_baseaddr)
     port map (
       axi_rw_regs         => axi_rw_regs,
       axi_ro_regs         => axi_ro_regs,

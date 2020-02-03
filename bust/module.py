@@ -435,7 +435,7 @@ class Module:
         par = '-- User Generics Start\n\n'
         par += '-- User Generics End\n'
         par += '-- ' + self.bus.bus_type.upper() + ' Bus Interface Generics\n'
-        par += 'g_' + self.bus.bus_type + '_baseaddr        : std_logic_vector(' + str(self.bus.addr_width - 1)
+        par += 'g_' + self.bus.short_name + '_baseaddr        : std_logic_vector(' + str(self.bus.addr_width - 1)
         par += " downto 0) := (others => '0'));\n"
 
         s += indent_string(par, 2)
@@ -444,12 +444,12 @@ class Module:
         par = '-- User Ports Start\n\n'
         par += '-- User Ports End\n'
         par += '-- ' + self.bus.bus_type.upper() + ' Bus Interface Ports\n'
-        par += self.bus.bus_type + '_' + self.bus.get_clk_name() + '      : in  std_logic;\n'
-        par += self.bus.bus_type + '_' + self.bus.get_reset_name() + ' : in  std_logic;\n'
-        par += self.bus.bus_type + '_in       : in  t_' + \
-            self.bus.bus_type + '_mosi;\n'
-        par += self.bus.bus_type + '_out      : out t_' + \
-            self.bus.bus_type + '_miso\n'
+        par += self.bus.short_name + '_' + self.bus.get_clk_name() + '      : in  std_logic;\n'
+        par += self.bus.short_name + '_' + self.bus.get_reset_name() + ' : in  std_logic;\n'
+        par += self.bus.short_name + '_in       : in  t_' + \
+            self.bus.short_name + '_mosi;\n'
+        par += self.bus.short_name + '_out      : out t_' + \
+            self.bus.short_name + '_miso\n'
         par += ');\n'
         s += indent_string(par, 2)
         s += '\n'
@@ -463,19 +463,19 @@ class Module:
         s += indent_string(par)
 
         s += indent_string("-- " + self.bus.bus_type.upper() + " output signal for user readback\n")
-        par = "signal " + self.bus.bus_type + "_out_i : t_" + self.bus.bus_type
+        par = "signal " + self.bus.short_name + "_out_i : t_" + self.bus.short_name
         par += "_miso;\n"
         s += indent_string(par)
 
         s += indent_string("-- Register Signals\n")
         if self.count_rw_regs() > 0:
-            s += indent_string('signal ' + self.bus.bus_type + '_rw_regs    : t_')
+            s += indent_string('signal ' + self.bus.short_name + '_rw_regs    : t_')
             s += self.name + '_rw_regs    := c_' + self.name + '_rw_regs;\n'
         if self.count_ro_regs() > 0:
-            s += indent_string('signal ' + self.bus.bus_type + '_ro_regs    : t_')
+            s += indent_string('signal ' + self.bus.short_name + '_ro_regs    : t_')
             s += self.name + '_ro_regs    := c_' + self.name + '_ro_regs;\n'
         if self.count_pulse_regs() > 0:
-            s += indent_string('signal ' + self.bus.bus_type + '_pulse_regs : t_')
+            s += indent_string('signal ' + self.bus.short_name + '_pulse_regs : t_')
             s += self.name + '_pulse_regs := c_' + self.name + '_pulse_regs;\n'
 
         if self.count_rw_regs() + self.count_ro_regs() + self.count_pulse_regs() > 0:
@@ -488,9 +488,9 @@ class Module:
         par += '-- User Logic End\n\n'
         s += indent_string(par)
 
-        s += indent_string(self.bus.bus_type + "_out <= " + self.bus.bus_type + "_out_i;\n\n")
+        s += indent_string(self.bus.short_name + "_out <= " + self.bus.short_name + "_out_i;\n\n")
 
-        s += indent_string(self.get_instantiation("i_{}_{}_pif".format(self.name, self.bus.bus_type)))
+        s += indent_string(self.get_instantiation("i_{}_{}_pif".format(self.name, self.bus.short_name)))
 
         s += '\n'
         s += 'end architecture behavior;'
@@ -499,9 +499,9 @@ class Module:
 
     def get_instantiation(self, instance_name, intern_out=True):
         s = instance_name + ' '
-        s += ': entity work.' + self.name + '_' + self.bus.bus_type + '_pif\n'
+        s += ': entity work.' + self.name + '_' + self.bus.short_name + '_pif\n'
         s += indent_string('generic map (\n')
-        par = 'g_' + self.bus.bus_type + '_baseaddr      => C_BASEADDR)\n'
+        par = 'g_{0}_baseaddr      => g_{0}_baseaddr)\n'.format(self.bus.short_name)
         s += indent_string(par, 2)
 
         s += indent_string('port map (\n')
@@ -512,34 +512,34 @@ class Module:
 
         par = ''
         if self.count_rw_regs() > 0:
-            par += self.bus.bus_type + '_rw_regs         => ' + self.bus.bus_type + '_rw_regs,\n'
+            par += self.bus.short_name + '_rw_regs         => ' + self.bus.short_name + '_rw_regs,\n'
         if self.count_ro_regs() > 0:
-            par += self.bus.bus_type + '_ro_regs         => ' + self.bus.bus_type + '_ro_regs,\n'
+            par += self.bus.short_name + '_ro_regs         => ' + self.bus.short_name + '_ro_regs,\n'
         if self.count_pulse_regs() > 0:
-            par += self.bus.bus_type + '_pulse_regs      => ' + self.bus.bus_type + '_pulse_regs,\n'
+            par += self.bus.short_name + '_pulse_regs      => ' + self.bus.short_name + '_pulse_regs,\n'
 
-        par += self.bus.get_clk_name() + '                 => ' + self.bus.bus_type + '_' + self.bus.get_clk_name() + ',\n'
-        par += self.bus.get_reset_name() + '            => ' + self.bus.bus_type + '_' + self.bus.get_reset_name() + ',\n'
-        par += 'awaddr              => ' + self.bus.bus_type + '_in.awaddr(C_'
+        par += self.bus.get_clk_name() + '                 => ' + self.bus.short_name + '_' + self.bus.get_clk_name() + ',\n'
+        par += self.bus.get_reset_name() + '            => ' + self.bus.short_name + '_' + self.bus.get_reset_name() + ',\n'
+        par += 'awaddr              => ' + self.bus.short_name + '_in.awaddr(C_'
         par += self.name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
-        par += 'awvalid             => ' + self.bus.bus_type + '_in.awvalid,\n'
-        par += 'awready             => ' + self.bus.bus_type + '_out{0}.awready,\n'.format(inter)
-        par += 'wdata               => ' + self.bus.bus_type + '_in.wdata(C_'
+        par += 'awvalid             => ' + self.bus.short_name + '_in.awvalid,\n'
+        par += 'awready             => ' + self.bus.short_name + '_out{0}.awready,\n'.format(inter)
+        par += 'wdata               => ' + self.bus.short_name + '_in.wdata(C_'
         par += self.name.upper() + '_DATA_WIDTH-1 downto 0),\n'
-        par += 'wvalid              => ' + self.bus.bus_type + '_in.wvalid,\n'
-        par += 'wready              => ' + self.bus.bus_type + '_out{0}.wready,\n'.format(inter)
-        par += 'bresp               => ' + self.bus.bus_type + '_out{0}.bresp,\n'.format(inter)
-        par += 'bvalid              => ' + self.bus.bus_type + '_out{0}.bvalid,\n'.format(inter)
-        par += 'bready              => ' + self.bus.bus_type + '_in.bready,\n'
-        par += 'araddr              => ' + self.bus.bus_type + '_in.araddr(C_'
+        par += 'wvalid              => ' + self.bus.short_name + '_in.wvalid,\n'
+        par += 'wready              => ' + self.bus.short_name + '_out{0}.wready,\n'.format(inter)
+        par += 'bresp               => ' + self.bus.short_name + '_out{0}.bresp,\n'.format(inter)
+        par += 'bvalid              => ' + self.bus.short_name + '_out{0}.bvalid,\n'.format(inter)
+        par += 'bready              => ' + self.bus.short_name + '_in.bready,\n'
+        par += 'araddr              => ' + self.bus.short_name + '_in.araddr(C_'
         par += self.name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
-        par += 'arvalid             => ' + self.bus.bus_type + '_in.arvalid,\n'
-        par += 'arready             => ' + self.bus.bus_type + '_out{0}.arready,\n'.format(inter)
-        par += 'rdata               => ' + self.bus.bus_type + '_out{0}.rdata(C_'.format(inter)
+        par += 'arvalid             => ' + self.bus.short_name + '_in.arvalid,\n'
+        par += 'arready             => ' + self.bus.short_name + '_out{0}.arready,\n'.format(inter)
+        par += 'rdata               => ' + self.bus.short_name + '_out{0}.rdata(C_'.format(inter)
         par += self.name.upper() + '_DATA_WIDTH-1 downto 0),\n'
-        par += 'rresp               => ' + self.bus.bus_type + '_out{0}.rresp,\n'.format(inter)
-        par += 'rvalid              => ' + self.bus.bus_type + '_out{0}.rvalid,\n'.format(inter)
-        par += 'rready              => ' + self.bus.bus_type + '_in.rready\n'
+        par += 'rresp               => ' + self.bus.short_name + '_out{0}.rresp,\n'.format(inter)
+        par += 'rvalid              => ' + self.bus.short_name + '_out{0}.rvalid,\n'.format(inter)
+        par += 'rready              => ' + self.bus.short_name + '_in.rready\n'
         par += ');\n'
         s += indent_string(par, 2)
         return s

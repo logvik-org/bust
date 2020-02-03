@@ -44,8 +44,9 @@ class Testbench(object):
              '}\n\n'
              '# Shut down running simulation\n'
              'quit -sim\n\n'
-             '# Set project paths\n'
-             'quietly set example_module_path "../"\n')
+             '# Set project paths\n')
+
+        s += 'quietly set {}_path "../"\n'.format(self.module.name)
 
         s += 'quietly set bus_path "'
         s += self.settings.return_sim_bus_path(self.bus.bus_type)
@@ -55,8 +56,8 @@ class Testbench(object):
         s += '"\n\n'
 
         s += ('# Compile UVVM Dependencies\n'
-              'do $UVVM_path/script/compile_all.do $UVVM_path/script $example_module_path/{} $example_module_path/'
-              '{}/component_list.txt\n\n'.format(self.settings.sim_dir, self.settings.script_dir))
+              'do $UVVM_path/script/compile_all.do $UVVM_path/script ${0}_path/{1} ${0}_path/'
+              '{2}/component_list.txt\n\n'.format(self.module.name, self.settings.sim_dir, self.settings.script_dir))
 
         s += ('# Set vcom args\n'
               'quietly set vcom_args "-pedanticerrors -fsmverbose -quiet -check_synthesis')
@@ -109,14 +110,14 @@ class Testbench(object):
             s += 'eval vcom $vcom_args $vhdldirectives $bus_path/hdl/{}_pkg.vhd\n'.format(self.bus.bus_type)
         s += ('eval vcom $vcom_args $vhdldirectives ${0}_path/hdl/{0}_pif_pkg.vhd\n'
               'eval vcom $vcom_args $vhdldirectives ${0}_path/hdl/{0}_{1}_pif.vhd\n\n').format(self.module.name,
-                                                                                               self.bus.bus_type)
+                                                                                               self.bus.short_name)
 
         s += ('###########################################################################\n'
               '# Compile testbench files into library\n'
               '###########################################################################\n'
               'quietly set vcom_args "-quiet"\n')
         s += 'eval vcom $vcom_args $vhdldirectives ${0}_path/tb/{0}_{1}_pif_tb.vhd\n\n'.format(self.module.name,
-                                                                                               self.bus.bus_type)
+                                                                                               self.bus.short_name)
 
         s += ('###########################################################################\n'
               '# Simulate\n'
@@ -124,12 +125,12 @@ class Testbench(object):
         s += 'vsim -quiet '
         if self.settings.coverage:
             s += '-coverage '
-        s += '-t 1ps {0}.{0}_{1}_pif_tb\n'.format(self.module.name, self.bus.bus_type)
-        s += 'add wave -position insertpoint sim:/{}_{}_pif_tb/*\n\n'.format(self.module.name, self.bus.bus_type)
+        s += '{0}.{0}_{1}_pif_tb\n'.format(self.module.name, self.bus.short_name)
+        s += 'add wave -position insertpoint sim:/{}_{}_pif_tb/*\n\n'.format(self.module.name, self.bus.short_name)
 
         s += ('# Trick to avoid metastability warnings\n'
               'quietly set NumericStdNoWarnings 1\n'
-              'run 1 ps;\n'
+              'run 1 ns;\n'
               'quietly set NumericStdNoWarnings 0\n'
               'run -all\n\n')
 
@@ -143,7 +144,7 @@ class Testbench(object):
                       'coverage exclude -du {0}_{1}_pif -togglenode bresp_i\n'
                       'coverage exclude -du {0}_{1}_pif -togglenode rresp\n'
                       'coverage exclude -du {0}_{1}_pif -togglenode rresp_i\n').format(self.module.name,
-                                                                                       self.bus.bus_type)
+                                                                                       self.bus.short_name)
             s += 'coverage report\n'
             s += 'coverage report -html -htmldir covhtmlreport -code bcefst'
 
@@ -173,18 +174,17 @@ class Testbench(object):
               'end entity {0}_{1}_pif_tb;\n'
               '\n'
               '-------------------------------------------------------------------------------\n\n'
-              '').format(self.module.name, self.bus.bus_type)
+              '').format(self.module.name, self.bus.short_name)
 
         s += 'architecture tb of {}_{}_pif_tb is\n\n'.format(self.module.name,
-                                                             self.bus.bus_type)
+                                                             self.bus.short_name)
 
         s += indent_string('constant C_SCOPE      : string := C_TB_SCOPE_DEFAULT;\n'
                            'constant C_CLK_PERIOD : time   := 10 ns;\n')
         s += '\n'
         s += indent_string('-- component generics\n'
-                           'constant C_BASEADDR : std_logic_vector(31 downto 0) := 32X"FFAA0000";\n'
-                           'constant g_instance_num : natural                       := 0;\n'
-                           '').format(self.bus.bus_type)
+                           'constant g_{}_baseaddr : std_logic_vector(31 downto 0) := 32X"FFAA0000";\n'
+                           'constant g_instance_num : natural                       := 0;\n').format(self.bus.short_name)
         s += '\n'
 
         # Initial reset value
@@ -201,7 +201,7 @@ class Testbench(object):
                            'signal {0}_{3}   : std_logic                   := {4};\n'
                            'signal axi_in         : t_axi_mosi;\n'
                            'signal axi_out        : t_axi_miso;\n'
-                           '').format(self.bus.bus_type,
+                           '').format(self.bus.short_name,
                                       self.module.name,
                                       self.bus.get_clk_name(),
                                       self.bus.get_reset_name(),
@@ -224,7 +224,7 @@ class Testbench(object):
         s += '\n'
 
         s += indent_string(('-- clock generator\n'
-              'clock_generator({}_{}, C_CLK_PERIOD);\n\n').format(self.bus.bus_type,
+              'clock_generator({}_{}, C_CLK_PERIOD);\n\n').format(self.bus.short_name,
                                                                   self.bus.get_clk_name()))
 
         s += indent_string(('-- main testbench\n'
@@ -255,7 +255,7 @@ class Testbench(object):
             pulse_reset = "'0'"
         else:
             pulse_reset = "'1'"
-        par = 'gen_pulse({}_{}, {}, 500 ns, BLOCKING, "Reset for 500 ns");\n'.format(self.bus.bus_type,
+        par = 'gen_pulse({}_{}, {}, 500 ns, BLOCKING, "Reset for 500 ns");\n'.format(self.bus.short_name,
                                                                                     self.bus.get_reset_name(),
                                                                                     pulse_reset)
 
@@ -292,7 +292,7 @@ class Testbench(object):
         s = self.log_hdr("Check Default Value")
         s += '\n'
         msg = '{} default value'.format(reg.name)
-        signal = "{}_{}_regs.{}".format(self.bus.bus_type,
+        signal = "{}_{}_regs.{}".format(self.bus.short_name,
                                         reg.mode, reg.name)
         if reg.sig_type in ['sl', 'slv', 'default']:
             s += self.check_value(signal, self.sig_value(reg.reset, reg.sig_type, reg.length), msg)
@@ -315,7 +315,7 @@ class Testbench(object):
         s = self.log_hdr("Set&Check Zero Value")
         s += '\n'
         c_addr = 'C_ADDR_{}'.format(reg.name.upper())
-        signal = "{}_{}_regs.{}".format(self.bus.bus_type,
+        signal = "{}_{}_regs.{}".format(self.bus.short_name,
                                         reg.mode, reg.name)
         msg = 'Setting all bits to zero'
         bus_val = self.sig_value('0', 'default')
@@ -399,7 +399,7 @@ class Testbench(object):
 
         c_addr = 'C_ADDR_{}'.format(reg.name.upper())
         msg = "Check all bit fields"
-        signal = "{}_{}_regs.{}".format(self.bus.bus_type,
+        signal = "{}_{}_regs.{}".format(self.bus.short_name,
                                         reg.mode, reg.name)
         if reg.mode == 'rw':
             if reg.sig_type == 'sl':
@@ -604,7 +604,7 @@ class Testbench(object):
 
     @staticmethod
     def await_value(signal, value, msg):
-        s = 'await_value({}, {}, 0 ps, 1 ps, error, "{}");\n'.format(signal, value, msg)
+        s = 'await_value({}, {}, 0 ns, 1 ns, error, "{}");\n'.format(signal, value, msg)
         return s
 
     @staticmethod

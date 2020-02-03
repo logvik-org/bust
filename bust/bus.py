@@ -4,6 +4,7 @@ from bust.utils import indent_string
 from bust.vhdl import async_process
 from bust.vhdl import comb_process
 from bust.vhdl import sync_process
+from bust.exceptions import InvalidBusType, InvalidResetMode
 
 class Bus(object):
     """! @brief Managing bus information
@@ -17,6 +18,11 @@ class Bus(object):
             self.bus_type = bus['type']
         else:
             raise InvalidBusType(bus['type'])
+
+        if self.bus_type == 'axi':
+            self.short_name = 'axi'
+        elif self.bus_type == 'ipbus':
+            self.short_name = 'ipb'
 
         self.data_width = bus['data_width']
         self.addr_width = bus['addr_width']
@@ -61,6 +67,8 @@ class Bus(object):
         return json
 
     def return_bus_pkg_VHDL(self):
+
+        if self.bus_type == 'axi':
 
         s = 'library ieee;\n'
         s += 'use ieee.std_logic_1164.all;\n'
@@ -119,6 +127,9 @@ class Bus(object):
 
         s += 'end ' + self.bus_type + '_pkg;'
 
+        else:
+            raise Exception("Bus type " + self.bus_type + " is not supported...")
+
         return s
 
     def return_bus_pif_VHDL(self, mod):
@@ -133,10 +144,10 @@ class Bus(object):
             s += "library " + self.comp_library + ";\n"
         s += "use " + self.comp_library + "." + self.bus_type + "_pkg.all;\n"
         s += 'use work.' + mod.name + '_pif_pkg.all;\n\n'
-        s += 'entity ' + mod.name + '_' + self.bus_type + '_pif is\n\n'
+        s += 'entity ' + mod.name + '_' + self.short_name + '_pif is\n\n'
         s += indent_string('generic (\n')
         par = '-- ' + self.bus_type.upper() + ' Bus Interface Generics\n'
-        par += 'g_' + self.bus_type + '_baseaddr        : std_logic_vector(' + str(self.addr_width - 1)
+        par += 'g_' + self.short_name + '_baseaddr        : std_logic_vector(' + str(self.addr_width - 1)
         par += " downto 0) := (others => '0'));\n"
         s += indent_string(par, 2)
 
@@ -147,15 +158,15 @@ class Bus(object):
             par += '\n-- ' + self.bus_type.upper() + ' Bus Interface Ports\n'
 
         if mod.count_rw_regs() > 0:
-            par += self.bus_type + '_rw_regs    : out t_' + mod.name + '_rw_regs    := '
+            par += self.short_name + '_rw_regs    : out t_' + mod.name + '_rw_regs    := '
             par += 'c_' + mod.name + '_rw_regs;\n'
 
         if mod.count_ro_regs() > 0:
-            par += self.bus_type + '_ro_regs    : in  t_' + mod.name + '_ro_regs    := '
+            par += self.short_name + '_ro_regs    : in  t_' + mod.name + '_ro_regs    := '
             par += 'c_' + mod.name + '_ro_regs;\n'
 
         if mod.count_pulse_regs() > 0:
-            par += self.bus_type + '_pulse_regs : out t_' + mod.name + '_pulse_regs := '
+            par += self.short_name + '_pulse_regs : out t_' + mod.name + '_pulse_regs := '
             par += 'c_' + mod.name + '_pulse_regs;\n'
 
 
@@ -186,11 +197,11 @@ class Bus(object):
             par += ');\n'
             s += indent_string(par, 2)
 
-        s += 'end ' + mod.name + '_' + self.bus_type + '_pif;\n\n'
+        s += 'end ' + mod.name + '_' + self.short_name + '_pif;\n\n'
 
         s += 'architecture behavior of ' + mod.name + '_axi_pif is\n\n'
 
-        par = "constant C_BASEADDR : t_" + self.bus_type + "_addr := g_" + self.bus_type + "_baseaddr;\n"
+        par = "constant C_BASEADDR : t_" + self.short_name + "_addr := g_" + self.short_name + "_baseaddr;\n"
         s += indent_string(par)
 
         s += "\n"
@@ -200,14 +211,14 @@ class Bus(object):
             par += '-- internal signal for readback' + '\n'
             s += indent_string(par)
             if mod.count_rw_regs() > 0:
-                par = 'signal ' + self.bus_type + '_rw_regs_i    : t_'
+                par = 'signal ' + self.short_name + '_rw_regs_i    : t_'
                 par += mod.name + '_rw_regs := c_' + mod.name + '_rw_regs;\n'
                 s += indent_string(par)
             if mod.count_pulse_regs() > 0:
-                par = 'signal ' + self.bus_type + '_pulse_regs_i : t_'
+                par = 'signal ' + self.short_name + '_pulse_regs_i : t_'
                 par += mod.name + '_pulse_regs := c_' + mod.name + '_pulse_regs;\n'
                 s += indent_string(par)
-                par = 'signal ' + self.bus_type + '_pulse_regs_cycle : t_'
+                par = 'signal ' + self.short_name + '_pulse_regs_cycle : t_'
                 par += mod.name + '_pulse_regs := c_' + mod.name + '_pulse_regs;\n'
                 s += indent_string(par)
 
@@ -557,8 +568,8 @@ class Bus(object):
         reset_name = self.get_reset_name()
         proc_name = "p_pulse_" + reg.name
         const_name = "c_" + mod.name + "_pulse_regs." + reg.name
-        reg_name = self.bus_type + "_pulse_regs_i." + reg.name
-        reg_tmp_name = self.bus_type + "_pulse_regs_cycle." + reg.name
+        reg_name = self.short_name + "_pulse_regs_i." + reg.name
+        reg_tmp_name = self.short_name + "_pulse_regs_cycle." + reg.name
         if reg.num_cycles > 1:
             variables = ["cnt : natural range 0 to " + str(reg.num_cycles-1) + " := 0"]
         else:
@@ -672,7 +683,7 @@ class Bus(object):
                   '                C_SCOPE,\n'
                   '                shared_msg_id_panel,\n'
                   '                axilite_bfm_config);\n'
-                  'end;\n\n').format(self.bus_type, self.get_clk_name())
+                  'end;\n\n').format(self.short_name, self.get_clk_name())
 
             s += ('procedure read(\n'
                   '  constant addr_value : in  unsigned;\n'
@@ -687,7 +698,7 @@ class Bus(object):
                   '               C_SCOPE,\n'
                   '               shared_msg_id_panel,\n'
                   '               axilite_bfm_config);\n'
-                  'end;\n\n').format(self.bus_type, self.get_clk_name())
+                  'end;\n\n').format(self.short_name, self.get_clk_name())
 
             s += ('procedure check(\n'
                   '  constant addr_value : in unsigned;\n'
@@ -703,18 +714,16 @@ class Bus(object):
                   '                C_SCOPE,\n'
                   '                shared_msg_id_panel,\n'
                   '                axilite_bfm_config);\n'
-                  'end;\n\n').format(self.bus_type, self.get_clk_name())
+                  'end;\n\n').format(self.short_name, self.get_clk_name())
 
         return s
 
-    @staticmethod
-    def uvvm_write(reg_addr, value, string):
-        s = 'write(f_addr(C_BASEADDR, {}), {}, "{}");\n'.format(reg_addr, value, string)
+    def uvvm_write(self, reg_addr, value, string):
+        s = 'write(f_addr(g_{}_baseaddr, {}), {}, "{}");\n'.format(self.short_name, reg_addr, value, string)
         return s
 
-    @staticmethod
-    def uvvm_check(reg_addr, data_exp, string):
-        s = 'check(f_addr(C_BASEADDR, {}), {}, "{}");\n'.format(reg_addr, data_exp, string)
+    def uvvm_check(self, reg_addr, data_exp, string):
+        s = 'check(f_addr(g_{}_baseaddr, {}), {}, "{}");\n'.format(self.short_name, reg_addr, data_exp, string)
         return s
 
 

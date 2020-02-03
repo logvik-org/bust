@@ -47,7 +47,8 @@ def generate_output(settings, bus, module, header, documentation, testbench, gen
         os.makedirs(bus_sim, exist_ok=True)
 
     except Exception:
-        logger.exception("Could not create output directories")
+        logger.error("ERROR: Could not create output directories")
+        exit(1)
     else:
         logger.debug("Successfully created all output directories")
 
@@ -57,7 +58,8 @@ def generate_output(settings, bus, module, header, documentation, testbench, gen
             filename = '{}_pkg.vhd'.format(bus.bus_type)
             write_string_to_file(bus.return_bus_pkg_VHDL(), filename, bus_hdl, gen_settings['force_ow'])
         except Exception:
-            logger.exception("Could not generate Bus VHDL Package File")
+            logger.error("ERROR: Could not generate Bus VHDL Package File")
+            exit(1)
 
     if gen_settings['gen_mod']:
         logger.info("Generating Module VHDL Files...")
@@ -80,7 +82,8 @@ def generate_output(settings, bus, module, header, documentation, testbench, gen
                 write_string_to_file(module.return_module_VHDL(), filename, mod_hdl, gen_settings['force_ow_top'])
 
         except Exception:
-            logger.exception("Could not generate Module VHDL Files")
+            logger.error("ERROR: Could not generate Module VHDL Files")
+            exit(1)
 
     if gen_settings['gen_header']:
         logger.info("Generating Module Include Files...")
@@ -93,7 +96,8 @@ def generate_output(settings, bus, module, header, documentation, testbench, gen
             write_string_to_file(header.return_python_header(), filename, mod_header, gen_settings['force_ow'])
 
         except Exception:
-            logger.exception("Could not generate Module Include Files")
+            logger.error("ERROR: Could not generate Module Include Files")
+            exit(1)
 
     if gen_settings['gen_tb']:
         if settings.uvvm_relative_path is None:
@@ -109,7 +113,8 @@ def generate_output(settings, bus, module, header, documentation, testbench, gen
                 write_string_to_file(testbench.return_vhdl_tb(), filename, mod_tb, gen_settings['force_ow'])
 
             except Exception:
-                logger.exception("Could not generate PIF Testbench Files")
+                logger.error("ERROR: Could not generate PIF Testbench Files")
+                exit(1)
 
     if gen_settings['gen_doc']:
         logger.info("Generating Module Documentation...")
@@ -117,7 +122,8 @@ def generate_output(settings, bus, module, header, documentation, testbench, gen
             filename = '{}.tex'.format(module.name)
             write_string_to_file(documentation.return_tex_documentation(), filename, mod_doc, gen_settings['force_ow'])
         except Exception:
-            logger.exception("Could not generate Module Documentation")
+            logger.error("ERROR: Could not generate Module Documentation")
+            exit(1)
 
     if gen_settings['gen_pdf']:
         logger.info("Generating Documentation PDF...")
@@ -126,4 +132,5 @@ def generate_output(settings, bus, module, header, documentation, testbench, gen
                             os.path.join(mod_doc, module.name + '.tex')],
                             stdout=open(os.devnull, 'wb'))
         except Exception:
-            logger.exception("PDF Generation Failed")
+            logger.error("ERROR: PDF Generation Failed")
+            exit(1)

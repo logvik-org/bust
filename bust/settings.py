@@ -80,8 +80,7 @@ class Settings(object):
 
     def return_sim_uvvm_path(self):
         """ Return UVVM path used for simulation compilation script """
+        # Must add one extra subdir because of scripts/
         path = "../"
-        if self.mod_subdir:
-            path = os.path.join(path, "../")
         path = os.path.join(path, self.uvvm_relative_path)
         return path

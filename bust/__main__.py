@@ -38,6 +38,7 @@ from bust.documentation import Documentation
 from bust.settings import Settings
 from bust.testbench import Testbench
 from bust.generation import generate_output
+from bust.exceptions import FormatError, InvalidAddress, InvalidRegister, InvalidBusType, InvalidResetMode
 
 __VERSION__ = '0.8.0-dev'
 
@@ -75,9 +76,13 @@ def main():
                 documentation = Documentation(module)
                 testbench = Testbench(module, bus, settings)
 
+            except (FormatError, InvalidAddress, InvalidRegister, InvalidResetMode, InvalidBusType) as e:
+                logger.error(str(e))
+                exit(1)
+
             except Exception as e:
-                logger.exception('An unresolvable error has occurred...')
-                print(str(e))
+                logger.error('\nERROR:\nAn unknown error has occurred...')
+                logger.debug(str(e))
                 exit(1)
 
             # File generation settings
@@ -103,7 +108,10 @@ def main():
                 gs['update_top'] = True
                 gs['force_ow_top'] = True
 
-            gs['gen_bus'] = True
+            if bus.bus_type == 'axi':
+                gs['gen_bus'] = True
+            else:
+                gs['gen_bus'] = False
             if args['-b']:
                 gs['gen_bus'] = False
 

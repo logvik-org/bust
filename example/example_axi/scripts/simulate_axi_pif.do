@@ -9,12 +9,12 @@ if {[batch_mode]} {
 quit -sim
 
 # Set project paths
-quietly set example_module_path "../"
+quietly set example_axi_path "../"
 quietly set bus_path "../"
-quietly set UVVM_path "../../../../../UVVM"
+quietly set UVVM_path "../../../../UVVM"
 
 # Compile UVVM Dependencies
-do $UVVM_path/script/compile_all.do $UVVM_path/script $example_module_path/sim $example_module_path/scripts/component_list.txt
+do $UVVM_path/script/compile_all.do $UVVM_path/script $example_axi_path/sim $example_axi_path/scripts/component_list.txt
 
 # Set vcom args
 quietly set vcom_args "-pedanticerrors -fsmverbose -quiet -check_synthesis +cover=sbt"
@@ -72,12 +72,12 @@ eval vcom $vcom_args $vhdldirectives $example_axi_path/tb/example_axi_axi_pif_tb
 ###########################################################################
 # Simulate
 ###########################################################################
-vsim -quiet -coverage -t 1ps example_axi.example_axi_axi_pif_tb
+vsim -quiet -coverage example_axi.example_axi_axi_pif_tb
 add wave -position insertpoint sim:/example_axi_axi_pif_tb/*
 
 # Trick to avoid metastability warnings
 quietly set NumericStdNoWarnings 1
-run 1 ps;
+run 1 ns;
 quietly set NumericStdNoWarnings 0
 run -all
 

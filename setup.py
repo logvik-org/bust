@@ -14,7 +14,9 @@ class clean(Command):
     def finalize_options(self):
         pass
     def run(self):
-        os.system('rm -vrf ./build ./dist ./*.pyc ./*.tgz ./*.egg-info ./.pytest_cache ./.eggs ./__pycache__')
+        os.system("find . -name '*.pyc' -delete")
+        os.system("find . -name '__pycache__' -delete")
+        os.system('rm -rf ./build ./dist ./*.tgz ./*.egg-info ./.pytest_cache ./.eggs')
 
 setup(
     name='bust',

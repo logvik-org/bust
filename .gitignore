@@ -8,6 +8,9 @@ docs/
 workflow.txt
 *example_identifier*
 
+# pylint
+.pylintrc
+
 # temp backup files
 example/module_name_backup*
 
@@ -53,6 +56,7 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
+.pytest_cache
 nosetests.xml
 coverage.xml
 *,cover
@@ -91,6 +95,7 @@ celerybeat-schedule
 # dotenv
 .env
 .env_win
+.win_env
 venv/
 ENV/
 

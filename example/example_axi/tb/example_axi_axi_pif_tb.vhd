@@ -26,7 +26,7 @@ architecture tb of example_axi_axi_pif_tb is
   constant C_CLK_PERIOD : time   := 10 ns;
 
   -- component generics
-  constant C_BASEADDR : std_logic_vector(31 downto 0) := 32X"FFAA0000";
+  constant g_axi_baseaddr : std_logic_vector(31 downto 0) := 32X"FFAA0000";
   constant g_instance_num : natural                       := 0;
 
   -- component ports
@@ -94,7 +94,7 @@ begin  -- architecture tb
   -- component instantiation
   DUT : entity work.example_axi_axi_pif
     generic map (
-      g_axi_baseaddr      => C_BASEADDR)
+      g_axi_baseaddr      => g_axi_baseaddr)
     port map (
       axi_rw_regs         => axi_rw_regs,
       axi_ro_regs         => axi_ro_regs,
@@ -209,23 +209,23 @@ begin  -- architecture tb
     log_hdr("Check Default Value");
 
     check_value(axi_rw_regs.reg0, '0', error, "reg0 default value");
-    check(f_addr(C_BASEADDR, C_ADDR_REG0), 32X"0", "reg0 default value");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG0), 32X"0", "reg0 default value");
 
     log_hdr("Set&Check Zero Value");
 
-    write(f_addr(C_BASEADDR, C_ADDR_REG0), 32X"0", "Setting all bits to zero");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG0), 32X"0", "Setting all bits to zero");
     check_value(axi_rw_regs.reg0, '0', error, "Setting all bits to zero");
-    check(f_addr(C_BASEADDR, C_ADDR_REG0), 32X"0", "Setting all bits to zero");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG0), 32X"0", "Setting all bits to zero");
 
     log_hdr("Check all bit fields");
 
-    write(f_addr(C_BASEADDR, C_ADDR_REG0), 32X"1", "Check all bit fields");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG0), 32X"1", "Check all bit fields");
     check_value(axi_rw_regs.reg0, '1', error, "Check all bit fields");
-    check(f_addr(C_BASEADDR, C_ADDR_REG0), 32X"1", "Check all bit fields");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG0), 32X"1", "Check all bit fields");
     -- Return to zero
-    write(f_addr(C_BASEADDR, C_ADDR_REG0), 32X"0", "Check all bit fields");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG0), 32X"0", "Check all bit fields");
     check_value(axi_rw_regs.reg0, '0', error, "Check all bit fields");
-    check(f_addr(C_BASEADDR, C_ADDR_REG0), 32X"0", "Check all bit fields");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG0), 32X"0", "Check all bit fields");
 
     --
 
@@ -234,23 +234,23 @@ begin  -- architecture tb
     log_hdr("Check Default Value");
 
     check_value(axi_rw_regs.reg1, '1', error, "reg1 default value");
-    check(f_addr(C_BASEADDR, C_ADDR_REG1), 32X"1", "reg1 default value");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG1), 32X"1", "reg1 default value");
 
     log_hdr("Set&Check Zero Value");
 
-    write(f_addr(C_BASEADDR, C_ADDR_REG1), 32X"0", "Setting all bits to zero");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG1), 32X"0", "Setting all bits to zero");
     check_value(axi_rw_regs.reg1, '0', error, "Setting all bits to zero");
-    check(f_addr(C_BASEADDR, C_ADDR_REG1), 32X"0", "Setting all bits to zero");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG1), 32X"0", "Setting all bits to zero");
 
     log_hdr("Check all bit fields");
 
-    write(f_addr(C_BASEADDR, C_ADDR_REG1), 32X"1", "Check all bit fields");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG1), 32X"1", "Check all bit fields");
     check_value(axi_rw_regs.reg1, '1', error, "Check all bit fields");
-    check(f_addr(C_BASEADDR, C_ADDR_REG1), 32X"1", "Check all bit fields");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG1), 32X"1", "Check all bit fields");
     -- Return to zero
-    write(f_addr(C_BASEADDR, C_ADDR_REG1), 32X"0", "Check all bit fields");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG1), 32X"0", "Check all bit fields");
     check_value(axi_rw_regs.reg1, '0', error, "Check all bit fields");
-    check(f_addr(C_BASEADDR, C_ADDR_REG1), 32X"0", "Check all bit fields");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG1), 32X"0", "Check all bit fields");
 
     --
 
@@ -259,23 +259,23 @@ begin  -- architecture tb
     log_hdr("Check Default Value");
 
     check_value(axi_ro_regs.reg2, '0', error, "reg2 default value");
-    check(f_addr(C_BASEADDR, C_ADDR_REG2), 32X"0", "reg2 default value");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG2), 32X"0", "reg2 default value");
 
     log_hdr("Set&Check Zero Value");
 
     axi_ro_regs.reg2 <= '0';
-    await_value(axi_ro_regs.reg2, '0', 0 ps, 1 ps, error, "Setting all bits to zero");
-    check(f_addr(C_BASEADDR, C_ADDR_REG2), 32X"0", "Setting all bits to zero");
+    await_value(axi_ro_regs.reg2, '0', 0 ns, 1 ns, error, "Setting all bits to zero");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG2), 32X"0", "Setting all bits to zero");
 
     log_hdr("Check all bit fields");
 
     axi_ro_regs.reg2 <= '1';
-    await_value(axi_ro_regs.reg2, '1', 0 ps, 1 ps, error, "Check all bit fields");
-    check(f_addr(C_BASEADDR, C_ADDR_REG2), 32X"1", "Check all bit fields");
+    await_value(axi_ro_regs.reg2, '1', 0 ns, 1 ns, error, "Check all bit fields");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG2), 32X"1", "Check all bit fields");
     -- Return to zero
     axi_ro_regs.reg2 <= '0';
-    await_value(axi_ro_regs.reg2, '0', 0 ps, 1 ps, error, "Check all bit fields");
-    check(f_addr(C_BASEADDR, C_ADDR_REG2), 32X"0", "Check all bit fields");
+    await_value(axi_ro_regs.reg2, '0', 0 ns, 1 ns, error, "Check all bit fields");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG2), 32X"0", "Check all bit fields");
 
     --
 
@@ -284,24 +284,24 @@ begin  -- architecture tb
     log_hdr("Check Default Value");
 
     check_value(axi_rw_regs.reg3, 8X"3", error, "reg3 default value");
-    check(f_addr(C_BASEADDR, C_ADDR_REG3), 32X"3", "reg3 default value");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG3), 32X"3", "reg3 default value");
 
     log_hdr("Set&Check Zero Value");
 
-    write(f_addr(C_BASEADDR, C_ADDR_REG3), 32X"0", "Setting all bits to zero");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG3), 32X"0", "Setting all bits to zero");
     check_value(axi_rw_regs.reg3, 8X"0", error, "Setting all bits to zero");
-    check(f_addr(C_BASEADDR, C_ADDR_REG3), 32X"0", "Setting all bits to zero");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG3), 32X"0", "Setting all bits to zero");
 
     log_hdr("Check all bit fields");
 
     for i in 0 to 7 loop
-      write(f_addr(C_BASEADDR, C_ADDR_REG3), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
+      write(f_addr(g_axi_baseaddr, C_ADDR_REG3), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
       check_value(axi_rw_regs.reg3, std_logic_vector(to_unsigned(1, 8) sll i), error, "Check all bit fields");
-      check(f_addr(C_BASEADDR, C_ADDR_REG3), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
+      check(f_addr(g_axi_baseaddr, C_ADDR_REG3), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
       -- Return to zero
-      write(f_addr(C_BASEADDR, C_ADDR_REG3), 32X"0", "Check all bit fields");
+      write(f_addr(g_axi_baseaddr, C_ADDR_REG3), 32X"0", "Check all bit fields");
       check_value(axi_rw_regs.reg3, 8X"0", error, "Check all bit fields");
-      check(f_addr(C_BASEADDR, C_ADDR_REG3), 32X"0", "Check all bit fields");
+      check(f_addr(g_axi_baseaddr, C_ADDR_REG3), 32X"0", "Check all bit fields");
     end loop;
 
     --
@@ -311,24 +311,24 @@ begin  -- architecture tb
     log_hdr("Check Default Value");
 
     check_value(axi_ro_regs.reg4, 14X"0", error, "reg4 default value");
-    check(f_addr(C_BASEADDR, C_ADDR_REG4), 32X"0", "reg4 default value");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG4), 32X"0", "reg4 default value");
 
     log_hdr("Set&Check Zero Value");
 
     axi_ro_regs.reg4 <= 14X"0";
-    await_value(axi_ro_regs.reg4, 14X"0", 0 ps, 1 ps, error, "Setting all bits to zero");
-    check(f_addr(C_BASEADDR, C_ADDR_REG4), 32X"0", "Setting all bits to zero");
+    await_value(axi_ro_regs.reg4, 14X"0", 0 ns, 1 ns, error, "Setting all bits to zero");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG4), 32X"0", "Setting all bits to zero");
 
     log_hdr("Check all bit fields");
 
     for i in 0 to 13 loop
       axi_ro_regs.reg4 <= std_logic_vector(to_unsigned(1, 14) sll i);
-      await_value(axi_ro_regs.reg4, std_logic_vector(to_unsigned(1, 14) sll i), 0 ps, 1 ps, error, "Check all bit fields");
-      check(f_addr(C_BASEADDR, C_ADDR_REG4), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
+      await_value(axi_ro_regs.reg4, std_logic_vector(to_unsigned(1, 14) sll i), 0 ns, 1 ns, error, "Check all bit fields");
+      check(f_addr(g_axi_baseaddr, C_ADDR_REG4), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
       -- Return to zero
       axi_ro_regs.reg4 <= 14X"0";
-      await_value(axi_ro_regs.reg4, 14X"0", 0 ps, 1 ps, error, "Check all bit fields");
-      check(f_addr(C_BASEADDR, C_ADDR_REG4), 32X"0", "Check all bit fields");
+      await_value(axi_ro_regs.reg4, 14X"0", 0 ns, 1 ns, error, "Check all bit fields");
+      check(f_addr(g_axi_baseaddr, C_ADDR_REG4), 32X"0", "Check all bit fields");
     end loop;
 
     --
@@ -338,24 +338,24 @@ begin  -- architecture tb
     log_hdr("Check Default Value");
 
     check_value(axi_rw_regs.reg5, 32X"FFFFFFFF", error, "reg5 default value");
-    check(f_addr(C_BASEADDR, C_ADDR_REG5), 32X"FFFFFFFF", "reg5 default value");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG5), 32X"FFFFFFFF", "reg5 default value");
 
     log_hdr("Set&Check Zero Value");
 
-    write(f_addr(C_BASEADDR, C_ADDR_REG5), 32X"0", "Setting all bits to zero");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG5), 32X"0", "Setting all bits to zero");
     check_value(axi_rw_regs.reg5, 32X"0", error, "Setting all bits to zero");
-    check(f_addr(C_BASEADDR, C_ADDR_REG5), 32X"0", "Setting all bits to zero");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG5), 32X"0", "Setting all bits to zero");
 
     log_hdr("Check all bit fields");
 
     for i in 0 to 31 loop
-      write(f_addr(C_BASEADDR, C_ADDR_REG5), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
+      write(f_addr(g_axi_baseaddr, C_ADDR_REG5), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
       check_value(axi_rw_regs.reg5, std_logic_vector(to_unsigned(1, 32) sll i), error, "Check all bit fields");
-      check(f_addr(C_BASEADDR, C_ADDR_REG5), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
+      check(f_addr(g_axi_baseaddr, C_ADDR_REG5), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
       -- Return to zero
-      write(f_addr(C_BASEADDR, C_ADDR_REG5), 32X"0", "Check all bit fields");
+      write(f_addr(g_axi_baseaddr, C_ADDR_REG5), 32X"0", "Check all bit fields");
       check_value(axi_rw_regs.reg5, 32X"0", error, "Check all bit fields");
-      check(f_addr(C_BASEADDR, C_ADDR_REG5), 32X"0", "Check all bit fields");
+      check(f_addr(g_axi_baseaddr, C_ADDR_REG5), 32X"0", "Check all bit fields");
     end loop;
 
     --
@@ -365,24 +365,24 @@ begin  -- architecture tb
     log_hdr("Check Default Value");
 
     check_value(axi_ro_regs.reg6, 32X"0", error, "reg6 default value");
-    check(f_addr(C_BASEADDR, C_ADDR_REG6), 32X"0", "reg6 default value");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG6), 32X"0", "reg6 default value");
 
     log_hdr("Set&Check Zero Value");
 
     axi_ro_regs.reg6 <= 32X"0";
-    await_value(axi_ro_regs.reg6, 32X"0", 0 ps, 1 ps, error, "Setting all bits to zero");
-    check(f_addr(C_BASEADDR, C_ADDR_REG6), 32X"0", "Setting all bits to zero");
+    await_value(axi_ro_regs.reg6, 32X"0", 0 ns, 1 ns, error, "Setting all bits to zero");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG6), 32X"0", "Setting all bits to zero");
 
     log_hdr("Check all bit fields");
 
     for i in 0 to 31 loop
       axi_ro_regs.reg6 <= std_logic_vector(to_unsigned(1, 32) sll i);
-      await_value(axi_ro_regs.reg6, std_logic_vector(to_unsigned(1, 32) sll i), 0 ps, 1 ps, error, "Check all bit fields");
-      check(f_addr(C_BASEADDR, C_ADDR_REG6), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
+      await_value(axi_ro_regs.reg6, std_logic_vector(to_unsigned(1, 32) sll i), 0 ns, 1 ns, error, "Check all bit fields");
+      check(f_addr(g_axi_baseaddr, C_ADDR_REG6), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
       -- Return to zero
       axi_ro_regs.reg6 <= 32X"0";
-      await_value(axi_ro_regs.reg6, 32X"0", 0 ps, 1 ps, error, "Check all bit fields");
-      check(f_addr(C_BASEADDR, C_ADDR_REG6), 32X"0", "Check all bit fields");
+      await_value(axi_ro_regs.reg6, 32X"0", 0 ns, 1 ns, error, "Check all bit fields");
+      check(f_addr(g_axi_baseaddr, C_ADDR_REG6), 32X"0", "Check all bit fields");
     end loop;
 
     --
@@ -395,59 +395,59 @@ begin  -- architecture tb
     check_value(axi_rw_regs.reg7.field1, 4X"b", error, "reg7.field1 default value");
     check_value(axi_rw_regs.reg7.field2, '0', error, "reg7.field2 default value");
     check_value(axi_rw_regs.reg7.field3, 15X"2b", error, "reg7.field3 default value");
-    check(f_addr(C_BASEADDR, C_ADDR_REG7), 32X"AD7", "reg7 default value");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"AD7", "reg7 default value");
 
     log_hdr("Set&Check Zero Value");
 
-    write(f_addr(C_BASEADDR, C_ADDR_REG7), 32X"0", "Setting all bits to zero");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"0", "Setting all bits to zero");
     check_value(axi_rw_regs.reg7.field0, '0', error, "Setting all bits to zero");
     check_value(axi_rw_regs.reg7.field1, 4X"0", error, "Setting all bits to zero");
     check_value(axi_rw_regs.reg7.field2, '0', error, "Setting all bits to zero");
     check_value(axi_rw_regs.reg7.field3, 15X"0", error, "Setting all bits to zero");
-    check(f_addr(C_BASEADDR, C_ADDR_REG7), 32X"0", "Setting all bits to zero");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"0", "Setting all bits to zero");
 
     log_hdr("Check all bit fields field0");
 
-    write(f_addr(C_BASEADDR, C_ADDR_REG7), 32X"1", "Check all bit fields");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"1", "Check all bit fields");
     check_value(axi_rw_regs.reg7.field0, '1', error, "Check all bit fields");
-    check(f_addr(C_BASEADDR, C_ADDR_REG7), 32X"1", "Check all bit fields");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"1", "Check all bit fields");
     -- Return to zero
-    write(f_addr(C_BASEADDR, C_ADDR_REG7), 32X"0", "Check all bit fields");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"0", "Check all bit fields");
     check_value(axi_rw_regs.reg7.field0, '0', error, "Check all bit fields");
-    check(f_addr(C_BASEADDR, C_ADDR_REG7), 32X"0", "Check all bit fields");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"0", "Check all bit fields");
 
     log_hdr("Check all bit fields field1");
 
     for i in 0 to 3 loop
-      write(f_addr(C_BASEADDR, C_ADDR_REG7), std_logic_vector(to_unsigned(1, data_width) sll i+1), "Check all bit fields");
+      write(f_addr(g_axi_baseaddr, C_ADDR_REG7), std_logic_vector(to_unsigned(1, data_width) sll i+1), "Check all bit fields");
       check_value(axi_rw_regs.reg7.field1, std_logic_vector(to_unsigned(1, 4) sll i), error, "Check all bit fields");
-      check(f_addr(C_BASEADDR, C_ADDR_REG7), std_logic_vector(to_unsigned(1, data_width) sll i+1), "Check all bit fields");
+      check(f_addr(g_axi_baseaddr, C_ADDR_REG7), std_logic_vector(to_unsigned(1, data_width) sll i+1), "Check all bit fields");
       -- Return to zero
-      write(f_addr(C_BASEADDR, C_ADDR_REG7), 32X"0", "Check all bit fields");
+      write(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"0", "Check all bit fields");
       check_value(axi_rw_regs.reg7.field1, 4X"0", error, "Check all bit fields");
-      check(f_addr(C_BASEADDR, C_ADDR_REG7), 32X"0", "Check all bit fields");
+      check(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"0", "Check all bit fields");
     end loop;
 
     log_hdr("Check all bit fields field2");
 
-    write(f_addr(C_BASEADDR, C_ADDR_REG7), 32X"20", "Check all bit fields");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"20", "Check all bit fields");
     check_value(axi_rw_regs.reg7.field2, '1', error, "Check all bit fields");
-    check(f_addr(C_BASEADDR, C_ADDR_REG7), 32X"20", "Check all bit fields");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"20", "Check all bit fields");
     -- Return to zero
-    write(f_addr(C_BASEADDR, C_ADDR_REG7), 32X"0", "Check all bit fields");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"0", "Check all bit fields");
     check_value(axi_rw_regs.reg7.field2, '0', error, "Check all bit fields");
-    check(f_addr(C_BASEADDR, C_ADDR_REG7), 32X"0", "Check all bit fields");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"0", "Check all bit fields");
 
     log_hdr("Check all bit fields field3");
 
     for i in 0 to 14 loop
-      write(f_addr(C_BASEADDR, C_ADDR_REG7), std_logic_vector(to_unsigned(1, data_width) sll i+6), "Check all bit fields");
+      write(f_addr(g_axi_baseaddr, C_ADDR_REG7), std_logic_vector(to_unsigned(1, data_width) sll i+6), "Check all bit fields");
       check_value(axi_rw_regs.reg7.field3, std_logic_vector(to_unsigned(1, 15) sll i), error, "Check all bit fields");
-      check(f_addr(C_BASEADDR, C_ADDR_REG7), std_logic_vector(to_unsigned(1, data_width) sll i+6), "Check all bit fields");
+      check(f_addr(g_axi_baseaddr, C_ADDR_REG7), std_logic_vector(to_unsigned(1, data_width) sll i+6), "Check all bit fields");
       -- Return to zero
-      write(f_addr(C_BASEADDR, C_ADDR_REG7), 32X"0", "Check all bit fields");
+      write(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"0", "Check all bit fields");
       check_value(axi_rw_regs.reg7.field3, 15X"0", error, "Check all bit fields");
-      check(f_addr(C_BASEADDR, C_ADDR_REG7), 32X"0", "Check all bit fields");
+      check(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"0", "Check all bit fields");
     end loop;
 
     --
@@ -460,7 +460,7 @@ begin  -- architecture tb
     check_value(axi_ro_regs.reg8.field1, 19X"0", error, "reg8.field1 default value");
     check_value(axi_ro_regs.reg8.field2, '0', error, "reg8.field2 default value");
     check_value(axi_ro_regs.reg8.field3, 3X"0", error, "reg8.field3 default value");
-    check(f_addr(C_BASEADDR, C_ADDR_REG8), 32X"0", "reg8 default value");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG8), 32X"0", "reg8 default value");
 
     log_hdr("Set&Check Zero Value");
 
@@ -468,54 +468,54 @@ begin  -- architecture tb
     axi_ro_regs.reg8.field1 <= (others => '0');
     axi_ro_regs.reg8.field2 <= '0';
     axi_ro_regs.reg8.field3 <= (others => '0');
-    await_value(axi_ro_regs.reg8.field0, '0', 0 ps, 1 ps, error, "Setting all bits to zero");
-    await_value(axi_ro_regs.reg8.field1, 19X"0", 0 ps, 1 ps, error, "Setting all bits to zero");
-    await_value(axi_ro_regs.reg8.field2, '0', 0 ps, 1 ps, error, "Setting all bits to zero");
-    await_value(axi_ro_regs.reg8.field3, 3X"0", 0 ps, 1 ps, error, "Setting all bits to zero");
-    check(f_addr(C_BASEADDR, C_ADDR_REG8), 32X"0", "Setting all bits to zero");
+    await_value(axi_ro_regs.reg8.field0, '0', 0 ns, 1 ns, error, "Setting all bits to zero");
+    await_value(axi_ro_regs.reg8.field1, 19X"0", 0 ns, 1 ns, error, "Setting all bits to zero");
+    await_value(axi_ro_regs.reg8.field2, '0', 0 ns, 1 ns, error, "Setting all bits to zero");
+    await_value(axi_ro_regs.reg8.field3, 3X"0", 0 ns, 1 ns, error, "Setting all bits to zero");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG8), 32X"0", "Setting all bits to zero");
 
     log_hdr("Check all bit fields field0");
 
     axi_ro_regs.reg8.field0 <= '1';
-    await_value(axi_ro_regs.reg8.field0, '1', 0 ps, 1 ps, error, "Check all bit fields");
-    check(f_addr(C_BASEADDR, C_ADDR_REG8), 32X"1", "Check all bit fields");
+    await_value(axi_ro_regs.reg8.field0, '1', 0 ns, 1 ns, error, "Check all bit fields");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG8), 32X"1", "Check all bit fields");
     -- Return to zero
     axi_ro_regs.reg8.field0 <= '0';
-    await_value(axi_ro_regs.reg8.field0, '0', 0 ps, 1 ps, error, "Check all bit fields");
-    check(f_addr(C_BASEADDR, C_ADDR_REG8), 32X"0", "Check all bit fields");
+    await_value(axi_ro_regs.reg8.field0, '0', 0 ns, 1 ns, error, "Check all bit fields");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG8), 32X"0", "Check all bit fields");
 
     log_hdr("Check all bit fields field1");
 
     for i in 0 to 18 loop
       axi_ro_regs.reg8.field1 <= std_logic_vector(to_unsigned(1, 19) sll i);
-      await_value(axi_ro_regs.reg8.field1, std_logic_vector(to_unsigned(1, 19) sll i), 0 ps, 1 ps, error, "Check all bit fields");
-      check(f_addr(C_BASEADDR, C_ADDR_REG8), std_logic_vector(to_unsigned(1, data_width) sll i+1), "Check all bit fields");
+      await_value(axi_ro_regs.reg8.field1, std_logic_vector(to_unsigned(1, 19) sll i), 0 ns, 1 ns, error, "Check all bit fields");
+      check(f_addr(g_axi_baseaddr, C_ADDR_REG8), std_logic_vector(to_unsigned(1, data_width) sll i+1), "Check all bit fields");
       -- Return to zero
       axi_ro_regs.reg8.field1 <= 19X"0";
-      await_value(axi_ro_regs.reg8.field1, 19X"0", 0 ps, 1 ps, error, "Check all bit fields");
-      check(f_addr(C_BASEADDR, C_ADDR_REG8), 32X"0", "Check all bit fields");
+      await_value(axi_ro_regs.reg8.field1, 19X"0", 0 ns, 1 ns, error, "Check all bit fields");
+      check(f_addr(g_axi_baseaddr, C_ADDR_REG8), 32X"0", "Check all bit fields");
     end loop;
 
     log_hdr("Check all bit fields field2");
 
     axi_ro_regs.reg8.field2 <= '1';
-    await_value(axi_ro_regs.reg8.field2, '1', 0 ps, 1 ps, error, "Check all bit fields");
-    check(f_addr(C_BASEADDR, C_ADDR_REG8), 32X"100000", "Check all bit fields");
+    await_value(axi_ro_regs.reg8.field2, '1', 0 ns, 1 ns, error, "Check all bit fields");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG8), 32X"100000", "Check all bit fields");
     -- Return to zero
     axi_ro_regs.reg8.field2 <= '0';
-    await_value(axi_ro_regs.reg8.field2, '0', 0 ps, 1 ps, error, "Check all bit fields");
-    check(f_addr(C_BASEADDR, C_ADDR_REG8), 32X"0", "Check all bit fields");
+    await_value(axi_ro_regs.reg8.field2, '0', 0 ns, 1 ns, error, "Check all bit fields");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG8), 32X"0", "Check all bit fields");
 
     log_hdr("Check all bit fields field3");
 
     for i in 0 to 2 loop
       axi_ro_regs.reg8.field3 <= std_logic_vector(to_unsigned(1, 3) sll i);
-      await_value(axi_ro_regs.reg8.field3, std_logic_vector(to_unsigned(1, 3) sll i), 0 ps, 1 ps, error, "Check all bit fields");
-      check(f_addr(C_BASEADDR, C_ADDR_REG8), std_logic_vector(to_unsigned(1, data_width) sll i+21), "Check all bit fields");
+      await_value(axi_ro_regs.reg8.field3, std_logic_vector(to_unsigned(1, 3) sll i), 0 ns, 1 ns, error, "Check all bit fields");
+      check(f_addr(g_axi_baseaddr, C_ADDR_REG8), std_logic_vector(to_unsigned(1, data_width) sll i+21), "Check all bit fields");
       -- Return to zero
       axi_ro_regs.reg8.field3 <= 3X"0";
-      await_value(axi_ro_regs.reg8.field3, 3X"0", 0 ps, 1 ps, error, "Check all bit fields");
-      check(f_addr(C_BASEADDR, C_ADDR_REG8), 32X"0", "Check all bit fields");
+      await_value(axi_ro_regs.reg8.field3, 3X"0", 0 ns, 1 ns, error, "Check all bit fields");
+      check(f_addr(g_axi_baseaddr, C_ADDR_REG8), 32X"0", "Check all bit fields");
     end loop;
 
     --
@@ -528,19 +528,19 @@ begin  -- architecture tb
 
     log_hdr("Set&Check Zero Value");
 
-    write(f_addr(C_BASEADDR, C_ADDR_REG9), 32X"0", "Setting all bits to zero");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG9), 32X"0", "Setting all bits to zero");
     check_value(axi_pulse_regs.reg9, '0', error, "Setting all bits to zero");
     await_stable(axi_pulse_regs.reg9, 4*C_CLK_PERIOD, FROM_LAST_EVENT, 4*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Setting all bits to zero");
     check_value(axi_pulse_regs.reg9, '0', error, "Setting all bits to zero");
-    await_value(axi_pulse_regs.reg9, '1', 0 ps, 1 ps, error, "Setting all bits to zero");
+    await_value(axi_pulse_regs.reg9, '1', 0 ns, 1 ns, error, "Setting all bits to zero");
 
     log_hdr("Check all bit fields");
 
-    write(f_addr(C_BASEADDR, C_ADDR_REG9), 32X"1", "Check all bit fields");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG9), 32X"1", "Check all bit fields");
     check_value(axi_pulse_regs.reg9, '1', error, "Check all bit fields");
     await_stable(axi_pulse_regs.reg9, 4*C_CLK_PERIOD, FROM_LAST_EVENT, 4*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Check all bit fields");
     check_value(axi_pulse_regs.reg9, '1', error, "Check all bit fields");
-    await_value(axi_pulse_regs.reg9, '1', 0 ps, 1 ps, error, "Check all bit fields");
+    await_value(axi_pulse_regs.reg9, '1', 0 ns, 1 ns, error, "Check all bit fields");
 
     --
 
@@ -552,20 +552,20 @@ begin  -- architecture tb
 
     log_hdr("Set&Check Zero Value");
 
-    write(f_addr(C_BASEADDR, C_ADDR_REG10), 32X"0", "Setting all bits to zero");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG10), 32X"0", "Setting all bits to zero");
     check_value(axi_pulse_regs.reg10, 4X"0", error, "Setting all bits to zero");
     await_stable(axi_pulse_regs.reg10, 1*C_CLK_PERIOD, FROM_LAST_EVENT, 1*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Setting all bits to zero");
     check_value(axi_pulse_regs.reg10, 4X"0", error, "Setting all bits to zero");
-    await_value(axi_pulse_regs.reg10, 4X"a", 0 ps, 1 ps, error, "Setting all bits to zero");
+    await_value(axi_pulse_regs.reg10, 4X"a", 0 ns, 1 ns, error, "Setting all bits to zero");
 
     log_hdr("Check all bit fields");
 
     for i in 0 to 3 loop
-      write(f_addr(C_BASEADDR, C_ADDR_REG10), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
+      write(f_addr(g_axi_baseaddr, C_ADDR_REG10), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
       check_value(axi_pulse_regs.reg10, std_logic_vector(to_unsigned(1, 4) sll i), error, "Check all bit fields");
       await_stable(axi_pulse_regs.reg10, 1*C_CLK_PERIOD, FROM_LAST_EVENT, 1*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Check all bit fields");
       check_value(axi_pulse_regs.reg10, std_logic_vector(to_unsigned(1, 4) sll i), error, "Check all bit fields");
-      await_value(axi_pulse_regs.reg10, 4X"a", 0 ps, 1 ps, error, "Check all bit fields");
+      await_value(axi_pulse_regs.reg10, 4X"a", 0 ns, 1 ns, error, "Check all bit fields");
     end loop;
 
     --
@@ -579,33 +579,33 @@ begin  -- architecture tb
 
     log_hdr("Set&Check Zero Value");
 
-    write(f_addr(C_BASEADDR, C_ADDR_REG11), 32X"0", "Setting all bits to zero");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG11), 32X"0", "Setting all bits to zero");
     check_value(axi_pulse_regs.reg11.field0, 15X"0", error, "Setting all bits to zero");
     check_value(axi_pulse_regs.reg11.field1, '0', error, "Setting all bits to zero");
     await_stable(axi_pulse_regs.reg11.field0, 50*C_CLK_PERIOD, FROM_LAST_EVENT, 50*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Setting all bits to zero");
     await_stable(axi_pulse_regs.reg11.field1, 50*C_CLK_PERIOD, FROM_LAST_EVENT, 50*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Setting all bits to zero");
     check_value(axi_pulse_regs.reg11.field0, 15X"0", error, "Setting all bits to zero");
     check_value(axi_pulse_regs.reg11.field1, '0', error, "Setting all bits to zero");
-    await_value(axi_pulse_regs.reg11.field0, 15X"3", 0 ps, 1 ps, error, "Setting all bits to zero");
-    await_value(axi_pulse_regs.reg11.field1, '0', 0 ps, 1 ps, error, "Setting all bits to zero");
+    await_value(axi_pulse_regs.reg11.field0, 15X"3", 0 ns, 1 ns, error, "Setting all bits to zero");
+    await_value(axi_pulse_regs.reg11.field1, '0', 0 ns, 1 ns, error, "Setting all bits to zero");
 
     log_hdr("Check all bit fields field0");
 
     for i in 0 to 14 loop
-      write(f_addr(C_BASEADDR, C_ADDR_REG11), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
+      write(f_addr(g_axi_baseaddr, C_ADDR_REG11), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
       check_value(axi_pulse_regs.reg11.field0, std_logic_vector(to_unsigned(1, 15) sll i), error, "Check all bit fields");
       await_stable(axi_pulse_regs.reg11.field0, 50*C_CLK_PERIOD, FROM_LAST_EVENT, 50*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Check all bit fields");
       check_value(axi_pulse_regs.reg11.field0, std_logic_vector(to_unsigned(1, 15) sll i), error, "Check all bit fields");
-      await_value(axi_pulse_regs.reg11.field0, 15X"3", 0 ps, 1 ps, error, "Check all bit fields");
+      await_value(axi_pulse_regs.reg11.field0, 15X"3", 0 ns, 1 ns, error, "Check all bit fields");
     end loop;
 
     log_hdr("Check all bit fields field1");
 
-    write(f_addr(C_BASEADDR, C_ADDR_REG11), 32X"8000", "Check all bit fields");
+    write(f_addr(g_axi_baseaddr, C_ADDR_REG11), 32X"8000", "Check all bit fields");
     check_value(axi_pulse_regs.reg11.field1, '1', error, "Check all bit fields");
     await_stable(axi_pulse_regs.reg11.field1, 50*C_CLK_PERIOD, FROM_LAST_EVENT, 50*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Check all bit fields");
     check_value(axi_pulse_regs.reg11.field1, '1', error, "Check all bit fields");
-    await_value(axi_pulse_regs.reg11.field1, '0', 0 ps, 1 ps, error, "Check all bit fields");
+    await_value(axi_pulse_regs.reg11.field1, '0', 0 ns, 1 ns, error, "Check all bit fields");
 
     --==================================================================================================
     -- Ending the simulation
