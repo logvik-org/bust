@@ -1,16 +1,16 @@
 {
     "settings": {
         "mod_subdir": true,
-        "bus_subdir": false,
-        "uvvm_relative_path": "../../../UVVM",
+        "uvvm_rel_path": "../../../UVVM",
+        "ipbus_rel_path": "../../../ipbus-firmware",
+        "vip_ipbus_rel_path": "../../../vip_ipbus",
         "coverage": true
     },
     "bus": {
         "type": "ipbus",
         "addr_width": 32,
         "data_width": 32,
-        "reset": "async",
-        "comp_library": "bust"
+        "reset": "sync"
     },
     "module": {
         "name": "example_ipbus",
