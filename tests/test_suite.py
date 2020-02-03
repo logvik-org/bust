@@ -33,7 +33,7 @@ class Test_Suite(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super(Test_Suite, self).__init__(*args, **kwargs)
-        self.buzz = [BusHolder(bus_type) for bus_type in ['axi']]
+        self.buzz = [BusHolder(bus_type) for bus_type in ['axi', 'ipbus']]
 
     def setUp(self):
         logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s: %(message)s', level=logging.DEBUG)

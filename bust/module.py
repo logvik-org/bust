@@ -519,28 +519,11 @@ class Module:
             par += self.bus.short_name + '_pulse_regs      => ' + self.bus.short_name + '_pulse_regs,\n'
 
         par += self.bus.get_clk_name() + '                 => ' + self.bus.short_name + '_' + self.bus.get_clk_name() + ',\n'
-        par += self.bus.get_reset_name() + '            => ' + self.bus.short_name + '_' + self.bus.get_reset_name() + ',\n'
-        par += 'awaddr              => ' + self.bus.short_name + '_in.awaddr(C_'
-        par += self.name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
-        par += 'awvalid             => ' + self.bus.short_name + '_in.awvalid,\n'
-        par += 'awready             => ' + self.bus.short_name + '_out{0}.awready,\n'.format(inter)
-        par += 'wdata               => ' + self.bus.short_name + '_in.wdata(C_'
-        par += self.name.upper() + '_DATA_WIDTH-1 downto 0),\n'
-        par += 'wvalid              => ' + self.bus.short_name + '_in.wvalid,\n'
-        par += 'wready              => ' + self.bus.short_name + '_out{0}.wready,\n'.format(inter)
-        par += 'bresp               => ' + self.bus.short_name + '_out{0}.bresp,\n'.format(inter)
-        par += 'bvalid              => ' + self.bus.short_name + '_out{0}.bvalid,\n'.format(inter)
-        par += 'bready              => ' + self.bus.short_name + '_in.bready,\n'
-        par += 'araddr              => ' + self.bus.short_name + '_in.araddr(C_'
-        par += self.name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
-        par += 'arvalid             => ' + self.bus.short_name + '_in.arvalid,\n'
-        par += 'arready             => ' + self.bus.short_name + '_out{0}.arready,\n'.format(inter)
-        par += 'rdata               => ' + self.bus.short_name + '_out{0}.rdata(C_'.format(inter)
-        par += self.name.upper() + '_DATA_WIDTH-1 downto 0),\n'
-        par += 'rresp               => ' + self.bus.short_name + '_out{0}.rresp,\n'.format(inter)
-        par += 'rvalid              => ' + self.bus.short_name + '_out{0}.rvalid,\n'.format(inter)
-        par += 'rready              => ' + self.bus.short_name + '_in.rready\n'
+        par += self.bus.get_reset_name() + '            => ' + self.bus.short_name + '_' + str.strip(self.bus.get_reset_name()) + ',\n'
+        par += self.bus.get_instantiation(self.name, inter)
+
         par += ');\n'
+
         s += indent_string(par, 2)
         return s
 

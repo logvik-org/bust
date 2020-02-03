@@ -42,22 +42,39 @@ class Bus(object):
         else:
             self.comp_library = Bus.default_comp_library
 
-        # Temporarily force all resets to be active_low
-        self.reset_active_low = True
+        if 'reset_pol' not in bus:
+            self.reset_active_low = True
+        elif bus['reset_pol'] == 'high':
+            self.reset_active_low = False
+        else:
+            self.reset_active_low = True
 
     def get_clk_name(self):
         return "clk"
 
     def get_reset_name(self):
-        if self.bus_reset == "async":
-            reset_name = "areset"
+        if self.bus_reset == "async" and self.reset_active_low is True:
+            reset_name = "areset_n"
+        elif self.bus_reset == "async" and self.reset_active_low is False:
+            reset_name = "areset  "
+        elif self.bus_reset == "sync" and self.reset_active_low is False:
+            reset_name = "reset   "
         else:
-            reset_name = "reset"
-
-        if self.reset_active_low is True:
-            reset_name += "_n"
+            reset_name = "reset_n "
 
         return reset_name
+
+    def get_in_type(self):
+        if self.bus_type == 'axi':
+            return 't_axi_mosi'
+        elif self.bus_type == 'ipbus':
+            return 'ipb_wbus'
+
+    def get_out_type(self):
+        if self.bus_type == 'axi':
+            return 't_axi_miso'
+        elif self.bus_type == 'ipbus':
+            return 'ipb_rbus'
 
     def return_JSON(self):
         json = OrderedDict()
@@ -129,9 +146,6 @@ class Bus(object):
             s += '\n'
 
             s += 'end ' + self.bus_type + '_pkg;'
-
-        else:
-            raise Exception("Bus type " + self.bus_type + " is not supported...")
 
         return s
 
@@ -232,8 +246,6 @@ class Bus(object):
 
             s += self.return_axi_pif_VHDL(mod, clk_name, reset_name)
 
-        else:
-            raise Exception("Bus type " + self.bus_type + " is not supported...")
 
         return s
 
@@ -564,6 +576,34 @@ class Bus(object):
 
         return s
 
+    def get_instantiation(self, name, inter):
+
+        if self.bus_type == 'axi':
+            s = 'awaddr              => ' + self.short_name + '_in.awaddr(C_'
+            s += name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
+            s += 'awvalid             => ' + self.short_name + '_in.awvalid,\n'
+            s += 'awready             => ' + self.short_name + '_out{0}.awready,\n'.format(inter)
+            s += 'wdata               => ' + self.short_name + '_in.wdata(C_'
+            s += name.upper() + '_DATA_WIDTH-1 downto 0),\n'
+            s += 'wvalid              => ' + self.short_name + '_in.wvalid,\n'
+            s += 'wready              => ' + self.short_name + '_out{0}.wready,\n'.format(inter)
+            s += 'bresp               => ' + self.short_name + '_out{0}.bresp,\n'.format(inter)
+            s += 'bvalid              => ' + self.short_name + '_out{0}.bvalid,\n'.format(inter)
+            s += 'bready              => ' + self.short_name + '_in.bready,\n'
+            s += 'araddr              => ' + self.short_name + '_in.araddr(C_'
+            s += name.upper() + '_ADDR_WIDTH-1 downto 0),\n'
+            s += 'arvalid             => ' + self.short_name + '_in.arvalid,\n'
+            s += 'arready             => ' + self.short_name + '_out{0}.arready,\n'.format(inter)
+            s += 'rdata               => ' + self.short_name + '_out{0}.rdata(C_'.format(inter)
+            s += name.upper() + '_DATA_WIDTH-1 downto 0),\n'
+            s += 'rresp               => ' + self.short_name + '_out{0}.rresp,\n'.format(inter)
+            s += 'rvalid              => ' + self.short_name + '_out{0}.rvalid,\n'.format(inter)
+            s += 'rready              => ' + self.short_name + '_in.rready\n'
+        elif self.bus_type == 'ipbus':
+            s = 'ipb_in              => ipb_in,\n'
+            s += 'ipb_out             => ipb_out{}\n'.format(inter)
+
+        return s
 
     def pulse_reg_process(self, mod, reg):
 
@@ -610,16 +650,17 @@ class Bus(object):
         if self.bus_type == 'axi':
             s = ('library bitvis_vip_axilite;\n'
                  'use bitvis_vip_axilite.axilite_bfm_pkg.all;\n')
-        else:
-            raise Exception('Invalid bustype')
+        elif self.bus_type == 'ipbus':
+            s = ('library vip_ipbus;\n'
+                 'use vip_ipbus.ipbus_bfm_pkg.all;\n')
         return s
 
     def get_uvvm_signals(self):
         s = ''
         if self.bus_type == 'axi':
             s += '-- Bitvis UVVM AXILITE BFM\n'
-        else:
-            raise Exception('Invalid bustype')
+        elif self.bus_type == 'ipbus':
+            s += '-- vip_ipbus BFM\n'
 
         s += ('constant data_width : natural := {};\n'
               'constant addr_width : natural := {};\n'
@@ -637,8 +678,10 @@ class Bus(object):
                   'signal dummy_arprot : std_logic_vector(2 downto 0);\n'
                   'signal dummy_awprot : std_logic_vector(2 downto 0);\n'
                   'signal dummy_wstrb  : std_logic_vector((data_width/8)-1 downto 0);\n')
-        else:
-            raise Exception('Invalid bustype')
+
+        elif self.bus_type == 'ipbus':
+            s += ('signal ipbus_if : t_ipbus_if := init_ipbus_if_signals;\n'
+                  'signal ipbus_bfm_config : t_ipbus_bfm_config := C_IPBUS_BFM_CONFIG_DEFAULT;\n')
 
         return s
 
@@ -667,57 +710,73 @@ class Bus(object):
                  'axilite_if.read_data_channel.rresp       <= axi_out.rresp;\n'
                  'axilite_if.read_data_channel.rvalid      <= axi_out.rvalid;\n'
                  'axilite_if.write_data_channel.wready     <= axi_out.wready;\n')
+        elif self.bus_type == 'ipbus':
+            s = ('ipbus_bfm_config.clock_period <= C_CLK_PERIOD;\n'
+                 'ipbus_bfm_config.setup_time   <= C_CLK_PERIOD/8;\n'
+                 'ipbus_bfm_config.hold_time    <= C_CLK_PERIOD/8;\n\n'
+                 'ipb_in.ipb_wdata  <= ipbus_if.wdata;\n'
+                 'ipb_in.ipb_write  <= ipbus_if.wr;\n'
+                 'ipb_in.ipb_addr  <= ipbus_if.addr;\n'
+                 'ipb_in.ipb_strobe  <= ipbus_if.strobe;\n\n'
+                 'ipbus_if.rdata  <= ipb_out.ipb_rdata;\n'
+                 'ipbus_if.ack  <= ipb_out.ipb_ack;\n'
+                 'ipbus_if.err  <= ipb_out.ipb_err;\n')
+
         return s
 
 
     def get_uvvm_overloads(self):
         s = ''
         if self.bus_type == 'axi':
-            s += ('procedure write(\n'
-                  '  constant addr_value : in unsigned;\n'
-                  '  constant data_value : in std_logic_vector;\n'
-                  '  constant msg        : in string) is\n'
-                  'begin\n'
-                  '  axilite_write(addr_value,\n'
-                  '                data_value,\n'
-                  '                msg,\n'
-                  '                {}_{},\n'
-                  '                axilite_if,\n'
-                  '                C_SCOPE,\n'
-                  '                shared_msg_id_panel,\n'
-                  '                axilite_bfm_config);\n'
-                  'end;\n\n').format(self.short_name, self.get_clk_name())
+            ext_name = 'axilite'
+        elif self.bus_type == 'ipbus':
+            ext_name = self.bus_type
 
-            s += ('procedure read(\n'
-                  '  constant addr_value : in  unsigned;\n'
-                  '  variable data_value : out std_logic_vector;\n'
-                  '  constant msg        : in  string) is\n'
-                  'begin\n'
-                  '  axilite_read(addr_value,\n'
-                  '               data_value,\n'
-                  '               msg,\n'
-                  '               {}_{},\n'
-                  '               axilite_if,\n'
-                  '               C_SCOPE,\n'
-                  '               shared_msg_id_panel,\n'
-                  '               axilite_bfm_config);\n'
-                  'end;\n\n').format(self.short_name, self.get_clk_name())
+        s += ('procedure write(\n'
+            '  constant addr_value : in unsigned;\n'
+            '  constant data_value : in std_logic_vector;\n'
+            '  constant msg        : in string) is\n'
+            'begin\n'
+            '  {0}_write(addr_value,\n'
+            '                data_value,\n'
+            '                msg,\n'
+            '                {1}_{2},\n'
+            '                {0}_if,\n'
+            '                C_SCOPE,\n'
+            '                shared_msg_id_panel,\n'
+            '                {0}_bfm_config);\n'
+            'end;\n\n').format(ext_name, self.short_name, self.get_clk_name())
 
-            s += ('procedure check(\n'
-                  '  constant addr_value : in unsigned;\n'
-                  '  constant data_exp   : in std_logic_vector;\n'
-                  '  constant msg        : in string) is\n'
-                  'begin\n'
-                  '  axilite_check(addr_value,\n'
-                  '                data_exp,\n'
-                  '                msg,\n'
-                  '                {}_{},\n'
-                  '                axilite_if,\n'
-                  '                error,\n'
-                  '                C_SCOPE,\n'
-                  '                shared_msg_id_panel,\n'
-                  '                axilite_bfm_config);\n'
-                  'end;\n\n').format(self.short_name, self.get_clk_name())
+        s += ('procedure read(\n'
+              '  constant addr_value : in  unsigned;\n'
+              '  variable data_value : out std_logic_vector;\n'
+              '  constant msg        : in  string) is\n'
+              'begin\n'
+              '  {0}_read(addr_value,\n'
+              '               data_value,\n'
+              '               msg,\n'
+              '               {1}_{2},\n'
+              '               {0}_if,\n'
+              '               C_SCOPE,\n'
+              '               shared_msg_id_panel,\n'
+              '               {0}_bfm_config);\n'
+              'end;\n\n').format(ext_name, self.short_name, self.get_clk_name())
+
+        s += ('procedure check(\n'
+              '  constant addr_value : in unsigned;\n'
+              '  constant data_exp   : in std_logic_vector;\n'
+              '  constant msg        : in string) is\n'
+              'begin\n'
+              '  {0}_check(addr_value,\n'
+              '                data_exp,\n'
+              '                msg,\n'
+              '                {1}_{2},\n'
+              '                {0}_if,\n'
+              '                error,\n'
+              '                C_SCOPE,\n'
+              '                shared_msg_id_panel,\n'
+              '                {0}_bfm_config);\n'
+              'end;\n\n').format(ext_name, self.short_name, self.get_clk_name())
 
         return s
 

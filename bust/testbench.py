@@ -157,9 +157,14 @@ class Testbench(object):
              'use ieee.std_logic_1164.all;\n'
              'use ieee.numeric_std.all;\n\n')
 
-        if self.bus.comp_library != Bus.default_comp_library:
-            s += 'library {};\n'.format(self.bus.comp_library)
-        s += 'use {}.{}_pkg.all;\n'.format(self.bus.comp_library, self.bus.bus_type)
+        if self.bus.bus_type == 'ipbus':
+            s += 'library ipbus;\n'
+            s += 'use ipbus.ipbus.all;\n\n'
+
+        else:
+            if self.bus.comp_library != Bus.default_comp_library:
+                s += 'library {};\n'.format(self.bus.comp_library)
+            s += 'use {}.{}_pkg.all;\n'.format(self.bus.comp_library, self.bus.bus_type)
         s += 'use work.{}_pif_pkg.all;\n\n'.format(self.module.name)
 
         s += ('library uvvm_util;\n'
@@ -199,13 +204,15 @@ class Testbench(object):
                            'signal {0}_pulse_regs : t_{1}_pulse_regs := c_{1}_pulse_regs;\n'
                            'signal {0}_{2}        : std_logic                   := \'1\';\n'
                            'signal {0}_{3}   : std_logic                   := {4};\n'
-                           'signal axi_in         : t_axi_mosi;\n'
-                           'signal axi_out        : t_axi_miso;\n'
+                           'signal {0}_in         : {5};\n'
+                           'signal {0}_out        : {6};\n'
                            '').format(self.bus.short_name,
                                       self.module.name,
                                       self.bus.get_clk_name(),
                                       self.bus.get_reset_name(),
-                                      init_reset)
+                                      init_reset,
+                                      self.bus.get_in_type(),
+                                      self.bus.get_out_type())
         s += '\n'
 
         s += indent_string(self.bus.get_uvvm_signals())
@@ -256,7 +263,7 @@ class Testbench(object):
         else:
             pulse_reset = "'1'"
         par = 'gen_pulse({}_{}, {}, 500 ns, BLOCKING, "Reset for 500 ns");\n'.format(self.bus.short_name,
-                                                                                    self.bus.get_reset_name(),
+                                                                                    str.strip(self.bus.get_reset_name()),
                                                                                     pulse_reset)
 
         s += indent_string(par, 2)
