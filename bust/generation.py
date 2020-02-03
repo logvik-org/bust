@@ -100,7 +100,7 @@ def generate_output(settings, bus, module, header, documentation, testbench, gen
             exit(1)
 
     if gen_settings['gen_tb']:
-        if settings.uvvm_relative_path is None:
+        if settings.uvvm_rel_path is None:
             logger.error('Cannot generate testbench: UVVM Relative Path is not specified')
         else:
             logger.info("Generating PIF Testbench Files...")

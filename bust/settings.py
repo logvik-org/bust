@@ -16,7 +16,7 @@ class Settings(object):
             self.json_name = ""
             self.mod_subdir = True
             self.bus_subdir = True
-            self.uvvm_relative_path = None
+            self.uvvm_rel_path = None
             self.coverage = False
         else:
 
@@ -42,11 +42,23 @@ class Settings(object):
             else:
                 self.bus_subdir = settings['bus_subdir']
 
-            if 'uvvm_relative_path' not in settings:
-                self.logger.warning("UVVM Path is not specified. No testbench can be generated!")
-                self.uvvm_relative_path = None
+            if 'uvvm_rel_path' not in settings:
+                self.logger.warning("UVVM path is not specified. No testbench can be generated!")
+                self.uvvm_rel_path = None
             else:
-                self.uvvm_relative_path = settings['uvvm_relative_path']
+                self.uvvm_rel_path = settings['uvvm_rel_path']
+
+            if 'ipbus_rel_path' not in settings:
+                self.logger.debug("ipbus path is not specified. No testbench can be generated for ipbus!")
+                self.ipbus_relative_path = None
+            else:
+                self.ipbus_relative_path = settings['ipbus_rel_path']
+
+            if 'vip_ipbus_rel_path' not in settings:
+                self.logger.debug("vip_ipbus path is not specified. No testbench can be generated for ipbus!")
+                self.vip_ipbus_relative_path = None
+            else:
+                self.vip_ipbus_relative_path = settings['vip_ipbus_rel_path']
 
             if 'coverage' not in settings:
                 self.logger.warning("Coverage is not specified. Choosing default: False")
@@ -66,8 +78,8 @@ class Settings(object):
         json = OrderedDict()
         json['mod_subdir'] = self.mod_subdir
         json['bus_subdir'] = self.bus_subdir
-        if self.uvvm_relative_path is not None:
-            json['uvvm_relative_path'] = self.uvvm_relative_path
+        if self.uvvm_rel_path is not None:
+            json['uvvm_rel_path'] = self.uvvm_rel_path
         json['coverage'] = self.coverage
         return json
 
@@ -82,5 +94,5 @@ class Settings(object):
         """ Return UVVM path used for simulation compilation script """
         # Must add one extra subdir because of scripts/
         path = "../"
-        path = os.path.join(path, self.uvvm_relative_path)
+        path = os.path.join(path, self.uvvm_rel_path)
         return path

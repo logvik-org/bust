@@ -10,8 +10,9 @@ class Bus(object):
     """! @brief Managing bus information
 
     """
-    supported_bus = ['axi']
+    supported_bus = ['axi', 'ipbus']
     default_comp_library = "work"
+    default_comp_library_ipbus = 'ipbus'
 
     def __init__(self, bus):
         if bus['type'] in Bus.supported_bus:
@@ -34,6 +35,8 @@ class Bus(object):
         else:
             raise InvalidResetMode(bus['reset'])
 
+        if self.bus_type == 'ipbus':
+            self.comp_library = Bus.default_comp_library_ipbus
         if 'comp_library' in bus:
             self.comp_library = bus['comp_library']
         else:
@@ -70,62 +73,62 @@ class Bus(object):
 
         if self.bus_type == 'axi':
 
-        s = 'library ieee;\n'
-        s += 'use ieee.std_logic_1164.all;\n'
-        s += '\n'
+            s = 'library ieee;\n'
+            s += 'use ieee.std_logic_1164.all;\n'
+            s += '\n'
 
-        s += 'package ' + self.bus_type + '_pkg is\n'
-        s += '\n\n'
+            s += 'package ' + self.bus_type + '_pkg is\n'
+            s += '\n\n'
 
-        data_width_constant = 'C_' + self.bus_type.upper() + '_DATA_WIDTH'
-        addr_width_constant = 'C_' + self.bus_type.upper() + '_ADDR_WIDTH'
-        data_sub_type = 't_' + self.bus_type + '_data'
-        addr_sub_type = 't_' + self.bus_type + '_addr'
+            data_width_constant = 'C_' + self.bus_type.upper() + '_DATA_WIDTH'
+            addr_width_constant = 'C_' + self.bus_type.upper() + '_ADDR_WIDTH'
+            data_sub_type = 't_' + self.bus_type + '_data'
+            addr_sub_type = 't_' + self.bus_type + '_addr'
 
-        par = ''
-        par += 'constant ' + data_width_constant
-        par += ' : natural := ' + str(self.data_width) + ';\n'
-        par += 'constant ' + addr_width_constant
-        par += ' : natural := ' + str(self.addr_width) + ';\n'
-        par += '\n'
-        par += 'subtype ' + data_sub_type + ' is std_logic_vector('
-        par += data_width_constant + '-1 downto 0);\n'
-        par += 'subtype ' + addr_sub_type + ' is std_logic_vector('
-        par += addr_width_constant + '-1 downto 0);\n'
-        par += '\n'
-        s += indent_string(par)
+            par = ''
+            par += 'constant ' + data_width_constant
+            par += ' : natural := ' + str(self.data_width) + ';\n'
+            par += 'constant ' + addr_width_constant
+            par += ' : natural := ' + str(self.addr_width) + ';\n'
+            par += '\n'
+            par += 'subtype ' + data_sub_type + ' is std_logic_vector('
+            par += data_width_constant + '-1 downto 0);\n'
+            par += 'subtype ' + addr_sub_type + ' is std_logic_vector('
+            par += addr_width_constant + '-1 downto 0);\n'
+            par += '\n'
+            s += indent_string(par)
 
-        s += indent_string('type t_' + self.bus_type)
-        s += '_mosi is record\n'
-        par = ''
-        par += 'araddr  : ' + addr_sub_type + ';\n'
-        par += 'arvalid : std_logic;\n'
-        par += 'awaddr  : ' + addr_sub_type + ';\n'
-        par += 'awvalid : std_logic;\n'
-        par += 'bready  : std_logic;\n'
-        par += 'rready  : std_logic;\n'
-        par += 'wdata   : ' + data_sub_type + ';\n'
-        par += 'wvalid  : std_logic;\n'
-        s += indent_string(par, 2)
-        s += indent_string('end record;\n')
-        s += '\n'
+            s += indent_string('type t_' + self.bus_type)
+            s += '_mosi is record\n'
+            par = ''
+            par += 'araddr  : ' + addr_sub_type + ';\n'
+            par += 'arvalid : std_logic;\n'
+            par += 'awaddr  : ' + addr_sub_type + ';\n'
+            par += 'awvalid : std_logic;\n'
+            par += 'bready  : std_logic;\n'
+            par += 'rready  : std_logic;\n'
+            par += 'wdata   : ' + data_sub_type + ';\n'
+            par += 'wvalid  : std_logic;\n'
+            s += indent_string(par, 2)
+            s += indent_string('end record;\n')
+            s += '\n'
 
-        s += indent_string('type t_' + self.bus_type)
-        s += '_miso is record\n'
-        par = ''
-        par += 'arready : std_logic;\n'
-        par += 'awready : std_logic;\n'
-        par += 'bresp   : std_logic_vector(1 downto 0);\n'
-        par += 'bvalid  : std_logic;\n'
-        par += 'rdata   : ' + data_sub_type + ';\n'
-        par += 'rresp   : std_logic_vector(1 downto 0);\n'
-        par += 'rvalid  : std_logic;\n'
-        par += 'wready  : std_logic;\n'
-        s += indent_string(par, 2)
-        s += indent_string('end record;\n')
-        s += '\n'
+            s += indent_string('type t_' + self.bus_type)
+            s += '_miso is record\n'
+            par = ''
+            par += 'arready : std_logic;\n'
+            par += 'awready : std_logic;\n'
+            par += 'bresp   : std_logic_vector(1 downto 0);\n'
+            par += 'bvalid  : std_logic;\n'
+            par += 'rdata   : ' + data_sub_type + ';\n'
+            par += 'rresp   : std_logic_vector(1 downto 0);\n'
+            par += 'rvalid  : std_logic;\n'
+            par += 'wready  : std_logic;\n'
+            s += indent_string(par, 2)
+            s += indent_string('end record;\n')
+            s += '\n'
 
-        s += 'end ' + self.bus_type + '_pkg;'
+            s += 'end ' + self.bus_type + '_pkg;'
 
         else:
             raise Exception("Bus type " + self.bus_type + " is not supported...")
@@ -727,22 +730,4 @@ class Bus(object):
         return s
 
 
-class InvalidBusType(RuntimeError):
-    """ @brief Raised when trying to parse an unspecified or unsupported bus type
 
-    """
-    def __init__(self, bus_type):
-        msg = "Bus type is not valid: " + bus_type
-        super().__init__(msg)
-
-
-class InvalidResetMode(RuntimeError):
-    """Documentation for InvalidResetMode
-
-    """
-    def __init__(self, reset):
-        msg = "Bus reset mode must be either:\n"
-        msg += "- 'async' - asynchronous (default)\n"
-        msg += "- 'sync'  - synchronous\n"
-        msg += "but was: " + reset
-        super().__init__(msg)
