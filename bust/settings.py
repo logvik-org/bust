@@ -31,19 +31,19 @@ class Settings(object):
                 self.project_path = settings['proj_dir']
 
             if 'mod_subdir' not in settings:
-                self.logger.warning('Module subdir setting not specified. Choosing default: True')
+                self.logger.info('Module subdir setting not specified. Choosing default: True')
                 self.mod_subdir = True
             else:
                 self.mod_subdir = settings['mod_subdir']
 
             if 'bus_subdir' not in settings:
-                self.logger.warning('Bus subdir setting not specified. Choosing default: True')
+                self.logger.info('Bus subdir setting not specified. Choosing default: True')
                 self.bus_subdir = True
             else:
                 self.bus_subdir = settings['bus_subdir']
 
             if 'uvvm_rel_path' not in settings:
-                self.logger.warning("UVVM path is not specified. No testbench can be generated!")
+                self.logger.info("UVVM path is not specified. No testbench can be generated!")
                 self.uvvm_rel_path = None
             else:
                 self.uvvm_rel_path = settings['uvvm_rel_path']
@@ -61,7 +61,7 @@ class Settings(object):
                 self.vip_ipbus_relative_path = settings['vip_ipbus_rel_path']
 
             if 'coverage' not in settings:
-                self.logger.warning("Coverage is not specified. Choosing default: False")
+                self.logger.info("Coverage is not specified. Choosing default: False")
                 self.coverage = False
             else:
                 self.coverage = settings['coverage']
