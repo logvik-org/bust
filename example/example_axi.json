@@ -9,7 +9,6 @@
         "type": "axi",
         "addr_width": 32,
         "data_width": 32,
-        "reset": "async",
         "comp_library": "bust"
     },
     "module": {

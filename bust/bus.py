@@ -28,26 +28,20 @@ class Bus(object):
         self.data_width = bus['data_width']
         self.addr_width = bus['addr_width']
 
-        if 'reset' not in bus:
-            self.bus_reset = 'async'
-        elif bus['reset'] in ['async', 'sync']:
-            self.bus_reset = bus['reset']
-        else:
-            raise InvalidResetMode(bus['reset'])
-
         if self.bus_type == 'ipbus':
             self.comp_library = Bus.default_comp_library_ipbus
-        if 'comp_library' in bus:
+        elif 'comp_library' in bus:
             self.comp_library = bus['comp_library']
         else:
             self.comp_library = Bus.default_comp_library
 
-        if 'reset_pol' not in bus:
+        # Set reset type based on bus
+        if self.bus_type == 'axi':
+            self.bus_reset = 'async'
             self.reset_active_low = True
-        elif bus['reset_pol'] == 'high':
+        elif self.bus_type == 'ipbus':
+            self.bus_reset = 'sync'
             self.reset_active_low = False
-        else:
-            self.reset_active_low = True
 
     def get_clk_name(self):
         return "clk"

@@ -9,9 +9,7 @@
     "bus": {
         "type": "ipbus",
         "addr_width": 32,
-        "data_width": 32,
-        "reset": "sync",
-        "reset_pol": "high"
+        "data_width": 32
     },
     "module": {
         "name": "example_ipbus",
