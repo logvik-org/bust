@@ -63,7 +63,7 @@ begin
       clk                 => ipb_clk,
       reset               => ipb_reset,
       ipb_in              => ipb_in,
-      ipb_out             => ipb_out
+      ipb_out             => ipb_out_i
       );
 
 end architecture behavior;

@@ -10,8 +10,8 @@ quit -sim
 
 # Set project paths
 quietly set example_ipbus_path "../"
-quietly set UVVM_path "../../../../UVVM"
 quietly set bus_path "../../../../ipbus-firmware"
+quietly set UVVM_path "../../../../UVVM"
 quietly set vip_ipbus_path "../../../../vip_ipbus"
 
 # Compile UVVM Dependencies
@@ -39,10 +39,11 @@ vmap $lib_name $bus_sim_path/$lib_name
 
 quietly set vhdldirectives "-2008 -work $lib_name"
 
-eval vcom $vcom_args $vhdldirectives $ipbus_path/components/ipbus_core/firmware/hdl/ipbus_package.vhd
+eval vcom $vcom_args $vhdldirectives $bus_path/components/ipbus_core/firmware/hdl/ipbus_package.vhd
 
 # Compile vip_ipbus Dependencies
 do $vip_ipbus_path/scripts/compile_src.do $vip_ipbus_path $vip_ipbus_path/sim
+
 
 ###########################################################################
 # Compile source files into library
@@ -75,12 +76,12 @@ eval vcom $vcom_args $vhdldirectives $example_ipbus_path/tb/example_ipbus_ipb_pi
 ###########################################################################
 # Simulate
 ###########################################################################
-vsim -quiet -coverage -t 1ps example_ipbus.example_ipbus_ipb_pif_tb
+vsim -quiet -coverage example_ipbus.example_ipbus_ipb_pif_tb
 add wave -position insertpoint sim:/example_ipbus_ipb_pif_tb/*
 
 # Trick to avoid metastability warnings
 quietly set NumericStdNoWarnings 1
-run 1 ps;
+run 1 ns;
 quietly set NumericStdNoWarnings 0
 run -all
 

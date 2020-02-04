@@ -2,8 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library axi;
-use axi.axi_pkg.all;
+library bust;
+use bust.axi_pkg.all;
 use work.example_axi_pif_pkg.all;
 
 entity example_axi_axi_pif is

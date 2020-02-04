@@ -195,8 +195,6 @@ begin
 
     elsif rising_edge(clk) then
 
-      reg_data_out <= (others => '0');
-
       -- default values
       rd_ack <= '0';
       rd_err <= '0';
@@ -273,12 +271,11 @@ begin
       ipb_out_i.ipb_ack <= '0';
       ipb_out_i.ipb_err <= '0';
     else
-      ipb_out_i.ipb_rdata <= ipb_out_i.ipb_rdata;
+      ipb_out_i.ipb_rdata <= reg_data_out;
       ipb_out_i.ipb_ack <= '0';
       ipb_out_i.ipb_err <= '0';
 
       if (rd_ack or rd_err) then
-        ipb_out_i.ipb_rdata <= reg_data_out;
         ipb_out_i.ipb_ack <= rd_ack;
         ipb_out_i.ipb_err <= rd_err;
       elsif (wr_ack or wr_err) then
