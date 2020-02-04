@@ -6,10 +6,9 @@ use ieee.numeric_std.all;
 
 -- User Libraries End
 
-use work.example_ipbus_pif_pkg.all;
-
 library ipbus;
 use ipbus.ipbus.all;
+use work.example_ipbus_pif_pkg.all;
 
 entity example_ipbus is
 

@@ -76,7 +76,7 @@ class Test_Suite(unittest.TestCase):
             with self.subTest(holder=holder):
 
                 self.logger.info("Testing TB Script generation...")
-                with open('example/example_{}/scripts/simulate_{}_pif.do'.format(holder.bus.bus_type, holder.bus.short_name)) as f:
+                with open('example/example_{}/scripts/simulate_{}_pif.do'.format(holder.bus.bus_type, holder.bus.bus_type)) as f:
                     string = f.read()
                 self.assertEqual(holder.tb.return_tcl_script(), string, ".tcl script must match manual file")
 

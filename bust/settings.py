@@ -85,9 +85,19 @@ class Settings(object):
 
     def return_sim_bus_path(self, bus_type):
         """ Return bus path used for simulation compilation scripts """
-        path = "../"
-        if self.bus_subdir:
-            path = os.path.join(path, "../{}/".format(bus_type))
+
+        if bus_type == 'ipbus':
+            path = os.path.join('../', self.ipbus_relative_path)
+        else:
+            path = "../"
+            if self.bus_subdir:
+                path = os.path.join(path, "../{}/".format(bus_type))
+        return path
+
+    def return_vip_ipbus_path(self):
+        """ Return bus path used for simulation compilation scripts """
+
+        path = os.path.join('../', self.vip_ipbus_relative_path)
         return path
 
     def return_sim_uvvm_path(self):

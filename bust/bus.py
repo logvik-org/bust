@@ -1,9 +1,7 @@
 from collections import OrderedDict
 
 from bust.utils import indent_string
-from bust.vhdl import async_process
-from bust.vhdl import comb_process
-from bust.vhdl import sync_process
+from bust.vhdl import async_process, sync_process, comb_process, comb_process_with_reset
 from bust.exceptions import InvalidBusType, InvalidResetMode
 
 class Bus(object):
@@ -153,8 +151,12 @@ class Bus(object):
         s += '\n'
         if self.comp_library != "work":
             s += "library " + self.comp_library + ";\n"
-        s += "use " + self.comp_library + "." + self.bus_type + "_pkg.all;\n"
+        if self.bus_type == 'ipbus':
+            s += 'use ' + self.comp_library + '.' + self.bus_type + '.all;\n'
+        else:
+            s += 'use ' + self.comp_library + '.' + self.bus_type + '_pkg.all;\n'
         s += 'use work.' + mod.name + '_pif_pkg.all;\n\n'
+
         s += 'entity ' + mod.name + '_' + self.short_name + '_pif is\n\n'
         s += indent_string('generic (\n')
         par = '-- ' + self.bus_type.upper() + ' Bus Interface Generics\n'
@@ -205,14 +207,21 @@ class Bus(object):
             par += 'rresp          : out std_logic_vector(1 downto 0);\n'
             par += 'rvalid         : out std_logic;\n'
             par += 'rready         : in  std_logic\n'
-            par += ');\n'
-            s += indent_string(par, 2)
 
+        elif self.bus_type == 'ipbus':
+            par += '{}_in         : in  {};\n'.format(self.short_name, self.get_in_type())
+            par += '{}_out        : out {}\n'.format(self.short_name, self.get_out_type())
+
+        par += ');\n'
+        s += indent_string(par, 2)
         s += 'end ' + mod.name + '_' + self.short_name + '_pif;\n\n'
 
-        s += 'architecture behavior of ' + mod.name + '_axi_pif is\n\n'
+        s += 'architecture behavior of {}_{}_pif is\n\n'.format(mod.name, self.short_name)
 
-        par = "constant C_BASEADDR : t_" + self.short_name + "_addr := g_" + self.short_name + "_baseaddr;\n"
+        if self.bus_type == 'ipbus':
+            par = "constant C_BASEADDR : std_logic_vector(31 downto 0) := g_" + self.short_name + "_baseaddr;\n"
+        else:
+            par = "constant C_BASEADDR : t_" + self.short_name + "_addr := g_" + self.short_name + "_baseaddr;\n"
         s += indent_string(par)
 
         s += "\n"
@@ -237,8 +246,9 @@ class Bus(object):
 
         # Add bus-specific logic
         if self.bus_type == 'axi':
-
-            s += self.return_axi_pif_VHDL(mod, clk_name, reset_name)
+            s += self.return_axi_pif_VHDL(mod, clk_name, str.strip(reset_name))
+        elif self.bus_type == 'ipbus':
+            s += self.return_ipbus_pif_VHDL(mod, clk_name, str.strip(reset_name))
 
 
         return s
@@ -315,10 +325,10 @@ class Bus(object):
         logic_string += "end if;"
 
         if self.bus_reset == "async":
-            s += indent_string(async_process(clk_name, reset_name, "p_awaddr", reset_string, logic_string))
+            s += indent_string(async_process(clk_name, reset_name, "p_awaddr", reset_string, logic_string, self.reset_active_low))
 
         elif self.bus_reset == "sync":
-            s += indent_string(sync_process(clk_name, reset_name, "p_awaddr", reset_string, logic_string))
+            s += indent_string(sync_process(clk_name, reset_name, "p_awaddr", reset_string, logic_string, self.reset_active_low))
         s += "\n"
 
         ####################################################################
@@ -333,10 +343,10 @@ class Bus(object):
         logic_string += "end if;"
 
         if self.bus_reset == "async":
-            s += indent_string(async_process(clk_name, reset_name, "p_wready", reset_string, logic_string))
+            s += indent_string(async_process(clk_name, reset_name, "p_wready", reset_string, logic_string, self.reset_active_low))
 
         elif self.bus_reset == "sync":
-            s += indent_string(sync_process(clk_name, reset_name, "p_wready", reset_string, logic_string))
+            s += indent_string(sync_process(clk_name, reset_name, "p_wready", reset_string, logic_string, self.reset_active_low))
         s += "\n"
 
         s += indent_string('slv_reg_wren <= wready_i and wvalid and awready_i and awvalid;\n')
@@ -346,11 +356,11 @@ class Bus(object):
             ###################################################################
             # p_mm_select_write
             ###################################################################
-            reset_string = ""
+            reset_string = "\n"
             if mod.count_rw_regs() > 0:
-                reset_string += '\naxi_rw_regs_i <= c_' + mod.name + '_rw_regs;\n'
+                reset_string += 'axi_rw_regs_i <= c_' + mod.name + '_rw_regs;\n'
             if mod.count_pulse_regs() > 0:
-                reset_string += '\naxi_pulse_regs_cycle <= c_' + mod.name + '_pulse_regs;\n'
+                reset_string += 'axi_pulse_regs_cycle <= c_' + mod.name + '_pulse_regs;\n'
 
             logic_string = ""
             # create a generator for looping through all pulse regs
@@ -396,11 +406,11 @@ class Bus(object):
 
             if self.bus_reset == "async":
                 s += indent_string(async_process(clk_name, reset_name, "p_mm_select_write",
-                                                 reset_string, logic_string))
+                                                 reset_string, logic_string, self.reset_active_low))
 
             elif self.bus_reset == "sync":
                 s += indent_string(sync_process(clk_name, reset_name, "p_mm_select_write",
-                                                reset_string, logic_string))
+                                                reset_string, logic_string, self.reset_active_low))
             s += "\n"
 
         # Pulse reg process
@@ -426,11 +436,11 @@ class Bus(object):
 
         if self.bus_reset == "async":
             s += indent_string(async_process(clk_name, reset_name, "p_write_response",
-                                             reset_string, logic_string))
+                                             reset_string, logic_string, self.reset_active_low))
 
         elif self.bus_reset == "sync":
             s += indent_string(sync_process(clk_name, reset_name, "p_write_response",
-                                            reset_string, logic_string))
+                                            reset_string, logic_string, self.reset_active_low))
         s += "\n"
 
         ####################################################################
@@ -448,11 +458,11 @@ class Bus(object):
 
         if self.bus_reset == "async":
             s += indent_string(async_process(clk_name, reset_name, "p_arready",
-                                             reset_string, logic_string))
+                                             reset_string, logic_string, self.reset_active_low))
 
         elif self.bus_reset == "sync":
             s += indent_string(sync_process(clk_name, reset_name, "p_arready",
-                                            reset_string, logic_string))
+                                            reset_string, logic_string, self.reset_active_low))
         s += "\n"
 
         ####################################################################
@@ -470,11 +480,11 @@ class Bus(object):
 
         if self.bus_reset == "async":
             s += indent_string(async_process(clk_name, reset_name, "p_arvalid",
-                                             reset_string, logic_string))
+                                             reset_string, logic_string, self.reset_active_low))
 
         elif self.bus_reset == "sync":
             s += indent_string(sync_process(clk_name, reset_name, "p_arvalid",
-                                            reset_string, logic_string))
+                                            reset_string, logic_string, self.reset_active_low))
         s += "\n"
 
 
@@ -570,6 +580,229 @@ class Bus(object):
 
         return s
 
+    def return_ipbus_pif_VHDL(self, mod, clk_name, reset_name):
+        s = ''
+        par = ('signal ipb_out_i      : ipb_rbus;\n'
+               'signal reg_rden       : std_logic := \'0\';\n'
+               'signal reg_wren       : std_logic := \'0\';\n'
+               'signal wr_ack, rd_ack : std_logic := \'0\';\n'
+               'signal wr_err, rd_err : std_logic := \'0\';\n'
+               'signal reg_data_out   : t_{}_data;\n\n').format(mod.name)
+
+        s += indent_string(par)
+
+        s += 'begin\n\n'
+
+        s += indent_string('ipb_out <= ipb_out_i;\n')
+        if mod.count_rw_regs() > 0:
+            s += indent_string('ipb_rw_regs <= ipb_rw_regs_i') + ';\n'
+        if mod.count_pulse_regs() > 0:
+            s += indent_string('ipb_pulse_regs <= ipb_pulse_regs_i') + ';\n'
+        if mod.count_rw_regs() + mod.count_pulse_regs() > 0:
+            s += '\n'
+
+        s += indent_string('reg_wren <= (ipb_in.ipb_strobe and ipb_in.ipb_write) and not (wr_ack or wr_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err);\n\n')
+
+        if mod.count_rw_regs() + mod.count_pulse_regs() > 0:
+            ###################################################################
+            # p_write
+            ###################################################################
+            reset_string = "\n"
+            if mod.count_rw_regs() > 0:
+                reset_string += 'ipb_rw_regs_i <= c_' + mod.name + '_rw_regs;\n'
+            if mod.count_pulse_regs() > 0:
+                reset_string += 'ipb_pulse_regs_cycle <= c_' + mod.name + '_pulse_regs;\n'
+            reset_string += ("wr_ack <= '0';\n"
+                             "wr_err <= '0';\n")
+
+            logic_string = ""
+            # create a generator for looping through all pulse regs
+            if mod.count_pulse_regs() > 0:
+                logic_string += "\n-- Return PULSE registers to reset value every clock cycle\n"
+                logic_string += 'ipb_pulse_regs_cycle <= c_' + mod.name + '_pulse_regs;\n\n'
+
+            logic_string += ("wr_ack <= '0';\n"
+                             "wr_err <= '0';\n")
+
+            logic_string += "\nif (reg_wren) then\n\n"
+
+            # create a generator for looping through all rw and pulse regs
+            gen = (reg for reg in mod.registers if reg.mode == "rw" or reg.mode == "pulse")
+            for i, reg in enumerate(gen):
+                if reg.mode == 'rw':
+                    sig_name = 'ipb_rw_regs_i.'
+                elif reg.mode == 'pulse':
+                    sig_name = 'ipb_pulse_regs_cycle.'
+
+                if i == 0:
+                    par = "if"
+                else:
+                    par = "elsif"
+                par += " unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_"
+                par += reg.name.upper() + "), " + str(self.addr_width) + ") then\n\n"
+                logic_string += indent_string(par)
+                par = ''
+                if reg.sig_type == 'fields':
+
+                    for field in reg.fields:
+                        par += sig_name + reg.name + '.' + field.name
+                        par += ' <= ipb_in.ipb_wdata('
+                        par += field.get_pos_vhdl()
+                        par += ');\n'
+
+                elif reg.sig_type == 'default':
+                    par += sig_name + reg.name + ' <= ipb_in.ipb_wdata;\n'
+                elif reg.sig_type == 'slv':
+                    par += sig_name + reg.name + ' <= ipb_in.ipb_wdata('
+                    par += str(reg.length - 1) + ' downto 0);\n'
+                elif reg.sig_type == 'sl':
+                    par += sig_name + reg.name + ' <= ipb_in.ipb_wdata(0);\n'
+                par += "wr_ack <= '1';\n"
+
+                logic_string += indent_string(par, 2)
+                logic_string += "\n"
+
+            logic_string += indent_string("else\n\n")
+            logic_string += indent_string("wr_err <= '1';\n\n", 2)
+
+            logic_string += indent_string('end if;\n')
+            logic_string += 'end if;\n'
+
+            if self.bus_reset == "async":
+                s += indent_string(async_process(clk_name, reset_name, "p_write",
+                                                 reset_string, logic_string, self.reset_active_low))
+
+            elif self.bus_reset == "sync":
+                s += indent_string(sync_process(clk_name, reset_name, "p_write",
+                                                reset_string, logic_string, self.reset_active_low))
+            s += "\n"
+
+        # Pulse reg process
+        # create a generator for looping through all rw and pulse regs
+        gen = (reg for reg in mod.registers if reg.mode == "pulse")
+        for reg in gen:
+            s += indent_string(self.pulse_reg_process(mod, reg))
+            s += '\n'
+
+        s += indent_string('\nreg_rden <= (ipb_in.ipb_strobe and (not ipb_in.ipb_write)) and not (rd_ack or rd_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err);\n\n')
+
+        ####################################################################
+        # p_read
+        ####################################################################
+        reset_string = ("reg_data_out <= (others => '0');\n"
+                        "rd_ack <= '0';\n"
+                        "rd_err <= '0';")
+
+        logic_string = ("\n-- default values\n"
+                        "rd_ack <= '0';\n"
+                        "rd_err <= '0';\n")
+
+        logic_string += "\nif (reg_rden) then\n\n"
+
+        gen = [reg for reg in mod.registers
+               if reg.mode == "ro" or reg.mode == "rw"]
+        for i, reg in enumerate(gen):
+            if i == 0:
+                par = "if"
+            else:
+                par = "elsif"
+            par += " unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_"
+            par += reg.name.upper() + "), " + str(self.addr_width) + ") then\n\n"
+            logic_string += indent_string(par)
+            par = ''
+
+            if reg.sig_type == 'fields':
+
+                for field in reg.fields:
+                    par += 'reg_data_out('
+                    par += field.get_pos_vhdl()
+
+                    if reg.mode == 'rw':
+                        par += ') <= ipb_rw_regs_i.'
+                    elif reg.mode == 'ro':
+                        par += ') <= ipb_ro_regs.'
+                    else:
+                        raise Exception("Unknown error occurred")
+                    par += reg.name + '.' + field.name + ';\n'
+
+            elif reg.sig_type == 'default':
+                par += 'reg_data_out <= '
+                if reg.mode == 'rw':
+                    par += 'ipb_rw_regs_i.'
+                elif reg.mode == 'ro':
+                    par += 'ipb_ro_regs.'
+                else:
+                    raise Exception("Unknown error occurred")
+                par += reg.name + ';\n'
+
+            elif reg.sig_type == 'slv':
+                par += 'reg_data_out('
+                par += str(reg.length - 1) + ' downto 0) <= '
+                if reg.mode == 'rw':
+                    par += 'ipb_rw_regs_i.'
+                elif reg.mode == 'ro':
+                    par += 'ipb_ro_regs.'
+                else:
+                    raise Exception("Unknown error occurred")
+                par += reg.name + ';\n'
+
+            elif reg.sig_type == 'sl':
+                par += 'reg_data_out(0) <= '
+                if reg.mode == 'rw':
+                    par += 'ipb_rw_regs_i.'
+                elif reg.mode == 'ro':
+                    par += 'ipb_ro_regs.'
+                else:
+                    raise Exception("Unknown error occurred")
+                par += reg.name + ';\n'
+            par += "rd_ack <= '1';\n"
+
+            logic_string += indent_string(par, 2)
+            logic_string += "\n"
+
+        logic_string += indent_string("else\n\n")
+        logic_string += indent_string('reg_data_out <= 32X"DEAD";\n', 2)
+        logic_string += indent_string("rd_err <= '1';\n\n", 2)
+
+        logic_string += indent_string('end if;\n')
+        logic_string += 'end if;\n'
+
+        if self.bus_reset == "async":
+            s += indent_string(async_process(clk_name, reset_name, "p_read",
+                                reset_string, logic_string, self.reset_active_low))
+
+        elif self.bus_reset == "sync":
+            s += indent_string(sync_process(clk_name, reset_name, "p_read",
+                                reset_string, logic_string, self.reset_active_low))
+
+        s += "\n"
+
+        ####################################################################
+        # p_output
+        ####################################################################
+        reset_string = ("ipb_out_i.ipb_rdata <= (others => '0');\n"
+                       "ipb_out_i.ipb_ack <= '0';\n"
+                       "ipb_out_i.ipb_err <= '0';")
+
+        logic_string = ("ipb_out_i.ipb_rdata <= reg_data_out;\n"
+                        "ipb_out_i.ipb_ack <= '0';\n"
+                        "ipb_out_i.ipb_err <= '0';\n\n"
+                        "if (rd_ack or rd_err) then\n")
+        logic_string += indent_string("ipb_out_i.ipb_ack <= rd_ack;\n")
+        logic_string += indent_string("ipb_out_i.ipb_err <= rd_err;\n")
+        logic_string += "elsif (wr_ack or wr_err) then\n"
+        logic_string += indent_string("ipb_out_i.ipb_ack <= wr_ack;\n")
+        logic_string += indent_string("ipb_out_i.ipb_err <= wr_err;\n")
+        logic_string += "end if;\n"
+
+        s += indent_string(comb_process_with_reset(reset_name, "p_output", reset_string, logic_string, self.reset_active_low))
+
+        s += "\n"
+
+        s += 'end behavior;'
+
+        return s
+
     def get_instantiation(self, name, inter):
 
         if self.bus_type == 'axi':
@@ -602,7 +835,7 @@ class Bus(object):
     def pulse_reg_process(self, mod, reg):
 
         clk_name = self.get_clk_name()
-        reset_name = self.get_reset_name()
+        reset_name = str.strip(self.get_reset_name())
         proc_name = "p_pulse_" + reg.name
         const_name = "c_" + mod.name + "_pulse_regs." + reg.name
         reg_name = self.short_name + "_pulse_regs_i." + reg.name
@@ -638,7 +871,7 @@ class Bus(object):
         if reg.num_cycles > 1:
             logic_string += indent_string("end if;\n")
         logic_string += "end if;\n"
-        return sync_process(clk_name, reset_name, proc_name, reset_string, logic_string, True, variables)
+        return sync_process(clk_name, reset_name, proc_name, reset_string, logic_string, self.reset_active_low, variables)
 
     def get_uvvm_lib(self):
         if self.bus_type == 'axi':

@@ -29,9 +29,9 @@ class Testbench(object):
         self.logger.debug('Generating UVVM Component List')
         string = "uvvm_util\n"
         string += "uvvm_vvc_framework\n"
-        string += "bitvis_vip_scoreboard\n"
+        string += "bitvis_vip_scoreboard"
         if self.bus.bus_type == 'axi':
-            string += "bitvis_vip_axilite"
+            string += "\nbitvis_vip_axilite"
         return string
 
     def return_tcl_script(self):
@@ -48,14 +48,13 @@ class Testbench(object):
 
         s += 'quietly set {}_path "../"\n'.format(self.module.name)
 
-        s += 'quietly set bus_path "'
-        s += self.settings.return_sim_bus_path(self.bus.bus_type)
-        s += '"\n'
-        s += 'quietly set UVVM_path "'
-        s += self.settings.return_sim_uvvm_path()
-        s += '"\n\n'
+        s += 'quietly set bus_path "{}"\n'.format(self.settings.return_sim_bus_path(self.bus.bus_type))
+        s += 'quietly set UVVM_path "{}"\n'.format(self.settings.return_sim_uvvm_path())
 
-        s += ('# Compile UVVM Dependencies\n'
+        if self.bus.bus_type == 'ipbus':
+            s += 'quietly set vip_ipbus_path "{}"\n'.format(self.settings.return_vip_ipbus_path())
+
+        s += ('\n# Compile UVVM Dependencies\n'
               'do $UVVM_path/script/compile_all.do $UVVM_path/script ${0}_path/{1} ${0}_path/'
               '{2}/component_list.txt\n\n'.format(self.module.name, self.settings.sim_dir, self.settings.script_dir))
 
@@ -65,7 +64,7 @@ class Testbench(object):
             s += ' +cover=sbt'
         s += '"\n\n'
 
-        if self.bus.comp_library != Bus.default_comp_library:
+        if self.bus.comp_library != Bus.default_comp_library or self.bus.bus_type == 'ipbus':
             s += ('###########################################################################\n'
               '# Compile bus source files into library\n'
               '###########################################################################\n\n'
@@ -73,7 +72,10 @@ class Testbench(object):
               'quietly set lib_name "')
             s += self.bus.comp_library
             s += '"\n'
-            s += 'quietly set bus_sim_path "$bus_path/{0}"\n\n'.format(self.settings.sim_dir)
+            if self.bus.bus_type == 'ipbus':
+                s += 'quietly set bus_sim_path "${}_path/{}"\n\n'.format(self.module.name, self.settings.sim_dir)
+            else:
+                s += 'quietly set bus_sim_path "$bus_path/{}"\n\n'.format(self.settings.sim_dir)
             s += ('# (Re-)Generate library and Compile source files\n'
                   'echo "\\nRe-gen lib and compile $lib_name source\\n"\n'
                   'if {{[file exists $bus_sim_path/$lib_name]}} {{\n'
@@ -84,9 +86,14 @@ class Testbench(object):
             s += 'vmap $lib_name $bus_sim_path/$lib_name\n\n'
 
             s += 'quietly set vhdldirectives "-2008 -work $lib_name"\n\n'
-            s += 'eval vcom $vcom_args $vhdldirectives $bus_path/hdl/{}_pkg.vhd\n\n\n'.format(self.bus.bus_type)
+            if self.bus.bus_type == 'ipbus':
+                s += 'eval vcom $vcom_args $vhdldirectives $bus_path/components/ipbus_core/firmware/hdl/ipbus_package.vhd\n\n'
+                s += '# Compile vip_ipbus Dependencies\n'
+                s += 'do $vip_ipbus_path/scripts/compile_src.do $vip_ipbus_path $vip_ipbus_path/sim\n'
+            else:
+                s += 'eval vcom $vcom_args $vhdldirectives $bus_path/hdl/{}_pkg.vhd\n'.format(self.bus.bus_type)
 
-        s += ('###########################################################################\n'
+        s += ('\n\n###########################################################################\n'
               '# Compile source files into library\n'
               '###########################################################################\n\n'
               '# Set up library and sim path\n'

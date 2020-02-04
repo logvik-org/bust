@@ -425,7 +425,10 @@ class Module:
         s += '\n'
         if self.bus.comp_library != "work":
             s += "library " + self.bus.comp_library + ";\n"
-        s += 'use ' + self.bus.comp_library + '.' + self.bus.bus_type + '_pkg.all;\n'
+        if self.bus.bus_type == 'ipbus':
+            s += 'use ' + self.bus.comp_library + '.' + self.bus.bus_type + '.all;\n'
+        else:
+            s += 'use ' + self.bus.comp_library + '.' + self.bus.bus_type + '_pkg.all;\n'
         s += 'use work.' + self.name + '_pif_pkg.all;\n'
         s += '\n'
 
@@ -443,13 +446,11 @@ class Module:
         s += indent_string('port (\n')
         par = '-- User Ports Start\n\n'
         par += '-- User Ports End\n'
-        par += '-- ' + self.bus.bus_type.upper() + ' Bus Interface Ports\n'
-        par += self.bus.short_name + '_' + self.bus.get_clk_name() + '      : in  std_logic;\n'
-        par += self.bus.short_name + '_' + self.bus.get_reset_name() + ' : in  std_logic;\n'
-        par += self.bus.short_name + '_in       : in  t_' + \
-            self.bus.short_name + '_mosi;\n'
-        par += self.bus.short_name + '_out      : out t_' + \
-            self.bus.short_name + '_miso\n'
+        par += '-- {} Bus Interface Ports\n'.format(self.bus.bus_type.upper())
+        par += '{}_{}      : in  std_logic;\n'.format(self.bus.short_name, self.bus.get_clk_name())
+        par += '{}_{} : in  std_logic;\n'.format(self.bus.short_name, self.bus.get_reset_name())
+        par += '{}_in       : in  {};\n'.format(self.bus.short_name, self.bus.get_in_type())
+        par += '{}_out      : out {}\n'.format(self.bus.short_name, self.bus.get_out_type())
         par += ');\n'
         s += indent_string(par, 2)
         s += '\n'
@@ -463,8 +464,7 @@ class Module:
         s += indent_string(par)
 
         s += indent_string("-- " + self.bus.bus_type.upper() + " output signal for user readback\n")
-        par = "signal " + self.bus.short_name + "_out_i : t_" + self.bus.short_name
-        par += "_miso;\n"
+        par = "signal {}_out_i : {};\n".format(self.bus.short_name, self.bus.get_out_type())
         s += indent_string(par)
 
         s += indent_string("-- Register Signals\n")

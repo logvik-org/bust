@@ -123,7 +123,6 @@ begin
     if areset_n = '0' then
 
       axi_rw_regs_i <= c_example_axi_rw_regs;
-
       axi_pulse_regs_cycle <= c_example_axi_pulse_regs;
 
     elsif rising_edge(clk) then

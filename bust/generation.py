@@ -18,7 +18,7 @@ def generate_output(settings, bus, module, header, documentation, testbench, gen
     else:
         mod_dir = proj_dir
 
-    if settings.bus_subdir:
+    if settings.bus_subdir and not bus.bus_type == 'ipbus':
         bus_dir = os.path.join(proj_dir, bus.bus_type)
     else:
         bus_dir = mod_dir
@@ -65,7 +65,7 @@ def generate_output(settings, bus, module, header, documentation, testbench, gen
         logger.info("Generating Module VHDL Files...")
         try:
             # PIF
-            filename = '{}_{}_pif.vhd'.format(module.name, bus.bus_type)
+            filename = '{}_{}_pif.vhd'.format(module.name, bus.short_name)
             write_string_to_file(bus.return_bus_pif_VHDL(module), filename, mod_hdl, gen_settings['force_ow'])
             # PIF Package
             filename = '{}_pif_pkg.vhd'.format(module.name)
@@ -109,7 +109,7 @@ def generate_output(settings, bus, module, header, documentation, testbench, gen
                 write_string_to_file(testbench.return_uvvm_component_list(), filename, mod_script, gen_settings['force_ow'])
                 filename = 'simulate_{}_pif.do'.format(bus.bus_type)
                 write_string_to_file(testbench.return_tcl_script(), filename, mod_script, gen_settings['force_ow'])
-                filename = '{}_{}_pif_tb.vhd'.format(module.name, bus.bus_type)
+                filename = '{}_{}_pif_tb.vhd'.format(module.name, bus.short_name)
                 write_string_to_file(testbench.return_vhdl_tb(), filename, mod_tb, gen_settings['force_ow'])
 
             except Exception:
