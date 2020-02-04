@@ -39,8 +39,7 @@ from bust.settings import Settings
 from bust.testbench import Testbench
 from bust.generation import generate_output
 from bust.exceptions import FormatError, InvalidAddress, InvalidRegister, InvalidBusType, InvalidResetMode
-
-__VERSION__ = '0.8.0-dev'
+from bust._version import __VERSION__
 
 
 def main():

@@ -118,7 +118,7 @@ class Test_Suite(unittest.TestCase):
                 self.logger.info("Testing Doc generation...")
                 with open('example/example_{0}/doc/example_{0}.tex'.format(holder.bus.bus_type)) as f:
                     string = f.read()
-                self.assertEqual(holder.doc.return_tex_documentation(), string, "doc must match manual file")
+                self.assertEqual(holder.doc.return_tex_documentation("v0.8"), string, "doc must match manual file")
 
 if __name__ == '__main__':
     unittest.main()

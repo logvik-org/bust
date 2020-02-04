@@ -35,8 +35,11 @@ class Module:
             self.name = mod['name']
             self.description = mod['description']
             self.description_with_breaks = add_line_breaks(mod['description'], 25)
-            self.version = None
-            self.git_hash = None
+            if 'version' in mod:
+                self.version = mod['version']
+            else:
+                self.version = None
+            self.git_hash = None # not used
 
             self.addr_width = bus.addr_width
             self.data_width = bus.data_width
@@ -59,6 +62,12 @@ class Module:
         except Exception as e:
             print(e)
             exit(2)
+
+    def get_version(self):
+        if self.version is None:
+            return ""
+        else:
+            return "Version: {}".format(self.version)
 
     def add_register(self, reg):
         if self.register_valid(reg):
