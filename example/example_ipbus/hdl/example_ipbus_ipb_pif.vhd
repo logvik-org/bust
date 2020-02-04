@@ -251,7 +251,7 @@ begin
 
           else
 
-            reg_data_out <= 32X"DEAD";
+            reg_data_out <= 32X"DEADBEEF";
             rd_err <= '1';
 
           end if;

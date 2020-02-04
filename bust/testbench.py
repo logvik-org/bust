@@ -286,6 +286,17 @@ class Testbench(object):
             s += '\n'
             s += indent_string(self.check_bit_fields(reg), 2)
 
+        if self.bus.bus_type == 'ipbus':
+            par = ('--\n\n'
+                   'log_hdr_large("Checking that invalid register returns ERR");\n\n'
+                   'ipbus_bfm_config.expected_response <= ERR;\n\n'
+                   'log_hdr("Check erroneous read");\n\n'
+                   'read(32X"FFFFFFFF", dummy_data, "Read from register that does not exist");\n'
+                   'check_value(dummy_data, 32X"DEADBEEF", error, "Check that the returned data is rubbish");\n\n'
+                   'log_hdr("Check erroneous write");\n\n'
+                   'write(32X"FFFFFFFF", 32X"0", "Write to register that does not exist");\n\n')
+            s += indent_string(par, 2)
+
         par = ('--==================================================================================================\n'
                '-- Ending the simulation\n'
                '--------------------------------------------------------------------------------------\n'

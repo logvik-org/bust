@@ -168,6 +168,7 @@ begin  -- architecture tb
                    shared_msg_id_panel,
                    axilite_bfm_config);
     end;
+    variable dummy_data : std_logic_vector(31 downto 0);
 
     procedure check(
       constant addr_value : in unsigned;

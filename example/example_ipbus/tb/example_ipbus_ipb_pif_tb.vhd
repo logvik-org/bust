@@ -134,6 +134,7 @@ begin  -- architecture tb
                    shared_msg_id_panel,
                    ipbus_bfm_config);
     end;
+    variable dummy_data : std_logic_vector(31 downto 0);
 
     procedure check(
       constant addr_value : in unsigned;
@@ -572,6 +573,21 @@ begin  -- architecture tb
     await_stable(ipb_pulse_regs.reg11.field1, 50*C_CLK_PERIOD, FROM_LAST_EVENT, 50*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Check all bit fields");
     check_value(ipb_pulse_regs.reg11.field1, '1', error, "Check all bit fields");
     await_value(ipb_pulse_regs.reg11.field1, '0', 0 ns, 1 ns, error, "Check all bit fields");
+
+    --
+
+    log_hdr_large("Checking that invalid register returns ERR");
+
+    ipbus_bfm_config.expected_response <= ERR;
+
+    log_hdr("Check erroneous read");
+
+    read(32X"FFFFFFFF", dummy_data, "Read from register that does not exist");
+    check_value(dummy_data, 32X"DEADBEEF", error, "Check that the returned data is rubbish");
+
+    log_hdr("Check erroneous write");
+
+    write(32X"FFFFFFFF", 32X"0", "Write to register that does not exist");
 
     --==================================================================================================
     -- Ending the simulation

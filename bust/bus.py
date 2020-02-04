@@ -761,7 +761,7 @@ class Bus(object):
             logic_string += "\n"
 
         logic_string += indent_string("else\n\n")
-        logic_string += indent_string('reg_data_out <= 32X"DEAD";\n', 2)
+        logic_string += indent_string('reg_data_out <= 32X"DEADBEEF";\n', 2)
         logic_string += indent_string("rd_err <= '1';\n\n", 2)
 
         logic_string += indent_string('end if;\n')
@@ -987,7 +987,8 @@ class Bus(object):
               '               C_SCOPE,\n'
               '               shared_msg_id_panel,\n'
               '               {0}_bfm_config);\n'
-              'end;\n\n').format(ext_name, self.short_name, self.get_clk_name())
+              'end;\n').format(ext_name, self.short_name, self.get_clk_name())
+        s += 'variable dummy_data : std_logic_vector(31 downto 0);\n\n'
 
         s += ('procedure check(\n'
               '  constant addr_value : in unsigned;\n'
