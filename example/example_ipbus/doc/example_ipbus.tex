@@ -102,7 +102,7 @@ An example module that contain all the register types that are currently support
 \reglabel{Reset}\regnewline
 \end{register}
 
-\begin{register}{H}{reg3 - RW - STALL for 30 cycles}{0x0000000C}  \par RW std{\_}logic{\_}vector[7:0] register that resets to 0x3 \regnewline
+\begin{register}{H}{reg3 - RW - STALL for 30 cycles}{0x0000000C}  \par RW std{\_}logic{\_}vector[7:0] register that resets to 0x3. Reading and writing from this register is stalling the bus for 30 extra clock cycles. \regnewline
   \label{reg3}
   \regfield{unused}{24}{8}{-}
   \regfield{}{8}{0}{{0x3}}
@@ -152,21 +152,21 @@ An example module that contain all the register types that are currently support
     \item [field0] std{\_}logic field    \item [field1] std{\_}logic{\_}vector[18:0] field    \item [field2] std{\_}logic field    \item [field3] std{\_}logic{\_}vector[2:0] field  \end{reglist}\end{regdesc}
 \end{register}
 
-\begin{register}{H}{reg9 - PULSE for 4 cycles}{0x00000024}  \par PULSE std{\_}logic register that resets to 0x1 \regnewline
+\begin{register}{H}{reg9 - PULSE for 4 cycles }{0x00000024}  \par PULSE std{\_}logic register that resets to 0x1 \regnewline
   \label{reg9}
   \regfield{unused}{31}{1}{-}
   \regfield{}{1}{0}{1}
 \reglabel{Reset}\regnewline
 \end{register}
 
-\begin{register}{H}{reg10 - PULSE for 1 cycles}{0x00000028}  \par PULSE std{\_}logic{\_}vector[3:0] register that resets to 0xA \regnewline
+\begin{register}{H}{reg10 - PULSE for 1 cycles }{0x00000028}  \par PULSE std{\_}logic{\_}vector[3:0] register that resets to 0xA \regnewline
   \label{reg10}
   \regfield{unused}{28}{4}{-}
   \regfield{}{4}{0}{{0xA}}
 \reglabel{Reset}\regnewline
 \end{register}
 
-\begin{register}{H}{reg11 - PULSE for 50 cycles}{0x0000002C}  \par PULSE register with two fields \regnewline
+\begin{register}{H}{reg11 - PULSE for 50 cycles }{0x0000002C}  \par PULSE register with two fields \regnewline
   \label{reg11}
   \regfield{unused}{16}{16}{-}
   \regfield{field1}{1}{15}{0}

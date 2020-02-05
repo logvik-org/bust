@@ -75,7 +75,7 @@ def main():
                 documentation = Documentation(module)
                 testbench = Testbench(module, bus, settings)
 
-            except (FormatError, InvalidAddress, InvalidRegister, InvalidResetMode, InvalidBusType) as e:
+            except (FormatError, InvalidAddress, InvalidRegister, InvalidResetMode, InvalidBusType, NotImplementedError) as e:
                 logger.error(str(e))
                 exit(1)
 

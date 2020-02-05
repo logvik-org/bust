@@ -109,7 +109,9 @@ class Header(object):
                                                                                                                    reg.reset)
 
             if reg.mode == 'pulse':
-                par += ';pulse_cycles={}'.format(reg.num_cycles)
+                par += ';pulse_cycles={}'.format(reg.pulse_cycles)
+            if reg.stall:
+                par += ';stall_cycles={}'.format(reg.stall_cycles)
             if reg.sig_type == 'fields':
                 par += '">\n'
             else:

@@ -21,11 +21,18 @@ class Register:
         self.address = address
 
         if self.mode == 'pulse':
-            # Check if num_cycles is set
-            if "num_cycles" in reg:
-                self.num_cycles = reg['num_cycles']
+            # Check if pulse_cycles is set
+            if "pulse_cycles" in reg:
+                self.pulse_cycles = reg['pulse_cycles']
             else:
-                self.num_cycles = 1
+                self.pulse_cycles = 1
+
+        self.stall = False
+        if "stall_cycles" in reg:
+            if reg['stall_cycles'] < 2 or reg['stall_cycles'] > 255:
+                raise InvalidStallValue(reg['stall_cycles'])
+            self.stall = True
+            self.stall_cycles = reg['stall_cycles']
 
         self.reset = "0x0"
         self.length = 0
@@ -179,6 +186,15 @@ class Register:
         else:
             return self.mode
 
+    def return_stall_string(self):
+        if self.stall:
+            return "/STALL"
+        else:
+            return ""
+
+    def get_stall_cycles_str(self):
+        return str(self.stall_cycles-2)
+
 
 class ModuleDataBitsExceeded(Exception):
     """! @brief Raised when the specified module data bits are exceeded
@@ -226,4 +242,9 @@ class InvalidRegisterFormat(RuntimeError):
 class InvalidFieldFormat(RuntimeError):
     def __init__(self, msg):
         msg = 'Invalid field format: ' + msg
+        super().__init__(msg)
+
+class InvalidStallValue(RuntimeError):
+    def __init__(self, val):
+        msg = 'Invalid stall value: {}. Must be between 2 and 255.'.format(val)
         super().__init__(msg)

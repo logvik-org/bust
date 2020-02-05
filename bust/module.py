@@ -25,43 +25,42 @@ class Module:
     def __init__(self, mod, bus, settings):
         """! @brief
         """
-        try:
-            self.bus = bus
-            self.settings = settings
-            self.registers = []
-            self.addresses = []
 
-            is_valid_VHDL(mod['name'])
-            self.name = mod['name']
-            self.description = mod['description']
-            self.description_with_breaks = add_line_breaks(mod['description'], 25)
-            if 'version' in mod:
-                self.version = mod['version']
+        self.bus = bus
+        self.settings = settings
+        self.registers = []
+        self.addresses = []
+
+        is_valid_VHDL(mod['name'])
+        self.name = mod['name']
+        self.description = mod['description']
+        self.description_with_breaks = add_line_breaks(mod['description'], 25)
+        if 'version' in mod:
+            self.version = mod['version']
+        else:
+            self.version = None
+        self.git_hash = None # not used
+
+        self.addr_width = bus.addr_width
+        self.data_width = bus.data_width
+
+        if 'byte_addressable' in mod:
+            if mod['byte_addressable'] == 'True':
+                self.byte_addressable = True
             else:
-                self.version = None
-            self.git_hash = None # not used
-
-            self.addr_width = bus.addr_width
-            self.data_width = bus.data_width
-
-            if 'byte_addressable' in mod:
-                if mod['byte_addressable'] == 'True':
-                    self.byte_addressable = True
-                else:
-                    self.byte_addressable = False
+                self.byte_addressable = False
+        else:
+            if self.bus.bus_type == 'axi': # axi usually is byte addressable
+                self.byte_addressable = True
             else:
-                if self.bus.bus_type == 'axi': # axi usually is byte addressable
-                    self.byte_addressable = True
-                else:
-                    self.byte_addressable = False
+                self.byte_addressable = False
+
+        for reg in mod['register']:
+            if 'stall_cycles' in reg and bus.bus_type != 'ipbus':
+                raise NotImplementedError("Stall cycles has not been implemented for other buses than IPBus...")
+            self.add_register(reg)
 
 
-            for reg in mod['register']:
-                self.add_register(reg)
-
-        except Exception as e:
-            print(e)
-            exit(2)
 
     def get_version(self):
         if self.version is None:
@@ -562,7 +561,7 @@ class Module:
             reg_dic["name"] = reg.name
             reg_dic["mode"] = reg.mode
             if reg.mode == 'pulse':
-                reg_dic["num_cycles"] = reg.num_cycles
+                reg_dic["pulse_cycles"] = reg.pulse_cycles
             reg_dic["type"] = reg.sig_type
 
             if include_address:
@@ -663,6 +662,12 @@ class Module:
 
     def count_pulse_regs(self):
         return len([reg for reg in self.registers if reg.mode == 'pulse'])
+
+    def has_stall_regs(self):
+        if len([reg for reg in self.registers if reg.stall]) > 0:
+            return True
+        else:
+            return False
 
     def __str__(self):
         string = "Name: " + self.name + "\n"

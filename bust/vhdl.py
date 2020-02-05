@@ -4,12 +4,11 @@ from bust.utils import indent_string
 from bust.utils import is_mixed
 
 
-def sync_process(clk_name, reset_name, process_name, reset_string, logic_string,
-                 active_low=True, variables=None):
+def sync_process(clk_name, reset_name, process_name, reset_string, logic_string, active_low=True, variables=None):
     s = process_name + " : process(" + clk_name + ")\n"
     if variables is not None:
         for var in variables:
-            s += "variable " + var + ";\n"
+            s += indent_string("variable " + var + ";\n")
     s += "begin\n"
     s += indent_string("if rising_edge(" + clk_name + ") then\n")
     s += indent_string("if " + reset_name + " = ", 2)
@@ -32,8 +31,11 @@ def sync_process(clk_name, reset_name, process_name, reset_string, logic_string,
     return s
 
 
-def async_process(clk_name, reset_name, process_name, reset_string, logic_string, active_low=True):
+def async_process(clk_name, reset_name, process_name, reset_string, logic_string, active_low=True, variables=None):
     s = process_name + " : process(" + clk_name + ", " + reset_name  + ")\n"
+    if variables is not None:
+        for var in variables:
+            s += indent_string("variable " + var + ";\n")
     s += "begin\n"
     s += indent_string("if " + reset_name + " = ")
 

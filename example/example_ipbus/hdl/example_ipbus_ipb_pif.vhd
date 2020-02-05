@@ -129,7 +129,7 @@ begin
   end process p_write;
 
   p_pulse_reg9 : process(clk)
-  variable cnt : natural range 0 to 3 := 0;
+    variable cnt : natural range 0 to 3 := 0;
   begin
     if rising_edge(clk) then
       if reset = '1' then
@@ -165,7 +165,7 @@ begin
   end process p_pulse_reg10;
 
   p_pulse_reg11 : process(clk)
-  variable cnt : natural range 0 to 49 := 0;
+    variable cnt : natural range 0 to 49 := 0;
   begin
     if rising_edge(clk) then
       if reset = '1' then
@@ -274,12 +274,7 @@ begin
         stall <= '0';
       else
         ack_d <= '0';
-        if wr_stall_ack = '1' then
-          stall <= '1';
-          if unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG3), 32) then
-            v_cnt := 28;
-          end if;
-        elsif rd_stall_ack = '1' then
+        if wr_stall_ack or rd_stall_ack then
           stall <= '1';
           if unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG3), 32) then
             v_cnt := 28;
@@ -293,7 +288,7 @@ begin
         end if;
       end if;
     end if;
-  end process p_stall ;
+  end process p_stall;
 
   p_output : process(all)
   begin

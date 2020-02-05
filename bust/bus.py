@@ -417,7 +417,7 @@ class Bus(object):
         # create a generator for looping through all rw and pulse regs
         gen = (reg for reg in mod.registers if reg.mode == "pulse")
         for reg in gen:
-            s += self.pulse_reg_process(mod, reg)
+            s += indent_string(self.pulse_reg_process(mod, reg))
             s += '\n'
 
         ####################################################################
@@ -587,7 +587,14 @@ class Bus(object):
                'signal reg_wren       : std_logic := \'0\';\n'
                'signal wr_ack, rd_ack : std_logic := \'0\';\n'
                'signal wr_err, rd_err : std_logic := \'0\';\n'
-               'signal reg_data_out   : t_{}_data;\n\n').format(mod.name)
+               'signal ack_d          : std_logic := \'0\';\n')
+
+        if mod.has_stall_regs():
+            par += ('signal wr_stall_ack   : std_logic := \'0\';\n'
+                    'signal rd_stall_ack   : std_logic := \'0\';\n'
+                    'signal stall          : std_logic := \'0\';\n')
+
+        par += 'signal reg_data_out   : t_{}_data;\n\n'.format(mod.name)
 
         s += indent_string(par)
 
@@ -601,7 +608,10 @@ class Bus(object):
         if mod.count_rw_regs() + mod.count_pulse_regs() > 0:
             s += '\n'
 
-        s += indent_string('reg_wren <= (ipb_in.ipb_strobe and ipb_in.ipb_write) and not (wr_ack or wr_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err);\n\n')
+        if mod.has_stall_regs():
+            s += indent_string('reg_wren <= (ipb_in.ipb_strobe and ipb_in.ipb_write) and not (wr_ack or wr_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err or wr_stall_ack or stall);\n\n')
+        else:
+            s += indent_string('reg_wren <= (ipb_in.ipb_strobe and ipb_in.ipb_write) and not (wr_ack or wr_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err);\n\n')
 
         if mod.count_rw_regs() + mod.count_pulse_regs() > 0:
             ###################################################################
@@ -623,6 +633,8 @@ class Bus(object):
 
             logic_string += ("wr_ack <= '0';\n"
                              "wr_err <= '0';\n")
+            if mod.has_stall_regs():
+                logic_string += "wr_stall_ack <= '0';\n"
 
             logic_string += "\nif (reg_wren) then\n\n"
 
@@ -657,7 +669,10 @@ class Bus(object):
                     par += str(reg.length - 1) + ' downto 0);\n'
                 elif reg.sig_type == 'sl':
                     par += sig_name + reg.name + ' <= ipb_in.ipb_wdata(0);\n'
-                par += "wr_ack <= '1';\n"
+                if reg.stall:
+                    par += "wr_stall_ack <= '1';\n"
+                else:
+                    par += "wr_ack <= '1';\n"
 
                 logic_string += indent_string(par, 2)
                 logic_string += "\n"
@@ -684,7 +699,10 @@ class Bus(object):
             s += indent_string(self.pulse_reg_process(mod, reg))
             s += '\n'
 
-        s += indent_string('\nreg_rden <= (ipb_in.ipb_strobe and (not ipb_in.ipb_write)) and not (rd_ack or rd_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err);\n\n')
+        if mod.has_stall_regs():
+            s += indent_string('\nreg_rden <= (ipb_in.ipb_strobe and (not ipb_in.ipb_write)) and not (rd_ack or rd_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err or rd_stall_ack or stall);\n\n')
+        else:
+            s += indent_string('\nreg_rden <= (ipb_in.ipb_strobe and (not ipb_in.ipb_write)) and not (rd_ack or rd_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err);\n\n')
 
         ####################################################################
         # p_read
@@ -696,6 +714,8 @@ class Bus(object):
         logic_string = ("\n-- default values\n"
                         "rd_ack <= '0';\n"
                         "rd_err <= '0';\n")
+        if mod.has_stall_regs():
+            logic_string += "rd_stall_ack <= '0';\n"
 
         logic_string += "\nif (reg_rden) then\n\n"
 
@@ -755,7 +775,10 @@ class Bus(object):
                 else:
                     raise Exception("Unknown error occurred")
                 par += reg.name + ';\n'
-            par += "rd_ack <= '1';\n"
+            if reg.stall:
+                par += "rd_stall_ack <= '1';\n"
+            else:
+                par += "rd_ack <= '1';\n"
 
             logic_string += indent_string(par, 2)
             logic_string += "\n"
@@ -778,6 +801,39 @@ class Bus(object):
         s += "\n"
 
         ####################################################################
+        # p_stall
+        ####################################################################
+        if mod.has_stall_regs():
+            variables = ['v_cnt : natural := 0']
+            reset_string = "stall <= '0';"
+
+            logic_string = ("ack_d <= '0';\n"
+                            "if wr_stall_ack or rd_stall_ack then\n")
+            logic_string += indent_string("stall <= '1';\n")
+            gen = [reg for reg in mod.registers if reg.stall]
+            for reg in gen:
+                logic_string += indent_string("if unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_{}), {}) then\n".format(reg.name.upper(), str(self.addr_width)))
+                logic_string += indent_string("v_cnt := {};\n".format(reg.get_stall_cycles_str()), 2)
+                logic_string += indent_string("end if;\n")
+
+            logic_string += "elsif v_cnt > 0 then\n"
+            logic_string += indent_string("v_cnt := v_cnt - 1;\n")
+            logic_string += indent_string("stall <= '1';\n")
+            logic_string += "elsif stall then\n"
+            logic_string += indent_string("stall <= '0';\n")
+            logic_string += indent_string("ack_d <= '1';\n")
+            logic_string += "end if;\n"
+
+            if self.bus_reset == "async":
+                s += indent_string(async_process(clk_name, reset_name, "p_stall",
+                                reset_string, logic_string, self.reset_active_low, variables))
+
+            elif self.bus_reset == "sync":
+                s += indent_string(sync_process(clk_name, reset_name, "p_stall",
+                                    reset_string, logic_string, self.reset_active_low, variables))
+            s += '\n'
+
+        ####################################################################
         # p_output
         ####################################################################
         reset_string = ("ipb_out_i.ipb_rdata <= (others => '0');\n"
@@ -786,13 +842,22 @@ class Bus(object):
 
         logic_string = ("ipb_out_i.ipb_rdata <= reg_data_out;\n"
                         "ipb_out_i.ipb_ack <= '0';\n"
-                        "ipb_out_i.ipb_err <= '0';\n\n"
-                        "if (rd_ack or rd_err) then\n")
+                        "ipb_out_i.ipb_err <= '0';\n\n")
+        if mod.has_stall_regs():
+            logic_string += "if (rd_ack or rd_err) and (not stall) then\n"
+        else:
+            logic_string += "if (rd_ack or rd_err) then\n"
         logic_string += indent_string("ipb_out_i.ipb_ack <= rd_ack;\n")
         logic_string += indent_string("ipb_out_i.ipb_err <= rd_err;\n")
-        logic_string += "elsif (wr_ack or wr_err) then\n"
+        if mod.has_stall_regs():
+            logic_string += "elsif (wr_ack or wr_err) and (not stall) then\n"
+        else:
+            logic_string += "elsif (wr_ack or wr_err) then\n"
         logic_string += indent_string("ipb_out_i.ipb_ack <= wr_ack;\n")
         logic_string += indent_string("ipb_out_i.ipb_err <= wr_err;\n")
+        if mod.has_stall_regs():
+            logic_string += "elsif ack_d then\n"
+            logic_string += indent_string("ipb_out_i.ipb_ack <= ack_d;\n")
         logic_string += "end if;\n"
 
         s += indent_string(comb_process_with_reset(reset_name, "p_output", reset_string, logic_string, self.reset_active_low))
@@ -840,8 +905,8 @@ class Bus(object):
         const_name = "c_" + mod.name + "_pulse_regs." + reg.name
         reg_name = self.short_name + "_pulse_regs_i." + reg.name
         reg_tmp_name = self.short_name + "_pulse_regs_cycle." + reg.name
-        if reg.num_cycles > 1:
-            variables = ["cnt : natural range 0 to " + str(reg.num_cycles-1) + " := 0"]
+        if reg.pulse_cycles > 1:
+            variables = ["cnt : natural range 0 to " + str(reg.pulse_cycles-1) + " := 0"]
         else:
             variables = []
 
@@ -852,23 +917,23 @@ class Bus(object):
         logic_string += " then\n"
 
         par = ""
-        if reg.num_cycles > 1 :
-            par = "cnt := " + str(reg.num_cycles-1) + ";\n"
+        if reg.pulse_cycles > 1 :
+            par = "cnt := " + str(reg.pulse_cycles-1) + ";\n"
         par += reg_name + " <= " + reg_tmp_name + ";\n"
         logic_string += indent_string(par)
 
         logic_string += "else\n"
-        if reg.num_cycles > 1:
+        if reg.pulse_cycles > 1:
             logic_string += indent_string("if cnt > 0 then\n")
             logic_string += indent_string("cnt := cnt - 1;\n", 2)
             logic_string += indent_string("else\n")
 
         par = reg_name + " <= " + const_name + ";\n"
-        if reg.num_cycles > 1:
+        if reg.pulse_cycles > 1:
             logic_string += indent_string(par, 2)
         else:
             logic_string += indent_string(par, 1)
-        if reg.num_cycles > 1:
+        if reg.pulse_cycles > 1:
             logic_string += indent_string("end if;\n")
         logic_string += "end if;\n"
         return sync_process(clk_name, reset_name, proc_name, reset_string, logic_string, self.reset_active_low, variables)
@@ -938,9 +1003,10 @@ class Bus(object):
                  'axilite_if.read_data_channel.rvalid      <= axi_out.rvalid;\n'
                  'axilite_if.write_data_channel.wready     <= axi_out.wready;\n')
         elif self.bus_type == 'ipbus':
-            s = ('ipbus_bfm_config.clock_period <= C_CLK_PERIOD;\n'
-                 'ipbus_bfm_config.setup_time   <= C_CLK_PERIOD/8;\n'
-                 'ipbus_bfm_config.hold_time    <= C_CLK_PERIOD/8;\n\n'
+            s = ('ipbus_bfm_config.clock_period    <= C_CLK_PERIOD;\n'
+                 'ipbus_bfm_config.setup_time      <= C_CLK_PERIOD/8;\n'
+                 'ipbus_bfm_config.hold_time       <= C_CLK_PERIOD/8;\n'
+                 'ipbus_bfm_config.max_wait_cycles <= 256;\n\n'
                  'ipb_in.ipb_wdata  <= ipbus_if.wdata;\n'
                  'ipb_in.ipb_write  <= ipbus_if.wr;\n'
                  'ipb_in.ipb_addr  <= ipbus_if.addr;\n'

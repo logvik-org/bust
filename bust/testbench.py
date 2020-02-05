@@ -394,7 +394,7 @@ class Testbench(object):
                     sig_val = self.sig_value('0', field.sig_type, field.length)
                     s += self.check_value(signal_field[i], sig_val, msg)
                 for i, field in enumerate(reg.fields):
-                    s += self.await_stable(signal_field[i], reg.num_cycles, msg)
+                    s += self.await_stable(signal_field[i], reg.pulse_cycles, msg)
                 for i, field in enumerate(reg.fields):
                     sig_val = self.sig_value('0', field.sig_type, field.length)
                     s += self.check_value(signal_field[i], sig_val, msg)
@@ -411,7 +411,7 @@ class Testbench(object):
     def set_check_zero_pulse(self, signal, reg, msg):
         sig_val = self.sig_value('0', reg.sig_type, reg.length)
         s = self.check_value(signal, sig_val, msg)
-        s += self.await_stable(signal, reg.num_cycles, msg)
+        s += self.await_stable(signal, reg.pulse_cycles, msg)
         s += self.check_value(signal, sig_val, msg)
         s += self.await_value(signal, self.sig_value(reg.reset, reg.sig_type, reg.length), msg)
         return s
@@ -472,9 +472,9 @@ class Testbench(object):
                     s += self.log_hdr("Check all bit fields {}".format(field.name))
                     s += '\n'
                     if field.sig_type == 'sl':
-                        s += self.check_bit_pulse_sl(c_addr, signal_field, field, msg, field.pos_low, reg.num_cycles)
+                        s += self.check_bit_pulse_sl(c_addr, signal_field, field, msg, field.pos_low, reg.pulse_cycles)
                     elif field.sig_type in ['slv', 'default']:
-                        s += self.check_bit_pulse_slv(c_addr, signal_field, field, msg, field.pos_low, reg.num_cycles)
+                        s += self.check_bit_pulse_slv(c_addr, signal_field, field, msg, field.pos_low, reg.pulse_cycles)
                     s += '\n'
         # For consistant line endings
         if reg.sig_type != 'fields':
@@ -525,7 +525,7 @@ class Testbench(object):
 
     def check_bit_pulse_slv(self, c_addr, signal, reg, msg, offset=0, clk_cycles=None):
         if clk_cycles is None:
-            clk_cycles = reg.num_cycles
+            clk_cycles = reg.pulse_cycles
         reset = reg.reset
         s = 'for i in 0 to {} loop\n'.format(reg.length - 1)
         if offset > 0:
@@ -574,7 +574,7 @@ class Testbench(object):
 
     def check_bit_pulse_sl(self, c_addr, signal, reg, msg, offset=0, clk_cycles=None):
         if clk_cycles is None:
-            clk_cycles = reg.num_cycles
+            clk_cycles = reg.pulse_cycles
         reset = reg.reset
         sig_val = self.sig_value('1', 'sl')
         bus_val = self.sig_value(hex(1 << offset), 'default')

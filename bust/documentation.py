@@ -40,7 +40,7 @@ class Documentation(object):
         for i, reg in enumerate(self.module.registers):
             p = str(i) + " & "
             p += utf8tolatex(reg.name) + " & "
-            p += reg.mode.upper() + " & "
+            p += reg.mode.upper() + reg.return_stall_string() + " & "
             p += r"\texttt{"
             p += '0x{0:0{1}X}'.format(reg.address, int(self.module.addr_width/4)) + "} & "
             p += reg.sig_type.upper() + " & "
@@ -58,7 +58,9 @@ class Documentation(object):
             s += r"\begin{register}{H}{" + utf8tolatex(reg.name) + " - "
             s += reg.mode.upper()
             if reg.mode.lower() == "pulse":
-                s += " for " + str(reg.num_cycles) + " cycles - "
+                s += " for " + str(reg.pulse_cycles) + " cycles "
+            if reg.stall:
+                s += " - STALL for {} cycles".format(reg.stall_cycles)
             s += "}{" + '0x{0:0{1}X}'.format(reg.address, int(self.module.addr_width/4))
             s += "}"
 
