@@ -170,6 +170,15 @@ class Register:
         else:
             return 0
 
+    def get_mode(self):
+        """ Get the register mode in r/w/rw format - pulse = w """
+        if self.mode == 'pulse':
+            return 'w'
+        elif self.mode == 'ro':
+            return 'r'
+        else:
+            return self.mode
+
 
 class ModuleDataBitsExceeded(Exception):
     """! @brief Raised when the specified module data bits are exceeded

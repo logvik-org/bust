@@ -12,7 +12,7 @@ class BusHolder():
     def __init__(self, bus_type):
         self.sett, self.bus, self.mod, self.tb, self.doc, self.hdr = self.load_bus(bus_type)
 
-    def __repr__(self):
+    def get_type(self):
         return self.bus.bus_type
 
     @staticmethod
@@ -27,6 +27,9 @@ class BusHolder():
         doc = Documentation(mod)
         hdr = Header(mod)
         return sett, bus, mod, tb, doc, hdr
+
+    def __repr__(self):
+        return self.get_type()
 
 class Test_Suite(unittest.TestCase):
     maxDiff = None
@@ -109,6 +112,11 @@ class Test_Suite(unittest.TestCase):
                 with open('example/example_{0}/header/example_{0}.py'.format(holder.bus.bus_type)) as f:
                     string = f.read()
                 self.assertEqual(holder.hdr.return_python_header(), string, "python header must match manual file")
+
+                if holder.get_type() == 'ipbus':
+                    with open('example/example_{0}/header/example_{0}.xml'.format(holder.bus.bus_type)) as f:
+                        string = f.read()
+                    self.assertEqual(holder.hdr.return_ipbus_addr_table(), string, "python header must match manual file")
 
     ############## Header Testing ##################
 

@@ -97,5 +97,33 @@ class Header(object):
                     s += indent_string(reg.name.upper() + "_" + field.name.upper() + "_MASK = ", 2)
                     s += str(hex(pow(2, field.length) - 1 << field.pos_low)) + "\n"
                     s += "\n"
+        return s
 
+    def return_ipbus_addr_table(self):
+        s = '<?xml version="1.0" encoding="ISO-8859-1"?>\n'
+        s += '<node id="{}">\n'.format(self.module.name)
+
+        for reg in self.module.registers:
+            par = '<node id="{}" address="0x{:08X}" permission="{}" description="{}" parameters="reset={}'.format(reg.name, reg.address,
+                                                                                                                   reg.get_mode(), reg.description,
+                                                                                                                   reg.reset)
+
+            if reg.mode == 'pulse':
+                par += ';pulse_cycles={}'.format(reg.num_cycles)
+            if reg.sig_type == 'fields':
+                par += '">\n'
+            else:
+                par += '"/>\n'
+
+            if reg.sig_type == 'fields':
+                for field in reg.fields:
+                    par2 = '<node id="{}" mask="{}" description="{}" parameters="reset={}"/>\n'.format(field.name, hex(field.get_mask()),
+                                                                                                      field.description, field.reset)
+                    par += indent_string(par2, 2)
+
+                par += '</node>\n'
+
+            s += indent_string(par, 2)
+
+        s += '</node>'
         return s

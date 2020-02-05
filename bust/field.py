@@ -31,6 +31,9 @@ class Field(object):
         elif self.sig_type == 'slv':
             return str(self.pos_high) + ' downto ' + str(self.pos_low)
 
+    def get_mask(self):
+        return pow(2, self.length) - 1 << self.pos_low
+
     def get_dictionary(self, reset, description):
         dict = OrderedDict()
         dict['name'] = self.name

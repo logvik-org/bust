@@ -94,6 +94,9 @@ def generate_output(settings, bus, module, header, documentation, testbench, gen
             write_string_to_file(header.return_cpp_header(), filename, mod_header, gen_settings['force_ow'])
             filename = '{}.py'.format(module.name)
             write_string_to_file(header.return_python_header(), filename, mod_header, gen_settings['force_ow'])
+            if bus.bus_type == 'ipbus':
+                filename = '{}.xml'.format(module.name)
+                write_string_to_file(header.return_ipbus_addr_table(), filename, mod_header, gen_settings['force_ow'])
 
         except Exception:
             logger.error("ERROR: Could not generate Module Include Files")

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<node id="example_ipbus">
+    <node id="reg0" address="0x00000000" permission="rw" description="RW std_logic register that resets to 0x0" parameters="reset=0x0"/>
+    <node id="reg1" address="0x00000004" permission="rw" description="RW std_logic register that resets to 0x1" parameters="reset=0x1"/>
+    <node id="reg2" address="0x00000008" permission="r" description="RO std_logic register" parameters="reset=0x0"/>
+    <node id="reg3" address="0x0000000C" permission="rw" description="RW std_logic_vector[7:0] register that resets to 0x3" parameters="reset=0x3"/>
+    <node id="reg4" address="0x00000010" permission="r" description="RO std_logic_vector[13:0]" parameters="reset=0x0"/>
+    <node id="reg5" address="0x00000014" permission="rw" description="Default RW register that resets to 0xFFFFFFFF" parameters="reset=0xffffffff"/>
+    <node id="reg6" address="0x00000018" permission="r" description="Default RO register" parameters="reset=0x0"/>
+    <node id="reg7" address="0x0000001C" permission="rw" description="RW register that have multiple fields" parameters="reset=0xad7">
+        <node id="field0" mask="0x1" description="std_logic that resets to 0x1" parameters="reset=0x1"/>
+        <node id="field1" mask="0x1e" description="std_logic_vector[3:0] that resets to 0xb is not a valid reset value" parameters="reset=0xb"/>
+        <node id="field2" mask="0x20" description="std_logic that resets to 0x1" parameters="reset=0x0"/>
+        <node id="field3" mask="0x1fffc0" description="std_logic_vector[14:0] that resets to 0x2b" parameters="reset=0x2b"/>
+    </node>
+    <node id="reg8" address="0x00000020" permission="r" description="RO register with multiple types of fields" parameters="reset=0x0">
+        <node id="field0" mask="0x1" description="std_logic field" parameters="reset=0x0"/>
+        <node id="field1" mask="0xffffe" description="std_logic_vector[18:0] field" parameters="reset=0x0"/>
+        <node id="field2" mask="0x100000" description="std_logic field" parameters="reset=0x0"/>
+        <node id="field3" mask="0xe00000" description="std_logic_vector[2:0] field" parameters="reset=0x0"/>
+    </node>
+    <node id="reg9" address="0x00000024" permission="w" description="PULSE std_logic register that resets to 0x1" parameters="reset=0x1;pulse_cycles=4"/>
+    <node id="reg10" address="0x00000028" permission="w" description="PULSE std_logic_vector[3:0] register that resets to 0xA" parameters="reset=0xa;pulse_cycles=1"/>
+    <node id="reg11" address="0x0000002C" permission="w" description="PULSE register with two fields" parameters="reset=0x3;pulse_cycles=50">
+        <node id="field0" mask="0x7fff" description="std_logic_vector[14:0] field that resets to 0x3" parameters="reset=0x3"/>
+        <node id="field1" mask="0x8000" description="std_logic field that resets to 0x0" parameters="reset=0x0"/>
+    </node>
+</node>
