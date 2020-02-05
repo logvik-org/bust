@@ -20,7 +20,7 @@ class clean(Command):
 
 setup(
     name='bust',
-    version='0.9.0-dev',
+    version='0.9',
     packages=find_packages(),
     license='MIT',
     install_requires=[
