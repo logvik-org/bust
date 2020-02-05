@@ -39,6 +39,10 @@ architecture behavior of example_ipbus_ipb_pif is
   signal reg_wren       : std_logic := '0';
   signal wr_ack, rd_ack : std_logic := '0';
   signal wr_err, rd_err : std_logic := '0';
+  signal ack_d          : std_logic := '0';
+  signal wr_stall_ack   : std_logic := '0';
+  signal rd_stall_ack   : std_logic := '0';
+  signal stall          : std_logic := '0';
   signal reg_data_out   : t_example_ipbus_data;
 
 begin
@@ -47,7 +51,7 @@ begin
   ipb_rw_regs <= ipb_rw_regs_i;
   ipb_pulse_regs <= ipb_pulse_regs_i;
 
-  reg_wren <= (ipb_in.ipb_strobe and ipb_in.ipb_write) and not (wr_ack or wr_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err);
+  reg_wren <= (ipb_in.ipb_strobe and ipb_in.ipb_write) and not (wr_ack or wr_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err or wr_stall_ack or stall);
 
   p_write : process(clk)
   begin
@@ -66,6 +70,7 @@ begin
 
         wr_ack <= '0';
         wr_err <= '0';
+        wr_stall_ack <= '0';
 
         if (reg_wren) then
 
@@ -82,7 +87,7 @@ begin
           elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG3), 32) then
 
             ipb_rw_regs_i.reg3 <= ipb_in.ipb_wdata(7 downto 0);
-            wr_ack <= '1';
+            wr_stall_ack <= '1';
 
           elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG5), 32) then
 
@@ -181,7 +186,7 @@ begin
   end process p_pulse_reg11;
 
 
-  reg_rden <= (ipb_in.ipb_strobe and (not ipb_in.ipb_write)) and not (rd_ack or rd_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err);
+  reg_rden <= (ipb_in.ipb_strobe and (not ipb_in.ipb_write)) and not (rd_ack or rd_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err or rd_stall_ack or stall);
 
   p_read : process(clk)
   begin
@@ -195,6 +200,7 @@ begin
         -- default values
         rd_ack <= '0';
         rd_err <= '0';
+        rd_stall_ack <= '0';
 
         if (reg_rden) then
 
@@ -216,7 +222,7 @@ begin
           elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG3), 32) then
 
             reg_data_out(7 downto 0) <= ipb_rw_regs_i.reg3;
-            rd_ack <= '1';
+            rd_stall_ack <= '1';
 
           elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG4), 32) then
 
@@ -260,6 +266,35 @@ begin
     end if;
   end process p_read;
 
+  p_stall : process(clk)
+    variable v_cnt : natural := 0;
+  begin
+    if rising_edge(clk) then
+      if reset = '1' then
+        stall <= '0';
+      else
+        ack_d <= '0';
+        if wr_stall_ack = '1' then
+          stall <= '1';
+          if unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG3), 32) then
+            v_cnt := 28;
+          end if;
+        elsif rd_stall_ack = '1' then
+          stall <= '1';
+          if unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG3), 32) then
+            v_cnt := 28;
+          end if;
+        elsif v_cnt > 0 then
+          v_cnt := v_cnt - 1;
+          stall <= '1';
+        elsif stall then
+          stall <= '0';
+          ack_d <= '1';
+        end if;
+      end if;
+    end if;
+  end process p_stall ;
+
   p_output : process(all)
   begin
     if reset = '1' then
@@ -271,12 +306,14 @@ begin
       ipb_out_i.ipb_ack <= '0';
       ipb_out_i.ipb_err <= '0';
 
-      if (rd_ack or rd_err) then
+      if (rd_ack or rd_err) and (not stall) then
         ipb_out_i.ipb_ack <= rd_ack;
         ipb_out_i.ipb_err <= rd_err;
-      elsif (wr_ack or wr_err) then
+      elsif (wr_ack or wr_err) and (not stall) then
         ipb_out_i.ipb_ack <= wr_ack;
         ipb_out_i.ipb_err <= wr_err;
+      elsif ack_d then
+        ipb_out_i.ipb_ack <= ack_d;
       end if;
 
     end if;

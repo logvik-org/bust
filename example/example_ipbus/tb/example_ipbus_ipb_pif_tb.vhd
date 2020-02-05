@@ -58,9 +58,10 @@ architecture tb of example_ipbus_ipb_pif_tb is
 
 begin  -- architecture tb
 
-  ipbus_bfm_config.clock_period <= C_CLK_PERIOD;
-  ipbus_bfm_config.setup_time   <= C_CLK_PERIOD/8;
-  ipbus_bfm_config.hold_time    <= C_CLK_PERIOD/8;
+  ipbus_bfm_config.clock_period    <= C_CLK_PERIOD;
+  ipbus_bfm_config.setup_time      <= C_CLK_PERIOD/8;
+  ipbus_bfm_config.hold_time       <= C_CLK_PERIOD/8;
+  ipbus_bfm_config.max_wait_cycles <= 256;
 
   ipb_in.ipb_wdata  <= ipbus_if.wdata;
   ipb_in.ipb_write  <= ipbus_if.wr;

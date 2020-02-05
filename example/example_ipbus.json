@@ -47,7 +47,8 @@
                 "address": "0xc",
                 "length": 8,
                 "reset": "0x3",
-                "description": "RW std_logic_vector[7:0] register that resets to 0x3"
+                "stall_cycles": 30,
+                "description": "RW std_logic_vector[7:0] register that resets to 0x3. Reading and writing from this register is stalling the bus for 30 extra clock cycles."
             },
             {
                 "name": "reg4",
