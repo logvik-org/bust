@@ -203,6 +203,7 @@ begin
         rd_stall_ack <= '0';
 
         if (reg_rden) then
+          reg_data_out <= (others => '0');
 
           if unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG0), 32) then
 
