@@ -215,11 +215,11 @@ class Testbench(object):
                            'signal {0}_out        : {6};\n'
                            '').format(self.bus.short_name,
                                       self.module.name,
-                                      self.bus.get_clk_name(),
-                                      self.bus.get_reset_name(),
+                                      self.bus.clk_name,
+                                      self.bus.reset_name,
                                       init_reset,
-                                      self.bus.get_in_type(),
-                                      self.bus.get_out_type())
+                                      self.bus.in_type,
+                                      self.bus.out_type)
         s += '\n'
 
         s += indent_string(self.bus.get_uvvm_signals())
@@ -239,7 +239,7 @@ class Testbench(object):
 
         s += indent_string(('-- clock generator\n'
               'clock_generator({}_{}, C_CLK_PERIOD);\n\n').format(self.bus.short_name,
-                                                                  self.bus.get_clk_name()))
+                                                                  self.bus.clk_name))
 
         s += indent_string(('-- main testbench\n'
               'p_main : process\n\n'))
@@ -270,7 +270,7 @@ class Testbench(object):
         else:
             pulse_reset = "'1'"
         par = 'gen_pulse({}_{}, {}, 500 ns, BLOCKING, "Reset for 500 ns");\n'.format(self.bus.short_name,
-                                                                                    str.strip(self.bus.get_reset_name()),
+                                                                                    str.strip(self.bus.reset_name),
                                                                                     pulse_reset)
 
         s += indent_string(par, 2)

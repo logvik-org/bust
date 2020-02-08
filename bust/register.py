@@ -1,8 +1,10 @@
-from bust.utils import indent_string
-from bust.utils import add_line_breaks
+from bust.exceptions import \
+    ModuleDataBitsExceeded, UndefinedRegisterType, \
+    UndefinedFieldType, InvalidRegisterFormat, \
+    InvalidFieldFormat, InvalidStallValue
 from bust.field import Field
-from bust.vhdl import is_valid_VHDL
-from bust.vhdl import is_unique
+from bust.utils import add_line_breaks, indent_string
+from bust.vhdl import is_unique, is_valid_VHDL
 
 
 class Register:
@@ -195,56 +197,3 @@ class Register:
     def get_stall_cycles_str(self):
         return str(self.stall_cycles-2)
 
-
-class ModuleDataBitsExceeded(Exception):
-    """! @brief Raised when the specified module data bits are exceeded
-
-    """
-
-    def __init__(self, register, reglength, mod_data_length):
-        msg = "Register length exceeded module data length by "
-        msg += str(reglength - mod_data_length)
-        msg += " in register " + register + "\n"
-        msg += 'Module length: ' + str(mod_data_length) + '\n'
-        msg += 'Register length: ' + str(reglength)
-
-        super().__init__(msg)
-
-
-class UndefinedRegisterType(RuntimeError):
-    """! @brief Raised when trying to parse a register type that is not supported
-
-    """
-
-    def __init__(self, regtype):
-        msg = "Could not parse register type: " + regtype
-        super().__init__(msg)
-
-
-class UndefinedFieldType(RuntimeError):
-    """! @brief Raised when trying to parse an field type that is not supported
-
-    """
-
-    def __init__(self, sig_type):
-        msg = "Could not parse field type: " + sig_type
-        super().__init__(msg)
-
-
-class InvalidRegisterFormat(RuntimeError):
-    """! @brief Raised when register has some unspecified format error"""
-
-    def __init__(self, msg):
-        msg = 'Invalid register format: ' + msg
-        super().__init__(msg)
-
-
-class InvalidFieldFormat(RuntimeError):
-    def __init__(self, msg):
-        msg = 'Invalid field format: ' + msg
-        super().__init__(msg)
-
-class InvalidStallValue(RuntimeError):
-    def __init__(self, val):
-        msg = 'Invalid stall value: {}. Must be between 2 and 255.'.format(val)
-        super().__init__(msg)

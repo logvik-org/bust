@@ -23,7 +23,7 @@ class BusHolder():
         sett = Settings(json_file, json['settings'])
         bus = Bus(json['bus'])
         mod = Module(json['module'], bus, sett)
-        tb = Testbench(mod, bus, sett)
+        tb = Testbench(mod, bus.get_VHDL_generator(), sett)
         doc = Documentation(mod)
         hdr = Header(mod)
         return sett, bus, mod, tb, doc, hdr

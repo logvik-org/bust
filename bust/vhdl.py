@@ -3,6 +3,11 @@ import re
 from bust.utils import indent_string
 from bust.utils import is_mixed
 
+def lib_declaration():
+    s = 'library ieee;\n'
+    s += 'use ieee.std_logic_1164.all;\n'
+    s += 'use ieee.numeric_std.all;\n\n'
+    return s
 
 def sync_process(clk_name, reset_name, process_name, reset_string, logic_string, active_low=True, variables=None):
     s = process_name + " : process(" + clk_name + ")\n"

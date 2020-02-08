@@ -73,7 +73,7 @@ def main():
                 module = Module(json_dict['module'], bus, settings)
                 header = Header(module)
                 documentation = Documentation(module)
-                testbench = Testbench(module, bus, settings)
+                testbench = Testbench(module, bus.get_VHDL_generator(), settings)
 
             except (FormatError, InvalidAddress, InvalidRegister, InvalidResetMode, InvalidBusType, NotImplementedError) as e:
                 logger.error(str(e))
