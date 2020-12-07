@@ -132,8 +132,7 @@ class Testbench(object):
         s += 'vsim -quiet '
         if self.settings.coverage:
             s += '-coverage '
-        s += '{0}.{0}_{1}_pif_tb\n'.format(self.module.name, self.bus.short_name)
-        s += 'add wave -position insertpoint sim:/{}_{}_pif_tb/*\n\n'.format(self.module.name, self.bus.short_name)
+        s += '{0}.{0}_{1}_pif_tb\n\n'.format(self.module.name, self.bus.short_name)
 
         s += ('# Trick to avoid metastability warnings\n'
               'quietly set NumericStdNoWarnings 1\n'

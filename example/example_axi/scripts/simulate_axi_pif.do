@@ -73,7 +73,6 @@ eval vcom $vcom_args $vhdldirectives $example_axi_path/tb/example_axi_axi_pif_tb
 # Simulate
 ###########################################################################
 vsim -quiet -coverage example_axi.example_axi_axi_pif_tb
-add wave -position insertpoint sim:/example_axi_axi_pif_tb/*
 
 # Trick to avoid metastability warnings
 quietly set NumericStdNoWarnings 1

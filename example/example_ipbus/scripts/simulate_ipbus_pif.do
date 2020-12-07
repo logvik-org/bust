@@ -77,7 +77,6 @@ eval vcom $vcom_args $vhdldirectives $example_ipbus_path/tb/example_ipbus_ipb_pi
 # Simulate
 ###########################################################################
 vsim -quiet -coverage example_ipbus.example_ipbus_ipb_pif_tb
-add wave -position insertpoint sim:/example_ipbus_ipb_pif_tb/*
 
 # Trick to avoid metastability warnings
 quietly set NumericStdNoWarnings 1
