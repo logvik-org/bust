@@ -1039,4 +1039,3 @@ class BusVHDLGen():
     def uvvm_check(self, reg_addr, data_exp, string):
         s = 'check(f_addr(g_{}_baseaddr, {}), {}, "{}");\n'.format(self.short_name, reg_addr, data_exp, string)
         return s
-

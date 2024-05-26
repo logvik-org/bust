@@ -196,4 +196,3 @@ class Register:
 
     def get_stall_cycles_str(self):
         return str(self.stall_cycles-2)
-
