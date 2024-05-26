@@ -199,7 +199,7 @@ class Module:
 
         mod["register"] = []
 
-        for i, reg in enumerate(self.registers):
+        for _, reg in enumerate(self.registers):
             reg_dic = OrderedDict()
 
             reg_dic["name"] = reg.name
@@ -231,7 +231,11 @@ class Module:
             mod["register"].append(reg_dic)
 
         dic["module"] = mod
-        return json.dumps(dic, indent=4)
+
+        s = json.dumps(dic, indent=4)
+        s += "\n"
+
+        return s
 
     def return_module_pkg_VHDL(self):
         gen_obj = self._get_vhdl_gen_obj()
