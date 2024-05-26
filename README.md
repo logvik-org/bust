@@ -20,11 +20,12 @@ bust currently supports these bus standards:
 
 bust is thoroughly tested with python 3.6.8 but should work with the following versions:
 
-- python 3.4
-- python 3.5
-- python 3.6
+- python 3.6.8
 - python 3.7
 - python 3.8
+- python 3.9
+- python 3.10
+- python 3.11
 
 bust does NOT support python 2.7 and neither should you!
 
