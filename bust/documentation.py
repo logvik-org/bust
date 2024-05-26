@@ -4,9 +4,7 @@ from bust._version import __VERSION__
 
 
 class Documentation(object):
-    """Class for auto-generation of module documentation
-
-    """
+    """Class for auto-generation of module documentation"""
 
     def __init__(self, module):
         self.module = module
@@ -42,11 +40,14 @@ class Documentation(object):
             p += utf8tolatex(reg.name) + " & "
             p += reg.mode.upper() + reg.return_stall_string() + " & "
             p += r"\texttt{"
-            p += '0x{0:0{1}X}'.format(reg.address, int(self.module.addr_width/4)) + "} & "
+            p += (
+                "0x{0:0{1}X}".format(reg.address, int(self.module.addr_width / 4))
+                + "} & "
+            )
             p += reg.sig_type.upper() + " & "
             p += str(reg.length) + " & "
             p += r"\texttt{"
-            p += '0x' + format(int(reg.reset, 16), 'X') + "} \\\\\n"
+            p += "0x" + format(int(reg.reset, 16), "X") + "} \\\\\n"
             p += r"\hline" + "\n"
             s += indent_string(p, 3)
         s += tex_table_bot
@@ -61,7 +62,9 @@ class Documentation(object):
                 s += " for " + str(reg.pulse_cycles) + " cycles "
             if reg.stall:
                 s += " - STALL for {} cycles".format(reg.stall_cycles)
-            s += "}{" + '0x{0:0{1}X}'.format(reg.address, int(self.module.addr_width/4))
+            s += "}{" + "0x{0:0{1}X}".format(
+                reg.address, int(self.module.addr_width / 4)
+            )
             s += "}"
 
             s += indent_string(r"\par ")
@@ -81,7 +84,7 @@ class Documentation(object):
                 if reg.length < 2:
                     p += str(int(reg.reset, 16))
                 else:
-                    p += '{0x' + format(int(reg.reset, 16), 'X') + "}"
+                    p += "{0x" + format(int(reg.reset, 16), "X") + "}"
                 p += "}\n"
 
                 s += indent_string(p)
@@ -94,7 +97,7 @@ class Documentation(object):
                     if field.length < 2:
                         p += str(int(field.reset, 16))
                     else:
-                        p += '{0x' + format(int(field.reset, 16), 'X') + "}"
+                        p += "{0x" + format(int(field.reset, 16), "X") + "}"
                     p += "}\n"
                     s += indent_string(p)
 
@@ -118,6 +121,8 @@ class Documentation(object):
             s += r"\end{register}" + "\n\n"
 
         s += "\end{document}"
+        s += "\n"
+
         return s
 
 

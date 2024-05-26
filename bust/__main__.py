@@ -38,112 +38,130 @@ from bust.documentation import Documentation
 from bust.settings import Settings
 from bust.testbench import Testbench
 from bust.generation import generate_output
-from bust.exceptions import FormatError, InvalidAddress, InvalidRegister, InvalidBusType, InvalidResetMode
+from bust.exceptions import (
+    FormatError,
+    InvalidAddress,
+    InvalidRegister,
+    InvalidBusType,
+    InvalidResetMode,
+)
 from bust._version import __VERSION__
 
 
 def main():
     args = docopt(__doc__, help=True, version="bust " + __VERSION__)
-    logging.basicConfig(filename='debug.log', filemode='w', datefmt='%a, %d %b %Y %H:%M:%S',
-                        format='%(asctime)s %(name)-15s %(levelname)-8s %(message)s', level=logging.DEBUG)
+    logging.basicConfig(
+        filename="debug.log",
+        filemode="w",
+        datefmt="%a, %d %b %Y %H:%M:%S",
+        format="%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
+        level=logging.DEBUG,
+    )
     # Define a handler which writes INFO or higher to sys.stderr
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
     # Define a simpler format for sys.stderr
-    formatter = logging.Formatter('%(message)s')
+    formatter = logging.Formatter("%(message)s")
     console.setFormatter(formatter)
-    logging.getLogger('').addHandler(console)
+    logging.getLogger("").addHandler(console)
     logger = logging.getLogger(__name__)
 
-    if args['-a']:
+    if args["-a"]:
         # TODO
         raise NotImplementedError("The address update feature is not yet implemented")
 
     try:
 
-        if args['FILE'] is not None:
-            json_file = args['FILE']
+        if args["FILE"] is not None:
+            json_file = args["FILE"]
 
-            logger.info('Parsing file: ' + json_file + '...')
+            logger.info("Parsing file: " + json_file + "...")
 
             try:
                 json_dict = json_parser(json_file)
-                settings = Settings(json_file, json_dict['settings'])
-                bus = Bus(json_dict['bus'])
-                module = Module(json_dict['module'], bus, settings)
+                settings = Settings(json_file, json_dict["settings"])
+                bus = Bus(json_dict["bus"])
+                module = Module(json_dict["module"], bus, settings)
                 header = Header(module)
                 documentation = Documentation(module)
                 testbench = Testbench(module, bus.get_VHDL_generator(), settings)
 
-            except (FormatError, InvalidAddress, InvalidRegister, InvalidResetMode, InvalidBusType, NotImplementedError) as e:
+            except (
+                FormatError,
+                InvalidAddress,
+                InvalidRegister,
+                InvalidResetMode,
+                InvalidBusType,
+                NotImplementedError,
+            ) as e:
                 logger.error(str(e))
                 exit(1)
 
             except Exception as e:
-                logger.error('\nERROR:\nAn unknown error has occurred...')
+                logger.error("\nERROR:\nAn unknown error has occurred...")
                 logger.debug(str(e))
                 exit(1)
 
             # File generation settings
             gs = {}
 
-            if args['-o'] is None:
-                gs['dir'] = settings.project_path
+            if args["-o"] is None:
+                gs["dir"] = settings.project_path
             else:
-                gs['dir'] = args['-o']
+                gs["dir"] = args["-o"]
 
             # Check if force overwrite is set
-            gs['force_ow'] = False
-            gs['force_ow_top'] = False
-            if args['-F']:
-                gs['force_ow'] = True
-                gs['force_ow_top'] = True
-            elif args['-f']:
-                gs['force_ow'] = True
+            gs["force_ow"] = False
+            gs["force_ow_top"] = False
+            if args["-F"]:
+                gs["force_ow"] = True
+                gs["force_ow_top"] = True
+            elif args["-f"]:
+                gs["force_ow"] = True
 
             # Check if top-level are to be updated
-            gs['update_top'] = False
-            if args['-u']:
-                gs['update_top'] = True
-                gs['force_ow_top'] = True
+            gs["update_top"] = False
+            if args["-u"]:
+                gs["update_top"] = True
+                gs["force_ow_top"] = True
 
-            if bus.bus_type == 'axi':
-                gs['gen_bus'] = True
+            if bus.bus_type == "axi":
+                gs["gen_bus"] = True
             else:
-                gs['gen_bus'] = False
-            if args['-b']:
-                gs['gen_bus'] = False
+                gs["gen_bus"] = False
+            if args["-b"]:
+                gs["gen_bus"] = False
 
-            gs['gen_doc'] = True
-            gs['gen_pdf'] = True
-            if args['-d']:
-                gs['gen_doc'] = False
-                gs['gen_pdf'] = False
-            elif args['-p']:
-                gs['gen_pdf'] = False
+            gs["gen_doc"] = True
+            gs["gen_pdf"] = True
+            if args["-d"]:
+                gs["gen_doc"] = False
+                gs["gen_pdf"] = False
+            elif args["-p"]:
+                gs["gen_pdf"] = False
 
-            gs['gen_tb'] = True
-            if args['-t']:
-                gs['gen_tb'] = False
+            gs["gen_tb"] = True
+            if args["-t"]:
+                gs["gen_tb"] = False
 
-            gs['gen_header'] = True
-            if args['-i']:
-                gs['gen_header'] = False
+            gs["gen_header"] = True
+            if args["-i"]:
+                gs["gen_header"] = False
 
-            gs['gen_mod'] = True
-            if args['-m']:
-                gs['gen_mod'] = False
+            gs["gen_mod"] = True
+            if args["-m"]:
+                gs["gen_mod"] = False
 
             generate_output(settings, bus, module, header, documentation, testbench, gs)
 
-        elif args['-c'] and args['FILE'] is not None:
+        elif args["-c"] and args["FILE"] is not None:
             raise NotImplementedError("The menu system is removed")
 
-        elif args['-e'] and args['FILE'] is not None:
+        elif args["-e"] and args["FILE"] is not None:
             raise NotImplementedError("The menu system is removed")
 
     except Exception:
-        logger.exception('An unresolvable error has occurred...')
+        logger.exception("An unresolvable error has occurred...")
         exit(1)
 
     sys.exit(0)
