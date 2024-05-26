@@ -101,6 +101,7 @@ class BusVHDLGen:
             s += "\n"
 
             s += "end " + self.bus_type + "_pkg;"
+            s += "\n"
 
         return s
 
@@ -704,6 +705,7 @@ class BusVHDLGen:
         s += "\n"
 
         s += "end behavior;"
+        s += "\n"
 
         return s
 
@@ -1075,6 +1077,7 @@ class BusVHDLGen:
         s += "\n"
 
         s += "end behavior;"
+        s += "\n"
 
         return s
 

@@ -34,6 +34,7 @@ class ModuleVHDLGen:
         s += "\n"
 
         s += "end package " + self.name + "_pif_pkg;"
+        s += "\n"
 
         return s
 
@@ -338,6 +339,7 @@ class ModuleVHDLGen:
 
         s += "\n"
         s += "end architecture behavior;"
+        s += "\n"
 
         return s
 

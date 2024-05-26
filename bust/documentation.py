@@ -121,6 +121,8 @@ class Documentation(object):
             s += r"\end{register}" + "\n\n"
 
         s += "\end{document}"
+        s += "\n"
+
         return s
 
 

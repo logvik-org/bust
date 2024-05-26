@@ -35,6 +35,7 @@ class Testbench(object):
         string += "bitvis_vip_scoreboard"
         if self.bus.bus_type == "axi":
             string += "\nbitvis_vip_axilite"
+        string += "\n"
         return string
 
     def return_tcl_script(self):
@@ -198,6 +199,8 @@ class Testbench(object):
                 ).format(self.module.name, self.bus.short_name)
             s += "coverage report\n"
             s += "coverage report -html -htmldir covhtmlreport -code bcefst"
+
+        s += "\n"
 
         return s
 
