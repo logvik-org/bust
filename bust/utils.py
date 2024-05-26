@@ -42,7 +42,7 @@ def json_parser(filename='module.json'):
 
 
 def fix_last_indent_only_line(string, tabs):
-    """! @brief Will edit the last line if it only contains indentation to an 
+    """! @brief Will edit the last line if it only contains indentation to an
     empty string
     """
     string_list = re.split(r"\n", string)
