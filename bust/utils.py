@@ -14,8 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def indent_string(string, tabs=1, break_line=False):
-    """! @brief adds indent spaces to all lines in string
-    """
+    """! @brief adds indent spaces to all lines in string"""
 
     indent = spaces_in_tab * tabs * (" ")
     # Add indent to every line and recreate string
@@ -31,11 +30,11 @@ def indent_string(string, tabs=1, break_line=False):
     string = fix_last_indent_only_line(string, tabs)
 
     if break_line:
-        string += '\n'
+        string += "\n"
     return string
 
 
-def json_parser(filename='module.json'):
+def json_parser(filename="module.json"):
     with open(filename) as json_data:
         d = json.load(json_data)
         return d
@@ -47,7 +46,7 @@ def fix_last_indent_only_line(string, tabs):
     """
     string_list = re.split(r"\n", string)
     if string_list[-1] == (spaces_in_tab * tabs * (" ")):
-        string_list[-1] = ''
+        string_list[-1] = ""
 
     string = "\n".join(string_list)
     return string
@@ -58,9 +57,10 @@ def compare_JSON(json1, json2, raise_error=False):
     extra argument can be used to force the function to raise an error with the line
     the difference was observed.
     """
-    for linenumber, (line1, line2) in enumerate(zip(json1.splitlines(),
-                                                    json2.splitlines())):
-        if (line1 != line2):
+    for linenumber, (line1, line2) in enumerate(
+        zip(json1.splitlines(), json2.splitlines())
+    ):
+        if line1 != line2:
             if raise_error:
                 raise Exception("JSON differs at line: " + str(linenumber))
             return False
@@ -69,9 +69,7 @@ def compare_JSON(json1, json2, raise_error=False):
 
 
 def write_string_to_file(string, output_file, output_dir, force_overwrite=False):
-    """! @brief Write string to file
-
-    """
+    """! @brief Write string to file"""
 
     # Make sure output directory exists
     if not os.path.isdir(output_dir):
@@ -81,13 +79,16 @@ def write_string_to_file(string, output_file, output_dir, force_overwrite=False)
 
     # Check if file exist
     if os.path.isfile(joined):
-        if not force_overwrite and input("Do you want to overwrite " + joined + "? (y/N):").upper() != "Y":
+        if (
+            not force_overwrite
+            and input("Do you want to overwrite " + joined + "? (y/N):").upper() != "Y"
+        ):
             logger.warning("Did not write " + joined)
             return
 
-    logger.debug('Writing string to ' + joined)
+    logger.debug("Writing string to " + joined)
 
-    with open(joined, 'w') as strfile:
+    with open(joined, "w") as strfile:
         strfile.write(string)
 
 
@@ -97,10 +98,16 @@ def update_module_top_level(existing_file, new_top_level):
         # Read the file and get the user edited parts...
         string_list = analyze_top_level_file(existing_file)
         string = restore_user_in_top_level(string_list, new_top_level)
-        if input("Preview updated top-level before writing to file? (y/N): ").upper() == 'Y':
+        if (
+            input("Preview updated top-level before writing to file? (y/N): ").upper()
+            == "Y"
+        ):
             print(string)
 
-        if input("Are you sure want to update " + existing_file + "? (Y/n): ").upper() == 'N':
+        if (
+            input("Are you sure want to update " + existing_file + "? (Y/n): ").upper()
+            == "N"
+        ):
             raise Exception("Cancelled update. Will keep existing top-level module.")
         else:
             return string
@@ -176,14 +183,18 @@ def restore_user_in_top_level(user, new_top_level):
 
 
 def splitkeepsep(s, sep):
-    return reduce(lambda acc, elem: acc[:-1] + [acc[-1] + elem] if elem == sep else acc + [elem], re.split("(%s)" % re.escape(sep), s), [])
+    return reduce(
+        lambda acc, elem: acc[:-1] + [acc[-1] + elem] if elem == sep else acc + [elem],
+        re.split("(%s)" % re.escape(sep), s),
+        [],
+    )
 
 
 def cont():
-        try:
-            input("Press enter to continue...")
-        except SyntaxError:
-            pass
+    try:
+        input("Press enter to continue...")
+    except SyntaxError:
+        pass
 
 
 def is_int(s):
@@ -195,6 +206,7 @@ def is_int(s):
 
     try:
         import unicodedata
+
         unicodedata.numeric(s)
         return True
     except (TypeError, ValueError):
@@ -203,12 +215,19 @@ def is_int(s):
     return False
 
 
-def get_int(msg, base=10, range_min=None, range_max=None, range_min_msg=None, range_max_msg=None,
-            default=None):
+def get_int(
+    msg,
+    base=10,
+    range_min=None,
+    range_max=None,
+    range_min_msg=None,
+    range_max_msg=None,
+    default=None,
+):
     while True:
         try:
             s = input(msg)
-            if s == '' and default is not None:
+            if s == "" and default is not None:
                 i = default
             else:
                 i = int(s, base)
@@ -234,29 +253,29 @@ def get_list_choice(msg, ls, case=None, default=None):
             print(msg)
             for i, element in enumerate(ls):
                 if default is not None and i == default:
-                    print(str(i+1) + ': ' + element.upper() + ' - default')
+                    print(str(i + 1) + ": " + element.upper() + " - default")
                 else:
-                    print(str(i+1) + ': ' + element)
-            tmp = input('Select by number: ')
-            if default is not None and tmp == '':
-                select = default+1
+                    print(str(i + 1) + ": " + element)
+            tmp = input("Select by number: ")
+            if default is not None and tmp == "":
+                select = default + 1
             else:
                 select = int(tmp)
             if select < 1 or select > len(ls):
-                print(str(select) + ' is not a valid choice...')
+                print(str(select) + " is not a valid choice...")
             else:
-                if case == 'lower':
-                    return ls[select-1].lower()
-                elif case == 'upper':
-                    return ls[select-1].upper()
+                if case == "lower":
+                    return ls[select - 1].lower()
+                elif case == "upper":
+                    return ls[select - 1].upper()
                 else:
-                    return ls[select-1]
+                    return ls[select - 1]
         except Exception as e:
-            print('That is not a valid choice...')
+            print("That is not a valid choice...")
 
 
 def clear_screen():
-    os.system('cls' if os.name == 'nt' else 'clear')
+    os.system("cls" if os.name == "nt" else "clear")
 
 
 def add_line_breaks(string, min_length):
@@ -267,12 +286,12 @@ def add_line_breaks(string, min_length):
     for i, char in enumerate(string):
         if i > requirement:
             replace = True
-        if replace and char == ' ':
+        if replace and char == " ":
             positions.append(i)
             requirement = i + min_length
             replace = False
     for rep in positions:
-        string = string[:rep] + '\n' + string[rep + 1:]
+        string = string[:rep] + "\n" + string[rep + 1 :]
 
     return string
 
