@@ -1,3 +1,5 @@
+![Workflow status](https://github.com/olagrottvik/bust/actions/workflows/python_tests.yml/badge.svg)
+
 # bust bus tool
 
 Utility for simply creating and modifying VHDL bus slave modules.
