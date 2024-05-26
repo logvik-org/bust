@@ -30,7 +30,7 @@ from docopt import docopt
 import sys
 import logging
 
-from bust.utils import json_parser
+from bust.utils import json_parser, write_string_to_file
 from bust.module import Module
 from bust.bus import Bus
 from bust.header import Header
@@ -65,10 +65,6 @@ def main():
     console.setFormatter(formatter)
     logging.getLogger("").addHandler(console)
     logger = logging.getLogger(__name__)
-
-    if args["-a"]:
-        # TODO
-        raise NotImplementedError("The address update feature is not yet implemented")
 
     try:
 
@@ -152,7 +148,19 @@ def main():
             if args["-m"]:
                 gs["gen_mod"] = False
 
-            generate_output(settings, bus, module, header, documentation, testbench, gs)
+            if args["-a"]:
+                module.update_addresses()
+                json = module.return_JSON(True)
+                try:
+                    write_string_to_file(json, json_file, ".")
+                except Exception as e:
+                    print("Saving failed...")
+                    print(e)
+                    return
+            else:
+                generate_output(
+                    settings, bus, module, header, documentation, testbench, gs
+                )
 
         elif args["-c"] and args["FILE"] is not None:
             raise NotImplementedError("The menu system is removed")
