@@ -20,7 +20,7 @@ bust currently supports these bus standards:
 
 ## Requirements
 
-bust is thoroughly tested with python 3.6.8 but should work with the following versions:
+bust is thoroughly tested with python 3.9.18 but should work with the following versions:
 
 - python 3.6.8
 - python 3.7
