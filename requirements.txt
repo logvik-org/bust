@@ -1,2 +1,9 @@
+bump2version==1.0.1
+bumpversion==0.6.0
+curses-menu==0.5.0
+Deprecated==1.2.14
 docopt==0.6.2
+prettytable==2.5.0
 pylatexenc==2.1
+wcwidth==0.2.13
+wrapt==1.16.0

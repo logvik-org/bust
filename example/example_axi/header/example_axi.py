@@ -1,34 +1,34 @@
 class EXAMPLE_AXI_H:
 
-    """ Register: reg0 """
+    """Register: reg0"""
     REG0_OFFSET = 0x0
     REG0_RESET = 0x0
 
-    """ Register: reg1 """
+    """Register: reg1"""
     REG1_OFFSET = 0x4
     REG1_RESET = 0x1
 
-    """ Register: reg2 """
+    """Register: reg2"""
     REG2_OFFSET = 0x8
     REG2_RESET = 0x0
 
-    """ Register: reg3 """
+    """Register: reg3"""
     REG3_OFFSET = 0xc
     REG3_RESET = 0x3
 
-    """ Register: reg4 """
+    """Register: reg4"""
     REG4_OFFSET = 0x10
     REG4_RESET = 0x0
 
-    """ Register: reg5 """
+    """Register: reg5"""
     REG5_OFFSET = 0x14
     REG5_RESET = 0xffffffff
 
-    """ Register: reg6 """
+    """Register: reg6"""
     REG6_OFFSET = 0x18
     REG6_RESET = 0x0
 
-    """ Register: reg7 """
+    """Register: reg7"""
     REG7_OFFSET = 0x1c
     REG7_RESET = 0xad7
 
@@ -56,7 +56,7 @@ class EXAMPLE_AXI_H:
     REG7_FIELD3_RESET = 0x2b
     REG7_FIELD3_MASK = 0x1fffc0
 
-    """ Register: reg8 """
+    """Register: reg8"""
     REG8_OFFSET = 0x20
     REG8_RESET = 0x0
 
@@ -84,15 +84,15 @@ class EXAMPLE_AXI_H:
     REG8_FIELD3_RESET = 0x0
     REG8_FIELD3_MASK = 0xe00000
 
-    """ Register: reg9 """
+    """Register: reg9"""
     REG9_OFFSET = 0x24
     REG9_RESET = 0x1
 
-    """ Register: reg10 """
+    """Register: reg10"""
     REG10_OFFSET = 0x28
     REG10_RESET = 0xa
 
-    """ Register: reg11 """
+    """Register: reg11"""
     REG11_OFFSET = 0x2c
     REG11_RESET = 0x3
 
@@ -107,4 +107,3 @@ class EXAMPLE_AXI_H:
     REG11_FIELD1_WIDTH = 1
     REG11_FIELD1_RESET = 0x0
     REG11_FIELD1_MASK = 0x8000
-
