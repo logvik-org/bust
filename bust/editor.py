@@ -508,25 +508,3 @@ class Editor(object):
                 if index == i:
                     return True
         return False
-
-
-if __name__ == "__main__":
-    """Debug entry for editor"""
-    from argparse import ArgumentParser
-
-    parser = ArgumentParser(description="Module editor for bust")
-    parser.add_argument(
-        "-e",
-        "--edit",
-        action="store_true",
-        help="Edit an existing module JSON file",
-    )
-    parser.add_argument(
-        "FILE",
-        type=str,
-        help="The JSON file to edit or create",
-    )
-    args = parser.parse_args()
-
-    editor = Editor(args.edit, args.FILE)
-    editor.show_menu()
