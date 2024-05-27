@@ -29,11 +29,16 @@ setup(
     version="0.10",
     packages=find_packages(),
     license="MIT",
-    install_requires=["docopt>=0.6.2", "pylatexenc>=1.2", "curses-menu", "PrettyTable"],
+    install_requires=[
+        "docopt>=0.6.2",
+        "pylatexenc>=2.1",
+        "curses-menu>=0.5.0",
+        "prettytable>=2.5.0",
+    ],
     extras_require={
         "dev": ["pytest", "pylint"],
     },
-    python_requires="~=3.4",  # For Python 3.4 and up, but not yet Python 4
+    python_requires="~=3.6.8",  # For Python 3.6.8 and up, but not yet Python 4
     description=description,
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -44,7 +49,7 @@ setup(
     author="Ola Groettvik",
     author_email="olagrottvik@gmail.com",
     url="http://github.com/olagrottvik/bust",
-    keywords=["vhdl", "bus", "axi"],
+    keywords=["vhdl", "bus", "axi", "ipbus", "slave", "generator"],
     cmdclass={
         "clean": clean,
     },
