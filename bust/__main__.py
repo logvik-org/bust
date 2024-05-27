@@ -2,7 +2,7 @@
 """bust register tool
 
 Usage:
-  bust.py FILE [-o DIR] [-F | -f] [-u] [-d | -p] [-b] [-t] [-i] [-m] [-a]
+  bust.py FILE [-o DIR] [[[-F | -f] [-u] [-d | -p] [-b] [-t] [-i] [-m]] | [-a] | [-c | -e]]
   bust.py --version
   bust.py -h | --help
 
@@ -18,6 +18,8 @@ Options:
   -i             Do not generate the include header files (.h, .hpp & .py)
   -m             Do not generate the module VHDL files
   -a             Update register addresses and save JSON file
+  -e             Edit the JSON file
+  -c             Create a new JSON file
   -h --help      HELP!
   --version      Show version info
 
@@ -45,6 +47,7 @@ from bust.exceptions import (
     InvalidBusType,
     InvalidResetMode,
 )
+from bust.editor import Editor
 from bust._version import __VERSION__
 
 
@@ -70,6 +73,16 @@ def main():
 
         if args["FILE"] is not None:
             json_file = args["FILE"]
+
+            if args["-c"] and json_file is not None:
+                e = Editor(False, json_file)
+                e.show_menu()
+                exit()
+
+            if args["-e"] and json_file is not None:
+                e = Editor(True, json_file)
+                e.show_menu()
+                exit()
 
             logger.info("Parsing file: " + json_file + "...")
 
@@ -161,12 +174,6 @@ def main():
                 generate_output(
                     settings, bus, module, header, documentation, testbench, gs
                 )
-
-        elif args["-c"] and args["FILE"] is not None:
-            raise NotImplementedError("The menu system is removed")
-
-        elif args["-e"] and args["FILE"] is not None:
-            raise NotImplementedError("The menu system is removed")
 
     except Exception:
         logger.exception("An unresolvable error has occurred...")
