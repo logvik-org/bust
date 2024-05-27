@@ -38,7 +38,7 @@ setup(
     extras_require={
         "dev": ["pytest", "pylint"],
     },
-    python_requires="~=3.6.8",  # For Python 3.6.8 and up, but not yet Python 4
+    python_requires=">=3.6.8",  # For Python 3.6.8 and up
     description=description,
     long_description=long_description,
     long_description_content_type="text/markdown",
