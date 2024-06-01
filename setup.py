@@ -26,7 +26,7 @@ class clean(Command):
 
 setup(
     name="bust",
-    version="0.10.1",
+    version="0.11.0-dev",
     packages=find_packages(),
     license="MIT",
     install_requires=[
@@ -38,7 +38,7 @@ setup(
     extras_require={
         "dev": ["pytest", "pylint"],
     },
-    python_requires=">=3.6.8",  # For Python 3.6.8 and up
+    python_requires=">=3.9.0",  # For Python 3.9.0 and up
     description=description,
     long_description=long_description,
     long_description_content_type="text/markdown",
