@@ -20,11 +20,8 @@ bust currently supports these bus standards:
 
 ## Requirements
 
-bust is thoroughly tested with python 3.9.18 but should work with the following versions:
+bust is developed in an environment with python 3.9.18 but should work with the following versions:
 
-- python 3.6.8
-- python 3.7
-- python 3.8
 - python 3.9
 - python 3.10
 - python 3.11
