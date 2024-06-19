@@ -221,6 +221,9 @@ class Module:
             if reg.sig_type != "fields":
                 reg_dic["reset"] = reg.reset
 
+            if reg.stall is True:
+                reg_dic["stall_cycles"] = reg.stall_cycles
+
             if reg.sig_type == "fields" and len(reg.fields) > 0:
                 reg_dic["fields"] = []
                 for field in reg.fields:
