@@ -191,9 +191,9 @@ class Module:
         dic["module"] = OrderedDict()
 
         mod["name"] = self.name
-        mod["description"] = self.description
         if self.version is not None:
             mod["version"] = self.version
+        mod["description"] = self.description
         if self.git_hash is not None:
             mod["git_hash"] = self.git_hash
 
