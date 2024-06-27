@@ -9,23 +9,23 @@ if {[batch_mode]} {
 quit -sim
 
 # Set project paths
-quietly set example_axi_path "../"
-quietly set bus_path "../"
-quietly set UVVM_path "../../../../UVVM"
+set example_axi_path "../"
+set bus_path "../"
+set UVVM_path "../../../../UVVM"
 
 # Compile UVVM Dependencies
 do $UVVM_path/script/compile_all.do $UVVM_path/script $example_axi_path/sim $example_axi_path/scripts/component_list.txt
 
 # Set vcom args
-quietly set vcom_args "-pedanticerrors -fsmverbose -quiet -check_synthesis +cover=sbt"
+set vcom_args "-quiet +cover=sbt"
 
 ###########################################################################
 # Compile bus source files into library
 ###########################################################################
 
 # Set up library and sim path
-quietly set lib_name "bust"
-quietly set bus_sim_path "$bus_path/sim"
+set lib_name "bust"
+set bus_sim_path "$bus_path/sim"
 
 # (Re-)Generate library and Compile source files
 echo "\nRe-gen lib and compile $lib_name source\n"
@@ -36,7 +36,7 @@ if {[file exists $bus_sim_path/$lib_name]} {
 vlib $bus_sim_path/$lib_name
 vmap $lib_name $bus_sim_path/$lib_name
 
-quietly set vhdldirectives "-2008 -work $lib_name"
+set vhdldirectives "-2008 -work $lib_name"
 
 eval vcom $vcom_args $vhdldirectives $bus_path/hdl/axi_pkg.vhd
 
@@ -46,8 +46,8 @@ eval vcom $vcom_args $vhdldirectives $bus_path/hdl/axi_pkg.vhd
 ###########################################################################
 
 # Set up library and sim path
-quietly set lib_name "example_axi"
-quietly set example_axi_sim_path "$example_axi_path/sim"
+set lib_name "example_axi"
+set example_axi_sim_path "$example_axi_path/sim"
 
 # (Re-)Generate library and Compile source files
 echo "\nRe-gen lib and compile $lib_name source\n"
@@ -58,7 +58,7 @@ if {[file exists $example_axi_sim_path/$lib_name]} {
 vlib $example_axi_sim_path/$lib_name
 vmap $lib_name $example_axi_sim_path/$lib_name
 
-quietly set vhdldirectives "-2008 -work $lib_name"
+set vhdldirectives "-2008 -work $lib_name"
 
 eval vcom $vcom_args $vhdldirectives $example_axi_path/hdl/example_axi_pif_pkg.vhd
 eval vcom $vcom_args $vhdldirectives $example_axi_path/hdl/example_axi_axi_pif.vhd
@@ -66,7 +66,7 @@ eval vcom $vcom_args $vhdldirectives $example_axi_path/hdl/example_axi_axi_pif.v
 ###########################################################################
 # Compile testbench files into library
 ###########################################################################
-quietly set vcom_args "-quiet"
+set vcom_args "-quiet"
 eval vcom $vcom_args $vhdldirectives $example_axi_path/tb/example_axi_axi_pif_tb.vhd
 
 ###########################################################################
@@ -75,9 +75,9 @@ eval vcom $vcom_args $vhdldirectives $example_axi_path/tb/example_axi_axi_pif_tb
 vsim -quiet -coverage example_axi.example_axi_axi_pif_tb
 
 # Trick to avoid metastability warnings
-quietly set NumericStdNoWarnings 1
+set NumericStdNoWarnings 1
 run 1 ns;
-quietly set NumericStdNoWarnings 0
+set NumericStdNoWarnings 0
 run -all
 
 coverage exclude -du example_axi_axi_pif -togglenode araddr

@@ -52,15 +52,15 @@ class Testbench(object):
             "# Set project paths\n"
         )
 
-        s += 'quietly set {}_path "../"\n'.format(self.module.name)
+        s += 'set {}_path "../"\n'.format(self.module.name)
 
-        s += 'quietly set bus_path "{}"\n'.format(
+        s += 'set bus_path "{}"\n'.format(
             self.settings.return_sim_bus_path(self.bus.bus_type)
         )
-        s += 'quietly set UVVM_path "{}"\n'.format(self.settings.return_sim_uvvm_path())
+        s += 'set UVVM_path "{}"\n'.format(self.settings.return_sim_uvvm_path())
 
         if self.bus.bus_type == "ipbus":
-            s += 'quietly set vip_ipbus_path "{}"\n'.format(
+            s += 'set vip_ipbus_path "{}"\n'.format(
                 self.settings.return_vip_ipbus_path()
             )
 
@@ -72,10 +72,7 @@ class Testbench(object):
             )
         )
 
-        s += (
-            "# Set vcom args\n"
-            'quietly set vcom_args "-pedanticerrors -fsmverbose -quiet -check_synthesis'
-        )
+        s += "# Set vcom args\n" 'set vcom_args "-quiet'
         if self.settings.coverage:
             s += " +cover=sbt"
         s += '"\n\n'
@@ -89,18 +86,16 @@ class Testbench(object):
                 "# Compile bus source files into library\n"
                 "###########################################################################\n\n"
                 "# Set up library and sim path\n"
-                'quietly set lib_name "'
+                'set lib_name "'
             )
             s += self.bus.comp_library
             s += '"\n'
             if self.bus.bus_type == "ipbus":
-                s += 'quietly set bus_sim_path "${}_path/{}"\n\n'.format(
+                s += 'set bus_sim_path "${}_path/{}"\n\n'.format(
                     self.module.name, self.settings.sim_dir
                 )
             else:
-                s += 'quietly set bus_sim_path "$bus_path/{}"\n\n'.format(
-                    self.settings.sim_dir
-                )
+                s += 'set bus_sim_path "$bus_path/{}"\n\n'.format(self.settings.sim_dir)
             s += (
                 "# (Re-)Generate library and Compile source files\n"
                 'echo "\\nRe-gen lib and compile $lib_name source\\n"\n'
@@ -112,7 +107,7 @@ class Testbench(object):
             s += "vlib $bus_sim_path/$lib_name\n"
             s += "vmap $lib_name $bus_sim_path/$lib_name\n\n"
 
-            s += 'quietly set vhdldirectives "-2008 -work $lib_name"\n\n'
+            s += 'set vhdldirectives "-2008 -work $lib_name"\n\n'
             if self.bus.bus_type == "ipbus":
                 s += "eval vcom $vcom_args $vhdldirectives $bus_path/components/ipbus_core/firmware/hdl/ipbus_package.vhd\n\n"
                 s += "# Compile vip_ipbus Dependencies\n"
@@ -127,11 +122,11 @@ class Testbench(object):
             "# Compile source files into library\n"
             "###########################################################################\n\n"
             "# Set up library and sim path\n"
-            'quietly set lib_name "'
+            'set lib_name "'
         )
         s += self.module.name
         s += '"\n'
-        s += 'quietly set {0}_sim_path "${0}_path/{1}"\n\n'.format(
+        s += 'set {0}_sim_path "${0}_path/{1}"\n\n'.format(
             self.module.name, self.settings.sim_dir
         )
 
@@ -146,7 +141,7 @@ class Testbench(object):
         s += "vlib ${}_sim_path/$lib_name\n".format(self.module.name)
         s += "vmap $lib_name ${}_sim_path/$lib_name\n\n".format(self.module.name)
 
-        s += 'quietly set vhdldirectives "-2008 -work $lib_name"\n\n'
+        s += 'set vhdldirectives "-2008 -work $lib_name"\n\n'
 
         if self.bus.comp_library == Bus.default_comp_library:
             s += "eval vcom $vcom_args $vhdldirectives $bus_path/hdl/{}_pkg.vhd\n".format(
@@ -161,7 +156,7 @@ class Testbench(object):
             "###########################################################################\n"
             "# Compile testbench files into library\n"
             "###########################################################################\n"
-            'quietly set vcom_args "-quiet"\n'
+            'set vcom_args "-quiet"\n'
         )
         s += "eval vcom $vcom_args $vhdldirectives ${0}_path/tb/{0}_{1}_pif_tb.vhd\n\n".format(
             self.module.name, self.bus.short_name
@@ -179,9 +174,9 @@ class Testbench(object):
 
         s += (
             "# Trick to avoid metastability warnings\n"
-            "quietly set NumericStdNoWarnings 1\n"
+            "set NumericStdNoWarnings 1\n"
             "run 1 ns;\n"
-            "quietly set NumericStdNoWarnings 0\n"
+            "set NumericStdNoWarnings 0\n"
             "run -all\n\n"
         )
 
