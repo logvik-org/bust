@@ -191,9 +191,9 @@ class Module:
         dic["module"] = OrderedDict()
 
         mod["name"] = self.name
-        mod["description"] = self.description
         if self.version is not None:
             mod["version"] = self.version
+        mod["description"] = self.description
         if self.git_hash is not None:
             mod["git_hash"] = self.git_hash
 
@@ -220,6 +220,9 @@ class Module:
 
             if reg.sig_type != "fields":
                 reg_dic["reset"] = reg.reset
+
+            if reg.stall is True:
+                reg_dic["stall_cycles"] = reg.stall_cycles
 
             if reg.sig_type == "fields" and len(reg.fields) > 0:
                 reg_dic["fields"] = []

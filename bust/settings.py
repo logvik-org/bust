@@ -6,6 +6,15 @@ from collections import OrderedDict
 class Settings(object):
     """Class for containing paths and other settings"""
 
+    default_val = {
+        "mod_subdir": True,
+        "bus_subdir": True,
+        "uvvm_rel_path": None,
+        "ipbus_rel_path": None,
+        "vip_ipbus_rel_path": None,
+        "coverage": False,
+    }
+
     def __init__(self, json_path, settings):
         self.logger = logging.getLogger(__name__)
 
@@ -14,10 +23,12 @@ class Settings(object):
             self.json_path = ""
             self.project_path = ""
             self.json_name = ""
-            self.mod_subdir = True
-            self.bus_subdir = True
-            self.uvvm_rel_path = None
-            self.coverage = False
+            self.mod_subdir = self.default_val["mod_subdir"]
+            self.bus_subdir = self.default_val["bus_subdir"]
+            self.uvvm_rel_path = self.default_val["uvvm_rel_path"]
+            self.ipbus_rel_path = self.default_val["ipbus_rel_path"]
+            self.vip_ipbus_rel_path = self.default_val["vip_ipbus_rel_path"]
+            self.coverage = self.default_val["coverage"]
         else:
 
             self.json_path = json_path
@@ -34,7 +45,7 @@ class Settings(object):
                 self.logger.info(
                     "Module subdir setting not specified. Choosing default: True"
                 )
-                self.mod_subdir = True
+                self.mod_subdir = self.default_val["mod_subdir"]
             else:
                 self.mod_subdir = settings["mod_subdir"]
 
@@ -42,7 +53,7 @@ class Settings(object):
                 self.logger.info(
                     "Bus subdir setting not specified. Choosing default: True"
                 )
-                self.bus_subdir = True
+                self.bus_subdir = self.default_val["bus_subdir"]
             else:
                 self.bus_subdir = settings["bus_subdir"]
 
@@ -50,7 +61,7 @@ class Settings(object):
                 self.logger.info(
                     "UVVM path is not specified. No testbench can be generated!"
                 )
-                self.uvvm_rel_path = None
+                self.uvvm_rel_path = self.default_val["uvvm_rel_path"]
             else:
                 self.uvvm_rel_path = settings["uvvm_rel_path"]
 
@@ -58,21 +69,21 @@ class Settings(object):
                 self.logger.debug(
                     "ipbus path is not specified. No testbench can be generated for ipbus!"
                 )
-                self.ipbus_relative_path = None
+                self.ipbus_rel_path = self.default_val["ipbus_rel_path"]
             else:
-                self.ipbus_relative_path = settings["ipbus_rel_path"]
+                self.ipbus_rel_path = settings["ipbus_rel_path"]
 
             if "vip_ipbus_rel_path" not in settings:
                 self.logger.debug(
                     "vip_ipbus path is not specified. No testbench can be generated for ipbus!"
                 )
-                self.vip_ipbus_relative_path = None
+                self.vip_ipbus_rel_path = self.default_val["vip_ipbus_rel_path"]
             else:
-                self.vip_ipbus_relative_path = settings["vip_ipbus_rel_path"]
+                self.vip_ipbus_rel_path = settings["vip_ipbus_rel_path"]
 
             if "coverage" not in settings:
                 self.logger.info("Coverage is not specified. Choosing default: False")
-                self.coverage = False
+                self.coverage = self.default_val["coverage"]
             else:
                 self.coverage = settings["coverage"]
 
@@ -89,6 +100,10 @@ class Settings(object):
         json["bus_subdir"] = self.bus_subdir
         if self.uvvm_rel_path is not None:
             json["uvvm_rel_path"] = self.uvvm_rel_path
+        if self.ipbus_rel_path is not None:
+            json["ipbus_rel_path"] = self.ipbus_rel_path
+        if self.vip_ipbus_rel_path is not None:
+            json["vip_ipbus_rel_path"] = self.vip_ipbus_rel_path
         json["coverage"] = self.coverage
         return json
 
@@ -96,7 +111,7 @@ class Settings(object):
         """Return bus path used for simulation compilation scripts"""
 
         if bus_type == "ipbus":
-            path = os.path.join("../", self.ipbus_relative_path)
+            path = os.path.join("../", self.ipbus_rel_path)
         else:
             path = "../"
             if self.bus_subdir:
@@ -106,7 +121,7 @@ class Settings(object):
     def return_vip_ipbus_path(self):
         """Return bus path used for simulation compilation scripts"""
 
-        path = os.path.join("../", self.vip_ipbus_relative_path)
+        path = os.path.join("../", self.vip_ipbus_rel_path)
         return path
 
     def return_sim_uvvm_path(self):
