@@ -84,26 +84,20 @@ class Header(object):
         for reg in self.module.registers:
             s += "/* Register: " + reg.name + " */\n"
             s += (
-                "static const uint32_t "
+                "const uint32_t "
                 + reg.name.upper()
                 + "_OFFSET = "
                 + str(hex(reg.address))
                 + ";\n"
             )
-            s += (
-                "static const uint32_t "
-                + reg.name.upper()
-                + "_RESET = "
-                + reg.reset
-                + ";\n"
-            )
+            s += "const uint32_t " + reg.name.upper() + "_RESET = " + reg.reset + ";\n"
             s += "\n"
 
             if reg.sig_type == "fields":
                 for field in reg.fields:
                     s += "/* Field: " + field.name + " */\n"
                     s += (
-                        "static const uint32_t "
+                        "const uint32_t "
                         + reg.name.upper()
                         + "_"
                         + field.name.upper()
@@ -111,7 +105,7 @@ class Header(object):
                     )
                     s += str(field.pos_low) + ";\n"
                     s += (
-                        "static const uint32_t "
+                        "const uint32_t "
                         + reg.name.upper()
                         + "_"
                         + field.name.upper()
@@ -119,7 +113,7 @@ class Header(object):
                     )
                     s += str(field.length) + ";\n"
                     s += (
-                        "static const uint32_t "
+                        "const uint32_t "
                         + reg.name.upper()
                         + "_"
                         + field.name.upper()
@@ -127,7 +121,7 @@ class Header(object):
                     )
                     s += field.reset + ";\n"
                     s += (
-                        "static const uint32_t "
+                        "const uint32_t "
                         + reg.name.upper()
                         + "_"
                         + field.name.upper()
