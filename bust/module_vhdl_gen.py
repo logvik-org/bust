@@ -1,5 +1,5 @@
 from bust.utils import indent_string
-from bust.vhdl import lib_declaration
+from bust.vhdl import lib_declaration, ieee_math
 
 
 class ModuleVHDLGen:
@@ -15,7 +15,7 @@ class ModuleVHDLGen:
         self.n_pulse_regs = len([reg for reg in self.registers if reg.mode == "pulse"])
 
     def return_module_pkg_VHDL(self):
-        s = lib_declaration()
+        s = ieee_math()
         s += "\n"
         s += "package " + self.name + "_pif_pkg is"
         s += "\n\n"
@@ -244,6 +244,12 @@ class ModuleVHDLGen:
             par += " : t_" + self.name + "_addr := " + str(self.addr_width)
             par += 'X"' + "%X" % reg.address + '";\n'
         par += "\n"
+
+        max_addr = self.registers[-1].address
+        par += f"constant C_ADDR_MAX   : integer := {max_addr}; -- {hex(max_addr)}\n"
+        par += "constant C_ADDR_WIDTH : integer := integer(ceil(log2(real(C_ADDR_MAX))));\n"
+        par += "\n"
+
         return indent_string(par)
 
     def return_module_VHDL(self):
