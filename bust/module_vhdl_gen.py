@@ -280,7 +280,8 @@ class ModuleVHDLGen:
             + "_baseaddr        : std_logic_vector("
             + str(self.bus.addr_width - 1)
         )
-        par += " downto 0) := (others => '0'));\n"
+        par += " downto 0) := (others => '0');\n"
+        par += "g_check_baseaddr      : boolean := true);\n"
 
         s += indent_string(par, 2)
 
@@ -353,7 +354,8 @@ class ModuleVHDLGen:
         s = instance_name + " "
         s += ": entity work." + self.name + "_" + self.bus.short_name + "_pif\n"
         s += indent_string("generic map (\n")
-        par = "g_{0}_baseaddr      => g_{0}_baseaddr)\n".format(self.bus.short_name)
+        par = "g_{0}_baseaddr      => g_{0}_baseaddr,\n".format(self.bus.short_name)
+        par += "g_check_baseaddr    => g_check_baseaddr)\n"
         s += indent_string(par, 2)
 
         s += indent_string("port map (\n")
