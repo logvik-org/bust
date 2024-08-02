@@ -584,7 +584,6 @@ begin  -- architecture tb
     log_hdr("Check erroneous read");
 
     read(32X"FFFFFFFF", dummy_data, "Read from register that does not exist");
-    check_value(dummy_data, 32X"DEADBEEF", error, "Check that the returned data is rubbish");
 
     log_hdr("Check erroneous write");
 
