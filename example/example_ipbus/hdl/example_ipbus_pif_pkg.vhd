@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-
+use ieee.math_real.all;
 
 package example_ipbus_pif_pkg is
 
@@ -23,6 +23,9 @@ package example_ipbus_pif_pkg is
   constant C_ADDR_REG9 : t_example_ipbus_addr := 32X"24";
   constant C_ADDR_REG10 : t_example_ipbus_addr := 32X"28";
   constant C_ADDR_REG11 : t_example_ipbus_addr := 32X"2C";
+
+  constant C_ADDR_MAX   : integer := 16#2C#;
+  constant C_ADDR_WIDTH : integer := integer(ceil(log2(real(C_ADDR_MAX))));
 
   -- RW Register Record Definitions
 
