@@ -75,7 +75,8 @@ begin  -- architecture tb
   -- component instantiation
   DUT : entity work.example_ipbus_ipb_pif
     generic map (
-      g_ipb_baseaddr      => g_ipb_baseaddr)
+      g_ipb_baseaddr      => g_ipb_baseaddr,
+      g_check_baseaddr    => g_check_baseaddr)
     port map (
       ipb_rw_regs         => ipb_rw_regs,
       ipb_ro_regs         => ipb_ro_regs,
