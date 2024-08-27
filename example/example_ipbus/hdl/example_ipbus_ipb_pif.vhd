@@ -87,6 +87,7 @@ begin
         if (reg_wren) then
 
           if (valid_baseaddr = '0') then
+
             wr_err <= '1';
 
           elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG0), C_ADDR_WIDTH) then
@@ -221,6 +222,7 @@ begin
           reg_data_out <= (others => '0');
 
           if (valid_baseaddr = '0') then
+
             rd_err <= '1';
 
           elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG0), C_ADDR_WIDTH) then
