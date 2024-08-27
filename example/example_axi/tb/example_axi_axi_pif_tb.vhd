@@ -26,8 +26,8 @@ architecture tb of example_axi_axi_pif_tb is
   constant C_CLK_PERIOD : time   := 10 ns;
 
   -- component generics
-  constant g_axi_baseaddr : std_logic_vector(31 downto 0) := 32X"FFAA0000";
-  constant g_instance_num : natural                       := 0;
+  constant g_axi_baseaddr   : std_logic_vector(31 downto 0) := 32X"FFAA0000";
+  constant g_check_baseaddr : boolean                       := true;
 
   -- component ports
   signal axi_rw_regs    : t_example_axi_rw_regs    := c_example_axi_rw_regs;
@@ -94,7 +94,8 @@ begin  -- architecture tb
   -- component instantiation
   DUT : entity work.example_axi_axi_pif
     generic map (
-      g_axi_baseaddr      => g_axi_baseaddr)
+      g_axi_baseaddr      => g_axi_baseaddr,
+      g_check_baseaddr    => g_check_baseaddr)
     port map (
       axi_rw_regs         => axi_rw_regs,
       axi_ro_regs         => axi_ro_regs,
@@ -554,7 +555,7 @@ begin  -- architecture tb
     log_hdr("Set&Check Zero Value");
 
     write(f_addr(g_axi_baseaddr, C_ADDR_REG10), 32X"0", "Setting all bits to zero");
-    check_value(axi_pulse_regs.reg10, 4X"0", error, "Setting all bits to zero");
+    await_change_to_value(axi_pulse_regs.reg10, 4X"0", 0*C_CLK_PERIOD, 1*C_CLK_PERIOD, error, "Setting all bits to zero");
     await_stable(axi_pulse_regs.reg10, 1*C_CLK_PERIOD, FROM_LAST_EVENT, 1*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Setting all bits to zero");
     check_value(axi_pulse_regs.reg10, 4X"0", error, "Setting all bits to zero");
     await_value(axi_pulse_regs.reg10, 4X"a", 0 ns, 1 ns, error, "Setting all bits to zero");

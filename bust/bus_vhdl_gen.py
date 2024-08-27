@@ -257,6 +257,10 @@ class BusVHDLGen:
         par += "signal slv_reg_wren : std_logic;\n"
         par += "signal reg_data_out : t_" + mod.name + "_data;\n"
         par += "-- signal byte_index   : integer" + "; -- unused\n\n"
+
+        par += "signal register_sel   : std_logic_vector(C_ADDR_WIDTH-1 downto 0) := (others => '0');\n"
+        par += "signal valid_baseaddr : std_logic := '0';\n\n"
+
         s += indent_string(par)
 
         s += "begin\n\n"
