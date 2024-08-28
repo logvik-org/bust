@@ -247,7 +247,7 @@ class ModuleVHDLGen:
 
         max_addr = self.registers[-1].address
         par += f"constant C_ADDR_MAX   : integer := {max_addr}; -- {hex(max_addr)}\n"
-        par += "constant C_ADDR_WIDTH : integer := integer(ceil(log2(real(C_ADDR_MAX))));\n"
+        par += "constant C_ADDR_WIDTH : integer := integer(ceil(log2(real(C_ADDR_MAX + 1))));\n"
         par += "\n"
 
         return indent_string(par)
