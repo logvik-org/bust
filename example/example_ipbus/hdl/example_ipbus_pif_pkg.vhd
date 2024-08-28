@@ -26,7 +26,7 @@ package example_ipbus_pif_pkg is
   constant C_ADDR_REG11 : t_example_ipbus_addr := 32X"2C";
 
   constant C_ADDR_MAX   : integer := 44; -- 0x2c
-  constant C_ADDR_WIDTH : integer := integer(ceil(log2(real(C_ADDR_MAX))));
+  constant C_ADDR_WIDTH : integer := integer(ceil(log2(real(C_ADDR_MAX + 1))));
 
   -- RW Register Record Definitions
 
