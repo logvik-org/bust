@@ -66,9 +66,10 @@ architecture tb of example_axi_axi_pif_tb is
 
 begin  -- architecture tb
 
-  axilite_bfm_config.clock_period <= C_CLK_PERIOD;
-  axilite_bfm_config.setup_time   <= C_CLK_PERIOD/8;
-  axilite_bfm_config.hold_time    <= C_CLK_PERIOD/8;
+  axilite_bfm_config.clock_period      <= C_CLK_PERIOD;
+  axilite_bfm_config.setup_time        <= C_CLK_PERIOD/8;
+  axilite_bfm_config.hold_time         <= C_CLK_PERIOD/8;
+  axilite_bfm_config.num_b_pipe_stages <= 0;
 
   axi_in.araddr  <= axilite_if.read_address_channel.araddr;
   dummy_arprot   <= axilite_if.read_address_channel.arprot;
@@ -555,7 +556,7 @@ begin  -- architecture tb
     log_hdr("Set&Check Zero Value");
 
     write(f_addr(g_axi_baseaddr, C_ADDR_REG10), 32X"0", "Setting all bits to zero");
-    await_change_to_value(axi_pulse_regs.reg10, 4X"0", 0*C_CLK_PERIOD, 1*C_CLK_PERIOD, error, "Setting all bits to zero");
+    check_value(axi_pulse_regs.reg10, 4X"0", error, "Setting all bits to zero");
     await_stable(axi_pulse_regs.reg10, 1*C_CLK_PERIOD, FROM_LAST_EVENT, 1*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Setting all bits to zero");
     check_value(axi_pulse_regs.reg10, 4X"0", error, "Setting all bits to zero");
     await_value(axi_pulse_regs.reg10, 4X"a", 0 ns, 1 ns, error, "Setting all bits to zero");
