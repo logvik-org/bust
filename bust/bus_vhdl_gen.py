@@ -1267,9 +1267,10 @@ class BusVHDLGen:
         s = ""
         if self.bus_type == "axi":
             s = (
-                "axilite_bfm_config.clock_period <= C_CLK_PERIOD;\n"
-                "axilite_bfm_config.setup_time   <= C_CLK_PERIOD/8;\n"
-                "axilite_bfm_config.hold_time    <= C_CLK_PERIOD/8;\n\n"
+                "axilite_bfm_config.clock_period      <= C_CLK_PERIOD;\n"
+                "axilite_bfm_config.setup_time        <= C_CLK_PERIOD/8;\n"
+                "axilite_bfm_config.hold_time         <= C_CLK_PERIOD/8;\n"
+                "axilite_bfm_config.num_b_pipe_stages <= 0;\n\n"
                 "axi_in.araddr  <= axilite_if.read_address_channel.araddr;\n"
                 "dummy_arprot   <= axilite_if.read_address_channel.arprot;\n"
                 "axi_in.arvalid <= axilite_if.read_address_channel.arvalid;\n"
