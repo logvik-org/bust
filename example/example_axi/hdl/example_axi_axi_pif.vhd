@@ -150,48 +150,47 @@ begin
 
       if (slv_reg_wren = '1') then
 
-          if (valid_baseaddr_wr = '0') then
+        if (valid_baseaddr_wr = '0') then
 
-            null;
+          null;
 
-          elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG0), C_ADDR_WIDTH) then
+        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG0), C_ADDR_WIDTH) then
 
-            axi_rw_regs_i.reg0 <= wdata(0);
+          axi_rw_regs_i.reg0 <= wdata(0);
 
-          elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG1), C_ADDR_WIDTH) then
+        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG1), C_ADDR_WIDTH) then
 
-            axi_rw_regs_i.reg1 <= wdata(0);
+          axi_rw_regs_i.reg1 <= wdata(0);
 
-          elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG3), C_ADDR_WIDTH) then
+        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG3), C_ADDR_WIDTH) then
 
-            axi_rw_regs_i.reg3 <= wdata(7 downto 0);
+          axi_rw_regs_i.reg3 <= wdata(7 downto 0);
 
-          elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG5), C_ADDR_WIDTH) then
+        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG5), C_ADDR_WIDTH) then
 
-            axi_rw_regs_i.reg5 <= wdata;
+          axi_rw_regs_i.reg5 <= wdata;
 
-          elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG7), C_ADDR_WIDTH) then
+        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG7), C_ADDR_WIDTH) then
 
-            axi_rw_regs_i.reg7.field0 <= wdata(0);
-            axi_rw_regs_i.reg7.field1 <= wdata(4 downto 1);
-            axi_rw_regs_i.reg7.field2 <= wdata(5);
-            axi_rw_regs_i.reg7.field3 <= wdata(20 downto 6);
+          axi_rw_regs_i.reg7.field0 <= wdata(0);
+          axi_rw_regs_i.reg7.field1 <= wdata(4 downto 1);
+          axi_rw_regs_i.reg7.field2 <= wdata(5);
+          axi_rw_regs_i.reg7.field3 <= wdata(20 downto 6);
 
-          elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG9), C_ADDR_WIDTH) then
+        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG9), C_ADDR_WIDTH) then
 
-            axi_pulse_regs_cycle.reg9 <= wdata(0);
+          axi_pulse_regs_cycle.reg9 <= wdata(0);
 
-          elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG10), C_ADDR_WIDTH) then
+        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG10), C_ADDR_WIDTH) then
 
-            axi_pulse_regs_cycle.reg10 <= wdata(3 downto 0);
+          axi_pulse_regs_cycle.reg10 <= wdata(3 downto 0);
 
-          elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG11), C_ADDR_WIDTH) then
+        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG11), C_ADDR_WIDTH) then
 
-            axi_pulse_regs_cycle.reg11.field0 <= wdata(14 downto 0);
-            axi_pulse_regs_cycle.reg11.field1 <= wdata(15);
+          axi_pulse_regs_cycle.reg11.field0 <= wdata(14 downto 0);
+          axi_pulse_regs_cycle.reg11.field1 <= wdata(15);
 
-          end if;
-
+        end if;
       end if;
 
     end if;
@@ -308,7 +307,7 @@ begin
 
     if (valid_baseaddr_wr = '0') then
 
-            null;
+      null;
 
     elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG0), C_ADDR_WIDTH) then
 
