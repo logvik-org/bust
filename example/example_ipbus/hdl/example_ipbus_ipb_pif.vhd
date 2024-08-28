@@ -10,7 +10,8 @@ entity example_ipbus_ipb_pif is
 
   generic (
     -- IPBUS Bus Interface Generics
-    g_ipb_baseaddr        : std_logic_vector(31 downto 0) := (others => '0'));
+    g_ipb_baseaddr        : std_logic_vector(31 downto 0) := (others => '0');
+    g_check_baseaddr      : boolean := true);
   port (
     -- IPBUS Bus Interface Ports
     ipb_rw_regs    : out t_example_ipbus_rw_regs    := c_example_ipbus_rw_regs;
@@ -45,6 +46,9 @@ architecture behavior of example_ipbus_ipb_pif is
   signal stall          : std_logic := '0';
   signal reg_data_out   : t_example_ipbus_data;
 
+  signal register_sel   : std_logic_vector(C_ADDR_WIDTH-1 downto 0) := (others => '0');
+  signal valid_baseaddr : std_logic := '0';
+
 begin
 
   ipb_out <= ipb_out_i;
@@ -52,6 +56,14 @@ begin
   ipb_pulse_regs <= ipb_pulse_regs_i;
 
   reg_wren <= (ipb_in.ipb_strobe and ipb_in.ipb_write) and not (wr_ack or wr_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err or wr_stall_ack or stall);
+
+  register_sel <= ipb_in.ipb_addr(C_ADDR_WIDTH-1 downto 0);
+
+  gen_check_baseaddr : if g_check_baseaddr generate
+    valid_baseaddr <= '1' when ipb_in.ipb_addr(31 downto C_ADDR_WIDTH) = C_BASEADDR(31 downto C_ADDR_WIDTH) else '0';
+  else generate
+    valid_baseaddr <= '1';
+  end generate gen_check_baseaddr;
 
   p_write : process(clk)
   begin
@@ -74,27 +86,31 @@ begin
 
         if (reg_wren) then
 
-          if unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG0), 32) then
+          if (valid_baseaddr = '0') then
+
+            wr_err <= '1';
+
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG0), C_ADDR_WIDTH) then
 
             ipb_rw_regs_i.reg0 <= ipb_in.ipb_wdata(0);
             wr_ack <= '1';
 
-          elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG1), 32) then
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG1), C_ADDR_WIDTH) then
 
             ipb_rw_regs_i.reg1 <= ipb_in.ipb_wdata(0);
             wr_ack <= '1';
 
-          elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG3), 32) then
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG3), C_ADDR_WIDTH) then
 
             ipb_rw_regs_i.reg3 <= ipb_in.ipb_wdata(7 downto 0);
             wr_stall_ack <= '1';
 
-          elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG5), 32) then
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG5), C_ADDR_WIDTH) then
 
             ipb_rw_regs_i.reg5 <= ipb_in.ipb_wdata;
             wr_ack <= '1';
 
-          elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG7), 32) then
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG7), C_ADDR_WIDTH) then
 
             ipb_rw_regs_i.reg7.field0 <= ipb_in.ipb_wdata(0);
             ipb_rw_regs_i.reg7.field1 <= ipb_in.ipb_wdata(4 downto 1);
@@ -102,17 +118,17 @@ begin
             ipb_rw_regs_i.reg7.field3 <= ipb_in.ipb_wdata(20 downto 6);
             wr_ack <= '1';
 
-          elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG9), 32) then
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG9), C_ADDR_WIDTH) then
 
             ipb_pulse_regs_cycle.reg9 <= ipb_in.ipb_wdata(0);
             wr_ack <= '1';
 
-          elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG10), 32) then
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG10), C_ADDR_WIDTH) then
 
             ipb_pulse_regs_cycle.reg10 <= ipb_in.ipb_wdata(3 downto 0);
             wr_ack <= '1';
 
-          elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG11), 32) then
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG11), C_ADDR_WIDTH) then
 
             ipb_pulse_regs_cycle.reg11.field0 <= ipb_in.ipb_wdata(14 downto 0);
             ipb_pulse_regs_cycle.reg11.field1 <= ipb_in.ipb_wdata(15);
@@ -205,42 +221,46 @@ begin
         if (reg_rden) then
           reg_data_out <= (others => '0');
 
-          if unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG0), 32) then
+          if (valid_baseaddr = '0') then
+
+            rd_err <= '1';
+
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG0), C_ADDR_WIDTH) then
 
             reg_data_out(0) <= ipb_rw_regs_i.reg0;
             rd_ack <= '1';
 
-          elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG1), 32) then
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG1), C_ADDR_WIDTH) then
 
             reg_data_out(0) <= ipb_rw_regs_i.reg1;
             rd_ack <= '1';
 
-          elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG2), 32) then
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG2), C_ADDR_WIDTH) then
 
             reg_data_out(0) <= ipb_ro_regs.reg2;
             rd_ack <= '1';
 
-          elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG3), 32) then
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG3), C_ADDR_WIDTH) then
 
             reg_data_out(7 downto 0) <= ipb_rw_regs_i.reg3;
             rd_stall_ack <= '1';
 
-          elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG4), 32) then
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG4), C_ADDR_WIDTH) then
 
             reg_data_out(13 downto 0) <= ipb_ro_regs.reg4;
             rd_ack <= '1';
 
-          elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG5), 32) then
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG5), C_ADDR_WIDTH) then
 
             reg_data_out <= ipb_rw_regs_i.reg5;
             rd_ack <= '1';
 
-          elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG6), 32) then
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG6), C_ADDR_WIDTH) then
 
             reg_data_out <= ipb_ro_regs.reg6;
             rd_ack <= '1';
 
-          elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG7), 32) then
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG7), C_ADDR_WIDTH) then
 
             reg_data_out(0) <= ipb_rw_regs_i.reg7.field0;
             reg_data_out(4 downto 1) <= ipb_rw_regs_i.reg7.field1;
@@ -248,7 +268,7 @@ begin
             reg_data_out(20 downto 6) <= ipb_rw_regs_i.reg7.field3;
             rd_ack <= '1';
 
-          elsif unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_REG8), 32) then
+          elsif unsigned(register_sel) = resize(unsigned(C_ADDR_REG8), C_ADDR_WIDTH) then
 
             reg_data_out(0) <= ipb_ro_regs.reg8.field0;
             reg_data_out(19 downto 1) <= ipb_ro_regs.reg8.field1;

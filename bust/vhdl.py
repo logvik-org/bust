@@ -11,6 +11,14 @@ def lib_declaration():
     return s
 
 
+def ieee_math():
+    s = "library ieee;\n"
+    s += "use ieee.std_logic_1164.all;\n"
+    s += "use ieee.numeric_std.all;\n"
+    s += "use ieee.math_real.all;\n\n"
+    return s
+
+
 def sync_process(
     clk_name,
     reset_name,

@@ -17,7 +17,8 @@ entity example_ipbus is
 
     -- User Generics End
     -- IPBUS Bus Interface Generics
-    g_ipb_baseaddr        : std_logic_vector(31 downto 0) := (others => '0'));
+    g_ipb_baseaddr        : std_logic_vector(31 downto 0) := (others => '0');
+    g_check_baseaddr      : boolean := true);
   port (
     -- User Ports Start
 
@@ -54,7 +55,8 @@ begin
 
   i_example_ipbus_ipb_pif : entity work.example_ipbus_ipb_pif
     generic map (
-      g_ipb_baseaddr      => g_ipb_baseaddr)
+      g_ipb_baseaddr      => g_ipb_baseaddr,
+      g_check_baseaddr    => g_check_baseaddr)
     port map (
       ipb_rw_regs         => ipb_rw_regs,
       ipb_ro_regs         => ipb_ro_regs,

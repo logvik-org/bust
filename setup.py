@@ -26,7 +26,7 @@ class clean(Command):
 
 setup(
     name="bust",
-    version="0.11.1-dev",
+    version="0.12.0-dev",
     packages=find_packages(),
     license="MIT",
     install_requires=[

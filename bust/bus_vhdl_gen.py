@@ -130,7 +130,8 @@ class BusVHDLGen:
             + "_baseaddr        : std_logic_vector("
             + str(self.addr_width - 1)
         )
-        par += " downto 0) := (others => '0'));\n"
+        par += " downto 0) := (others => '0');\n"
+        par += "g_check_baseaddr      : boolean := true);\n"
         s += indent_string(par, 2)
 
         s += indent_string("port (")
@@ -256,6 +257,12 @@ class BusVHDLGen:
         par += "signal slv_reg_wren : std_logic;\n"
         par += "signal reg_data_out : t_" + mod.name + "_data;\n"
         par += "-- signal byte_index   : integer" + "; -- unused\n\n"
+
+        par += "signal register_sel_wr   : std_logic_vector(C_ADDR_WIDTH-1 downto 0) := (others => '0');\n"
+        par += "signal register_sel_rd   : std_logic_vector(C_ADDR_WIDTH-1 downto 0) := (others => '0');\n"
+        par += "signal valid_baseaddr_wr : std_logic := '0';\n"
+        par += "signal valid_baseaddr_rd : std_logic := '0';\n\n"
+
         s += indent_string(par)
 
         s += "begin\n\n"
@@ -278,6 +285,22 @@ class BusVHDLGen:
         par += "rvalid  <= rvalid_i;\n"
         par += "\n"
 
+        s += indent_string(par)
+
+        s += indent_string("register_sel_wr <= awaddr_i(C_ADDR_WIDTH-1 downto 0);\n")
+        s += indent_string("register_sel_rd <= araddr_i(C_ADDR_WIDTH-1 downto 0);\n\n")
+
+        par = "gen_check_baseaddr : if g_check_baseaddr generate\n"
+        par += indent_string(
+            "valid_baseaddr_wr <= '1' when awaddr_i(31 downto C_ADDR_WIDTH) = C_BASEADDR(31 downto C_ADDR_WIDTH) else '0';\n"
+        )
+        par += indent_string(
+            "valid_baseaddr_rd <= '1' when araddr_i(31 downto C_ADDR_WIDTH) = C_BASEADDR(31 downto C_ADDR_WIDTH) else '0';\n"
+        )
+        par += "else generate\n"
+        par += indent_string("valid_baseaddr_wr <= '1';\n")
+        par += indent_string("valid_baseaddr_rd <= '1';\n")
+        par += "end generate gen_check_baseaddr;\n\n"
         s += indent_string(par)
 
         ####################################################################
@@ -415,6 +438,9 @@ class BusVHDLGen:
 
             logic_string += "\nif (slv_reg_wren = '1') then\n\n"
 
+            logic_string += indent_string("if (valid_baseaddr_wr = '0') then\n\n")
+            logic_string += indent_string("null;\n\n", 2)
+
             # create a generator for looping through all rw and pulse regs
             gen = (
                 reg for reg in mod.registers if reg.mode == "rw" or reg.mode == "pulse"
@@ -425,9 +451,9 @@ class BusVHDLGen:
                 elif reg.mode == "pulse":
                     sig_name = "axi_pulse_regs_cycle."
 
-                par = "if unsigned(awaddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_"
-                par += reg.name.upper() + "), " + str(self.addr_width) + ") then\n\n"
-                logic_string += indent_string(par, 2)
+                par = "elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_"
+                par += reg.name.upper() + "), C_ADDR_WIDTH) then\n\n"
+                logic_string += indent_string(par, 1)
                 par = ""
                 if reg.sig_type == "fields":
 
@@ -445,10 +471,10 @@ class BusVHDLGen:
                 elif reg.sig_type == "sl":
                     par += sig_name + reg.name + " <= wdata(0);\n"
 
-                logic_string += indent_string(par, 3)
-                logic_string += indent_string("\nend if;\n", 2)
+                logic_string += indent_string(par, 2)
                 logic_string += "\n"
 
+            logic_string += indent_string("end if;\n")
             logic_string += "end if;\n"
 
             if self.bus_reset == "async":
@@ -609,12 +635,13 @@ class BusVHDLGen:
         ####################################################################
         logic_string = "reg_data_out <= (others => '0');\n\n"
 
+        logic_string += "if (valid_baseaddr_wr = '0') then\n\n"
+        logic_string += indent_string("null;\n\n")
+
         gen = [reg for reg in mod.registers if reg.mode == "ro" or reg.mode == "rw"]
         for reg in gen:
-            par = (
-                "if unsigned(araddr_i) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_"
-            )
-            par += reg.name.upper() + "), " + str(self.addr_width) + ") then\n\n"
+            par = "elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_"
+            par += reg.name.upper() + "), C_ADDR_WIDTH) then\n\n"
             logic_string += par
             par = ""
 
@@ -664,9 +691,9 @@ class BusVHDLGen:
                 par += reg.name + ";\n"
 
             logic_string += indent_string(par)
-            logic_string += "\nend if;\n"
             logic_string += "\n"
 
+        logic_string += "end if;\n\n"
         s += indent_string(comb_process("p_mm_select_read", logic_string))
         s += "\n"
 
@@ -729,6 +756,9 @@ class BusVHDLGen:
 
         par += "signal reg_data_out   : t_{}_data;\n\n".format(mod.name)
 
+        par += "signal register_sel   : std_logic_vector(C_ADDR_WIDTH-1 downto 0) := (others => '0');\n"
+        par += "signal valid_baseaddr : std_logic := '0';\n\n"
+
         s += indent_string(par)
 
         s += "begin\n\n"
@@ -749,6 +779,19 @@ class BusVHDLGen:
             s += indent_string(
                 "reg_wren <= (ipb_in.ipb_strobe and ipb_in.ipb_write) and not (wr_ack or wr_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err);\n\n"
             )
+
+        s += indent_string(
+            "register_sel <= ipb_in.ipb_addr(C_ADDR_WIDTH-1 downto 0);\n\n"
+        )
+
+        par = "gen_check_baseaddr : if g_check_baseaddr generate\n"
+        par += indent_string(
+            "valid_baseaddr <= '1' when ipb_in.ipb_addr(31 downto C_ADDR_WIDTH) = C_BASEADDR(31 downto C_ADDR_WIDTH) else '0';\n"
+        )
+        par += "else generate\n"
+        par += indent_string("valid_baseaddr <= '1';\n")
+        par += "end generate gen_check_baseaddr;\n\n"
+        s += indent_string(par)
 
         if mod.count_rw_regs() + mod.count_pulse_regs() > 0:
             ###################################################################
@@ -779,6 +822,9 @@ class BusVHDLGen:
 
             logic_string += "\nif (reg_wren) then\n\n"
 
+            logic_string += indent_string("if (valid_baseaddr = '0') then\n\n")
+            logic_string += indent_string("wr_err <= '1';\n\n", 2)
+
             # create a generator for looping through all rw and pulse regs
             gen = (
                 reg for reg in mod.registers if reg.mode == "rw" or reg.mode == "pulse"
@@ -789,12 +835,9 @@ class BusVHDLGen:
                 elif reg.mode == "pulse":
                     sig_name = "ipb_pulse_regs_cycle."
 
-                if i == 0:
-                    par = "if"
-                else:
-                    par = "elsif"
-                par += " unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_"
-                par += reg.name.upper() + "), " + str(self.addr_width) + ") then\n\n"
+                par = "elsif"
+                par += " unsigned(register_sel) = resize(unsigned(C_ADDR_"
+                par += reg.name.upper() + "), C_ADDR_WIDTH) then\n\n"
                 logic_string += indent_string(par)
                 par = ""
                 if reg.sig_type == "fields":
@@ -881,14 +924,15 @@ class BusVHDLGen:
         logic_string += "\nif (reg_rden) then\n"
         logic_string += indent_string("reg_data_out <= (others => '0');\n\n")
 
+        logic_string += indent_string("if (valid_baseaddr = '0') then\n\n")
+        logic_string += indent_string("rd_err <= '1';\n\n", 2)
+
         gen = [reg for reg in mod.registers if reg.mode == "ro" or reg.mode == "rw"]
         for i, reg in enumerate(gen):
-            if i == 0:
-                par = "if"
-            else:
-                par = "elsif"
-            par += " unsigned(ipb_in.ipb_addr) = resize(unsigned(C_BASEADDR) + unsigned(C_ADDR_"
-            par += reg.name.upper() + "), " + str(self.addr_width) + ") then\n\n"
+
+            par = "elsif"
+            par += " unsigned(register_sel) = resize(unsigned(C_ADDR_"
+            par += reg.name.upper() + "), C_ADDR_WIDTH) then\n\n"
             logic_string += indent_string(par)
             par = ""
 
@@ -1245,9 +1289,10 @@ class BusVHDLGen:
         s = ""
         if self.bus_type == "axi":
             s = (
-                "axilite_bfm_config.clock_period <= C_CLK_PERIOD;\n"
-                "axilite_bfm_config.setup_time   <= C_CLK_PERIOD/8;\n"
-                "axilite_bfm_config.hold_time    <= C_CLK_PERIOD/8;\n\n"
+                "axilite_bfm_config.clock_period      <= C_CLK_PERIOD;\n"
+                "axilite_bfm_config.setup_time        <= C_CLK_PERIOD/8;\n"
+                "axilite_bfm_config.hold_time         <= C_CLK_PERIOD/8;\n"
+                "axilite_bfm_config.num_b_pipe_stages <= 0;\n\n"
                 "axi_in.araddr  <= axilite_if.read_address_channel.araddr;\n"
                 "dummy_arprot   <= axilite_if.read_address_channel.arprot;\n"
                 "axi_in.arvalid <= axilite_if.read_address_channel.arvalid;\n"

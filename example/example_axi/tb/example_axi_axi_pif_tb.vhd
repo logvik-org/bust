@@ -26,8 +26,8 @@ architecture tb of example_axi_axi_pif_tb is
   constant C_CLK_PERIOD : time   := 10 ns;
 
   -- component generics
-  constant g_axi_baseaddr : std_logic_vector(31 downto 0) := 32X"FFAA0000";
-  constant g_instance_num : natural                       := 0;
+  constant g_axi_baseaddr   : std_logic_vector(31 downto 0) := 32X"FFAA0000";
+  constant g_check_baseaddr : boolean                       := true;
 
   -- component ports
   signal axi_rw_regs    : t_example_axi_rw_regs    := c_example_axi_rw_regs;
@@ -66,9 +66,10 @@ architecture tb of example_axi_axi_pif_tb is
 
 begin  -- architecture tb
 
-  axilite_bfm_config.clock_period <= C_CLK_PERIOD;
-  axilite_bfm_config.setup_time   <= C_CLK_PERIOD/8;
-  axilite_bfm_config.hold_time    <= C_CLK_PERIOD/8;
+  axilite_bfm_config.clock_period      <= C_CLK_PERIOD;
+  axilite_bfm_config.setup_time        <= C_CLK_PERIOD/8;
+  axilite_bfm_config.hold_time         <= C_CLK_PERIOD/8;
+  axilite_bfm_config.num_b_pipe_stages <= 0;
 
   axi_in.araddr  <= axilite_if.read_address_channel.araddr;
   dummy_arprot   <= axilite_if.read_address_channel.arprot;
@@ -94,7 +95,8 @@ begin  -- architecture tb
   -- component instantiation
   DUT : entity work.example_axi_axi_pif
     generic map (
-      g_axi_baseaddr      => g_axi_baseaddr)
+      g_axi_baseaddr      => g_axi_baseaddr,
+      g_check_baseaddr    => g_check_baseaddr)
     port map (
       axi_rw_regs         => axi_rw_regs,
       axi_ro_regs         => axi_ro_regs,
