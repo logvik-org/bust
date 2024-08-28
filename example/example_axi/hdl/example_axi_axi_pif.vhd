@@ -11,7 +11,9 @@ entity example_axi_axi_pif is
   generic (
     -- AXI Bus Interface Generics
     g_axi_baseaddr        : std_logic_vector(31 downto 0) := (others => '0');
-    g_check_baseaddr      : boolean := true);
+    g_check_baseaddr      : boolean := true;
+    g_module_addr_width   : integer := 0
+    );
   port (
     -- AXI Bus Interface Ports
     axi_rw_regs    : out t_example_axi_rw_regs    := c_example_axi_rw_regs;
@@ -66,8 +68,10 @@ architecture behavior of example_axi_axi_pif is
   signal reg_data_out : t_example_axi_data;
   -- signal byte_index   : integer; -- unused
 
-  signal register_sel_wr   : std_logic_vector(C_ADDR_WIDTH-1 downto 0) := (others => '0');
-  signal register_sel_rd   : std_logic_vector(C_ADDR_WIDTH-1 downto 0) := (others => '0');
+  constant C_MODULE_ADDR_WIDTH : integer := set_module_addr_width(g_module_addr_width);
+
+  signal register_sel_wr   : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0) := (others => '0');
+  signal register_sel_rd   : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0) := (others => '0');
   signal valid_baseaddr_wr : std_logic := '0';
   signal valid_baseaddr_rd : std_logic := '0';
 
@@ -85,12 +89,12 @@ begin
   rresp   <= rresp_i;
   rvalid  <= rvalid_i;
 
-  register_sel_wr <= awaddr_i(C_ADDR_WIDTH-1 downto 0);
-  register_sel_rd <= araddr_i(C_ADDR_WIDTH-1 downto 0);
+  register_sel_wr <= awaddr_i(C_MODULE_ADDR_WIDTH-1 downto 0);
+  register_sel_rd <= araddr_i(C_MODULE_ADDR_WIDTH-1 downto 0);
 
   gen_check_baseaddr : if g_check_baseaddr generate
-    valid_baseaddr_wr <= '1' when awaddr_i(31 downto C_ADDR_WIDTH) = C_BASEADDR(31 downto C_ADDR_WIDTH) else '0';
-    valid_baseaddr_rd <= '1' when araddr_i(31 downto C_ADDR_WIDTH) = C_BASEADDR(31 downto C_ADDR_WIDTH) else '0';
+    valid_baseaddr_wr <= '1' when awaddr_i(31 downto C_MODULE_ADDR_WIDTH) = C_BASEADDR(31 downto C_MODULE_ADDR_WIDTH) else '0';
+    valid_baseaddr_rd <= '1' when araddr_i(31 downto C_MODULE_ADDR_WIDTH) = C_BASEADDR(31 downto C_MODULE_ADDR_WIDTH) else '0';
   else generate
     valid_baseaddr_wr <= '1';
     valid_baseaddr_rd <= '1';
@@ -154,38 +158,38 @@ begin
 
           null;
 
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG0), C_ADDR_WIDTH) then
+        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG0), C_MODULE_ADDR_WIDTH) then
 
           axi_rw_regs_i.reg0 <= wdata(0);
 
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG1), C_ADDR_WIDTH) then
+        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG1), C_MODULE_ADDR_WIDTH) then
 
           axi_rw_regs_i.reg1 <= wdata(0);
 
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG3), C_ADDR_WIDTH) then
+        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG3), C_MODULE_ADDR_WIDTH) then
 
           axi_rw_regs_i.reg3 <= wdata(7 downto 0);
 
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG5), C_ADDR_WIDTH) then
+        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG5), C_MODULE_ADDR_WIDTH) then
 
           axi_rw_regs_i.reg5 <= wdata;
 
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG7), C_ADDR_WIDTH) then
+        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG7), C_MODULE_ADDR_WIDTH) then
 
           axi_rw_regs_i.reg7.field0 <= wdata(0);
           axi_rw_regs_i.reg7.field1 <= wdata(4 downto 1);
           axi_rw_regs_i.reg7.field2 <= wdata(5);
           axi_rw_regs_i.reg7.field3 <= wdata(20 downto 6);
 
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG9), C_ADDR_WIDTH) then
+        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG9), C_MODULE_ADDR_WIDTH) then
 
           axi_pulse_regs_cycle.reg9 <= wdata(0);
 
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG10), C_ADDR_WIDTH) then
+        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG10), C_MODULE_ADDR_WIDTH) then
 
           axi_pulse_regs_cycle.reg10 <= wdata(3 downto 0);
 
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG11), C_ADDR_WIDTH) then
+        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG11), C_MODULE_ADDR_WIDTH) then
 
           axi_pulse_regs_cycle.reg11.field0 <= wdata(14 downto 0);
           axi_pulse_regs_cycle.reg11.field1 <= wdata(15);
@@ -309,42 +313,42 @@ begin
 
       null;
 
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG0), C_ADDR_WIDTH) then
+    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG0), C_MODULE_ADDR_WIDTH) then
 
       reg_data_out(0) <= axi_rw_regs_i.reg0;
 
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG1), C_ADDR_WIDTH) then
+    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG1), C_MODULE_ADDR_WIDTH) then
 
       reg_data_out(0) <= axi_rw_regs_i.reg1;
 
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG2), C_ADDR_WIDTH) then
+    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG2), C_MODULE_ADDR_WIDTH) then
 
       reg_data_out(0) <= axi_ro_regs.reg2;
 
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG3), C_ADDR_WIDTH) then
+    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG3), C_MODULE_ADDR_WIDTH) then
 
       reg_data_out(7 downto 0) <= axi_rw_regs_i.reg3;
 
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG4), C_ADDR_WIDTH) then
+    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG4), C_MODULE_ADDR_WIDTH) then
 
       reg_data_out(13 downto 0) <= axi_ro_regs.reg4;
 
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG5), C_ADDR_WIDTH) then
+    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG5), C_MODULE_ADDR_WIDTH) then
 
       reg_data_out <= axi_rw_regs_i.reg5;
 
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG6), C_ADDR_WIDTH) then
+    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG6), C_MODULE_ADDR_WIDTH) then
 
       reg_data_out <= axi_ro_regs.reg6;
 
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG7), C_ADDR_WIDTH) then
+    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG7), C_MODULE_ADDR_WIDTH) then
 
       reg_data_out(0) <= axi_rw_regs_i.reg7.field0;
       reg_data_out(4 downto 1) <= axi_rw_regs_i.reg7.field1;
       reg_data_out(5) <= axi_rw_regs_i.reg7.field2;
       reg_data_out(20 downto 6) <= axi_rw_regs_i.reg7.field3;
 
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG8), C_ADDR_WIDTH) then
+    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG8), C_MODULE_ADDR_WIDTH) then
 
       reg_data_out(0) <= axi_ro_regs.reg8.field0;
       reg_data_out(19 downto 1) <= axi_ro_regs.reg8.field1;

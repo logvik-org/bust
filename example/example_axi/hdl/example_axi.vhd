@@ -18,7 +18,9 @@ entity example_axi is
     -- User Generics End
     -- AXI Bus Interface Generics
     g_axi_baseaddr        : std_logic_vector(31 downto 0) := (others => '0');
-    g_check_baseaddr      : boolean := true);
+    g_check_baseaddr      : boolean := true;
+    g_module_addr_width   : integer := 0
+  );
   port (
     -- User Ports Start
 
@@ -56,7 +58,8 @@ begin
   i_example_axi_axi_pif : entity work.example_axi_axi_pif
     generic map (
       g_axi_baseaddr      => g_axi_baseaddr,
-      g_check_baseaddr    => g_check_baseaddr)
+      g_check_baseaddr    => g_check_baseaddr,
+      g_module_addr_width => g_module_addr_width)
     port map (
       axi_rw_regs         => axi_rw_regs,
       axi_ro_regs         => axi_ro_regs,

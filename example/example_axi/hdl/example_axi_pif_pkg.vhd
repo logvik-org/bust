@@ -28,6 +28,8 @@ package example_axi_pif_pkg is
   constant C_ADDR_MAX   : integer := 44; -- 0x2c
   constant C_ADDR_WIDTH : integer := integer(ceil(log2(real(C_ADDR_MAX + 1))));
 
+  function set_module_addr_width(g_module_addr_width : integer) return integer;
+
   -- RW Register Record Definitions
 
   type t_example_axi_rw_reg7 is record
@@ -109,3 +111,16 @@ package example_axi_pif_pkg is
 
 
 end package example_axi_pif_pkg;
+
+package body example_axi_pif_pkg is
+
+  function set_module_addr_width(g_module_addr_width : integer) return integer is
+  begin
+    if (g_module_addr_width = 0) then
+      return C_ADDR_WIDTH; -- use maximum address to define the range
+    else
+      return g_module_addr_width;
+    end if;
+  end function set_module_addr_width;
+
+end package body example_axi_pif_pkg;
