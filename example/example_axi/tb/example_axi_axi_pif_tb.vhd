@@ -28,7 +28,7 @@ architecture tb of example_axi_axi_pif_tb is
   -- component generics
   constant g_axi_baseaddr   : std_logic_vector(31 downto 0) := 32X"FFAA0000";
   constant g_check_baseaddr    : boolean                       := true;
-  constant g_module_addr_width : boolean                       := 16;
+  constant g_module_addr_width : integer                       := 16;
 
   -- component ports
   signal axi_rw_regs    : t_example_axi_rw_regs    := c_example_axi_rw_regs;
