@@ -34,7 +34,22 @@ class ModuleVHDLGen:
         s += "\n"
 
         s += "end package " + self.name + "_pif_pkg;"
-        s += "\n"
+        s += "\n\n"
+
+        s += (
+            f"package body {self.name}_pif_pkg is\n"
+            "\n"
+            "  function set_module_addr_width(g_module_addr_width : integer) return integer is\n"
+            "  begin\n"
+            "    if (g_module_addr_width = 0) then\n"
+            "      return C_ADDR_WIDTH; -- use maximum address to define the range\n"
+            "    else\n"
+            "      return g_module_addr_width;\n"
+            "    end if;\n"
+            "  end function set_module_addr_width;\n"
+            "\n"
+            f"end package body {self.name}_pif_pkg;\n"
+        )
 
         return s
 
@@ -247,7 +262,9 @@ class ModuleVHDLGen:
 
         max_addr = self.registers[-1].address
         par += f"constant C_ADDR_MAX   : integer := {max_addr}; -- {hex(max_addr)}\n"
-        par += "constant C_ADDR_WIDTH : integer := integer(ceil(log2(real(C_ADDR_MAX + 1))));\n"
+        par += "constant C_ADDR_WIDTH : integer := integer(ceil(log2(real(C_ADDR_MAX + 1))));\n\n"
+
+        par += "function set_module_addr_width(g_module_addr_width : integer) return integer;\n"
         par += "\n"
 
         return indent_string(par)
@@ -281,7 +298,9 @@ class ModuleVHDLGen:
             + str(self.bus.addr_width - 1)
         )
         par += " downto 0) := (others => '0');\n"
-        par += "g_check_baseaddr      : boolean := true);\n"
+        par += "g_check_baseaddr      : boolean := true;\n"
+        par += "g_module_addr_width   : integer := 0\n"
+        par += ");\n"
 
         s += indent_string(par, 2)
 
@@ -355,7 +374,8 @@ class ModuleVHDLGen:
         s += ": entity work." + self.name + "_" + self.bus.short_name + "_pif\n"
         s += indent_string("generic map (\n")
         par = "g_{0}_baseaddr      => g_{0}_baseaddr,\n".format(self.bus.short_name)
-        par += "g_check_baseaddr    => g_check_baseaddr)\n"
+        par += "g_check_baseaddr    => g_check_baseaddr,\n"
+        par += "g_module_addr_width => g_module_addr_width)\n"
         s += indent_string(par, 2)
 
         s += indent_string("port map (\n")

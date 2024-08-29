@@ -19,7 +19,8 @@ entity example_ipbus is
     -- IPBUS Bus Interface Generics
     g_ipb_baseaddr        : std_logic_vector(31 downto 0) := (others => '0');
     g_check_baseaddr      : boolean := true;
-    g_module_addr_width   : integer := 0);
+    g_module_addr_width   : integer := 0
+    );
   port (
     -- User Ports Start
 

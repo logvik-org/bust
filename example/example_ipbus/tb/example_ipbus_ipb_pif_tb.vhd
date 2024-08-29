@@ -28,7 +28,8 @@ architecture tb of example_ipbus_ipb_pif_tb is
 
   -- component generics
   constant g_ipb_baseaddr   : std_logic_vector(31 downto 0) := 32X"FFAA0000";
-  constant g_check_baseaddr : boolean                       := true;
+  constant g_check_baseaddr    : boolean                       := true;
+  constant g_module_addr_width : boolean                       := 16;
 
   -- component ports
   signal ipb_rw_regs    : t_example_ipbus_rw_regs    := c_example_ipbus_rw_regs;
@@ -76,7 +77,8 @@ begin  -- architecture tb
   DUT : entity work.example_ipbus_ipb_pif
     generic map (
       g_ipb_baseaddr      => g_ipb_baseaddr,
-      g_check_baseaddr    => g_check_baseaddr)
+      g_check_baseaddr    => g_check_baseaddr,
+      g_module_addr_width => g_module_addr_width)
     port map (
       ipb_rw_regs         => ipb_rw_regs,
       ipb_ro_regs         => ipb_ro_regs,

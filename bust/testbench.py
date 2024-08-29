@@ -245,7 +245,8 @@ class Testbench(object):
         s += indent_string(
             "-- component generics\n"
             'constant g_{}_baseaddr   : std_logic_vector(31 downto 0) := 32X"FFAA0000";\n'
-            "constant g_check_baseaddr : boolean                       := true;\n"
+            "constant g_check_baseaddr    : boolean                       := true;\n"
+            "constant g_module_addr_width : boolean                       := 16;\n"
         ).format(self.bus.short_name)
         s += "\n"
 
