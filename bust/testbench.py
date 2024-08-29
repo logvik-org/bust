@@ -245,7 +245,8 @@ class Testbench(object):
         s += indent_string(
             "-- component generics\n"
             'constant g_{}_baseaddr   : std_logic_vector(31 downto 0) := 32X"FFAA0000";\n'
-            "constant g_check_baseaddr : boolean                       := true;\n"
+            "constant g_check_baseaddr    : boolean                       := true;\n"
+            "constant g_module_addr_width : integer                       := 16;\n"
         ).format(self.bus.short_name)
         s += "\n"
 
@@ -365,7 +366,8 @@ class Testbench(object):
                 'log_hdr_large("Checking that invalid register returns ERR");\n\n'
                 "ipbus_bfm_config.expected_response <= ERR;\n\n"
                 'log_hdr("Check erroneous read");\n\n'
-                'read(32X"FFFFFFFF", dummy_data, "Read from register that does not exist");\n\n'
+                'read(f_addr(g_ipb_baseaddr, 32x"ffff"), dummy_data, "Read from register that does not exist");\n'
+                'check_value(dummy_data, 32X"DEADBEEF", error, "Check that the returned data is rubbish");\n\n'
                 'log_hdr("Check erroneous write");\n\n'
                 'write(32X"FFFFFFFF", 32X"0", "Write to register that does not exist");\n\n'
             )
