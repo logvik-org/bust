@@ -28,7 +28,8 @@ architecture tb of example_ipbus_ipb_pif_tb is
 
   -- component generics
   constant g_ipb_baseaddr   : std_logic_vector(31 downto 0) := 32X"FFAA0000";
-  constant g_check_baseaddr : boolean                       := true;
+  constant g_check_baseaddr    : boolean                       := true;
+  constant g_module_addr_width : integer                       := 16;
 
   -- component ports
   signal ipb_rw_regs    : t_example_ipbus_rw_regs    := c_example_ipbus_rw_regs;
@@ -76,7 +77,8 @@ begin  -- architecture tb
   DUT : entity work.example_ipbus_ipb_pif
     generic map (
       g_ipb_baseaddr      => g_ipb_baseaddr,
-      g_check_baseaddr    => g_check_baseaddr)
+      g_check_baseaddr    => g_check_baseaddr,
+      g_module_addr_width => g_module_addr_width)
     port map (
       ipb_rw_regs         => ipb_rw_regs,
       ipb_ro_regs         => ipb_ro_regs,
@@ -584,7 +586,8 @@ begin  -- architecture tb
 
     log_hdr("Check erroneous read");
 
-    read(32X"FFFFFFFF", dummy_data, "Read from register that does not exist");
+    read(f_addr(g_ipb_baseaddr, 32x"ffff"), dummy_data, "Read from register that does not exist");
+    check_value(dummy_data, 32X"DEADBEEF", error, "Check that the returned data is rubbish");
 
     log_hdr("Check erroneous write");
 
