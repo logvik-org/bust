@@ -1,5 +1,6 @@
 from bust.utils import NL, indent_string
-from bust.vhdl import lib_declaration, ieee_math
+from bust.vhdl_gen import ieee_math
+from bust.vhdl_gen import lib_declaration
 
 
 class ModuleVHDLGen:

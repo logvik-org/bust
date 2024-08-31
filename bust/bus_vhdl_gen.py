@@ -1,5 +1,6 @@
 from bust.utils import indent_string
-from bust.vhdl import async_process, sync_process, comb_process, comb_process_with_reset
+from bust.vhdl_gen import comb_process_with_reset
+from bust.vhdl_gen import async_process, comb_process, sync_process
 
 
 class BusVHDLGen:
