@@ -1,4 +1,4 @@
-from bust.utils import indent_string
+from bust.utils import NL, indent_string
 from bust.vhdl import lib_declaration, ieee_math
 
 
@@ -15,10 +15,9 @@ class ModuleVHDLGen:
         self.n_pulse_regs = len([reg for reg in self.registers if reg.mode == "pulse"])
 
     def return_module_pkg_VHDL(self):
-        s = ieee_math()
-        s += "\n"
-        s += "package " + self.name + "_pif_pkg is"
-        s += "\n\n"
+        s = f"{ieee_math()}{NL}{NL}"
+        s += f"package {self.name}_pif_pkg is"
+        s += f"{NL}{NL}"
 
         s += self.get_subtypes_and_addrs_vhdl()
 
@@ -270,10 +269,12 @@ class ModuleVHDLGen:
         return indent_string(par)
 
     def return_module_VHDL(self):
-        s = lib_declaration()
-        s += "-- User Libraries Start\n\n"
-        s += "-- User Libraries End\n"
-        s += "\n"
+        s = (
+            f"{lib_declaration()}{NL}"
+            f"-- User Libraries Start{NL}{NL}"
+            f"-- User Libraries End{NL}"
+            f"{NL}"
+        )
         if self.bus.comp_library != "work":
             s += "library " + self.bus.comp_library + ";\n"
         if self.bus.bus_type == "ipbus":

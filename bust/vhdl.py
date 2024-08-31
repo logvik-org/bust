@@ -7,18 +7,14 @@ def lib_declaration():
     s = (
         f"library ieee;{NL}"
         f"use ieee.std_logic_1164.all;{NL}"
-        f"use ieee.numeric_std.all;{NL}{NL}"
+        f"use ieee.numeric_std.all;{NL}"
     )
     return s
 
 
 def ieee_math():
-    s = (
-        f"library ieee;{NL}"
-        f"use ieee.std_logic_1164.all;{NL}"
-        f"use ieee.numeric_std.all;{NL}"
-        f"use ieee.math_real.all;{NL}{NL}"
-    )
+    s = f"{lib_declaration()}"
+    s += f"use ieee.math_real.all;{NL}"
     return s
 
 
