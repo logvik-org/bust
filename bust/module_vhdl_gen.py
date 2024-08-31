@@ -15,9 +15,9 @@ class ModuleVHDLGen:
         self.n_pulse_regs = len([reg for reg in self.registers if reg.mode == "pulse"])
 
     def return_module_pkg_VHDL(self):
-        s = f"{ieee_math()}{NL}{NL}"
-        s += f"package {self.name}_pif_pkg is"
-        s += f"{NL}{NL}"
+        s = f"{ieee_math()}{2*NL}"
+
+        s += f"package {self.name}_pif_pkg is{2*NL}"
 
         s += self.get_subtypes_and_addrs_vhdl()
 
