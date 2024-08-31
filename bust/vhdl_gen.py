@@ -11,8 +11,9 @@ def lib_declaration():
 
 
 def ieee_math():
-    s = f"{lib_declaration()}"
-    s += f"use ieee.math_real.all;{NL}"
+    # fmt: off
+    s = (f"{lib_declaration()}"
+         f"use ieee.math_real.all;{NL}")  # fmt: on
     return s
 
 
