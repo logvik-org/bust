@@ -1,21 +1,24 @@
 import re
 
-from bust.utils import indent_string
-from bust.utils import is_mixed
+from bust.utils import indent_string, is_mixed, NL
 
 
 def lib_declaration():
-    s = "library ieee;\n"
-    s += "use ieee.std_logic_1164.all;\n"
-    s += "use ieee.numeric_std.all;\n\n"
+    s = (
+        f"library ieee;{NL}"
+        f"use ieee.std_logic_1164.all;{NL}"
+        f"use ieee.numeric_std.all;{NL}{NL}"
+    )
     return s
 
 
 def ieee_math():
-    s = "library ieee;\n"
-    s += "use ieee.std_logic_1164.all;\n"
-    s += "use ieee.numeric_std.all;\n"
-    s += "use ieee.math_real.all;\n\n"
+    s = (
+        f"library ieee;{NL}"
+        f"use ieee.std_logic_1164.all;{NL}"
+        f"use ieee.numeric_std.all;{NL}"
+        f"use ieee.math_real.all;{NL}{NL}"
+    )
     return s
 
 
@@ -28,29 +31,31 @@ def sync_process(
     active_low=True,
     variables=None,
 ):
-    s = process_name + " : process(" + clk_name + ")\n"
+    s = f"{process_name} : process({clk_name}){NL}"
     if variables is not None:
         for var in variables:
-            s += indent_string("variable " + var + ";\n")
-    s += "begin\n"
-    s += indent_string("if rising_edge(" + clk_name + ") then\n")
-    s += indent_string("if " + reset_name + " = ", 2)
+            s += indent_string(f"variable {var};{NL}")
+    s += (
+        f"begin{NL}"
+        f'{indent_string(f"if rising_edge({clk_name}) then{NL}")}'
+        f'{indent_string(f"if {reset_name} = ", 2)}'
+    )
 
     if active_low:
         s += "'0'"
     else:
         s += "'1'"
 
-    s += " then\n"
+    s += (
+        f" then{NL}"
+        f'{indent_string(f"{reset_string}{NL}", 3)}'
+        f'{indent_string(f"else{NL}", 2)}'
+        f"{indent_string(logic_string, 3)}"
+        f'{indent_string(f"end if;{NL}", 2)}'
+        f'{indent_string(f"end if;{NL}")}'
+    )
 
-    s += indent_string(reset_string, 3)
-    s += "\n"
-    s += indent_string("else\n", 2)
-
-    s += indent_string(logic_string, 3)
-    s += indent_string("end if;\n", 2)
-    s += indent_string("end if;\n")
-    s += "end process " + process_name + ";\n"
+    s += f"end process {process_name};{NL}"
     return s
 
 
@@ -63,39 +68,36 @@ def async_process(
     active_low=True,
     variables=None,
 ):
-    s = process_name + " : process(" + clk_name + ", " + reset_name + ")\n"
+    s = f"{process_name} : process({clk_name}, {reset_name}){NL}"
     if variables is not None:
         for var in variables:
-            s += indent_string("variable " + var + ";\n")
-    s += "begin\n"
-    s += indent_string("if " + reset_name + " = ")
+            s += indent_string(f"variable {var};{NL}")
+    s += f"begin{NL}" f'{indent_string("if " + reset_name + " = ")}'
 
     if active_low:
         s += "'0'"
     else:
         s += "'1'"
 
-    s += " then\n"
-
-    s += indent_string(reset_string, 2)
-    s += "\n"
-    s += indent_string("elsif rising_edge(" + clk_name + ") then\n")
-
-    s += indent_string(logic_string, 2)
-    s += "\n"
-    s += indent_string("end if;\n")
-    s += "end process " + process_name + ";\n"
+    s += (
+        f" then{NL}"
+        f'{indent_string(f"{reset_string}{NL}", 2)}'
+        f'{indent_string(f"elsif rising_edge({clk_name}) then{NL}")}'
+        f'{indent_string(f"{logic_string}{NL}", 2)}'
+        f'{indent_string(f"end if;{NL}")}'
+        f'{f"end process {process_name};{NL}"}'
+    )
 
     return s
 
 
 def comb_process(process_name, logic_string):
-    s = process_name + " : process(all)\n"
-    s += "begin\n\n"
+    s = f"{process_name} : process(all){NL}"
+    s += f"begin{NL}{NL}"
 
     s += indent_string(logic_string)
 
-    s += "end process " + process_name + ";\n"
+    s += f"end process {process_name};{NL}"
 
     return s
 
@@ -103,25 +105,25 @@ def comb_process(process_name, logic_string):
 def comb_process_with_reset(
     reset_name, process_name, reset_string, logic_string, active_low=True
 ):
-    s = process_name + " : process(all)\n"
-    s += "begin\n"
-    s += indent_string("if " + reset_name + " = ")
+    s = (
+        f"{process_name} : process(all){NL}"
+        f"begin{NL}"
+        f'{indent_string(f"if {reset_name} = ")}'
+    )
+
     if active_low:
         s += "'0'"
     else:
         s += "'1'"
 
-    s += " then\n"
-
-    s += indent_string(reset_string, 2)
-    s += "\n"
-    s += indent_string("else\n")
-
-    s += indent_string(logic_string, 2)
-    s += "\n"
-    s += indent_string("end if;\n")
-
-    s += "end process " + process_name + ";\n"
+    s += (
+        f" then{NL}"
+        f'{indent_string(f"{reset_string}{NL}", 2)}'
+        f'{indent_string(f"else{NL}")}'
+        f'{indent_string(f"{logic_string}{NL}", 2)}'
+        f'{indent_string(f"end if;{NL}")}'
+        f'{f"end process {process_name};{NL}"}'
+    )
 
     return s
 
@@ -305,19 +307,19 @@ def is_valid_VHDL(string):
     if not is_only_alpfanum_(string):
         raise InvalidVHDLIdentifier(
             string
-            + " - identifiers may only contain \n\n- alphabetic letters "
-            + "(‘A’ to ‘Z’ and ‘a’ to ‘z’), \n- decimal digits (‘0’ to ‘9’) "
-            + "\n- the underline character (‘_’)"
+            + f" - identifiers may only contain {NL}{NL}- alphabetic letters "
+            + f"(‘A’ to ‘Z’ and ‘a’ to ‘z’), {NL}- decimal digits (‘0’ to ‘9’) "
+            + f"{NL}- the underline character (‘_’)"
         )
     if len(string) > 16:
         print(
-            "\nWarning - "
+            f"{NL}Warning - "
             + string
             + " - identifier should probably not be longer than 16 characters."
         )
     if is_mixed(string):
         print(
-            "\nWarning - "
+            f"{NL}Warning - "
             + string
             + " - identifier should probably not contain a mix of uppercase"
             + " and lowercase letters."
@@ -335,11 +337,11 @@ def is_unique(string, ls):
 
 class InvalidVHDLIdentifier(Exception):
     def __init__(self, msg):
-        s = "\nError in parsing identifier: " + msg
+        s = f"{NL}Error in parsing identifier: {msg}"
         super().__init__(s)
 
 
 class NonUniqueIdentifer(Exception):
     def __init__(self, msg):
-        s = "\nError in parsing identifier: " + msg
+        s = f"{NL}Error in parsing identifier: {msg}"
         super().__init__(s)

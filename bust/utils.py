@@ -8,9 +8,10 @@ import os
 from functools import reduce
 import logging
 
-spaces_in_tab = 2
-
 logger = logging.getLogger(__name__)
+
+spaces_in_tab = 2
+NL = "\n"
 
 
 def indent_string(string, tabs=1, break_line=False):
