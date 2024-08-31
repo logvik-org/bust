@@ -10,7 +10,7 @@ from bust.exceptions import InvalidAddress, InvalidRegister
 from bust.module_vhdl_gen import ModuleVHDLGen
 from bust.register import Register
 from bust.utils import add_line_breaks, indent_string
-from bust.vhdl import is_unique, is_valid_VHDL
+from bust.vhdl_util import is_unique, is_valid_VHDL
 
 
 class Module:
