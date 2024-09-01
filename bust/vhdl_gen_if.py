@@ -16,7 +16,7 @@ def if_else_stmt(condition: str, if_true: str, else_true: str):
         f"{indent_string(if_true)}{NL}"
         f"else{NL}"
         f"{indent_string(else_true)}{NL}"
-        "end if;"
+        f"end if;{NL}"
     )
 
 
