@@ -26,13 +26,13 @@ class clean(Command):
 
 setup(
     name="bust",
-    version="0.13",
+    version="0.13.1",
     packages=find_packages(),
     license="MIT",
     install_requires=[
         "docopt>=0.6.2",
         "pylatexenc>=2.1",
-        "curses-menu>=0.5.0",
+        "curses-menu>=0.9.0",
         "prettytable>=2.5.0",
     ],
     extras_require={
