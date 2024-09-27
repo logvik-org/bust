@@ -69,15 +69,21 @@ class Editor(object):
             self.settings = Settings(None, None)
             self.mod = Module(mod, self.bus, self.settings)
 
-    def show_menu(self):
-        self.menu = CursesMenu("bust - Module Editor", self.set_subtitle())
+        self.menu = self.create_menu()
 
-        self.menu.append_item(FunctionItem("Edit name", self.edit_name))
-        self.menu.append_item(FunctionItem("List registers", self.list_registers))
-        self.menu.append_item(FunctionItem("Add new register", self.add_register))
-        self.menu.append_item(FunctionItem("Remove register", self.remove_register))
-        self.menu.append_item(FunctionItem("Update addresses", self.update_addresses))
-        self.menu.append_item(FunctionItem("Save JSON", self.save_JSON))
+    def create_menu(self):
+        menu = CursesMenu("bust - Module Editor", self.set_subtitle())
+
+        menu.items.append(FunctionItem("Edit name", self.edit_name))
+        menu.items.append(FunctionItem("List registers", self.list_registers))
+        menu.items.append(FunctionItem("Add new register", self.add_register))
+        menu.items.append(FunctionItem("Remove register", self.remove_register))
+        menu.items.append(FunctionItem("Update addresses", self.update_addresses))
+        menu.items.append(FunctionItem("Save JSON", self.save_JSON))
+
+        return menu
+
+    def show_menu(self):
         self.menu.show()
 
     def update_menu(self):
