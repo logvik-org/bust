@@ -194,7 +194,8 @@ def generate_output(
             subprocess.call(
                 [
                     "pdflatex",
-                    "--output-directory=" + mod_doc,
+                    "--interaction=batchmode",
+                    f"--output-directory={mod_doc}",
                     os.path.join(mod_doc, module.name + ".tex"),
                 ],
                 stdout=open(os.devnull, "wb"),
