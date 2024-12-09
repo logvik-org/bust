@@ -57,12 +57,12 @@ class InvalidResetMode(RuntimeError):
 class ModuleDataBitsExceeded(Exception):
     """! @brief Raised when the specified module data bits are exceeded."""
 
-    def __init__(self, register, reglength, mod_data_length):
-        msg = "Register length exceeded module data length by "
-        msg += str(reglength - mod_data_length)
+    def __init__(self, register, regwidth, mod_data_width):
+        msg = "Register width exceeded module data width by "
+        msg += str(regwidth - mod_data_width)
         msg += " in register " + register + "\n"
-        msg += "Module length: " + str(mod_data_length) + "\n"
-        msg += "Register length: " + str(reglength)
+        msg += "Module width: " + str(mod_data_width) + "\n"
+        msg += "Register width: " + str(regwidth)
 
         super().__init__(msg)
 

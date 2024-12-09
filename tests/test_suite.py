@@ -218,7 +218,7 @@ class Test_Suite(unittest.TestCase):
                 ) as f:
                     string = f.read()
                 self.assertEqual(
-                    holder.doc.return_tex_documentation("0.9.4"),
+                    holder.doc.return_tex_documentation("0.14.0-dev"),
                     string,
                     "doc must match manual file",
                 )

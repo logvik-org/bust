@@ -475,7 +475,7 @@ class BusVHDLGen:
                     par += sig_name + reg.name + " <= wdata;\n"
                 elif reg.sig_type == "slv":
                     par += sig_name + reg.name + " <= wdata("
-                    par += str(reg.length - 1) + " downto 0);\n"
+                    par += str(reg.width - 1) + " downto 0);\n"
                 elif reg.sig_type == "sl":
                     par += sig_name + reg.name + " <= wdata(0);\n"
 
@@ -679,7 +679,7 @@ class BusVHDLGen:
 
             elif reg.sig_type == "slv":
                 par += "reg_data_out("
-                par += str(reg.length - 1) + " downto 0) <= "
+                par += str(reg.width - 1) + " downto 0) <= "
                 if reg.mode == "rw":
                     par += "axi_rw_regs_i."
                 elif reg.mode == "ro":
@@ -862,7 +862,7 @@ class BusVHDLGen:
                     par += sig_name + reg.name + " <= ipb_in.ipb_wdata;\n"
                 elif reg.sig_type == "slv":
                     par += sig_name + reg.name + " <= ipb_in.ipb_wdata("
-                    par += str(reg.length - 1) + " downto 0);\n"
+                    par += str(reg.width - 1) + " downto 0);\n"
                 elif reg.sig_type == "sl":
                     par += sig_name + reg.name + " <= ipb_in.ipb_wdata(0);\n"
                 if reg.stall:
@@ -972,7 +972,7 @@ class BusVHDLGen:
 
             elif reg.sig_type == "slv":
                 par += "reg_data_out("
-                par += str(reg.length - 1) + " downto 0) <= "
+                par += str(reg.width - 1) + " downto 0) <= "
                 if reg.mode == "rw":
                     par += "ipb_rw_regs_i."
                 elif reg.mode == "ro":
