@@ -110,7 +110,7 @@ class Editor(object):
                     "Mode",
                     "Address",
                     "Type",
-                    "Length",
+                    "Width",
                     "Reset",
                     "Description",
                 ]
@@ -122,7 +122,7 @@ class Editor(object):
                             reg.mode,
                             hex(reg.address),
                             reg.sig_type,
-                            reg.length,
+                            reg.width,
                             reg.reset,
                             add_line_breaks(reg.description, 25),
                         ]
@@ -160,7 +160,7 @@ class Editor(object):
                 "Name",
                 "Type",
                 "Position",
-                "Length",
+                "Width",
                 "Reset",
                 "Description",
             ]
@@ -172,7 +172,7 @@ class Editor(object):
                         field.name,
                         field.sig_type,
                         field.get_pos_str(),
-                        field.length,
+                        field.width,
                         field.reset,
                         add_line_breaks(field.description, 25),
                     ]
@@ -213,8 +213,8 @@ class Editor(object):
                     if field_dic["type"] == "slv":
                         max_width = self.mod.data_width - width_consumed
 
-                        field_dic["length"] = get_int(
-                            "Field length: ",
+                        field_dic["width"] = get_int(
+                            "Field width: ",
                             10,
                             1,
                             max_width,
@@ -224,13 +224,13 @@ class Editor(object):
                             + " consumed by other fields: "
                             + str(max_width),
                         )
-                        width_consumed += field_dic["length"]
+                        width_consumed += field_dic["width"]
 
                     else:
                         width_consumed += 1
-                        field_dic["length"] = 1
+                        field_dic["width"] = 1
 
-                    max_reset = 2 ** field_dic["length"] - 1
+                    max_reset = 2 ** field_dic["width"] - 1
                     field_dic["reset"] = hex(
                         get_int(
                             "Field reset in hex (default=0x0): ",
@@ -272,19 +272,19 @@ class Editor(object):
                     "Register type: ", Register.supported_types, None, 0
                 )
 
-            # Make sure reg length is set to help calculate max reset later
+            # Make sure reg width is set to help calculate max reset later
             # Registers of field type will get an auto reset based on the field resets
             if reg["type"] == "default":
-                reg["length"] = self.mod.data_width
+                reg["width"] = self.mod.data_width
             elif reg["type"] == "sl":
-                reg["length"] = 1
+                reg["width"] = 1
             elif reg["type"] == "slv":
                 while True:
                     try:
-                        reg["length"] = int(input("Length: "))
+                        reg["width"] = int(input("Width: "))
                         break
                     except Exception:
-                        print("That is not a valid length...")
+                        print("That is not a valid width...")
 
             if input("Auto-assign address? (Y/n): ").upper() == "N":
                 # Make sure the address is not out of range and that it is free
@@ -325,7 +325,7 @@ class Editor(object):
 
             if reg["type"] != "fields":
 
-                max_reset = 2 ** reg["length"] - 1
+                max_reset = 2 ** reg["width"] - 1
                 reg["reset"] = hex(
                     get_int(
                         "Register reset in hex (default=0x0): ",
@@ -347,7 +347,7 @@ class Editor(object):
                 "Mode",
                 "Address",
                 "Type",
-                "Length",
+                "Width",
                 "Reset",
                 "Description",
             ]
@@ -364,11 +364,11 @@ class Editor(object):
             table_type = reg["type"]
 
             if reg["type"] == "fields":
-                table_length = "auto"
-            elif "length" in reg:
-                table_length = reg["length"]
+                table_width = "auto"
+            elif "width" in reg:
+                table_width = reg["width"]
             else:
-                table_length = self.mod.bus.data_width
+                table_width = self.mod.bus.data_width
 
             if reg["type"] == "fields":
                 table_reset = "auto"
@@ -386,7 +386,7 @@ class Editor(object):
                     table_mode,
                     table_address,
                     table_type,
-                    table_length,
+                    table_width,
                     table_reset,
                     table_description,
                 ]
@@ -401,7 +401,7 @@ class Editor(object):
                     "#",
                     "Name",
                     "Type",
-                    "Length",
+                    "Width",
                     "Reset",
                     "Description",
                 ]
@@ -412,7 +412,7 @@ class Editor(object):
                             i,
                             field["name"],
                             field["type"],
-                            field["length"],
+                            field["width"],
                             field["reset"],
                             field["description"],
                         ]

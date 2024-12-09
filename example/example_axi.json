@@ -45,7 +45,7 @@
                 "mode": "rw",
                 "type": "slv",
                 "address": "0xc",
-                "length": 8,
+                "width": 8,
                 "reset": "0x3",
                 "description": "RW std_logic_vector[7:0] register that resets to 0x3"
             },
@@ -54,7 +54,7 @@
                 "mode": "ro",
                 "type": "slv",
                 "address": "0x10",
-                "length": 14,
+                "width": 14,
                 "reset": "0x0",
                 "description": "RO std_logic_vector[13:0]"
             },
@@ -89,7 +89,7 @@
                     {
                         "name": "field1",
                         "type": "slv",
-                        "length": 4,
+                        "width": 4,
                         "reset": "0xb",
                         "description": "std_logic_vector[3:0] that resets to 0xb is not a valid reset value"
                     },
@@ -101,7 +101,7 @@
                     {
                         "name": "field3",
                         "type": "slv",
-                        "length": 15,
+                        "width": 15,
                         "reset": "0x2b",
                         "description": "std_logic_vector[14:0] that resets to 0x2b"
                     }
@@ -122,7 +122,7 @@
                     {
                         "name": "field1",
                         "type": "slv",
-                        "length": 19,
+                        "width": 19,
                         "description": "std_logic_vector[18:0] field"
                     },
                     {
@@ -133,7 +133,7 @@
                     {
                         "name": "field3",
                         "type": "slv",
-                        "length": 3,
+                        "width": 3,
                         "description": "std_logic_vector[2:0] field"
                     }
                 ],
@@ -154,7 +154,7 @@
                 "pulse_cycles": 1,
                 "type": "slv",
                 "address": "0x28",
-                "length": 4,
+                "width": 4,
                 "reset": "0xa",
                 "description": "PULSE std_logic_vector[3:0] register that resets to 0xA"
             },
@@ -168,7 +168,7 @@
                     {
                         "name": "field0",
                         "type": "slv",
-                        "length": 15,
+                        "width": 15,
                         "reset": "0x3",
                         "description": "std_logic_vector[14:0] field that resets to 0x3"
                     },

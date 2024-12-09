@@ -17,7 +17,7 @@ class Register:
     supported_types = ["default", "slv", "sl"]
     supported_modes = ["RW", "RO", "PULSE"]
 
-    def __init__(self, reg, address, mod_data_length):
+    def __init__(self, reg, address, mod_data_width):
         self.name = reg["name"]
         self.mode = reg["mode"].lower()
         self.description = reg["description"]
@@ -39,32 +39,32 @@ class Register:
             self.stall_cycles = reg["stall_cycles"]
 
         self.reset = "0x0"
-        self.length = 0
+        self.width = 0
         self.fields = []
 
-        if "length" in reg:
-            tmp_length = reg["length"]
+        if "width" in reg:
+            tmp_width = reg["width"]
         else:
-            tmp_length = 1  # Setting to 1, in case std_logic
+            tmp_width = 1  # Setting to 1, in case std_logic
 
         if "type" in reg:
             self.sig_type = reg["type"]
         else:
             self.sig_type = "fields"
 
-        # Assign the reg type and register data length
+        # Assign the reg type and register data width
         if self.sig_type == "default":
-            self.length = mod_data_length
+            self.width = mod_data_width
 
         elif self.sig_type == "slv":
-            self.length = tmp_length
+            self.width = tmp_width
 
         elif self.sig_type == "sl":
             self.sig_type = "sl"
 
-            if tmp_length != 1:
-                raise UndefinedRegisterType("SL cannot have length other than 1")
-            self.length = tmp_length
+            if tmp_width != 1:
+                raise UndefinedRegisterType("SL cannot have width other than 1")
+            self.width = tmp_width
 
         elif self.sig_type == "fields" or "fields" in reg:
             if len(reg["fields"]) > 0:
@@ -83,9 +83,9 @@ class Register:
                     "Reset value is not allowed for record type register: " + self.name
                 )
             else:
-                # Check whether reset value matches register length
-                # maxvalue is given by 2^length
-                maxvalue = (2**self.length) - 1
+                # Check whether reset value matches register width
+                # maxvalue is given by 2^width
+                maxvalue = (2**self.width) - 1
                 if maxvalue < int(reg["reset"], 16):
                     raise InvalidRegisterFormat(
                         "Reset value does not match register: " + self.name
@@ -94,14 +94,14 @@ class Register:
                     self.reset = reg["reset"]
 
         # Perform check that data bits are not exceeded
-        self.check_register_data_length(mod_data_length)
+        self.check_register_data_width(mod_data_width)
 
     def __str__(self):
         string = "Name: " + self.name + "\n"
         string += "Address: " + hex(self.address) + "\n"
         string += "Mode: " + self.mode + "\n"
         string += "Type: " + self.sig_type + "\n"
-        string += "Length: " + str(self.length) + "\n"
+        string += "Width: " + str(self.width) + "\n"
         string += "Reset: " + self.reset
         if self.sig_type == "record":
 
@@ -112,8 +112,8 @@ class Register:
                     + i["name"]
                     + " Type: "
                     + i["type"]
-                    + " Length: "
-                    + str(i["length"])
+                    + " Width: "
+                    + str(i["width"])
                     + " Reset: "
                     + i["reset"]
                 )
@@ -134,24 +134,24 @@ class Register:
         is_unique(field["name"], field_names)
 
         if field["type"] == "slv":
-            if "length" not in field:
+            if "width" not in field:
                 raise InvalidFieldFormat(self.name)
-            length = field["length"]
+            width = field["width"]
 
         elif field["type"] == "sl":
-            length = 1
+            width = 1
 
         else:
             raise UndefinedFieldType(field["type"])
 
-        # Increment register length
-        self.length += length
+        # Increment register width
+        self.width += width
 
         if "reset" in field:
             reset = field["reset"]
-            # Check whether reset value matches field length
-            # maxvalue is given by 2^length
-            maxvalue = (2**length) - 1
+            # Check whether reset value matches field width
+            # maxvalue is given by 2^width
+            maxvalue = (2**width) - 1
             if maxvalue < int(field["reset"], 16):
                 raise InvalidFieldFormat(
                     "Reset value does not match field: "
@@ -169,7 +169,7 @@ class Register:
 
         next_low = self.get_next_pos_low()
         self.fields.append(
-            Field(field["name"], field["type"], length, reset, description, next_low)
+            Field(field["name"], field["type"], width, reset, description, next_low)
         )
 
         # Maintain the register reset value
@@ -178,13 +178,13 @@ class Register:
         reg_reset_int += field_reset_int << next_low
         self.reset = hex(reg_reset_int)
 
-    def check_register_data_length(self, module):
+    def check_register_data_width(self, module):
         """! @brief Controls that the combined data bits in fields does not
         exceed data bits of module
 
         """
-        if self.length > module:
-            raise ModuleDataBitsExceeded(self.name, self.length, module)
+        if self.width > module:
+            raise ModuleDataBitsExceeded(self.name, self.width, module)
 
     def get_next_pos_low(self):
         if len(self.fields) > 0:

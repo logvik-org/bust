@@ -45,7 +45,7 @@ class Header(object):
                         + field.name.upper()
                         + "_WIDTH "
                     )
-                    s += str(field.length) + "\n"
+                    s += str(field.width) + "\n"
                     s += (
                         "#define "
                         + reg.name.upper()
@@ -61,7 +61,7 @@ class Header(object):
                         + field.name.upper()
                         + "_MASK "
                     )
-                    s += str(hex(pow(2, field.length) - 1 << field.pos_low)) + "\n"
+                    s += str(hex(pow(2, field.width) - 1 << field.pos_low)) + "\n"
                     s += "\n"
 
         s += "#endif"
@@ -111,7 +111,7 @@ class Header(object):
                         + field.name.upper()
                         + "_WIDTH = "
                     )
-                    s += str(field.length) + ";\n"
+                    s += str(field.width) + ";\n"
                     s += (
                         "const uint32_t "
                         + reg.name.upper()
@@ -127,7 +127,7 @@ class Header(object):
                         + field.name.upper()
                         + "_MASK = "
                     )
-                    s += str(hex(pow(2, field.length) - 1 << field.pos_low)) + ";\n"
+                    s += str(hex(pow(2, field.width) - 1 << field.pos_low)) + ";\n"
                     s += "\n"
         s += "};\n\n"
 
@@ -160,7 +160,7 @@ class Header(object):
                     s += indent_string(
                         reg.name.upper() + "_" + field.name.upper() + "_WIDTH = ", 2
                     )
-                    s += str(field.length) + "\n"
+                    s += str(field.width) + "\n"
                     s += indent_string(
                         reg.name.upper() + "_" + field.name.upper() + "_RESET = ", 2
                     )
@@ -168,7 +168,7 @@ class Header(object):
                     s += indent_string(
                         reg.name.upper() + "_" + field.name.upper() + "_MASK = ", 2
                     )
-                    s += str(hex(pow(2, field.length) - 1 << field.pos_low))
+                    s += str(hex(pow(2, field.width) - 1 << field.pos_low))
                     s += "\n"
 
         return s
