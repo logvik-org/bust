@@ -216,7 +216,7 @@ class Module:
                 and reg.sig_type != "fields"
                 and reg.sig_type != "sl"
             ):
-                reg_dic["length"] = reg.length
+                reg_dic["width"] = reg.width
 
             if reg.sig_type != "fields":
                 reg_dic["reset"] = reg.reset

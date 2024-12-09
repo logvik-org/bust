@@ -65,11 +65,11 @@ class ModuleVHDLGen:
             if reg.mode == "pulse":
                 s += indent_string(reg.name, 2) + " : "
                 if reg.sig_type == "default" or (
-                    reg.sig_type == "slv" and reg.length == self.data_width
+                    reg.sig_type == "slv" and reg.width == self.data_width
                 ):
                     s += "t_" + self.name + "_data;\n"
                 elif reg.sig_type == "slv":
-                    s += "std_logic_vector(" + str(reg.length - 1) + " downto 0);\n"
+                    s += "std_logic_vector(" + str(reg.width - 1) + " downto 0);\n"
                 elif reg.sig_type == "sl":
                     s += "std_logic;\n"
                 elif reg.sig_type == "fields":
@@ -97,7 +97,7 @@ class ModuleVHDLGen:
                 for field in reg.fields:
                     s += indent_string(field.name, 2) + " : "
                     if field.sig_type == "slv":
-                        s += "std_logic_vector(" + str(field.length - 1)
+                        s += "std_logic_vector(" + str(field.width - 1)
                         s += " downto 0);\n"
                     elif field.sig_type == "sl":
                         s += "std_logic;\n"
@@ -110,11 +110,11 @@ class ModuleVHDLGen:
             if reg.mode == "ro":
                 s += indent_string(reg.name, 2) + " : "
                 if reg.sig_type == "default" or (
-                    reg.sig_type == "slv" and reg.length == self.data_width
+                    reg.sig_type == "slv" and reg.width == self.data_width
                 ):
                     s += "t_" + self.name + "_data;\n"
                 elif reg.sig_type == "slv":
-                    s += "std_logic_vector(" + str(reg.length - 1) + " downto 0);\n"
+                    s += "std_logic_vector(" + str(reg.width - 1) + " downto 0);\n"
                 elif reg.sig_type == "sl":
                     s += "std_logic;\n"
                 elif reg.sig_type == "fields":
@@ -150,7 +150,7 @@ class ModuleVHDLGen:
                 if field.reset == "0x0":
                     par += "(others => '0')"
                 else:
-                    par += str(field.length) + 'X"'
+                    par += str(field.width) + 'X"'
                     par += format(int(field.reset, 16), "X") + '"'
 
             elif field.sig_type == "sl":
@@ -173,11 +173,11 @@ class ModuleVHDLGen:
             if reg.mode == "rw":
                 s += indent_string(reg.name, 2) + " : "
                 if reg.sig_type == "default" or (
-                    reg.sig_type == "slv" and reg.length == self.data_width
+                    reg.sig_type == "slv" and reg.width == self.data_width
                 ):
                     s += "t_" + self.name + "_data;\n"
                 elif reg.sig_type == "slv":
-                    s += "std_logic_vector(" + str(reg.length - 1) + " downto 0);\n"
+                    s += "std_logic_vector(" + str(reg.width - 1) + " downto 0);\n"
                 elif reg.sig_type == "sl":
                     s += "std_logic;\n"
                 elif reg.sig_type == "fields":
@@ -205,7 +205,7 @@ class ModuleVHDLGen:
                 if reg.reset == "0x0":
                     par += "(others => '0')"
                 else:
-                    par += str(reg.length) + 'X"'
+                    par += str(reg.width) + 'X"'
                     par += format(int(reg.reset, 16), "X") + '"'
 
             elif reg.sig_type == "fields":
@@ -231,7 +231,7 @@ class ModuleVHDLGen:
         for field in reg.fields:
             s += indent_string(field.name, 2) + " : "
             if field.sig_type == "slv":
-                s += "std_logic_vector(" + str(field.length - 1)
+                s += "std_logic_vector(" + str(field.width - 1)
                 s += " downto 0);\n"
             elif field.sig_type == "sl":
                 s += "std_logic;\n"

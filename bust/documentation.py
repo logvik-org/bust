@@ -45,7 +45,7 @@ class Documentation(object):
                 + "} & "
             )
             p += reg.sig_type.upper() + " & "
-            p += str(reg.length) + " & "
+            p += str(reg.width) + " & "
             p += r"\texttt{"
             p += "0x" + format(int(reg.reset, 16), "X") + "} \\\\\n"
             p += r"\hline" + "\n"
@@ -72,16 +72,16 @@ class Documentation(object):
             s += utf8tolatex(reg.description) + r" \regnewline" + "\n"
             s += indent_string(r"\label{" + reg.name + "}\n")
 
-            if reg.length < self.module.data_width:
+            if reg.width < self.module.data_width:
                 p = r"\regfield{unused}{"
-                p += str(self.module.data_width - reg.length) + "}{"
-                p += str(reg.length) + "}{-}\n"
+                p += str(self.module.data_width - reg.width) + "}{"
+                p += str(reg.width) + "}{-}\n"
                 s += indent_string(p)
 
             if reg.sig_type != "fields":
 
-                p = r"\regfield{}{" + str(reg.length) + "}{0}{"
-                if reg.length < 2:
+                p = r"\regfield{}{" + str(reg.width) + "}{0}{"
+                if reg.width < 2:
                     p += str(int(reg.reset, 16))
                 else:
                     p += "{0x" + format(int(reg.reset, 16), "X") + "}"
@@ -92,9 +92,9 @@ class Documentation(object):
             else:
                 for field in reversed(reg.fields):
                     p = r"\regfield{" + utf8tolatex(field.name) + "}{"
-                    p += str(field.length) + "}{"
+                    p += str(field.width) + "}{"
                     p += str(field.pos_low) + "}{"
-                    if field.length < 2:
+                    if field.width < 2:
                         p += str(int(field.reset, 16))
                     else:
                         p += "{0x" + format(int(field.reset, 16), "X") + "}"
@@ -106,7 +106,7 @@ class Documentation(object):
             if reg.sig_type == "fields":
 
                 p = r"\begin{regdesc}\begin{reglist}["
-                # Get the longest field name and indent the list based on that length
+                # Get the longest field name and indent the list based on that width
                 gen = [field.name for field in reg.fields]
                 longest = max(gen, key=len)
                 p += utf8tolatex(longest)
@@ -156,7 +156,7 @@ tex_table_top = r"""\begin{table}[h!]
     \label{tab:table1}
     \begin{tabularx}{\linewidth}{|l|X|l|l|l|c|l|}
       \hline
-      \textbf{\#} & \textbf{Name} & \textbf{Mode} & \textbf{Address} & \textbf{Type} & \textbf{Length} &
+      \textbf{\#} & \textbf{Name} & \textbf{Mode} & \textbf{Address} & \textbf{Type} & \textbf{Width} &
       \textbf{Reset} \\
       \hline"""
 

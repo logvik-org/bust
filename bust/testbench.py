@@ -397,7 +397,7 @@ class Testbench(object):
         signal = "{}_{}_regs.{}".format(self.bus.short_name, reg.mode, reg.name)
         if reg.sig_type in ["sl", "slv", "default"]:
             s += self.check_value(
-                signal, self.sig_value(reg.reset, reg.sig_type, reg.length), msg
+                signal, self.sig_value(reg.reset, reg.sig_type, reg.width), msg
             )
         elif reg.sig_type == "fields":
             for field in reg.fields:
@@ -405,13 +405,13 @@ class Testbench(object):
                 signal_field = "{}.{}".format(signal, field.name)
                 s += self.check_value(
                     signal_field,
-                    self.sig_value(field.reset, field.sig_type, field.length),
+                    self.sig_value(field.reset, field.sig_type, field.width),
                     msg_field,
                 )
 
         if reg.mode in ["rw", "ro"]:
             c_addr = "C_ADDR_{}".format(reg.name.upper())
-            exp_value = self.sig_value(reg.reset, "default", reg.length)
+            exp_value = self.sig_value(reg.reset, "default", reg.width)
             s += self.bus.uvvm_check(c_addr, exp_value, msg)
         elif reg.mode == "pulse":
             pass
@@ -430,14 +430,14 @@ class Testbench(object):
             s += self.bus.uvvm_write(c_addr, bus_val, msg)
 
             if reg.sig_type in ["sl", "slv", "default"]:
-                sig_val = self.sig_value("0", reg.sig_type, reg.length)
+                sig_val = self.sig_value("0", reg.sig_type, reg.width)
                 s += self.check_value(signal, sig_val, msg)
             elif reg.sig_type == "fields":
                 for field in reg.fields:
                     signal_field = "{}.{}".format(signal, field.name)
                     s += self.check_value(
                         signal_field,
-                        self.sig_value("0", field.sig_type, field.length),
+                        self.sig_value("0", field.sig_type, field.width),
                         msg,
                     )
             else:
@@ -448,7 +448,7 @@ class Testbench(object):
         elif reg.mode == "ro":
 
             if reg.sig_type in ["sl", "slv", "default"]:
-                sig_val = self.sig_value("0", reg.sig_type, reg.length)
+                sig_val = self.sig_value("0", reg.sig_type, reg.width)
                 s += "{} <= {};\n".format(signal, sig_val)
                 s += self.await_value(signal, sig_val, msg)
             elif reg.sig_type == "fields":
@@ -459,7 +459,7 @@ class Testbench(object):
                     )
                 for field in reg.fields:
                     signal_field = "{}.{}".format(signal, field.name)
-                    sig_val = self.sig_value("0", field.sig_type, field.length)
+                    sig_val = self.sig_value("0", field.sig_type, field.width)
                     s += self.await_value(signal_field, sig_val, msg)
 
             else:
@@ -478,15 +478,15 @@ class Testbench(object):
                 for field in reg.fields:
                     signal_field.append("{}.{}".format(signal, field.name))
                 for i, field in enumerate(reg.fields):
-                    sig_val = self.sig_value("0", field.sig_type, field.length)
+                    sig_val = self.sig_value("0", field.sig_type, field.width)
                     s += self.check_value(signal_field[i], sig_val, msg)
                 for i, field in enumerate(reg.fields):
                     s += self.await_stable(signal_field[i], reg.pulse_cycles, msg)
                 for i, field in enumerate(reg.fields):
-                    sig_val = self.sig_value("0", field.sig_type, field.length)
+                    sig_val = self.sig_value("0", field.sig_type, field.width)
                     s += self.check_value(signal_field[i], sig_val, msg)
                 for i, field in enumerate(reg.fields):
-                    sig_val = self.sig_value(field.reset, field.sig_type, field.length)
+                    sig_val = self.sig_value(field.reset, field.sig_type, field.width)
                     s += self.await_value(signal_field[i], sig_val, msg)
 
             else:
@@ -495,12 +495,12 @@ class Testbench(object):
         return s
 
     def set_check_zero_pulse(self, signal, reg, msg):
-        sig_val = self.sig_value("0", reg.sig_type, reg.length)
+        sig_val = self.sig_value("0", reg.sig_type, reg.width)
         s = self.check_value(signal, sig_val, msg)
         s += self.await_stable(signal, reg.pulse_cycles, msg)
         s += self.check_value(signal, sig_val, msg)
         s += self.await_value(
-            signal, self.sig_value(reg.reset, reg.sig_type, reg.length), msg
+            signal, self.sig_value(reg.reset, reg.sig_type, reg.width), msg
         )
         return s
 
@@ -591,18 +591,18 @@ class Testbench(object):
         return s
 
     def check_bit_ro_slv(self, c_addr, signal, reg, msg, offset=0):
-        s = "for i in 0 to {} loop\n".format(reg.length - 1)
+        s = "for i in 0 to {} loop\n".format(reg.width - 1)
         if offset > 0:
             offset = "+{}".format(offset)
         else:
             offset = ""
-        sig_val = "std_logic_vector(to_unsigned(1, {}) sll i)".format(reg.length)
+        sig_val = "std_logic_vector(to_unsigned(1, {}) sll i)".format(reg.width)
         bus_val = "std_logic_vector(to_unsigned(1, data_width) sll i{})".format(offset)
         par = "{} <= {};\n".format(signal, sig_val)
         par += self.await_value(signal, sig_val, msg)
         par += self.bus.uvvm_check(c_addr, bus_val, msg)
         par += "-- Return to zero\n"
-        sig_val = self.sig_value("0", "slv", reg.length)
+        sig_val = self.sig_value("0", "slv", reg.width)
         bus_val = self.sig_value("0", "default")
         par += "{} <= {};\n".format(signal, sig_val)
         par += self.await_value(signal, sig_val, msg)
@@ -612,18 +612,18 @@ class Testbench(object):
         return s
 
     def check_bit_rw_slv(self, c_addr, signal, reg, msg, offset=0):
-        s = "for i in 0 to {} loop\n".format(reg.length - 1)
+        s = "for i in 0 to {} loop\n".format(reg.width - 1)
         if offset > 0:
             offset = "+{}".format(offset)
         else:
             offset = ""
-        sig_val = "std_logic_vector(to_unsigned(1, {}) sll i)".format(reg.length)
+        sig_val = "std_logic_vector(to_unsigned(1, {}) sll i)".format(reg.width)
         bus_val = "std_logic_vector(to_unsigned(1, data_width) sll i{})".format(offset)
         par = self.bus.uvvm_write(c_addr, bus_val, msg)
         par += self.check_value(signal, sig_val, msg)
         par += self.bus.uvvm_check(c_addr, bus_val, msg)
         par += "-- Return to zero\n"
-        sig_val = self.sig_value("0", "slv", reg.length)
+        sig_val = self.sig_value("0", "slv", reg.width)
         bus_val = self.sig_value("0", "default")
         par += self.bus.uvvm_write(c_addr, bus_val, msg)
         par += self.check_value(signal, sig_val, msg)
@@ -636,18 +636,18 @@ class Testbench(object):
         if clk_cycles is None:
             clk_cycles = reg.pulse_cycles
         reset = reg.reset
-        s = "for i in 0 to {} loop\n".format(reg.length - 1)
+        s = "for i in 0 to {} loop\n".format(reg.width - 1)
         if offset > 0:
             offset = "+{}".format(offset)
         else:
             offset = ""
-        sig_val = "std_logic_vector(to_unsigned(1, {}) sll i)".format(reg.length)
+        sig_val = "std_logic_vector(to_unsigned(1, {}) sll i)".format(reg.width)
         bus_val = "std_logic_vector(to_unsigned(1, data_width) sll i{})".format(offset)
         par = self.bus.uvvm_write(c_addr, bus_val, msg)
         par += self.check_value(signal, sig_val, msg)
         par += self.await_stable(signal, clk_cycles, msg)
         par += self.check_value(signal, sig_val, msg)
-        sig_val = self.sig_value(reset, reg.sig_type, reg.length)
+        sig_val = self.sig_value(reset, reg.sig_type, reg.width)
         par += self.await_value(signal, sig_val, msg)
         s += indent_string(par)
         s += "end loop;\n"
@@ -699,7 +699,7 @@ class Testbench(object):
         if reg.sig_type == "sl":
             reg_type = "std_logic"
         elif reg.sig_type in ["slv", "default"]:
-            reg_type = "{} bit std_logic_vector".format(reg.length)
+            reg_type = "{} bit std_logic_vector".format(reg.width)
         elif reg.sig_type == "fields":
             reg_type = "fields"
         par = "Checking Register {} - {} {}".format(
