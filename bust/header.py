@@ -17,14 +17,10 @@ class Header(object):
 
         for reg in self.module.registers:
             s += "/* Register: " + reg.name + " */\n"
-            s += (
-                "#define "
-                + reg.name.upper()
-                + "_OFFSET "
-                + str(hex(reg.address))
-                + "\n"
-            )
-            s += "#define " + reg.name.upper() + "_RESET " + reg.reset + "\n"
+            s += f'#define {reg.name.upper()}_MODE "{reg.mode}";\n'
+            s += f"#define {reg.name.upper()}_WIDTH {reg.width};\n"
+            s += f"#define {reg.name.upper()}_OFFSET {str(hex(reg.address))};\n"
+            s += f"#define {reg.name.upper()}_RESET {reg.reset};\n"
             s += "\n"
 
             if reg.sig_type == "fields":
@@ -83,14 +79,12 @@ class Header(object):
 
         for reg in self.module.registers:
             s += "/* Register: " + reg.name + " */\n"
+            s += f'const uint32_t {reg.name.upper()}_MODE = "{reg.mode}";\n'
+            s += f"const uint32_t {reg.name.upper()}_WIDTH = {reg.width};\n"
             s += (
-                "const uint32_t "
-                + reg.name.upper()
-                + "_OFFSET = "
-                + str(hex(reg.address))
-                + ";\n"
+                f"const uint32_t {reg.name.upper()}_OFFSET = {str(hex(reg.address))};\n"
             )
-            s += "const uint32_t " + reg.name.upper() + "_RESET = " + reg.reset + ";\n"
+            s += f"const uint32_t {reg.name.upper()}_RESET = {reg.reset};\n"
             s += "\n"
 
             if reg.sig_type == "fields":
@@ -144,10 +138,12 @@ class Header(object):
         for reg in self.module.registers:
             s += "\n"
             s += indent_string('"""Register: ' + reg.name + '"""\n', 2)
+            s += indent_string(f'{reg.name.upper()}_MODE = "{reg.mode}"\n', 2)
+            s += indent_string(f"{reg.name.upper()}_WIDTH = {reg.width}\n", 2)
             s += indent_string(
-                reg.name.upper() + "_OFFSET = " + str(hex(reg.address)) + "\n", 2
+                f"{reg.name.upper()}_OFFSET = {str(hex(reg.address))}\n", 2
             )
-            s += indent_string(reg.name.upper() + "_RESET = " + reg.reset + "\n", 2)
+            s += indent_string(f"{reg.name.upper()}_RESET = {reg.reset}\n", 2)
 
             if reg.sig_type == "fields":
                 for field in reg.fields:
