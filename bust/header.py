@@ -72,14 +72,15 @@ class Header(object):
         s += "#define " + self.module.name.upper() + "_H\n"
         s += "\n"
 
-        s += "#include <cstdint>\n\n"
+        s += "#include <cstdint>\n"
+        s += "#include <string>\n\n"
 
         s += "namespace " + self.module.name.upper() + "\n"
         s += "{\n"
 
         for reg in self.module.registers:
             s += "/* Register: " + reg.name + " */\n"
-            s += f'const uint32_t {reg.name.upper()}_MODE = "{reg.mode}";\n'
+            s += f'const std::string {reg.name.upper()}_MODE = "{reg.mode}";\n'
             s += f"const uint32_t {reg.name.upper()}_WIDTH = {reg.width};\n"
             s += (
                 f"const uint32_t {reg.name.upper()}_OFFSET = {str(hex(reg.address))};\n"
