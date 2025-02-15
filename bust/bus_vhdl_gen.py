@@ -867,11 +867,11 @@ class BusVHDLGen:
             if self.bus_reset == "async":
                 s += indent_string(
                     _seq_process_async_reset(
-                        clk_name,
-                        reset_name,
                         "p_write",
-                        reset_string,
+                        clk_name,
                         logic_string,
+                        reset_name,
+                        reset_string,
                         self.reset_active_high,
                     )
                 )
@@ -879,11 +879,11 @@ class BusVHDLGen:
             elif self.bus_reset == "sync":
                 s += indent_string(
                     _seq_process_sync_reset(
-                        clk_name,
-                        reset_name,
                         "p_write",
-                        reset_string,
+                        clk_name,
                         logic_string,
+                        reset_name,
+                        reset_string,
                         self.reset_active_high,
                     )
                 )
