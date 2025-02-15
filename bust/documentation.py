@@ -10,6 +10,7 @@ class Documentation(object):
         self.module = module
 
     def return_tex_documentation(self, test_version=None):
+        """Generate LaTeX documentation for the module"""
         if test_version is None:
             version = __VERSION__
         else:

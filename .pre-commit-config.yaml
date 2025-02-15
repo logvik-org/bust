@@ -13,7 +13,7 @@ repos:
         exclude: Makefile|.bumpversion.cfg
     -   id: remove-crlf
 -   repo: https://github.com/psf/black
-    rev: 22.3.0
+    rev: 24.3.0
     hooks:
     -   id: black
         exclude: example/

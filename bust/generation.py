@@ -48,8 +48,9 @@ def generate_output(
         os.makedirs(bus_hdl, exist_ok=True)
         os.makedirs(bus_sim, exist_ok=True)
 
-    except Exception:
+    except Exception as e:
         logger.error("ERROR: Could not create output directories")
+        logger.error(e)
         exit(1)
     else:
         logger.debug("Successfully created all output directories")
@@ -61,8 +62,9 @@ def generate_output(
             write_string_to_file(
                 bus.return_bus_pkg_VHDL(), filename, bus_hdl, gen_settings["force_ow"]
             )
-        except Exception:
+        except Exception as e:
             logger.error("ERROR: Could not generate Bus VHDL Package File")
+            logger.error(e)
             exit(1)
 
     if gen_settings["gen_mod"]:
@@ -102,8 +104,9 @@ def generate_output(
                     gen_settings["force_ow_top"],
                 )
 
-        except Exception:
+        except Exception as e:
             logger.error("ERROR: Could not generate Module VHDL Files")
+            logger.error(e)
             exit(1)
 
     if gen_settings["gen_header"]:
@@ -136,8 +139,9 @@ def generate_output(
                     gen_settings["force_ow"],
                 )
 
-        except Exception:
+        except Exception as e:
             logger.error("ERROR: Could not generate Module Include Files")
+            logger.error(e)
             exit(1)
 
     if gen_settings["gen_tb"]:
@@ -170,8 +174,9 @@ def generate_output(
                     gen_settings["force_ow"],
                 )
 
-            except Exception:
+            except Exception as e:
                 logger.error("ERROR: Could not generate PIF Testbench Files")
+                logger.error(e)
                 exit(1)
 
     if gen_settings["gen_doc"]:
@@ -184,8 +189,9 @@ def generate_output(
                 mod_doc,
                 gen_settings["force_ow"],
             )
-        except Exception:
+        except Exception as e:
             logger.error("ERROR: Could not generate Module Documentation")
+            logger.error(e)
             exit(1)
 
     if gen_settings["gen_pdf"]:

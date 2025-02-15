@@ -2,6 +2,7 @@
 Contains the Editor class
 
 """
+
 from cursesmenu import CursesMenu
 from cursesmenu.items import FunctionItem
 from collections import OrderedDict
@@ -19,7 +20,7 @@ from bust.module import Module
 from bust.bus import Bus
 from bust.register import Register
 from bust.field import Field
-from bust.vhdl import get_identifier
+from bust.vhdl_util import get_identifier
 from bust.settings import Settings
 
 

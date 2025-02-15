@@ -251,10 +251,10 @@ class Testbench(object):
         s += "\n"
 
         # Initial reset value
-        if self.bus.reset_active_low:
-            init_reset = "'1'"
-        else:
+        if self.bus.reset_active_high:
             init_reset = "'0'"
+        else:
+            init_reset = "'1'"
 
         s += indent_string("-- component ports\n")
         if self.module.count_rw_regs() > 0:
@@ -339,10 +339,10 @@ class Testbench(object):
 
         s += "\n"
         # Initial reset value
-        if self.bus.reset_active_low:
-            pulse_reset = "'0'"
-        else:
+        if self.bus.reset_active_high:
             pulse_reset = "'1'"
+        else:
+            pulse_reset = "'0'"
         par = 'gen_pulse({}_{}, {}, 500 ns, BLOCKING, "Reset for 500 ns");\n'.format(
             self.bus.short_name, str.strip(self.bus.reset_name), pulse_reset
         )
