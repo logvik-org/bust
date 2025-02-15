@@ -1,4 +1,3 @@
-from symbol import if_stmt
 from bust.utils import NL, indent_string
 from bust.vhdl_gen_if import if_stmt, if_else_stmt, if_elseif_stmt
 
