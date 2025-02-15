@@ -396,11 +396,11 @@ class BusVHDLGen:
         elif self.bus_reset == "sync":
             s += indent_string(
                 _seq_process_sync_reset(
-                    clk_identifier,
-                    reset_identifier,
                     "p_wready",
-                    reset_logic,
+                    clk_identifier,
                     logic,
+                    reset_identifier,
+                    reset_logic,
                     self.reset_active_high,
                 )
             )
@@ -487,11 +487,11 @@ class BusVHDLGen:
             elif self.bus_reset == "sync":
                 s += indent_string(
                     _seq_process_sync_reset(
-                        clk_identifier,
-                        reset_identifier,
                         "p_mm_select_write",
-                        reset_logic,
+                        clk_identifier,
                         logic,
+                        reset_identifier,
+                        reset_logic,
                         self.reset_active_high,
                     )
                 )
@@ -533,11 +533,11 @@ class BusVHDLGen:
         elif self.bus_reset == "sync":
             s += indent_string(
                 _seq_process_sync_reset(
-                    clk_identifier,
-                    reset_identifier,
                     "p_write_response",
-                    reset_logic,
+                    clk_identifier,
                     logic,
+                    reset_identifier,
+                    reset_logic,
                     self.reset_active_high,
                 )
             )
@@ -571,11 +571,11 @@ class BusVHDLGen:
         elif self.bus_reset == "sync":
             s += indent_string(
                 _seq_process_sync_reset(
-                    clk_identifier,
-                    reset_identifier,
                     "p_arready",
-                    reset_logic,
+                    clk_identifier,
                     logic,
+                    reset_identifier,
+                    reset_logic,
                     self.reset_active_high,
                 )
             )
@@ -609,11 +609,11 @@ class BusVHDLGen:
         elif self.bus_reset == "sync":
             s += indent_string(
                 _seq_process_sync_reset(
-                    clk_identifier,
-                    reset_identifier,
                     "p_arvalid",
-                    reset_logic,
+                    clk_identifier,
                     logic,
+                    reset_identifier,
+                    reset_logic,
                     self.reset_active_high,
                 )
             )
@@ -714,11 +714,11 @@ class BusVHDLGen:
         elif self.bus_reset == "sync":
             s += indent_string(
                 _seq_process_sync_reset(
-                    clk_identifier,
-                    reset_identifier,
                     "p_output",
-                    reset_logic,
+                    clk_identifier,
                     logic,
+                    reset_identifier,
+                    reset_logic,
                     self.reset_active_high,
                 )
             )
@@ -1005,11 +1005,11 @@ class BusVHDLGen:
         elif self.bus_reset == "sync":
             s += indent_string(
                 _seq_process_sync_reset(
-                    clk_name,
-                    reset_name,
                     "p_read",
-                    reset_string,
+                    clk_name,
                     logic_string,
+                    reset_name,
+                    reset_string,
                     self.reset_active_high,
                 )
             )
@@ -1061,11 +1061,11 @@ class BusVHDLGen:
             elif self.bus_reset == "sync":
                 s += indent_string(
                     _seq_process_sync_reset(
-                        clk_name,
-                        reset_name,
                         "p_stall",
-                        reset_string,
+                        clk_name,
                         logic_string,
+                        reset_name,
+                        reset_string,
                         self.reset_active_high,
                         variables,
                     )
@@ -1223,11 +1223,11 @@ class BusVHDLGen:
             logic_string += indent_string("end if;\n")
         logic_string += "end if;\n"
         return _seq_process_sync_reset(
-            clk_name,
-            reset_name,
             proc_name,
-            reset_string,
+            clk_name,
             logic_string,
+            reset_name,
+            reset_string,
             self.reset_active_high,
             variables,
         )
