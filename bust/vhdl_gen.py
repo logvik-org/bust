@@ -132,7 +132,7 @@ def comb_process(process_name, logic_string):
 
 
 def comb_process_with_reset(
-    reset_name, process_name, reset_string, logic_string, active_low=True
+    reset_name, process_name, reset_string, logic_string, reset_active_high=True
 ):
     s = (
         f"{process_name} : process(all){NL}"
@@ -140,10 +140,10 @@ def comb_process_with_reset(
         f'{indent_string(f"if {reset_name} = ")}'
     )
 
-    if active_low:
-        s += "'0'"
-    else:
+    if reset_active_high:
         s += "'1'"
+    else:
+        s += "'0'"
 
     s += (
         f" then{NL}"
