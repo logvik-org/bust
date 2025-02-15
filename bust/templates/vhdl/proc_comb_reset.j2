@@ -1,0 +1,8 @@
+{{ indent }}{{ process_id }} : process (all)
+{{ indent }}begin
+{{ indent }}  if {{ reset_id }} = {{ reset_polarity }} then
+{{ indent }}    {{ reset_logic }}
+{{ indent }}  else
+{{ indent }}    {{ logic }}
+{{ indent }}  end if;
+{{ indent }}end process : {{ process_id }};

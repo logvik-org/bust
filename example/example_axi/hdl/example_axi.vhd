@@ -34,7 +34,7 @@ entity example_axi is
 
 end entity example_axi;
 
-architecture behavior of example_axi is
+architecture rtl of example_axi is
 
   -- User Architecture Start
 
@@ -84,4 +84,4 @@ begin
       rready              => axi_in.rready
       );
 
-end architecture behavior;
+end architecture rtl;
