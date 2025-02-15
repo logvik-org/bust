@@ -90,7 +90,7 @@ def _seq_process_sync_reset(
     clocked_block = if_stmt(clock_condition(clk_identifier), logic_block)
     return process(
         process_identifier,
-        _sensitivity_list_seq_process(clk_identifier, reset_identifier),
+        _sensitivity_list_seq_process(clk_identifier),
         clocked_block,
         variables,
     )
@@ -157,5 +157,8 @@ def comb_process_with_reset(
     return s
 
 
-def _sensitivity_list_seq_process(clk_identifier, reset_identifier):
-    return f"{clk_identifier}, {reset_identifier}"
+def _sensitivity_list_seq_process(clk_identifier, reset_identifier=None):
+    if reset_identifier is None:
+        return clk_identifier
+    else:
+        return f"{clk_identifier}, {reset_identifier}"
