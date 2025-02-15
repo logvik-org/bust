@@ -1,3 +1,6 @@
+from jinja2 import Environment, FileSystemLoader
+import os
+
 from bust.utils import NL, indent_string
 from bust.vhdl_gen import ieee_math
 from bust.vhdl_gen import lib_declaration
@@ -270,106 +273,24 @@ class ModuleVHDLGen:
         return indent_string(par)
 
     def return_module_VHDL(self):
-        s = (
-            f"{lib_declaration()}{NL}"
-            f"-- User Libraries Start{NL}{NL}"
-            f"-- User Libraries End{NL}"
-            f"{NL}"
-        )
-        if self.bus.comp_library != "work":
-            s += "library " + self.bus.comp_library + ";\n"
-        if self.bus.bus_type == "ipbus":
-            s += "use " + self.bus.comp_library + "." + self.bus.bus_type + ".all;\n"
-        else:
-            s += (
-                "use " + self.bus.comp_library + "." + self.bus.bus_type + "_pkg.all;\n"
-            )
-        s += "use work." + self.name + "_pif_pkg.all;\n"
-        s += "\n"
-
-        s += "entity " + self.name + " is\n"
-        s += "\n"
-        s += indent_string("generic (\n")
-        par = "-- User Generics Start\n\n"
-        par += "-- User Generics End\n"
-        par += "-- " + self.bus.bus_type.upper() + " Bus Interface Generics\n"
-        par += (
-            "g_"
-            + self.bus.short_name
-            + "_baseaddr        : std_logic_vector("
-            + str(self.bus.addr_width - 1)
-        )
-        par += " downto 0) := (others => '0');\n"
-        par += "g_check_baseaddr      : boolean := true;\n"
-        par += "g_module_addr_width   : integer := 0\n"
-        par += ");\n"
-
-        s += indent_string(par, 2)
-
-        s += indent_string("port (\n")
-        par = "-- User Ports Start\n\n"
-        par += "-- User Ports End\n"
-        par += "-- {} Bus Interface Ports\n".format(self.bus.bus_type.upper())
-        par += "{}_{}      : in  std_logic;\n".format(
-            self.bus.short_name, self.bus.clk_name
-        )
-        par += "{}_{} : in  std_logic;\n".format(
-            self.bus.short_name, self.bus.reset_name
-        )
-        par += "{}_in       : in  {};\n".format(self.bus.short_name, self.bus.in_type)
-        par += "{}_out      : out {}\n".format(self.bus.short_name, self.bus.out_type)
-        par += ");\n"
-        s += indent_string(par, 2)
-        s += "\n"
-        s += "end entity " + self.name + ";\n"
-        s += "\n"
-
-        s += "architecture behavior of " + self.name + " is\n"
-        s += "\n"
-        par = "-- User Architecture Start\n\n"
-        par += "-- User Architecture End\n\n"
-        s += indent_string(par)
-
-        s += indent_string(
-            "-- " + self.bus.bus_type.upper() + " output signal for user readback\n"
-        )
-        par = "signal {}_out_i : {};\n".format(self.bus.short_name, self.bus.out_type)
-        s += indent_string(par)
-
-        s += indent_string("-- Register Signals\n")
-        if self.n_rw_regs > 0:
-            s += indent_string("signal " + self.bus.short_name + "_rw_regs    : t_")
-            s += self.name + "_rw_regs    := c_" + self.name + "_rw_regs;\n"
-        if self.n_ro_regs > 0:
-            s += indent_string("signal " + self.bus.short_name + "_ro_regs    : t_")
-            s += self.name + "_ro_regs    := c_" + self.name + "_ro_regs;\n"
-        if self.n_pulse_regs > 0:
-            s += indent_string("signal " + self.bus.short_name + "_pulse_regs : t_")
-            s += self.name + "_pulse_regs := c_" + self.name + "_pulse_regs;\n"
-
-        if self.n_rw_regs + self.n_ro_regs + self.n_pulse_regs > 0:
-            s += "\n"
-
-        s += "begin\n"
-        s += "\n"
-
-        par = "-- User Logic Start\n\n"
-        par += "-- User Logic End\n\n"
-        s += indent_string(par)
-
-        s += indent_string(
-            self.bus.short_name + "_out <= " + self.bus.short_name + "_out_i;\n\n"
+        # Set up Jinja2 environment
+        template_dir = os.path.join(os.path.dirname(__file__), "templates")
+        env = Environment(
+            loader=FileSystemLoader(template_dir, followlinks=True),
+            trim_blocks=True,
+            lstrip_blocks=True,
         )
 
-        s += indent_string(
-            self.get_instantiation("i_{}_{}_pif".format(self.name, self.bus.short_name))
-        )
+        # Load the IPBus-specific module template
+        template = env.get_template("vhdl/module/module.j2")
 
-        s += "\n"
-        s += "end architecture behavior;"
-        s += "\n"
-
-        return s
+        # Define context for template rendering
+        context = {
+            "module": self,
+            "bus": self.bus,  # Assumes `module` has an attribute `bus`
+            "NL": "\n",  # Ensures newline formatting if needed
+        }
+        return template.render(context)
 
     def get_instantiation(self, instance_name, intern_out=True):
         s = instance_name + " "
