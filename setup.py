@@ -34,6 +34,7 @@ setup(
         "pylatexenc>=2.1",
         "curses-menu>=0.9.0",
         "prettytable>=2.5.0",
+        "Jinja2==3.1.5",
     ],
     extras_require={
         "dev": ["pytest", "pylint"],
