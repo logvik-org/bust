@@ -1,5 +1,11 @@
 from bust.utils import indent_string
-from bust.vhdl import async_process, sync_process, comb_process, comb_process_with_reset
+from bust.vhdl_gen import comb_process_with_reset
+from bust.vhdl_gen import (
+    _seq_process_async_reset,
+    comb_process,
+    _seq_process_sync_reset,
+    seq_process,
+)
 
 
 class BusVHDLGen:
@@ -22,25 +28,27 @@ class BusVHDLGen:
             self.in_type = "t_axi_mosi"
             self.out_type = "t_axi_miso"
             self.bus_reset = "async"
-            self.reset_active_low = True
+            self.reset_active_high = False
+            self.reset_async = True
 
         elif self.bus_type == "ipbus":
             self.short_name = "ipb"
             self.in_type = "ipb_wbus"
             self.out_type = "ipb_rbus"
             self.bus_reset = "sync"
-            self.reset_active_low = False
+            self.reset_active_high = True
+            self.reset_async = False
 
-        if self.reset_active_low is True:
-            if self.bus_reset == "async":
-                self.reset_name = "areset_n"
-            else:
-                self.reset_name = "reset_n "
-        else:
+        if self.reset_active_high:
             if self.bus_reset == "async":
                 self.reset_name = "areset  "
             else:
                 self.reset_name = "reset   "
+        else:
+            if self.bus_reset == "async":
+                self.reset_name = "areset_n"
+            else:
+                self.reset_name = "reset_n "
 
     def return_bus_pkg_VHDL(self):
         if self.bus_type == "axi":
@@ -106,8 +114,8 @@ class BusVHDLGen:
         return s
 
     def return_bus_pif_VHDL(self, mod):
-        clk_name = self.clk_name
-        reset_name = self.reset_name
+        clk_identifier = self.clk_name
+        reset_identifier = self.reset_name
 
         s = "library ieee;\n"
         s += "use ieee.std_logic_1164.all;\n"
@@ -162,8 +170,8 @@ class BusVHDLGen:
 
         par += "\n"
         par += "-- bus signals\n"
-        par += clk_name + "            : in  std_logic;\n"
-        par += reset_name + "       : in  std_logic;\n"
+        par += clk_identifier + "            : in  std_logic;\n"
+        par += reset_identifier + "       : in  std_logic;\n"
 
         # Add bus-specific signals
         if self.bus_type == "axi":
@@ -235,13 +243,17 @@ class BusVHDLGen:
 
         # Add bus-specific logic
         if self.bus_type == "axi":
-            s += self.return_axi_pif_VHDL(mod, clk_name, str.strip(reset_name))
+            s += self.return_axi_pif_VHDL(
+                mod, clk_identifier, str.strip(reset_identifier)
+            )
         elif self.bus_type == "ipbus":
-            s += self.return_ipbus_pif_VHDL(mod, clk_name, str.strip(reset_name))
+            s += self.return_ipbus_pif_VHDL(
+                mod, clk_identifier, str.strip(reset_identifier)
+            )
 
         return s
 
-    def return_axi_pif_VHDL(self, mod, clk_name, reset_name):
+    def return_axi_pif_VHDL(self, mod, clk_identifier, reset_identifier):
         s = ""
         par = "-- internal bus signals for readback\n"
         par += "signal awaddr_i      : t_" + mod.name + "_addr;\n"
@@ -314,105 +326,82 @@ class BusVHDLGen:
         ####################################################################
         # p_awready
         ####################################################################
-        reset_string = "awready_i <= '0';"
+        reset_logic = "awready_i <= '0';"
 
-        logic_string = "if (awready_i = '0' and awvalid = '1'  and wvalid = '1') then\n"
-        logic_string += indent_string("awready_i <= '1';\n")
-        logic_string += "else\n"
-        logic_string += indent_string("awready_i <= '0';\n")
-        logic_string += "end if;"
+        logic = "if (awready_i = '0' and awvalid = '1'  and wvalid = '1') then\n"
+        logic += indent_string("awready_i <= '1';\n")
+        logic += "else\n"
+        logic += indent_string("awready_i <= '0';\n")
+        logic += "end if;"
 
-        if self.bus_reset == "async":
-            s += indent_string(
-                async_process(
-                    clk_name,
-                    reset_name,
-                    "p_awready",
-                    reset_string,
-                    logic_string,
-                    self.reset_active_low,
-                )
+        s += indent_string(
+            seq_process(
+                "p_awready",
+                clk_identifier,
+                logic,
+                reset_identifier,
+                reset_logic,
+                self.reset_active_high,
+                self.reset_async,
             )
-
-        elif self.bus_reset == "sync":
-            s += indent_string(
-                sync_process(
-                    clk_name,
-                    reset_name,
-                    "p_awready",
-                    reset_string,
-                    logic_string,
-                    self.reset_active_low,
-                )
-            )
+        )
         s += "\n"
 
         ####################################################################
         # p_awaddr
         ####################################################################
-        reset_string = "awaddr_i <= (others => '0');"
+        reset_logic = "awaddr_i <= (others => '0');"
 
-        logic_string = "if (awready_i = '0' and awvalid = '1' and wvalid = '1') then\n"
-        logic_string += indent_string("awaddr_i <= awaddr;\n")
-        logic_string += "end if;"
+        logic = "if (awready_i = '0' and awvalid = '1' and wvalid = '1') then\n"
+        logic += indent_string("awaddr_i <= awaddr;\n")
+        logic += "end if;"
 
-        if self.bus_reset == "async":
-            s += indent_string(
-                async_process(
-                    clk_name,
-                    reset_name,
-                    "p_awaddr",
-                    reset_string,
-                    logic_string,
-                    self.reset_active_low,
-                )
+        s += indent_string(
+            seq_process(
+                "p_awaddr",
+                clk_identifier,
+                logic,
+                reset_identifier,
+                reset_logic,
+                self.reset_active_high,
+                self.reset_async,
             )
-
-        elif self.bus_reset == "sync":
-            s += indent_string(
-                sync_process(
-                    clk_name,
-                    reset_name,
-                    "p_awaddr",
-                    reset_string,
-                    logic_string,
-                    self.reset_active_low,
-                )
-            )
+        )
         s += "\n"
 
         ####################################################################
         # p_wready
         ####################################################################
-        reset_string = "wready_i <= '0';"
+        reset_logic = "wready_i <= '0';"
 
-        logic_string = "if (wready_i = '0' and awvalid = '1' and wvalid = '1') then\n"
-        logic_string += indent_string("wready_i <= '1';\n")
-        logic_string += "else\n"
-        logic_string += indent_string("wready_i <= '0';\n")
-        logic_string += "end if;"
+        logic = "if (wready_i = '0' and awvalid = '1' and wvalid = '1') then\n"
+        logic += indent_string("wready_i <= '1';\n")
+        logic += "else\n"
+        logic += indent_string("wready_i <= '0';\n")
+        logic += "end if;"
 
         if self.bus_reset == "async":
             s += indent_string(
-                async_process(
-                    clk_name,
-                    reset_name,
+                seq_process(
                     "p_wready",
-                    reset_string,
-                    logic_string,
-                    self.reset_active_low,
+                    clk_identifier,
+                    logic,
+                    reset_identifier,
+                    reset_logic,
+                    self.reset_active_high,
+                    True,
                 )
             )
 
         elif self.bus_reset == "sync":
             s += indent_string(
-                sync_process(
-                    clk_name,
-                    reset_name,
+                _seq_process_sync_reset(
                     "p_wready",
-                    reset_string,
-                    logic_string,
-                    self.reset_active_low,
+                    clk_identifier,
+                    logic,
+                    reset_identifier,
+                    reset_logic,
+                    self.reset_active_high,
                 )
             )
         s += "\n"
@@ -426,28 +415,26 @@ class BusVHDLGen:
             ###################################################################
             # p_mm_select_write
             ###################################################################
-            reset_string = "\n"
+            reset_logic = "\n"
             if mod.count_rw_regs() > 0:
-                reset_string += "axi_rw_regs_i <= c_" + mod.name + "_rw_regs;\n"
+                reset_logic += "axi_rw_regs_i <= c_" + mod.name + "_rw_regs;\n"
             if mod.count_pulse_regs() > 0:
-                reset_string += (
+                reset_logic += (
                     "axi_pulse_regs_cycle <= c_" + mod.name + "_pulse_regs;\n"
                 )
 
-            logic_string = ""
+            logic = ""
             # create a generator for looping through all pulse regs
             if mod.count_pulse_regs() > 0:
-                logic_string += (
+                logic += (
                     "\n-- Return PULSE registers to reset value every clock cycle\n"
                 )
-                logic_string += (
-                    "axi_pulse_regs_cycle <= c_" + mod.name + "_pulse_regs;\n\n"
-                )
+                logic += "axi_pulse_regs_cycle <= c_" + mod.name + "_pulse_regs;\n\n"
 
-            logic_string += "\nif (slv_reg_wren = '1') then\n\n"
+            logic += "\nif (slv_reg_wren = '1') then\n\n"
 
-            logic_string += indent_string("if (valid_baseaddr_wr = '0') then\n\n")
-            logic_string += indent_string("null;\n\n", 2)
+            logic += indent_string("if (valid_baseaddr_wr = '0') then\n\n")
+            logic += indent_string("null;\n\n", 2)
 
             # create a generator for looping through all rw and pulse regs
             gen = (
@@ -461,7 +448,7 @@ class BusVHDLGen:
 
                 par = "elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_"
                 par += reg.name.upper() + "), C_MODULE_ADDR_WIDTH) then\n\n"
-                logic_string += indent_string(par, 1)
+                logic += indent_string(par, 1)
                 par = ""
                 if reg.sig_type == "fields":
 
@@ -479,33 +466,33 @@ class BusVHDLGen:
                 elif reg.sig_type == "sl":
                     par += sig_name + reg.name + " <= wdata(0);\n"
 
-                logic_string += indent_string(par, 2)
-                logic_string += "\n"
+                logic += indent_string(par, 2)
+                logic += "\n"
 
-            logic_string += indent_string("end if;\n")
-            logic_string += "end if;\n"
+            logic += indent_string("end if;\n")
+            logic += "end if;\n"
 
             if self.bus_reset == "async":
                 s += indent_string(
-                    async_process(
-                        clk_name,
-                        reset_name,
+                    _seq_process_async_reset(
                         "p_mm_select_write",
-                        reset_string,
-                        logic_string,
-                        self.reset_active_low,
+                        clk_identifier,
+                        logic,
+                        reset_identifier,
+                        reset_logic,
+                        self.reset_active_high,
                     )
                 )
 
             elif self.bus_reset == "sync":
                 s += indent_string(
-                    sync_process(
-                        clk_name,
-                        reset_name,
+                    _seq_process_sync_reset(
                         "p_mm_select_write",
-                        reset_string,
-                        logic_string,
-                        self.reset_active_low,
+                        clk_identifier,
+                        logic,
+                        reset_identifier,
+                        reset_logic,
+                        self.reset_active_high,
                     )
                 )
             s += "\n"
@@ -520,38 +507,38 @@ class BusVHDLGen:
         ####################################################################
         # p_write_response
         ####################################################################
-        reset_string = "bvalid_i <= '0';\n"
-        reset_string += 'bresp_i  <= "00";'
+        reset_logic = "bvalid_i <= '0';\n"
+        reset_logic += 'bresp_i  <= "00";'
 
-        logic_string = "if (awready_i = '1' and awvalid = '1' and wready_i = '1' "
-        logic_string += "and wvalid = '1' and bvalid_i = '0') then\n"
-        logic_string += indent_string("bvalid_i <= '1';\n")
-        logic_string += indent_string('bresp_i  <= "00";\n')
-        logic_string += "elsif (bready = '1' and bvalid_i = '1') then\n"
-        logic_string += indent_string("bvalid_i <= '0';\n")
-        logic_string += "end if;"
+        logic = "if (awready_i = '1' and awvalid = '1' and wready_i = '1' "
+        logic += "and wvalid = '1' and bvalid_i = '0') then\n"
+        logic += indent_string("bvalid_i <= '1';\n")
+        logic += indent_string('bresp_i  <= "00";\n')
+        logic += "elsif (bready = '1' and bvalid_i = '1') then\n"
+        logic += indent_string("bvalid_i <= '0';\n")
+        logic += "end if;"
 
         if self.bus_reset == "async":
             s += indent_string(
-                async_process(
-                    clk_name,
-                    reset_name,
+                _seq_process_async_reset(
                     "p_write_response",
-                    reset_string,
-                    logic_string,
-                    self.reset_active_low,
+                    clk_identifier,
+                    logic,
+                    reset_identifier,
+                    reset_logic,
+                    self.reset_active_high,
                 )
             )
 
         elif self.bus_reset == "sync":
             s += indent_string(
-                sync_process(
-                    clk_name,
-                    reset_name,
+                _seq_process_sync_reset(
                     "p_write_response",
-                    reset_string,
-                    logic_string,
-                    self.reset_active_low,
+                    clk_identifier,
+                    logic,
+                    reset_identifier,
+                    reset_logic,
+                    self.reset_active_high,
                 )
             )
         s += "\n"
@@ -559,37 +546,37 @@ class BusVHDLGen:
         ####################################################################
         # p_arready
         ####################################################################
-        reset_string = "arready_i <= '0';\n"
-        reset_string += "araddr_i  <= (others => '0');"
+        reset_logic = "arready_i <= '0';\n"
+        reset_logic += "araddr_i  <= (others => '0');"
 
-        logic_string = "if (arready_i = '0' and arvalid = '1') then\n"
-        logic_string += indent_string("arready_i <= '1';\n")
-        logic_string += indent_string("araddr_i  <= araddr;\n")
-        logic_string += "else\n"
-        logic_string += indent_string("arready_i <= '0';\n")
-        logic_string += "end if;"
+        logic = "if (arready_i = '0' and arvalid = '1') then\n"
+        logic += indent_string("arready_i <= '1';\n")
+        logic += indent_string("araddr_i  <= araddr;\n")
+        logic += "else\n"
+        logic += indent_string("arready_i <= '0';\n")
+        logic += "end if;"
 
         if self.bus_reset == "async":
             s += indent_string(
-                async_process(
-                    clk_name,
-                    reset_name,
+                _seq_process_async_reset(
                     "p_arready",
-                    reset_string,
-                    logic_string,
-                    self.reset_active_low,
+                    clk_identifier,
+                    logic,
+                    reset_identifier,
+                    reset_logic,
+                    self.reset_active_high,
                 )
             )
 
         elif self.bus_reset == "sync":
             s += indent_string(
-                sync_process(
-                    clk_name,
-                    reset_name,
+                _seq_process_sync_reset(
                     "p_arready",
-                    reset_string,
-                    logic_string,
-                    self.reset_active_low,
+                    clk_identifier,
+                    logic,
+                    reset_identifier,
+                    reset_logic,
+                    self.reset_active_high,
                 )
             )
         s += "\n"
@@ -597,39 +584,37 @@ class BusVHDLGen:
         ####################################################################
         # p_arvalid
         ####################################################################
-        reset_string = "rvalid_i <= '0';\n"
-        reset_string += 'rresp_i  <= "00";'
+        reset_logic = "rvalid_i <= '0';\n"
+        reset_logic += 'rresp_i  <= "00";'
 
-        logic_string = (
-            "if (arready_i = '1' and arvalid = '1' and rvalid_i = '0') then\n"
-        )
-        logic_string += indent_string("rvalid_i <= '1';\n")
-        logic_string += indent_string('rresp_i  <= "00";\n')
-        logic_string += "elsif (rvalid_i = '1' and rready = '1') then\n"
-        logic_string += indent_string("rvalid_i <= '0';\n")
-        logic_string += "end if;"
+        logic = "if (arready_i = '1' and arvalid = '1' and rvalid_i = '0') then\n"
+        logic += indent_string("rvalid_i <= '1';\n")
+        logic += indent_string('rresp_i  <= "00";\n')
+        logic += "elsif (rvalid_i = '1' and rready = '1') then\n"
+        logic += indent_string("rvalid_i <= '0';\n")
+        logic += "end if;"
 
         if self.bus_reset == "async":
             s += indent_string(
-                async_process(
-                    clk_name,
-                    reset_name,
+                _seq_process_async_reset(
                     "p_arvalid",
-                    reset_string,
-                    logic_string,
-                    self.reset_active_low,
+                    clk_identifier,
+                    logic,
+                    reset_identifier,
+                    reset_logic,
+                    self.reset_active_high,
                 )
             )
 
         elif self.bus_reset == "sync":
             s += indent_string(
-                sync_process(
-                    clk_name,
-                    reset_name,
+                _seq_process_sync_reset(
                     "p_arvalid",
-                    reset_string,
-                    logic_string,
-                    self.reset_active_low,
+                    clk_identifier,
+                    logic,
+                    reset_identifier,
+                    reset_logic,
+                    self.reset_active_high,
                 )
             )
         s += "\n"
@@ -641,16 +626,16 @@ class BusVHDLGen:
         ####################################################################
         # p_mm_select_read
         ####################################################################
-        logic_string = "reg_data_out <= (others => '0');\n\n"
+        logic = "reg_data_out <= (others => '0');\n\n"
 
-        logic_string += "if (valid_baseaddr_wr = '0') then\n\n"
-        logic_string += indent_string("null;\n\n")
+        logic += "if (valid_baseaddr_wr = '0') then\n\n"
+        logic += indent_string("null;\n\n")
 
         gen = [reg for reg in mod.registers if reg.mode == "ro" or reg.mode == "rw"]
         for reg in gen:
             par = "elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_"
             par += reg.name.upper() + "), C_MODULE_ADDR_WIDTH) then\n\n"
-            logic_string += par
+            logic += par
             par = ""
 
             if reg.sig_type == "fields":
@@ -698,43 +683,43 @@ class BusVHDLGen:
                     raise Exception("Unknown error occurred")
                 par += reg.name + ";\n"
 
-            logic_string += indent_string(par)
-            logic_string += "\n"
+            logic += indent_string(par)
+            logic += "\n"
 
-        logic_string += "end if;\n\n"
-        s += indent_string(comb_process("p_mm_select_read", logic_string))
+        logic += "end if;\n\n"
+        s += indent_string(comb_process("p_mm_select_read", logic))
         s += "\n"
 
         ####################################################################
         # p_output
         ####################################################################
-        reset_string = "rdata_i <= (others => '0');"
+        reset_logic = "rdata_i <= (others => '0');"
 
-        logic_string = "if (slv_reg_rden = '1') then\n"
-        logic_string += indent_string("rdata_i <= reg_data_out;\n")
-        logic_string += "end if;"
+        logic = "if (slv_reg_rden = '1') then\n"
+        logic += indent_string("rdata_i <= reg_data_out;\n")
+        logic += "end if;"
 
         if self.bus_reset == "async":
             s += indent_string(
-                async_process(
-                    clk_name,
-                    reset_name,
+                _seq_process_async_reset(
                     "p_output",
-                    reset_string,
-                    logic_string,
-                    self.reset_active_low,
+                    clk_identifier,
+                    logic,
+                    reset_identifier,
+                    reset_logic,
+                    self.reset_active_high,
                 )
             )
 
         elif self.bus_reset == "sync":
             s += indent_string(
-                sync_process(
-                    clk_name,
-                    reset_name,
+                _seq_process_sync_reset(
                     "p_output",
-                    reset_string,
-                    logic_string,
-                    self.reset_active_low,
+                    clk_identifier,
+                    logic,
+                    reset_identifier,
+                    reset_logic,
+                    self.reset_active_high,
                 )
             )
         s += "\n"
@@ -877,29 +862,29 @@ class BusVHDLGen:
             logic_string += indent_string("wr_err <= '1';\n\n", 2)
 
             logic_string += indent_string("end if;\n")
-            logic_string += "end if;\n"
+            logic_string += "end if;"
 
             if self.bus_reset == "async":
                 s += indent_string(
-                    async_process(
-                        clk_name,
-                        reset_name,
+                    _seq_process_async_reset(
                         "p_write",
-                        reset_string,
+                        clk_name,
                         logic_string,
-                        self.reset_active_low,
+                        reset_name,
+                        reset_string,
+                        self.reset_active_high,
                     )
                 )
 
             elif self.bus_reset == "sync":
                 s += indent_string(
-                    sync_process(
-                        clk_name,
-                        reset_name,
+                    _seq_process_sync_reset(
                         "p_write",
-                        reset_string,
+                        clk_name,
                         logic_string,
-                        self.reset_active_low,
+                        reset_name,
+                        reset_string,
+                        self.reset_active_high,
                     )
                 )
             s += "\n"
@@ -1003,29 +988,29 @@ class BusVHDLGen:
         logic_string += indent_string("rd_err <= '1';\n\n", 2)
 
         logic_string += indent_string("end if;\n")
-        logic_string += "end if;\n"
+        logic_string += "end if;"
 
         if self.bus_reset == "async":
             s += indent_string(
-                async_process(
-                    clk_name,
-                    reset_name,
+                _seq_process_async_reset(
                     "p_read",
-                    reset_string,
+                    clk_name,
                     logic_string,
-                    self.reset_active_low,
+                    reset_name,
+                    reset_string,
+                    self.reset_active_high,
                 )
             )
 
         elif self.bus_reset == "sync":
             s += indent_string(
-                sync_process(
-                    clk_name,
-                    reset_name,
+                _seq_process_sync_reset(
                     "p_read",
-                    reset_string,
+                    clk_name,
                     logic_string,
-                    self.reset_active_low,
+                    reset_name,
+                    reset_string,
+                    self.reset_active_high,
                 )
             )
 
@@ -1058,30 +1043,30 @@ class BusVHDLGen:
             logic_string += "elsif stall then\n"
             logic_string += indent_string("stall <= '0';\n")
             logic_string += indent_string("ack_d <= '1';\n")
-            logic_string += "end if;\n"
+            logic_string += "end if;"
 
             if self.bus_reset == "async":
                 s += indent_string(
-                    async_process(
-                        clk_name,
-                        reset_name,
+                    _seq_process_async_reset(
                         "p_stall",
-                        reset_string,
+                        clk_name,
                         logic_string,
-                        self.reset_active_low,
+                        reset_name,
+                        reset_string,
+                        self.reset_active_high,
                         variables,
                     )
                 )
 
             elif self.bus_reset == "sync":
                 s += indent_string(
-                    sync_process(
-                        clk_name,
-                        reset_name,
+                    _seq_process_sync_reset(
                         "p_stall",
-                        reset_string,
+                        clk_name,
                         logic_string,
-                        self.reset_active_low,
+                        reset_name,
+                        reset_string,
+                        self.reset_active_high,
                         variables,
                     )
                 )
@@ -1124,7 +1109,7 @@ class BusVHDLGen:
                 "p_output",
                 reset_string,
                 logic_string,
-                self.reset_active_low,
+                self.reset_active_high,
             )
         )
 
@@ -1236,14 +1221,14 @@ class BusVHDLGen:
             logic_string += indent_string(par, 1)
         if reg.pulse_cycles > 1:
             logic_string += indent_string("end if;\n")
-        logic_string += "end if;\n"
-        return sync_process(
-            clk_name,
-            reset_name,
+        logic_string += "end if;"
+        return _seq_process_sync_reset(
             proc_name,
-            reset_string,
+            clk_name,
             logic_string,
-            self.reset_active_low,
+            reset_name,
+            reset_string,
+            self.reset_active_high,
             variables,
         )
 
