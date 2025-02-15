@@ -1,0 +1,125 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use ieee.math_real.all;
+
+
+package {{ module.name }}_pif_pkg is
+
+  constant C_{{ module.name.upper() }}_ADDR_WIDTH : natural := {{ addr_width }};
+  constant C_{{ module.name.upper() }}_DATA_WIDTH : natural := {{ data_width }};
+
+  subtype t_{{ module.name }}_addr is std_logic_vector(C_{{ module.name.upper() }}_ADDR_WIDTH-1 downto 0);
+  subtype t_{{ module.name }}_data is std_logic_vector(C_{{ module.name.upper() }}_DATA_WIDTH-1 downto 0);
+
+  {% for reg in module.registers %}
+  constant C_ADDR_{{ reg.name.upper() }} : t_{{ module.name }}_addr := {{ addr_width }}X"{{ "%X"|format(reg.address) }}";
+  {% endfor %}
+
+  constant C_ADDR_MAX   : integer := {{ module.registers[-1].address }}; -- {{ "%#x"|format(module.registers[-1].address) }}
+  constant C_ADDR_WIDTH : integer := integer(ceil(log2(real(C_ADDR_MAX + 1))));
+
+  function set_module_addr_width(g_module_addr_width : integer) return integer;
+
+  {% if module.n_rw_regs > 0 %}
+  -- RW Register Record Definitions
+  {% for reg in module.registers if reg.mode == "rw" and reg.sig_type == "fields" %}
+
+  type t_{{ module.name }}_rw_{{ reg.name }} is record
+  {% for field in reg.fields %}
+    {{ field.name }} : {{ field.sig_type_vhdl }};
+  {% endfor %}
+  end record;
+  {% endfor %}
+
+  type t_{{ module.name }}_rw_regs is record
+    {% for reg in module.registers if reg.mode == "rw" %}
+    {{ reg.name }} : {{ reg.sig_type_vhdl }};
+    {% endfor %}
+  end record;
+
+  -- RW Register Reset Value Constant
+
+  constant c_{{ module.name }}_rw_regs : t_{{ module.name }}_rw_regs := (
+    {% for reg in module.registers if reg.mode == "rw" %}
+    {{ reg.name }} =>
+    {%- if reg.sig_type != "fields" %}
+ {{ reg.reset_val_vhdl }}{% if not loop.last %},{{ '\n' }}{% endif %}
+    {% endif %}
+    {% endfor %}
+  );
+  {% endif %}
+
+  {% if module.n_ro_regs > 0 %}
+  -- RO Register Record Definitions
+  {% for reg in module.registers if reg.mode == "ro" and reg.sig_type == "fields" %}
+
+  type t_{{ module.name }}_ro_{{ reg.name }} is record
+  {% for field in reg.fields %}
+    {{ field.name }} : {{ field | get_vhdl_type(module.name) }};
+  {% endfor %}
+  end record;
+  {% endfor %}
+
+  type t_{{ module.name }}_ro_regs is record
+    {% for reg in module.registers if reg.mode == "ro" %}
+    {{ reg.name }} : {{ reg | get_vhdl_type(module.name) }};
+    {% endfor %}
+  end record;
+
+  -- RO Register Reset Value Constant
+
+  constant c_{{ module.name }}_ro_regs : t_{{ module.name }}_ro_regs := (
+    {% for reg in module.registers if reg.mode == "ro" %}
+    {{ reg.name }} =>
+    {%- if reg.sig_type != "fields" %}
+ {{ reg.reset_val_vhdl }}{% if not loop.last %},{{ '\n' }}{% endif %}
+    {% endif %}
+    {% endfor %}
+  );
+  {% endif %}
+
+  {% if module.n_pulse_regs > 0 %}
+  -- PULSE Register Record Definitions
+  {% for reg in module.registers if reg.mode == "pulse" and reg.sig_type == "fields" %}
+
+  type t_{{ module.name }}_pulse_{{ reg.name }} is record
+  {% for field in reg.fields %}
+    {{ field.name }} : {{ field | get_vhdl_type(module.name) }};
+  {% endfor %}
+  end record;
+  {% endfor %}
+
+  type t_{{ module.name }}_pulse_regs is record
+    {% for reg in module.registers if reg.mode == "pulse" %}
+    {{ reg.name }} : {{ reg | get_vhdl_type(module.name) }};
+    {% endfor %}
+  end record;
+
+  -- PULSE Register Reset Value Constant
+
+  constant c_{{ module.name }}_pulse_regs : t_{{ module.name }}_pulse_regs := (
+    {% for reg in module.registers if reg.mode == "pulse" %}
+    {{ reg.name }} =>
+    {%- if reg.sig_type != "fields" %}
+ {{ reg.reset_val_vhdl }}{% if not loop.last %},{{ '\n' }}{% endif %}
+    {% endif %}
+    {% endfor %}
+  );
+  {% endif %}
+
+end package {{ module.name }}_pif_pkg;
+
+package body {{ module.name }}_pif_pkg is
+
+  function set_module_addr_width(g_module_addr_width : integer) return integer is
+  begin
+    if (g_module_addr_width = 0) then
+      return C_ADDR_WIDTH; -- use maximum address to define the range
+    else
+      return g_module_addr_width;
+    end if;
+  end function set_module_addr_width;
+
+end package body {{ module.name }}_pif_pkg;
+
