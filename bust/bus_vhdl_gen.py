@@ -862,7 +862,7 @@ class BusVHDLGen:
             logic_string += indent_string("wr_err <= '1';\n\n", 2)
 
             logic_string += indent_string("end if;\n")
-            logic_string += "end if;\n"
+            logic_string += "end if;"
 
             if self.bus_reset == "async":
                 s += indent_string(
@@ -988,7 +988,7 @@ class BusVHDLGen:
         logic_string += indent_string("rd_err <= '1';\n\n", 2)
 
         logic_string += indent_string("end if;\n")
-        logic_string += "end if;\n"
+        logic_string += "end if;"
 
         if self.bus_reset == "async":
             s += indent_string(
@@ -1043,7 +1043,7 @@ class BusVHDLGen:
             logic_string += "elsif stall then\n"
             logic_string += indent_string("stall <= '0';\n")
             logic_string += indent_string("ack_d <= '1';\n")
-            logic_string += "end if;\n"
+            logic_string += "end if;"
 
             if self.bus_reset == "async":
                 s += indent_string(
@@ -1221,7 +1221,7 @@ class BusVHDLGen:
             logic_string += indent_string(par, 1)
         if reg.pulse_cycles > 1:
             logic_string += indent_string("end if;\n")
-        logic_string += "end if;\n"
+        logic_string += "end if;"
         return _seq_process_sync_reset(
             proc_name,
             clk_name,
