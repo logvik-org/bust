@@ -1,0 +1,8 @@
+{{ indent }}{{ process_id }} : process ({{ clock_id }}, {{ reset_id }})
+{{ indent }}begin
+{{ indent }}  if {{ reset_id }} = {{ reset_polarity }} then
+{{ indent }}    {{ reset_logic }}
+{{ indent }}  elif rising_edge({{ clock_id }}) then
+{{ indent }}    {{ logic }}
+{{ indent }}  end if;
+{{ indent }}end process : {{ process_id }};

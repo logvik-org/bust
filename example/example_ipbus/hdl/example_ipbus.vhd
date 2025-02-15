@@ -34,7 +34,7 @@ entity example_ipbus is
 
 end entity example_ipbus;
 
-architecture behavior of example_ipbus is
+architecture rtl of example_ipbus is
 
   -- User Architecture Start
 
@@ -70,4 +70,4 @@ begin
       ipb_out             => ipb_out_i
       );
 
-end architecture behavior;
+end architecture rtl;
