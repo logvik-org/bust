@@ -45,10 +45,14 @@ package {{ module.name }}_pif_pkg is
     {{ reg.name }} =>
     {%- if reg.sig_type != "fields" %}
  {{ reg.reset_val_vhdl }}{% if not loop.last %},{{ '\n' }}{% endif %}
-    {% endif %}
+    {% else %}
+ (
+    {% for field in reg.fields %}
+      {{ field.name }} => {{ field.reset_val_vhdl }}{% if not loop.last %},{{ '\n' }}{% endif %}
+    {% endfor %}){% endif %}{% if loop.last %});{% endif %}
     {% endfor %}
-  );
   {% endif %}
+
 
   {% if module.n_ro_regs > 0 %}
   -- RO Register Record Definitions
@@ -74,10 +78,14 @@ package {{ module.name }}_pif_pkg is
     {{ reg.name }} =>
     {%- if reg.sig_type != "fields" %}
  {{ reg.reset_val_vhdl }}{% if not loop.last %},{{ '\n' }}{% endif %}
-    {% endif %}
+    {% else %}
+ (
+    {% for field in reg.fields %}
+      {{ field.name }} => {{ field.reset_val_vhdl }}{% if not loop.last %},{{ '\n' }}{% endif %}
+    {% endfor %}){% endif %}{% if loop.last %});{% endif %}
     {% endfor %}
-  );
   {% endif %}
+
 
   {% if module.n_pulse_regs > 0 %}
   -- PULSE Register Record Definitions
@@ -103,10 +111,14 @@ package {{ module.name }}_pif_pkg is
     {{ reg.name }} =>
     {%- if reg.sig_type != "fields" %}
  {{ reg.reset_val_vhdl }}{% if not loop.last %},{{ '\n' }}{% endif %}
-    {% endif %}
+    {% else %}
+ (
+    {% for field in reg.fields %}
+      {{ field.name }} => {{ field.reset_val_vhdl }}{% if not loop.last %},{{ '\n' }}{% endif %}
+    {% endfor %}){% endif %}{% if loop.last %});{% endif %}
     {% endfor %}
-  );
   {% endif %}
+
 
 end package {{ module.name }}_pif_pkg;
 
