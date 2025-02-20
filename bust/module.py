@@ -75,13 +75,15 @@ class Module:
                             "Address " + hex(addr) + " is definitely out of range..."
                         )
                     self.addresses.append(addr)
-                    self.registers.append(Register(reg, addr, self.data_width))
+                    self.registers.append(
+                        Register(reg, addr, self.name, self.data_width)
+                    )
                 else:
                     raise InvalidAddress(reg["name"], addr)
             else:
                 addr = self.get_next_address()
                 self.addresses.append(addr)
-                self.registers.append(Register(reg, addr, self.data_width))
+                self.registers.append(Register(reg, addr, self.name, self.data_width))
         else:
             raise InvalidRegister(reg)
 
