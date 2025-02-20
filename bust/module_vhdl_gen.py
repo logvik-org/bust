@@ -6,6 +6,38 @@ from bust.vhdl_gen import ieee_math
 from bust.vhdl_gen import lib_declaration
 
 
+# Helper function to determine VHDL type
+def get_vhdl_type(reg, module_name):
+    """Returns the correct VHDL type based on the register's type."""
+    if reg.sig_type == "default" or (reg.sig_type == "slv" and reg.width == 32):
+        return f"t_{module_name}_data"
+    elif reg.sig_type == "slv":
+        return f"std_logic_vector({reg.width - 1} downto 0)"
+    elif reg.sig_type == "sl":
+        return "std_logic"
+    elif reg.sig_type == "fields":
+        return f"t_{module_name}_{reg.mode}_{reg.name}"
+    else:
+        raise RuntimeError(f"Unknown signal type: {reg.sig_type}")
+
+
+# Helper function to format reset values
+def get_reset_value(reg):
+    """Returns the formatted VHDL reset value."""
+    if reg.sig_type in ["default", "slv"]:
+        return (
+            "(others => '0')"
+            if reg.reset == "0x0"
+            else f'{reg.width}X"{int(reg.reset, 16):X}"'
+        )
+    elif reg.sig_type == "fields":
+        return f"({', '.join([f'{field.name} => {field.get_reset_vhdl()}' for field in reg.fields])})"
+    elif reg.sig_type == "sl":
+        return f"'{int(reg.reset, 16):X}'"
+    else:
+        raise RuntimeError(f"Unknown reset type: {reg.sig_type}")
+
+
 class ModuleVHDLGen:
     def __init__(self, name, bus_gen, regs, data_width, addr_width):
         """Code generator for the Module module."""
@@ -19,258 +51,282 @@ class ModuleVHDLGen:
         self.n_pulse_regs = len([reg for reg in self.registers if reg.mode == "pulse"])
 
     def return_module_pkg_VHDL(self):
-        s = f"{ieee_math()}{2*NL}"
 
-        s += f"package {self.name}_pif_pkg is{2*NL}"
-
-        s += self.get_subtypes_and_addrs_vhdl()
-
-        if self.n_rw_regs > 0:
-            s += self.get_rw_regs_vhdl()
-
-        if self.n_ro_regs > 0:
-            s += self.get_ro_regs_vhdl()
-
-        if self.n_pulse_regs > 0:
-            s += self.get_pulse_regs_vhdl()
-
-        s += "\n"
-
-        s += "end package " + self.name + "_pif_pkg;"
-        s += "\n\n"
-
-        s += (
-            f"package body {self.name}_pif_pkg is\n"
-            "\n"
-            "  function set_module_addr_width(g_module_addr_width : integer) return integer is\n"
-            "  begin\n"
-            "    if (g_module_addr_width = 0) then\n"
-            "      return C_ADDR_WIDTH; -- use maximum address to define the range\n"
-            "    else\n"
-            "      return g_module_addr_width;\n"
-            "    end if;\n"
-            "  end function set_module_addr_width;\n"
-            "\n"
-            f"end package body {self.name}_pif_pkg;\n"
+        template_dir = os.path.join(os.path.dirname(__file__), "templates")
+        env = Environment(
+            loader=FileSystemLoader(template_dir, followlinks=True),
+            trim_blocks=True,
+            lstrip_blocks=True,
         )
 
-        return s
+        # Register custom filters
+        env.filters["get_vhdl_type"] = get_vhdl_type
+        env.filters["get_reset_value"] = get_reset_value
 
-    def get_pulse_regs_vhdl(self):
-        s = indent_string("-- PULSE Register Record Definitions\n\n")
-        # Create all types for PULSE registers with records
-        for reg in self.registers:
-            if reg.mode == "pulse" and reg.sig_type == "fields":
-                s += self.record_fields_definition_vhdl(reg)
-        # The PULSE register record type
-        s += indent_string("type t_" + self.name + "_pulse_regs is record\n")
-        for reg in self.registers:
-            if reg.mode == "pulse":
-                s += indent_string(reg.name, 2) + " : "
-                if reg.sig_type == "default" or (
-                    reg.sig_type == "slv" and reg.width == self.data_width
-                ):
-                    s += "t_" + self.name + "_data;\n"
-                elif reg.sig_type == "slv":
-                    s += "std_logic_vector(" + str(reg.width - 1) + " downto 0);\n"
-                elif reg.sig_type == "sl":
-                    s += "std_logic;\n"
-                elif reg.sig_type == "fields":
-                    s += "t_" + self.name + "_pulse_" + reg.name + ";\n"
-                else:
-                    raise RuntimeError("Something went wrong...")
-        s += indent_string("end record;\n")
-        s += "\n"
-        s += indent_string("-- PULSE Register Reset Value Constant\n\n")
-        s += indent_string("constant c_") + self.name + "_pulse_regs : t_"
-        s += self.name + "_pulse_regs := (\n"
-        gen = [reg for reg in self.registers if reg.mode == "pulse"]
-        s += self.get_field_declarations(gen)
-        s += "\n"
-        return s
+        # Load the template
+        template = env.get_template("vhdl/pif_pkg.j2")
 
-    def get_ro_regs_vhdl(self):
-        s = indent_string("-- RO Register Record Definitions\n\n")
-        # Create all types for RO registers with records
-        for reg in self.registers:
-            if reg.mode == "ro" and reg.sig_type == "fields":
-                s += indent_string("type t_" + self.name + "_ro_")
-                s += reg.name + " is record\n"
+        # Define context for template rendering
+        context = {
+            "module": self,
+            "addr_width": self.addr_width,
+            "data_width": self.data_width,
+        }
 
-                for field in reg.fields:
-                    s += indent_string(field.name, 2) + " : "
-                    if field.sig_type == "slv":
-                        s += "std_logic_vector(" + str(field.width - 1)
-                        s += " downto 0);\n"
-                    elif field.sig_type == "sl":
-                        s += "std_logic;\n"
-                    else:
-                        raise RuntimeError("Something went wrong...")
-                s += indent_string("end record;\n\n")
-        # The RO register record type
-        s += indent_string("type t_" + self.name + "_ro_regs is record\n")
-        for reg in self.registers:
-            if reg.mode == "ro":
-                s += indent_string(reg.name, 2) + " : "
-                if reg.sig_type == "default" or (
-                    reg.sig_type == "slv" and reg.width == self.data_width
-                ):
-                    s += "t_" + self.name + "_data;\n"
-                elif reg.sig_type == "slv":
-                    s += "std_logic_vector(" + str(reg.width - 1) + " downto 0);\n"
-                elif reg.sig_type == "sl":
-                    s += "std_logic;\n"
-                elif reg.sig_type == "fields":
-                    s += "t_" + self.name + "_ro_" + reg.name + ";\n"
-                else:
-                    raise RuntimeError(
-                        "Something went wrong... What now?" + reg.sig_type
-                    )
-        s += indent_string("end record;\n")
-        s += "\n"
-        s += indent_string("-- RO Register Reset Value Constant\n\n")
-        s += indent_string("constant c_") + self.name + "_ro_regs : t_"
-        s += self.name + "_ro_regs := (\n"
-        gen = [reg for reg in self.registers if reg.mode == "ro"]
-        s += self.get_field_declarations(gen)
-        return s
+        return template.render(context)
 
-    @staticmethod
-    def get_field_reset_value(reg):
-        par = ""
-        if len(reg.fields) > 1:
-            par += "(\n"
-        else:
-            par += "("
-        for j, field in enumerate(reg.fields):
-            if len(reg.fields) > 1:
-                par += indent_string(field.name + " => ")
-            else:
-                par += field.name + " => "
+    #     s = f"{ieee_math()}{2*NL}"
 
-            if field.sig_type == "slv":
+    #     s += f"package {self.name}_pif_pkg is{2*NL}"
 
-                if field.reset == "0x0":
-                    par += "(others => '0')"
-                else:
-                    par += str(field.width) + 'X"'
-                    par += format(int(field.reset, 16), "X") + '"'
+    #     s += self.get_subtypes_and_addrs_vhdl()
 
-            elif field.sig_type == "sl":
-                par += "'" + format(int(field.reset, 16), "X") + "'"
+    #     if self.n_rw_regs > 0:
+    #         s += self.get_rw_regs_vhdl()
 
-            if j < len(reg.fields) - 1:
-                par += ",\n"
-        par += ")"
-        return par
+    #     if self.n_ro_regs > 0:
+    #         s += self.get_ro_regs_vhdl()
 
-    def get_rw_regs_vhdl(self):
-        s = indent_string("-- RW Register Record Definitions\n\n")
-        # Create all types for RW registers with records
-        for reg in self.registers:
-            if reg.mode == "rw" and reg.sig_type == "fields":
-                s += self.record_fields_definition_vhdl(reg)
-        # The RW register record type
-        s += indent_string("type t_" + self.name + "_rw_regs is record\n")
-        for reg in self.registers:
-            if reg.mode == "rw":
-                s += indent_string(reg.name, 2) + " : "
-                if reg.sig_type == "default" or (
-                    reg.sig_type == "slv" and reg.width == self.data_width
-                ):
-                    s += "t_" + self.name + "_data;\n"
-                elif reg.sig_type == "slv":
-                    s += "std_logic_vector(" + str(reg.width - 1) + " downto 0);\n"
-                elif reg.sig_type == "sl":
-                    s += "std_logic;\n"
-                elif reg.sig_type == "fields":
-                    s += "t_" + self.name + "_rw_" + reg.name + ";\n"
-                else:
-                    raise RuntimeError("Something went wrong...")
-        s += indent_string("end record;\n")
-        s += "\n"
-        s += indent_string("-- RW Register Reset Value Constant\n\n")
-        s += indent_string("constant c_") + self.name + "_rw_regs : t_"
-        s += self.name + "_rw_regs := (\n"
-        gen = [reg for reg in self.registers if reg.mode == "rw"]
-        s += self.get_field_declarations(gen)
-        s += "\n"
-        return s
+    #     if self.n_pulse_regs > 0:
+    #         s += self.get_pulse_regs_vhdl()
 
-    def get_field_declarations(self, gen):
-        s = ""
-        for i, reg in enumerate(gen):
-            par = ""
-            par += reg.name + " => "
+    #     s += "\n"
 
-            # default values must be declared
-            if reg.sig_type == "default" or reg.sig_type == "slv":
-                if reg.reset == "0x0":
-                    par += "(others => '0')"
-                else:
-                    par += str(reg.width) + 'X"'
-                    par += format(int(reg.reset, 16), "X") + '"'
+    #     s += "end package " + self.name + "_pif_pkg;"
+    #     s += "\n\n"
 
-            elif reg.sig_type == "fields":
-                par += self.get_field_reset_value(reg)
+    #     s += (
+    #         f"package body {self.name}_pif_pkg is\n"
+    #         "\n"
+    #         "  function set_module_addr_width(g_module_addr_width : integer) return integer is\n"
+    #         "  begin\n"
+    #         "    if (g_module_addr_width = 0) then\n"
+    #         "      return C_ADDR_WIDTH; -- use maximum address to define the range\n"
+    #         "    else\n"
+    #         "      return g_module_addr_width;\n"
+    #         "    end if;\n"
+    #         "  end function set_module_addr_width;\n"
+    #         "\n"
+    #         f"end package body {self.name}_pif_pkg;\n"
+    #     )
 
-            elif reg.sig_type == "sl":
-                par += "'" + format(int(reg.reset, 16), "X") + "'"
-            else:
-                raise RuntimeError("Something went wrong... What now?" + reg.sig_type)
+    #     return s
 
-            if i < len(gen) - 1:
-                par += ","
-            else:
-                par += ");"
-            par += "\n"
+    # def get_pulse_regs_vhdl(self):
+    #     s = indent_string("-- PULSE Register Record Definitions\n\n")
+    #     # Create all types for PULSE registers with records
+    #     for reg in self.registers:
+    #         if reg.mode == "pulse" and reg.sig_type == "fields":
+    #             s += self.record_fields_definition_vhdl(reg)
+    #     # The PULSE register record type
+    #     s += indent_string("type t_" + self.name + "_pulse_regs is record\n")
+    #     for reg in self.registers:
+    #         if reg.mode == "pulse":
+    #             s += indent_string(reg.name, 2) + " : "
+    #             if reg.sig_type == "default" or (
+    #                 reg.sig_type == "slv" and reg.width == self.data_width
+    #             ):
+    #                 s += "t_" + self.name + "_data;\n"
+    #             elif reg.sig_type == "slv":
+    #                 s += "std_logic_vector(" + str(reg.width - 1) + " downto 0);\n"
+    #             elif reg.sig_type == "sl":
+    #                 s += "std_logic;\n"
+    #             elif reg.sig_type == "fields":
+    #                 s += "t_" + self.name + "_pulse_" + reg.name + ";\n"
+    #             else:
+    #                 raise RuntimeError("Something went wrong...")
+    #     s += indent_string("end record;\n")
+    #     s += "\n"
+    #     s += indent_string("-- PULSE Register Reset Value Constant\n\n")
+    #     s += indent_string("constant c_") + self.name + "_pulse_regs : t_"
+    #     s += self.name + "_pulse_regs := (\n"
+    #     gen = [reg for reg in self.registers if reg.mode == "pulse"]
+    #     s += self.get_field_declarations(gen)
+    #     s += "\n"
+    #     return s
 
-            s += indent_string(par, 2)
-        return s
+    # def get_ro_regs_vhdl(self):
+    #     s = indent_string("-- RO Register Record Definitions\n\n")
+    #     # Create all types for RO registers with records
+    #     for reg in self.registers:
+    #         if reg.mode == "ro" and reg.sig_type == "fields":
+    #             s += indent_string("type t_" + self.name + "_ro_")
+    #             s += reg.name + " is record\n"
 
-    def record_fields_definition_vhdl(self, reg):
-        s = indent_string("type t_" + self.name + "_" + reg.mode + "_")
-        s += reg.name + " is record\n"
-        for field in reg.fields:
-            s += indent_string(field.name, 2) + " : "
-            if field.sig_type == "slv":
-                s += "std_logic_vector(" + str(field.width - 1)
-                s += " downto 0);\n"
-            elif field.sig_type == "sl":
-                s += "std_logic;\n"
-            else:
-                raise RuntimeError("Something went wrong..." + field.sig_type)
-        s += indent_string("end record;\n\n")
-        return s
+    #             for field in reg.fields:
+    #                 s += indent_string(field.name, 2) + " : "
+    #                 if field.sig_type == "slv":
+    #                     s += "std_logic_vector(" + str(field.width - 1)
+    #                     s += " downto 0);\n"
+    #                 elif field.sig_type == "sl":
+    #                     s += "std_logic;\n"
+    #                 else:
+    #                     raise RuntimeError("Something went wrong...")
+    #             s += indent_string("end record;\n\n")
+    #     # The RO register record type
+    #     s += indent_string("type t_" + self.name + "_ro_regs is record\n")
+    #     for reg in self.registers:
+    #         if reg.mode == "ro":
+    #             s += indent_string(reg.name, 2) + " : "
+    #             if reg.sig_type == "default" or (
+    #                 reg.sig_type == "slv" and reg.width == self.data_width
+    #             ):
+    #                 s += "t_" + self.name + "_data;\n"
+    #             elif reg.sig_type == "slv":
+    #                 s += "std_logic_vector(" + str(reg.width - 1) + " downto 0);\n"
+    #             elif reg.sig_type == "sl":
+    #                 s += "std_logic;\n"
+    #             elif reg.sig_type == "fields":
+    #                 s += "t_" + self.name + "_ro_" + reg.name + ";\n"
+    #             else:
+    #                 raise RuntimeError(
+    #                     "Something went wrong... What now?" + reg.sig_type
+    #                 )
+    #     s += indent_string("end record;\n")
+    #     s += "\n"
+    #     s += indent_string("-- RO Register Reset Value Constant\n\n")
+    #     s += indent_string("constant c_") + self.name + "_ro_regs : t_"
+    #     s += self.name + "_ro_regs := (\n"
+    #     gen = [reg for reg in self.registers if reg.mode == "ro"]
+    #     s += self.get_field_declarations(gen)
+    #     return s
 
-    def get_subtypes_and_addrs_vhdl(self):
-        par = ""
-        par += "constant C_" + self.name.upper()
-        par += "_ADDR_WIDTH : natural := " + str(self.addr_width) + ";\n"
-        par += "constant C_" + self.name.upper()
-        par += "_DATA_WIDTH : natural := " + str(self.data_width) + ";\n"
-        par += "\n"
-        par += "subtype t_" + self.name + "_addr is "
-        par += "std_logic_vector(C_" + self.name.upper() + "_ADDR_WIDTH-1 "
-        par += "downto 0);\n"
-        par += "subtype t_" + self.name + "_data is "
-        par += "std_logic_vector(C_" + self.name.upper() + "_DATA_WIDTH-1 "
-        par += "downto 0);\n"
-        par += "\n"
-        for reg in self.registers:
-            par += "constant C_ADDR_" + reg.name.upper()
-            par += " : t_" + self.name + "_addr := " + str(self.addr_width)
-            par += 'X"' + "%X" % reg.address + '";\n'
-        par += "\n"
+    # @staticmethod
+    # def get_field_reset_value(reg):
+    #     par = ""
+    #     if len(reg.fields) > 1:
+    #         par += "(\n"
+    #     else:
+    #         par += "("
+    #     for j, field in enumerate(reg.fields):
+    #         if len(reg.fields) > 1:
+    #             par += indent_string(field.name + " => ")
+    #         else:
+    #             par += field.name + " => "
 
-        max_addr = self.registers[-1].address
-        par += f"constant C_ADDR_MAX   : integer := {max_addr}; -- {hex(max_addr)}\n"
-        par += "constant C_ADDR_WIDTH : integer := integer(ceil(log2(real(C_ADDR_MAX + 1))));\n\n"
+    #         if field.sig_type == "slv":
 
-        par += "function set_module_addr_width(g_module_addr_width : integer) return integer;\n"
-        par += "\n"
+    #             if field.reset == "0x0":
+    #                 par += "(others => '0')"
+    #             else:
+    #                 par += str(field.width) + 'X"'
+    #                 par += format(int(field.reset, 16), "X") + '"'
 
-        return indent_string(par)
+    #         elif field.sig_type == "sl":
+    #             par += "'" + format(int(field.reset, 16), "X") + "'"
+
+    #         if j < len(reg.fields) - 1:
+    #             par += ",\n"
+    #     par += ")"
+    #     return par
+
+    # def get_rw_regs_vhdl(self):
+    #     s = indent_string("-- RW Register Record Definitions\n\n")
+    #     # Create all types for RW registers with records
+    #     for reg in self.registers:
+    #         if reg.mode == "rw" and reg.sig_type == "fields":
+    #             s += self.record_fields_definition_vhdl(reg)
+    #     # The RW register record type
+    #     s += indent_string("type t_" + self.name + "_rw_regs is record\n")
+    #     for reg in self.registers:
+    #         if reg.mode == "rw":
+    #             s += indent_string(reg.name, 2) + " : "
+    #             if reg.sig_type == "default" or (
+    #                 reg.sig_type == "slv" and reg.width == self.data_width
+    #             ):
+    #                 s += "t_" + self.name + "_data;\n"
+    #             elif reg.sig_type == "slv":
+    #                 s += "std_logic_vector(" + str(reg.width - 1) + " downto 0);\n"
+    #             elif reg.sig_type == "sl":
+    #                 s += "std_logic;\n"
+    #             elif reg.sig_type == "fields":
+    #                 s += "t_" + self.name + "_rw_" + reg.name + ";\n"
+    #             else:
+    #                 raise RuntimeError("Something went wrong...")
+    #     s += indent_string("end record;\n")
+    #     s += "\n"
+    #     s += indent_string("-- RW Register Reset Value Constant\n\n")
+    #     s += indent_string("constant c_") + self.name + "_rw_regs : t_"
+    #     s += self.name + "_rw_regs := (\n"
+    #     gen = [reg for reg in self.registers if reg.mode == "rw"]
+    #     s += self.get_field_declarations(gen)
+    #     s += "\n"
+    #     return s
+
+    # def get_field_declarations(self, gen):
+    #     s = ""
+    #     for i, reg in enumerate(gen):
+    #         par = ""
+    #         par += reg.name + " => "
+
+    #         # default values must be declared
+    #         if reg.sig_type == "default" or reg.sig_type == "slv":
+    #             if reg.reset == "0x0":
+    #                 par += "(others => '0')"
+    #             else:
+    #                 par += str(reg.width) + 'X"'
+    #                 par += format(int(reg.reset, 16), "X") + '"'
+
+    #         elif reg.sig_type == "fields":
+    #             par += self.get_field_reset_value(reg)
+
+    #         elif reg.sig_type == "sl":
+    #             par += "'" + format(int(reg.reset, 16), "X") + "'"
+    #         else:
+    #             raise RuntimeError("Something went wrong... What now?" + reg.sig_type)
+
+    #         if i < len(gen) - 1:
+    #             par += ","
+    #         else:
+    #             par += ");"
+    #         par += "\n"
+
+    #         s += indent_string(par, 2)
+    #     return s
+
+    # def record_fields_definition_vhdl(self, reg):
+    #     s = indent_string("type t_" + self.name + "_" + reg.mode + "_")
+    #     s += reg.name + " is record\n"
+    #     for field in reg.fields:
+    #         s += indent_string(field.name, 2) + " : "
+    #         if field.sig_type == "slv":
+    #             s += "std_logic_vector(" + str(field.width - 1)
+    #             s += " downto 0);\n"
+    #         elif field.sig_type == "sl":
+    #             s += "std_logic;\n"
+    #         else:
+    #             raise RuntimeError("Something went wrong..." + field.sig_type)
+    #     s += indent_string("end record;\n\n")
+    #     return s
+
+    # def get_subtypes_and_addrs_vhdl(self):
+    #     par = ""
+    #     par += "constant C_" + self.name.upper()
+    #     par += "_ADDR_WIDTH : natural := " + str(self.addr_width) + ";\n"
+    #     par += "constant C_" + self.name.upper()
+    #     par += "_DATA_WIDTH : natural := " + str(self.data_width) + ";\n"
+    #     par += "\n"
+    #     par += "subtype t_" + self.name + "_addr is "
+    #     par += "std_logic_vector(C_" + self.name.upper() + "_ADDR_WIDTH-1 "
+    #     par += "downto 0);\n"
+    #     par += "subtype t_" + self.name + "_data is "
+    #     par += "std_logic_vector(C_" + self.name.upper() + "_DATA_WIDTH-1 "
+    #     par += "downto 0);\n"
+    #     par += "\n"
+    #     for reg in self.registers:
+    #         par += "constant C_ADDR_" + reg.name.upper()
+    #         par += " : t_" + self.name + "_addr := " + str(self.addr_width)
+    #         par += 'X"' + "%X" % reg.address + '";\n'
+    #     par += "\n"
+
+    #     max_addr = self.registers[-1].address
+    #     par += f"constant C_ADDR_MAX   : integer := {max_addr}; -- {hex(max_addr)}\n"
+    #     par += "constant C_ADDR_WIDTH : integer := integer(ceil(log2(real(C_ADDR_MAX + 1))));\n\n"
+
+    #     par += "function set_module_addr_width(g_module_addr_width : integer) return integer;\n"
+    #     par += "\n"
+
+    #     return indent_string(par)
 
     def return_module_VHDL(self):
         # Set up Jinja2 environment

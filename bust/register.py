@@ -17,12 +17,14 @@ class Register:
     supported_types = ["default", "slv", "sl"]
     supported_modes = ["RW", "RO", "PULSE"]
 
-    def __init__(self, reg, address, mod_data_width):
+    def __init__(self, reg, address, module_name, module_data_width):
         self.name = reg["name"]
         self.mode = reg["mode"].lower()
         self.description = reg["description"]
         self.description_with_breaks = add_line_breaks(reg["description"], 25)
         self.address = address
+        self.module_name = module_name
+        self.module_data_width = module_data_width
 
         if self.mode == "pulse":
             # Check if pulse_cycles is set
@@ -54,7 +56,7 @@ class Register:
 
         # Assign the reg type and register data width
         if self.sig_type == "default":
-            self.width = mod_data_width
+            self.width = module_data_width
 
         elif self.sig_type == "slv":
             self.width = tmp_width
@@ -94,7 +96,7 @@ class Register:
                     self.reset = reg["reset"]
 
         # Perform check that data bits are not exceeded
-        self.check_register_data_width(mod_data_width)
+        self.check_register_data_width(module_data_width)
 
     def __str__(self):
         string = "Name: " + self.name + "\n"
@@ -120,6 +122,41 @@ class Register:
 
         string += "\nDescription: " + self.description + "\n\n"
         return string
+
+    @property
+    def range_vhdl(self):
+        if self.sig_type == "slv":
+            return f"{self.width - 1} downto 0"
+        raise ValueError("Only slv fields have a range")
+
+    @property
+    def sig_type_vhdl(self):
+        if self.sig_type == "default" or (
+            self.sig_type == "slv" and self.width == self.module_data_width
+        ):
+            return f"t_{self.module_name}_data"
+        elif self.sig_type == "slv":
+            return f"std_logic_vector({self.range_vhdl})"
+        elif self.sig_type == "sl":
+            return "std_logic"
+        else:
+            return f"t_{self.module_name}_{self.mode}_{self.name}"
+
+    @property
+    def reset_val_vhdl(self):
+        if self.sig_type in ["default", "slv"]:
+            if self.reset == "0x0":
+                return "(others => '0')"
+            else:
+                val = str(self.width) + 'X"'
+                val += format(int(self.reset, 16), "X") + '"'
+                return val
+        elif self.sig_type == "sl":
+            return "'" + format(int(self.reset, 16), "X") + "'"
+
+        raise ValueError(
+            "Only default, slv and sl registers can extract reset value directly"
+        )
 
     def add_field(self, field):
         # Check that all required keys exist

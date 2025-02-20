@@ -67,3 +67,30 @@ class Field(object):
         if self.description != "":
             dic["description"] = self.description
         return dic
+
+    @property
+    def range_vhdl(self):
+        if self.sig_type == "slv":
+            return f"{self.width - 1} downto 0"
+        raise ValueError("Only slv fields have a range")
+
+    @property
+    def sig_type_vhdl(self):
+        if self.sig_type == "slv":
+            return f"std_logic_vector({self.range_vhdl})"
+        elif self.sig_type == "sl":
+            return "std_logic"
+
+    @property
+    def reset_val_vhdl(self):
+        if self.sig_type == "slv":
+            if self.reset == "0x0":
+                val = "(others => '0')"
+            else:
+                val = str(self.width) + 'X"'
+                val += format(int(self.reset, 16), "X") + '"'
+
+        elif self.sig_type == "sl":
+            val = "'" + format(int(self.reset, 16), "X") + "'"
+
+        return val
