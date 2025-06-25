@@ -1,3 +1,6 @@
+from jinja2 import Environment, FileSystemLoader
+import os
+
 from bust.utils import indent_string
 from bust.vhdl_gen import comb_process_with_reset
 from bust.vhdl_gen import (
@@ -114,144 +117,24 @@ class BusVHDLGen:
         return s
 
     def return_bus_pif_VHDL(self, mod):
-        clk_identifier = self.clk_name
-        reset_identifier = self.reset_name
-
-        s = "library ieee;\n"
-        s += "use ieee.std_logic_1164.all;\n"
-        s += "use ieee.numeric_std.all;\n"
-        s += "\n"
-        if self.comp_library != "work":
-            s += "library " + self.comp_library + ";\n"
-        if self.bus_type == "ipbus":
-            s += "use " + self.comp_library + "." + self.bus_type + ".all;\n"
-        else:
-            s += "use " + self.comp_library + "." + self.bus_type + "_pkg.all;\n"
-        s += "use work." + mod.name + "_pif_pkg.all;\n\n"
-
-        s += "entity " + mod.name + "_" + self.short_name + "_pif is\n\n"
-        s += indent_string("generic (\n")
-        par = "-- " + self.bus_type.upper() + " Bus Interface Generics\n"
-        par += (
-            "g_"
-            + self.short_name
-            + "_baseaddr        : std_logic_vector("
-            + str(self.addr_width - 1)
-        )
-        par += " downto 0) := (others => '0');\n"
-        par += "g_check_baseaddr      : boolean := true;\n"
-        par += "g_module_addr_width   : integer := 0\n"
-        par += ");\n"
-        s += indent_string(par, 2)
-
-        s += indent_string("port (")
-
-        par = ""
-        if mod.count_rw_regs() + mod.count_ro_regs() + mod.count_pulse_regs() > 0:
-            par += "\n-- " + self.bus_type.upper() + " Bus Interface Ports\n"
-
-        if mod.count_rw_regs() > 0:
-            par += (
-                self.short_name + "_rw_regs    : out t_" + mod.name + "_rw_regs    := "
-            )
-            par += "c_" + mod.name + "_rw_regs;\n"
-
-        if mod.count_ro_regs() > 0:
-            par += (
-                self.short_name + "_ro_regs    : in  t_" + mod.name + "_ro_regs    := "
-            )
-            par += "c_" + mod.name + "_ro_regs;\n"
-
-        if mod.count_pulse_regs() > 0:
-            par += (
-                self.short_name + "_pulse_regs : out t_" + mod.name + "_pulse_regs := "
-            )
-            par += "c_" + mod.name + "_pulse_regs;\n"
-
-        par += "\n"
-        par += "-- bus signals\n"
-        par += clk_identifier + "            : in  std_logic;\n"
-        par += reset_identifier + "       : in  std_logic;\n"
-
-        # Add bus-specific signals
-        if self.bus_type == "axi":
-
-            par += "awaddr         : in  t_" + mod.name + "_addr;\n"
-            par += "awvalid        : in  std_logic;\n"
-            par += "awready        : out std_logic;\n"
-            par += "wdata          : in  t_" + mod.name + "_data;\n"
-            par += "wvalid         : in  std_logic;\n"
-            par += "wready         : out std_logic;\n"
-            par += "bresp          : out std_logic_vector(1 downto 0);\n"
-            par += "bvalid         : out std_logic;\n"
-            par += "bready         : in  std_logic;\n"
-            par += "araddr         : in  t_" + mod.name + "_addr;\n"
-            par += "arvalid        : in  std_logic;\n"
-            par += "arready        : out std_logic;\n"
-            par += "rdata          : out t_" + mod.name + "_data;\n"
-            par += "rresp          : out std_logic_vector(1 downto 0);\n"
-            par += "rvalid         : out std_logic;\n"
-            par += "rready         : in  std_logic\n"
-
-        elif self.bus_type == "ipbus":
-            par += "{}_in         : in  {};\n".format(self.short_name, self.in_type)
-            par += "{}_out        : out {}\n".format(self.short_name, self.out_type)
-
-        par += ");\n"
-        s += indent_string(par, 2)
-        s += "end " + mod.name + "_" + self.short_name + "_pif;\n\n"
-
-        s += "architecture behavior of {}_{}_pif is\n\n".format(
-            mod.name, self.short_name
+        # Set up Jinja2 environment
+        template_dir = os.path.join(os.path.dirname(__file__), "templates")
+        env = Environment(
+            loader=FileSystemLoader(template_dir, followlinks=True),
+            trim_blocks=True,
+            lstrip_blocks=True,
         )
 
-        if self.bus_type == "ipbus":
-            par = (
-                "constant C_BASEADDR : std_logic_vector(31 downto 0) := g_"
-                + self.short_name
-                + "_baseaddr;\n"
-            )
-        else:
-            par = (
-                "constant C_BASEADDR : t_"
-                + self.short_name
-                + "_addr := g_"
-                + self.short_name
-                + "_baseaddr;\n"
-            )
-        s += indent_string(par)
+        # Load the IPBus-specific module template
+        template = env.get_template("vhdl/module/pif.j2")
 
-        s += "\n"
-
-        if mod.count_rw_regs() + mod.count_pulse_regs() > 0:
-            par = ""
-            par += "-- internal signal for readback" + "\n"
-            s += indent_string(par)
-            if mod.count_rw_regs() > 0:
-                par = "signal " + self.short_name + "_rw_regs_i    : t_"
-                par += mod.name + "_rw_regs := c_" + mod.name + "_rw_regs;\n"
-                s += indent_string(par)
-            if mod.count_pulse_regs() > 0:
-                par = "signal " + self.short_name + "_pulse_regs_i : t_"
-                par += mod.name + "_pulse_regs := c_" + mod.name + "_pulse_regs;\n"
-                s += indent_string(par)
-                par = "signal " + self.short_name + "_pulse_regs_cycle : t_"
-                par += mod.name + "_pulse_regs := c_" + mod.name + "_pulse_regs;\n"
-                s += indent_string(par)
-
-        s += "\n"
-
-        # Add bus-specific logic
-        if self.bus_type == "axi":
-            s += self.return_axi_pif_VHDL(
-                mod, clk_identifier, str.strip(reset_identifier)
-            )
-        elif self.bus_type == "ipbus":
-            s += self.return_ipbus_pif_VHDL(
-                mod, clk_identifier, str.strip(reset_identifier)
-            )
-
-        return s
+        # Define context for template rendering
+        context = {
+            "module": mod,
+            "bus": mod.bus,  # Assumes `module` has an attribute `bus`
+            "NL": "\n",  # Ensures newline formatting if needed
+        }
+        return template.render(context)
 
     def return_axi_pif_VHDL(self, mod, clk_identifier, reset_identifier):
         s = ""
