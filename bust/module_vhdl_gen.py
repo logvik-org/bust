@@ -2,8 +2,6 @@ from jinja2 import Environment, FileSystemLoader
 import os
 
 from bust.utils import NL, indent_string
-from bust.vhdl_gen import ieee_math
-from bust.vhdl_gen import lib_declaration
 
 
 # Helper function to determine VHDL type
