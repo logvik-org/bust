@@ -2,22 +2,6 @@ from bust.utils import NL, indent_string
 from bust.vhdl_gen_if import if_stmt, if_else_stmt, if_elseif_stmt
 
 
-def lib_declaration():
-    s = (
-        f"library ieee;{NL}"
-        f"use ieee.std_logic_1164.all;{NL}"
-        f"use ieee.numeric_std.all;{NL}"
-    )
-    return s
-
-
-def ieee_math():
-    # fmt: off
-    s = (f"{lib_declaration()}"
-         f"use ieee.math_real.all;{NL}")  # fmt: on
-    return s
-
-
 def clock_condition(clk_identifier):
     return f"rising_edge({clk_identifier})"
 
