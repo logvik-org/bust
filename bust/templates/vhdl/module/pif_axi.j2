@@ -1,71 +1,18 @@
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-
-library bust;
-use bust.axi_pkg.all;
-use work.example_axi_pif_pkg.all;
-
-entity example_axi_axi_pif is
-
-  generic (
-    -- AXI Bus Interface Generics
-    g_axi_baseaddr        : std_logic_vector(31 downto 0) := (others => '0');
-    g_check_baseaddr      : boolean := true;
-    g_module_addr_width   : integer := 0
-    );
-  port (
-    -- AXI Bus Interface Ports
-    axi_rw_regs    : out t_example_axi_rw_regs    := c_example_axi_rw_regs;
-    axi_ro_regs    : in  t_example_axi_ro_regs    := c_example_axi_ro_regs;
-    axi_pulse_regs : out t_example_axi_pulse_regs := c_example_axi_pulse_regs;
-
-    -- bus signals
-    clk            : in  std_logic;
-    areset_n       : in  std_logic;
-    awaddr         : in  t_example_axi_addr;
-    awvalid        : in  std_logic;
-    awready        : out std_logic;
-    wdata          : in  t_example_axi_data;
-    wvalid         : in  std_logic;
-    wready         : out std_logic;
-    bresp          : out std_logic_vector(1 downto 0);
-    bvalid         : out std_logic;
-    bready         : in  std_logic;
-    araddr         : in  t_example_axi_addr;
-    arvalid        : in  std_logic;
-    arready        : out std_logic;
-    rdata          : out t_example_axi_data;
-    rresp          : out std_logic_vector(1 downto 0);
-    rvalid         : out std_logic;
-    rready         : in  std_logic
-    );
-end example_axi_axi_pif;
-
-architecture behavior of example_axi_axi_pif is
-
-  constant C_BASEADDR : t_axi_addr := g_axi_baseaddr;
-
-  -- internal signal for readback
-  signal axi_rw_regs_i    : t_example_axi_rw_regs := c_example_axi_rw_regs;
-  signal axi_pulse_regs_i : t_example_axi_pulse_regs := c_example_axi_pulse_regs;
-  signal axi_pulse_regs_cycle : t_example_axi_pulse_regs := c_example_axi_pulse_regs;
-
   -- internal bus signals for readback
-  signal awaddr_i      : t_example_axi_addr;
+  signal awaddr_i      : t_{{ module.name }}_addr;
   signal awready_i     : std_logic;
   signal wready_i      : std_logic;
   signal bresp_i       : std_logic_vector(1 downto 0);
   signal bvalid_i      : std_logic;
-  signal araddr_i      : t_example_axi_addr;
+  signal araddr_i      : t_{{ module.name }}_addr;
   signal arready_i     : std_logic;
-  signal rdata_i       : t_example_axi_data;
+  signal rdata_i       : t_{{ module.name }}_data;
   signal rresp_i       : std_logic_vector(1 downto 0);
   signal rvalid_i      : std_logic;
 
   signal slv_reg_rden : std_logic;
   signal slv_reg_wren : std_logic;
-  signal reg_data_out : t_example_axi_data;
+  signal reg_data_out : t_{{ module.name }}_data;
   -- signal byte_index   : integer; -- unused
 
   constant C_MODULE_ADDR_WIDTH : integer := set_module_addr_width(g_module_addr_width);
@@ -143,13 +90,13 @@ begin
   begin
     if areset_n = '0' then
 
-      axi_rw_regs_i <= c_example_axi_rw_regs;
-      axi_pulse_regs_cycle <= c_example_axi_pulse_regs;
+      axi_rw_regs_i <= c_{{ module.name }}_rw_regs;
+      axi_pulse_regs_cycle <= c_{{ module.name }}_pulse_regs;
 
     elsif rising_edge(clk) then
 
       -- Return PULSE registers to reset value every clock cycle
-      axi_pulse_regs_cycle <= c_example_axi_pulse_regs;
+      axi_pulse_regs_cycle <= c_{{ module.name }}_pulse_regs;
 
 
       if (slv_reg_wren = '1') then
@@ -158,41 +105,7 @@ begin
 
           null;
 
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG0), C_MODULE_ADDR_WIDTH) then
 
-          axi_rw_regs_i.reg0 <= wdata(0);
-
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG1), C_MODULE_ADDR_WIDTH) then
-
-          axi_rw_regs_i.reg1 <= wdata(0);
-
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG3), C_MODULE_ADDR_WIDTH) then
-
-          axi_rw_regs_i.reg3 <= wdata(7 downto 0);
-
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG5), C_MODULE_ADDR_WIDTH) then
-
-          axi_rw_regs_i.reg5 <= wdata;
-
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG7), C_MODULE_ADDR_WIDTH) then
-
-          axi_rw_regs_i.reg7.field0 <= wdata(0);
-          axi_rw_regs_i.reg7.field1 <= wdata(4 downto 1);
-          axi_rw_regs_i.reg7.field2 <= wdata(5);
-          axi_rw_regs_i.reg7.field3 <= wdata(20 downto 6);
-
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG9), C_MODULE_ADDR_WIDTH) then
-
-          axi_pulse_regs_cycle.reg9 <= wdata(0);
-
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG10), C_MODULE_ADDR_WIDTH) then
-
-          axi_pulse_regs_cycle.reg10 <= wdata(3 downto 0);
-
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_REG11), C_MODULE_ADDR_WIDTH) then
-
-          axi_pulse_regs_cycle.reg11.field0 <= wdata(14 downto 0);
-          axi_pulse_regs_cycle.reg11.field1 <= wdata(15);
 
         end if;
       end if;
@@ -200,57 +113,57 @@ begin
     end if;
   end process p_mm_select_write;
 
-  p_pulse_reg9 : process(clk)
+  ...p_pulse_reg9 : process(clk)
     variable cnt : natural range 0 to 3 := 0;
   begin
     if rising_edge(clk) then
       if areset_n = '0' then
-        axi_pulse_regs_i.reg9 <= c_example_axi_pulse_regs.reg9;
+        axi_pulse_regs_i.reg9 <= c_{{ module.name }}_pulse_regs.reg9;
       else
-        if axi_pulse_regs_cycle.reg9 /= c_example_axi_pulse_regs.reg9 then
+        if axi_pulse_regs_cycle.reg9 /= c_{{ module.name }}_pulse_regs.reg9 then
           cnt := 3;
           axi_pulse_regs_i.reg9 <= axi_pulse_regs_cycle.reg9;
         else
           if cnt > 0 then
             cnt := cnt - 1;
           else
-            axi_pulse_regs_i.reg9 <= c_example_axi_pulse_regs.reg9;
+            axi_pulse_regs_i.reg9 <= c_{{ module.name }}_pulse_regs.reg9;
           end if;
         end if;
       end if;
     end if;
   end process p_pulse_reg9;
 
-  p_pulse_reg10 : process(clk)
+  ...p_pulse_reg10 : process(clk)
   begin
     if rising_edge(clk) then
       if areset_n = '0' then
-        axi_pulse_regs_i.reg10 <= c_example_axi_pulse_regs.reg10;
+        axi_pulse_regs_i.reg10 <= c_{{ module.name }}_pulse_regs.reg10;
       else
-        if axi_pulse_regs_cycle.reg10 /= c_example_axi_pulse_regs.reg10 then
+        if axi_pulse_regs_cycle.reg10 /= c_{{ module.name }}_pulse_regs.reg10 then
           axi_pulse_regs_i.reg10 <= axi_pulse_regs_cycle.reg10;
         else
-          axi_pulse_regs_i.reg10 <= c_example_axi_pulse_regs.reg10;
+          axi_pulse_regs_i.reg10 <= c_{{ module.name }}_pulse_regs.reg10;
         end if;
       end if;
     end if;
   end process p_pulse_reg10;
 
-  p_pulse_reg11 : process(clk)
+  ...p_pulse_reg11 : process(clk)
     variable cnt : natural range 0 to 49 := 0;
   begin
     if rising_edge(clk) then
       if areset_n = '0' then
-        axi_pulse_regs_i.reg11 <= c_example_axi_pulse_regs.reg11;
+        axi_pulse_regs_i.reg11 <= c_{{ module.name }}_pulse_regs.reg11;
       else
-        if axi_pulse_regs_cycle.reg11 /= c_example_axi_pulse_regs.reg11 then
+        if axi_pulse_regs_cycle.reg11 /= c_{{ module.name }}_pulse_regs.reg11 then
           cnt := 49;
           axi_pulse_regs_i.reg11 <= axi_pulse_regs_cycle.reg11;
         else
           if cnt > 0 then
             cnt := cnt - 1;
           else
-            axi_pulse_regs_i.reg11 <= c_example_axi_pulse_regs.reg11;
+            axi_pulse_regs_i.reg11 <= c_{{ module.name }}_pulse_regs.reg11;
           end if;
         end if;
       end if;
@@ -313,47 +226,7 @@ begin
 
       null;
 
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG0), C_MODULE_ADDR_WIDTH) then
 
-      reg_data_out(0) <= axi_rw_regs_i.reg0;
-
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG1), C_MODULE_ADDR_WIDTH) then
-
-      reg_data_out(0) <= axi_rw_regs_i.reg1;
-
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG2), C_MODULE_ADDR_WIDTH) then
-
-      reg_data_out(0) <= axi_ro_regs.reg2;
-
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG3), C_MODULE_ADDR_WIDTH) then
-
-      reg_data_out(7 downto 0) <= axi_rw_regs_i.reg3;
-
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG4), C_MODULE_ADDR_WIDTH) then
-
-      reg_data_out(13 downto 0) <= axi_ro_regs.reg4;
-
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG5), C_MODULE_ADDR_WIDTH) then
-
-      reg_data_out <= axi_rw_regs_i.reg5;
-
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG6), C_MODULE_ADDR_WIDTH) then
-
-      reg_data_out <= axi_ro_regs.reg6;
-
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG7), C_MODULE_ADDR_WIDTH) then
-
-      reg_data_out(0) <= axi_rw_regs_i.reg7.field0;
-      reg_data_out(4 downto 1) <= axi_rw_regs_i.reg7.field1;
-      reg_data_out(5) <= axi_rw_regs_i.reg7.field2;
-      reg_data_out(20 downto 6) <= axi_rw_regs_i.reg7.field3;
-
-    elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_REG8), C_MODULE_ADDR_WIDTH) then
-
-      reg_data_out(0) <= axi_ro_regs.reg8.field0;
-      reg_data_out(19 downto 1) <= axi_ro_regs.reg8.field1;
-      reg_data_out(20) <= axi_ro_regs.reg8.field2;
-      reg_data_out(23 downto 21) <= axi_ro_regs.reg8.field3;
 
     end if;
 
