@@ -29,12 +29,16 @@ class Module:
         self.registers = []
         self.addresses = []
 
-        self._config = ConfigWrapper(mod, defaults={
-            "byte_addressable": bus.bus_type == "axi",
-            "version": "",
-            "description": "",
-            "git_hash": None, # Currently not used
-        })
+        self._config = ConfigWrapper(
+            mod,
+            required_keys=["name",],
+            defaults={
+                "byte_addressable": bus.bus_type == "axi",
+                "version": "",
+                "description": "",
+                "git_hash": None,  # Currently not used
+            },
+        )
 
         self.name = self._config.require("name")
         is_valid_VHDL(self.name)
@@ -48,14 +52,12 @@ class Module:
         self.addr_width = bus.addr_width
         self.data_width = bus.data_width
 
-
         for reg in mod["register"]:
             if "stall_cycles" in reg and bus.bus_type != "ipbus":
                 raise NotImplementedError(
                     "Stall cycles has not been implemented for other buses than IPBus..."
                 )
             self.add_register(reg)
-
 
     def add_register(self, reg):
         if self.register_valid(reg):
