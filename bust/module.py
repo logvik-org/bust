@@ -59,6 +59,15 @@ class Module:
                 )
             self.add_register(reg)
 
+    def get_num_rw_regs(self):
+        return len([reg for reg in self.registers if reg.mode == "rw"])
+
+    def get_num_ro_regs(self):
+        return len([reg for reg in self.registers if reg.mode == "ro"])
+
+    def get_num_pulse_regs(self):
+        return len([reg for reg in self.registers if reg.mode == "pulse"])
+
     def get_version(self):
         if self.version is None:
             return ""
@@ -244,16 +253,16 @@ class Module:
 
     def return_module_pkg_VHDL(self):
         gen_obj = self._get_vhdl_gen_obj()
-        return gen_obj.return_module_pkg_VHDL()
+        return gen_obj.return_module_pkg_VHDL(self)
 
     def return_module_VHDL(self):
         gen_obj = self._get_vhdl_gen_obj()
-        return gen_obj.return_module_VHDL()
+        return gen_obj.return_module_VHDL(self)
 
     def get_instantiation(self, instance_name, intern_out=False):
         """Also a VHDL method."""
         gen_obj = self._get_vhdl_gen_obj()
-        return gen_obj.get_instantiation(instance_name, intern_out)
+        return gen_obj.get_instantiation(self, instance_name, intern_out)
 
     def _get_vhdl_gen_obj(self):
         o = ModuleVHDLGen(

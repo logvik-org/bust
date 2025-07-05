@@ -44,11 +44,8 @@ class ModuleVHDLGen:
         self.registers = regs
         self.data_width = data_width
         self.addr_width = addr_width
-        self.n_rw_regs = len([reg for reg in self.registers if reg.mode == "rw"])
-        self.n_ro_regs = len([reg for reg in self.registers if reg.mode == "ro"])
-        self.n_pulse_regs = len([reg for reg in self.registers if reg.mode == "pulse"])
 
-    def return_module_pkg_VHDL(self):
+    def return_module_pkg_VHDL(self, module):
 
         template_dir = os.path.join(os.path.dirname(__file__), "templates")
         env = Environment(
@@ -66,14 +63,14 @@ class ModuleVHDLGen:
 
         # Define context for template rendering
         context = {
-            "module": self,
+            "module": module,
             "addr_width": self.addr_width,
             "data_width": self.data_width,
         }
 
         return template.render(context)
 
-    def return_module_VHDL(self):
+    def return_module_VHDL(self, module):
         # Set up Jinja2 environment
         template_dir = os.path.join(os.path.dirname(__file__), "templates")
         env = Environment(
@@ -87,13 +84,13 @@ class ModuleVHDLGen:
 
         # Define context for template rendering
         context = {
-            "module": self,
+            "module": module,
             "bus": self.bus,  # Assumes `module` has an attribute `bus`
             "NL": "\n",  # Ensures newline formatting if needed
         }
         return template.render(context)
 
-    def get_instantiation(self, instance_name, intern_out=True):
+    def get_instantiation(self, module, instance_name, intern_out=True):
         s = instance_name + " "
         s += ": entity work." + self.name + "_" + self.bus.short_name + "_pif\n"
         s += indent_string("generic map (\n")
@@ -109,21 +106,21 @@ class ModuleVHDLGen:
             inter = ""
 
         par = ""
-        if self.n_rw_regs > 0:
+        if module.get_num_rw_regs() > 0:
             par += (
                 self.bus.short_name
                 + "_rw_regs         => "
                 + self.bus.short_name
                 + "_rw_regs,\n"
             )
-        if self.n_ro_regs > 0:
+        if module.get_num_ro_regs() > 0:
             par += (
                 self.bus.short_name
                 + "_ro_regs         => "
                 + self.bus.short_name
                 + "_ro_regs,\n"
             )
-        if self.n_pulse_regs > 0:
+        if module.get_num_pulse_regs() > 0:
             par += (
                 self.bus.short_name
                 + "_pulse_regs      => "
