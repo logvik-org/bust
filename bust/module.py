@@ -59,15 +59,6 @@ class Module:
                 )
             self.add_register(reg)
 
-    def get_num_rw_regs(self):
-        return len([reg for reg in self.registers if reg.mode == "rw"])
-
-    def get_num_ro_regs(self):
-        return len([reg for reg in self.registers if reg.mode == "ro"])
-
-    def get_num_pulse_regs(self):
-        return len([reg for reg in self.registers if reg.mode == "pulse"])
-
     def get_version(self):
         if self.version is None:
             return ""
@@ -168,14 +159,17 @@ class Module:
 
         return True
 
-    def count_ro_regs(self):
-        return len([reg for reg in self.registers if reg.mode == "ro"])
+    @property
+    def num_ro_regs(self):
+        return sum(1 for reg in self.registers if reg.mode == "ro")
 
-    def count_rw_regs(self):
-        return len([reg for reg in self.registers if reg.mode == "rw"])
+    @property
+    def num_rw_regs(self):
+        return sum(1 for reg in self.registers if reg.mode == "rw")
 
-    def count_pulse_regs(self):
-        return len([reg for reg in self.registers if reg.mode == "pulse"])
+    @property
+    def num_pulse_regs(self):
+        return sum(1 for reg in self.registers if reg.mode == "pulse")
 
     def has_stall_regs(self):
         if len([reg for reg in self.registers if reg.stall]) > 0:

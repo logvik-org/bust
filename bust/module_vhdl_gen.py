@@ -106,21 +106,21 @@ class ModuleVHDLGen:
             inter = ""
 
         par = ""
-        if module.get_num_rw_regs() > 0:
+        if module.num_rw_regs > 0:
             par += (
                 self.bus.short_name
                 + "_rw_regs         => "
                 + self.bus.short_name
                 + "_rw_regs,\n"
             )
-        if module.get_num_ro_regs() > 0:
+        if module.num_ro_regs > 0:
             par += (
                 self.bus.short_name
                 + "_ro_regs         => "
                 + self.bus.short_name
                 + "_ro_regs,\n"
             )
-        if module.get_num_pulse_regs() > 0:
+        if module.num_pulse_regs > 0:
             par += (
                 self.bus.short_name
                 + "_pulse_regs      => "

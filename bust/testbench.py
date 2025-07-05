@@ -257,19 +257,19 @@ class Testbench(object):
             init_reset = "'1'"
 
         s += indent_string("-- component ports\n")
-        if self.module.count_rw_regs() > 0:
+        if self.module.num_rw_regs > 0:
             s += indent_string(
                 "signal {0}_rw_regs    : t_{1}_rw_regs    := c_{1}_rw_regs;\n".format(
                     self.bus.short_name, self.module.name
                 )
             )
-        if self.module.count_ro_regs() > 0:
+        if self.module.num_ro_regs > 0:
             s += indent_string(
                 "signal {0}_ro_regs    : t_{1}_ro_regs    := c_{1}_ro_regs;\n".format(
                     self.bus.short_name, self.module.name
                 )
             )
-        if self.module.count_pulse_regs() > 0:
+        if self.module.num_pulse_regs > 0:
             s += indent_string(
                 "signal {0}_pulse_regs : t_{1}_pulse_regs := c_{1}_pulse_regs;\n".format(
                     self.bus.short_name, self.module.name
