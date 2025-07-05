@@ -21,7 +21,6 @@ class Register:
         self.name = reg["name"]
         self.mode = reg["mode"].lower()
         self.description = reg["description"]
-        self.description_with_breaks = add_line_breaks(reg["description"], 25)
         self.address = address
         self.module_name = module_name
         self.module_data_width = module_data_width

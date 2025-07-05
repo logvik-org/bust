@@ -11,6 +11,7 @@ from bust.module_vhdl_gen import ModuleVHDLGen
 from bust.register import Register
 from bust.utils import add_line_breaks, indent_string
 from bust.vhdl_util import is_unique, is_valid_VHDL
+from bust._config_wrapper import ConfigWrapper
 
 
 class Module:
@@ -28,29 +29,25 @@ class Module:
         self.registers = []
         self.addresses = []
 
-        is_valid_VHDL(mod["name"])
-        self.name = mod["name"]
-        self.description = mod["description"]
-        self.description_with_breaks = add_line_breaks(mod["description"], 25)
-        if "version" in mod:
-            self.version = mod["version"]
-        else:
-            self.version = None
-        self.git_hash = None  # not used
+        self._config = ConfigWrapper(mod, defaults={
+            "byte_addressable": bus.bus_type == "axi",
+            "version": None,
+            "description": "",
+            "git_hash": None, # Currently not used
+        })
+
+        self.name = self._config.require("name")
+        is_valid_VHDL(self.name)
+
+        # Store some config values for easy access
+        self.description = self._config.get("description")
+        self.version = self._config.get("version")
+        self.git_hash = self._config.get("git_hash")
+        self.byte_addressable = self._config.get("byte_addressable")
 
         self.addr_width = bus.addr_width
         self.data_width = bus.data_width
 
-        if "byte_addressable" in mod:
-            if mod["byte_addressable"] == "True":
-                self.byte_addressable = True
-            else:
-                self.byte_addressable = False
-        else:
-            if self.bus.bus_type == "axi":  # axi usually is byte addressable
-                self.byte_addressable = True
-            else:
-                self.byte_addressable = False
 
         for reg in mod["register"]:
             if "stall_cycles" in reg and bus.bus_type != "ipbus":
