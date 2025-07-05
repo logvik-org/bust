@@ -14,7 +14,6 @@ class Field(object):
         self.width = width
         self.reset = reset
         self.description = description
-        self.description_with_breaks = add_line_breaks(description, 25)
         self.pos_low = pos_low
         self.pos_high = pos_low + width - 1
 
