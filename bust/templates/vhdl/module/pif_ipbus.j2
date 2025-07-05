@@ -54,8 +54,13 @@ begin
           if (valid_baseaddr = '0') then
 
             wr_err <= '1';
+          {# This part can probably be re-used for all bus-types #}
+          {% if bus.bus_type == "ipbus" %}
+            {% set wdata = "ipb_in.ipb_wdata" %}
+          {% elif bus.bus_type == "axi" %}
+            {% set wdata = "wdata" %}
+          {% endif %}
 
-          {# This part can probably be re-used for all bus-types  #}
           {% for reg in module.registers if reg.mode == "rw" or reg.mode == "pulse" %}
           {% if reg.mode == "rw" %}
             {% set sig_name = module.bus.short_name + "_rw_regs_i." %}
@@ -66,19 +71,22 @@ begin
 
            {% if reg.sig_type == "fields" %}
            {% for field in reg.fields %}
-             {{ sig_name }}{{ reg.name }}.{{ field.name }} <= wdata({{ field.get_pos_vhdl() }});
+            {{ sig_name }}{{ reg.name }}.{{ field.name }} <= {{ wdata }}({{ field.get_pos_vhdl() }});
            {% endfor %}
           {% elif reg.sig_type == "default" %}
-            {{ sig_name }}{{ reg.name }} <= wdata;
+            {{ sig_name }}{{ reg.name }} <= {{ wdata }};
           {% elif reg.sig_type == "slv" %}
-            {{ sig_name }}{{ reg.name }} <= wdata({{ reg.width - 1 }} downto 0);
+            {{ sig_name }}{{ reg.name }} <= {{ wdata }}({{ reg.width - 1 }} downto 0);
           {% elif reg.sig_type == "sl" %}
-            {{ sig_name }}{{ reg.name }} <= wdata(0);
+            {{ sig_name }}{{ reg.name }} <= {{ wdata }}(0);
           {% endif %}
+          {% if reg.stall %}
+            wr_stall_ack <= '1';
+          {% else %}
             wr_ack <= '1';
+          {% endif %}
 
           {% endfor %}
-
           else
 
             wr_err <= '1';
