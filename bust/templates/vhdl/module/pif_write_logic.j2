@@ -1,0 +1,43 @@
+{#
+  Parameters:
+    module:        module object
+    wdata:         string representing write data signal (e.g., "ipb_in.ipb_wdata" or "wdata")
+    reg_sel_sig:   string like "register_sel" or "register_sel_wr"
+    use_ack:       boolean; if true, generate wr_ack/wr_stall_ack
+#}
+
+{% macro write_logic(module, wdata, reg_sel_sig, use_ack=False) %}
+  {% for reg in module.registers if reg.mode in ["rw", "pulse"] %}
+    {% if reg.mode == "rw" %}
+      {% set sig_name = module.bus.short_name + "_rw_regs_i." %}
+    {% elif reg.mode == "pulse" %}
+      {% set sig_name = module.bus.short_name + "_pulse_regs_cycle." %}
+    {% endif %}
+elsif unsigned({{ reg_sel_sig }}) = resize(unsigned(C_ADDR_{{ reg.name.upper() }}), C_MODULE_ADDR_WIDTH) then
+
+    {% if reg.sig_type == "fields" %}
+      {% for field in reg.fields %}
+  {{ sig_name }}{{ reg.name }}.{{ field.name }} <= {{ wdata }}({{ field.get_pos_vhdl() }});
+      {% endfor %}
+    {% elif reg.sig_type == "default" %}
+  {{ sig_name }}{{ reg.name }} <= {{ wdata }};
+    {% elif reg.sig_type == "slv" %}
+  {{ sig_name }}{{ reg.name }} <= {{ wdata }}({{ reg.width - 1 }} downto 0);
+    {% elif reg.sig_type == "sl" %}
+  {{ sig_name }}{{ reg.name }} <= {{ wdata }}(0);
+    {% endif %}
+    {% if use_ack %}
+      {% if reg.stall %}
+  wr_stall_ack <= '1';
+
+      {% else %}
+  wr_ack <= '1';
+
+{% endif %}
+{% else %}
+
+{% endif %}{% endfor %}
+{% if module.bus.bus_type == "ipbus" %}
+else
+{% endif %}
+{% endmacro %}
