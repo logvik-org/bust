@@ -31,7 +31,7 @@ class Module:
 
         self._config = ConfigWrapper(mod, defaults={
             "byte_addressable": bus.bus_type == "axi",
-            "version": None,
+            "version": "",
             "description": "",
             "git_hash": None, # Currently not used
         })
@@ -41,7 +41,7 @@ class Module:
 
         # Store some config values for easy access
         self.description = self._config.get("description")
-        self.version = self._config.get("version")
+        self._version = self._config.get("version")
         self.git_hash = self._config.get("git_hash")
         self.byte_addressable = self._config.get("byte_addressable")
 
@@ -56,11 +56,10 @@ class Module:
                 )
             self.add_register(reg)
 
-    def get_version(self):
-        if self.version is None:
-            return ""
-        else:
-            return "Version: {}".format(self.version)
+    @property
+    def version(self):
+        """! @brief Returns the version of the module formatted as a string"""
+        return f"Version: {self._version}"
 
     def add_register(self, reg):
         if self.register_valid(reg):
