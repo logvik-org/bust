@@ -21,13 +21,13 @@ entity {{ module.name }}_{{ bus.short_name }}_pif is
     );
   port (
     -- {{bus.bus_type.upper()}} Bus Interface Ports
-    {% if module.count_rw_regs() + module.count_ro_regs() + module.count_pulse_regs() > 0 %}
+    {% if module.num_rw_regs + module.num_ro_regs + module.num_pulse_regs > 0 %}
     {{bus.short_name}}_rw_regs    : out t_example_{{bus.bus_type}}_rw_regs    := c_example_{{bus.bus_type}}_rw_regs;
     {% endif %}
-    {% if module.count_ro_regs() > 0 %}
+    {% if module.num_ro_regs > 0 %}
     {{bus.short_name}}_ro_regs    : in  t_example_{{bus.bus_type}}_ro_regs    := c_example_{{bus.bus_type}}_ro_regs;
     {% endif %}
-    {% if module.count_pulse_regs() > 0 %}
+    {% if module.num_pulse_regs > 0 %}
     {{bus.short_name}}_pulse_regs : out t_example_{{bus.bus_type}}_pulse_regs := c_example_{{bus.bus_type}}_pulse_regs;
     {% endif %}
 
@@ -69,10 +69,10 @@ architecture behavior of {{ module.name }}_{{ bus.short_name }}_pif is
   {% endif %}
 
   -- internal signal for readback
-  {% if module.get_num_rw_regs() > 0 %}
+  {% if module.num_rw_regs > 0 %}
   signal {{bus.short_name }}_rw_regs_i    : t_{{ module.name }}_rw_regs := c_{{ module.name }}_rw_regs;
   {% endif %}
-  {% if module.get_num_pulse_regs() > 0 %}
+  {% if module.num_pulse_regs > 0 %}
   signal {{bus.short_name }}_pulse_regs_i : t_{{ module.name }}_pulse_regs := c_{{ module.name }}_pulse_regs;
   signal {{bus.short_name }}_pulse_regs_cycle : t_{{ module.name }}_pulse_regs := c_{{ module.name }}_pulse_regs;
   {% endif %}

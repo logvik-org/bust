@@ -166,11 +166,11 @@ class BusVHDLGen:
 
         s += "begin\n\n"
 
-        if mod.count_rw_regs() > 0:
+        if mod.num_rw_regs > 0:
             s += indent_string("axi_rw_regs <= axi_rw_regs_i") + ";\n"
-        if mod.count_pulse_regs() > 0:
+        if mod.num_pulse_regs > 0:
             s += indent_string("axi_pulse_regs <= axi_pulse_regs_i") + ";\n"
-        if mod.count_rw_regs() + mod.count_pulse_regs() > 0:
+        if mod.num_rw_regs + mod.num_pulse_regs > 0:
             s += "\n"
 
         par = ""
@@ -294,21 +294,21 @@ class BusVHDLGen:
         )
         s += "\n"
 
-        if mod.count_rw_regs() + mod.count_pulse_regs() > 0:
+        if mod.num_rw_regs + mod.num_pulse_regs > 0:
             ###################################################################
             # p_mm_select_write
             ###################################################################
             reset_logic = "\n"
-            if mod.count_rw_regs() > 0:
+            if mod.num_rw_regs > 0:
                 reset_logic += "axi_rw_regs_i <= c_" + mod.name + "_rw_regs;\n"
-            if mod.count_pulse_regs() > 0:
+            if mod.num_pulse_regs > 0:
                 reset_logic += (
                     "axi_pulse_regs_cycle <= c_" + mod.name + "_pulse_regs;\n"
                 )
 
             logic = ""
             # create a generator for looping through all pulse regs
-            if mod.count_pulse_regs() > 0:
+            if mod.num_pulse_regs > 0:
                 logic += (
                     "\n-- Return PULSE registers to reset value every clock cycle\n"
                 )
@@ -642,11 +642,11 @@ class BusVHDLGen:
         s += "begin\n\n"
 
         s += indent_string("ipb_out <= ipb_out_i;\n")
-        if mod.count_rw_regs() > 0:
+        if mod.num_rw_regs > 0:
             s += indent_string("ipb_rw_regs <= ipb_rw_regs_i") + ";\n"
-        if mod.count_pulse_regs() > 0:
+        if mod.num_pulse_regs > 0:
             s += indent_string("ipb_pulse_regs <= ipb_pulse_regs_i") + ";\n"
-        if mod.count_rw_regs() + mod.count_pulse_regs() > 0:
+        if mod.num_rw_regs + mod.num_pulse_regs > 0:
             s += "\n"
 
         if mod.has_stall_regs():
@@ -671,14 +671,14 @@ class BusVHDLGen:
         par += "end generate gen_check_baseaddr;\n\n"
         s += indent_string(par)
 
-        if mod.count_rw_regs() + mod.count_pulse_regs() > 0:
+        if mod.num_rw_regs + mod.num_pulse_regs > 0:
             ###################################################################
             # p_write
             ###################################################################
             reset_string = "\n"
-            if mod.count_rw_regs() > 0:
+            if mod.num_rw_regs > 0:
                 reset_string += "ipb_rw_regs_i <= c_" + mod.name + "_rw_regs;\n"
-            if mod.count_pulse_regs() > 0:
+            if mod.num_pulse_regs > 0:
                 reset_string += (
                     "ipb_pulse_regs_cycle <= c_" + mod.name + "_pulse_regs;\n"
                 )
@@ -686,7 +686,7 @@ class BusVHDLGen:
 
             logic_string = ""
             # create a generator for looping through all pulse regs
-            if mod.count_pulse_regs() > 0:
+            if mod.num_pulse_regs > 0:
                 logic_string += (
                     "\n-- Return PULSE registers to reset value every clock cycle\n"
                 )

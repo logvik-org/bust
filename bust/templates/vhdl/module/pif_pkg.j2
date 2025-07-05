@@ -21,7 +21,7 @@ package {{ module.name }}_pif_pkg is
 
   function set_module_addr_width(g_module_addr_width : integer) return integer;
 
-  {% if module.get_num_rw_regs() > 0 %}
+  {% if module.num_rw_regs > 0 %}
   -- RW Register Record Definitions
   {% for reg in module.registers if reg.mode == "rw" and reg.sig_type == "fields" %}
 
@@ -54,7 +54,7 @@ package {{ module.name }}_pif_pkg is
   {% endif %}
 
 
-  {% if module.get_num_ro_regs() > 0 %}
+  {% if module.num_ro_regs > 0 %}
   -- RO Register Record Definitions
   {% for reg in module.registers if reg.mode == "ro" and reg.sig_type == "fields" %}
 
@@ -87,7 +87,7 @@ package {{ module.name }}_pif_pkg is
   {% endif %}
 
 
-  {% if module.get_num_pulse_regs() > 0 %}
+  {% if module.num_pulse_regs > 0 %}
   -- PULSE Register Record Definitions
   {% for reg in module.registers if reg.mode == "pulse" and reg.sig_type == "fields" %}
 
