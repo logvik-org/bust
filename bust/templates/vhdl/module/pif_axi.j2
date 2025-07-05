@@ -104,41 +104,10 @@ begin
         if (valid_baseaddr_wr = '0') then
 
           null;
-        {# This part can probably be re-used for all bus-types with some modifications #}
-        {% if bus.bus_type == "ipbus" %}
-          {% set wdata = "ipb_in.ipb_wdata" %}
-        {% elif bus.bus_type == "axi" %}
-          {% set wdata = "wdata" %}
-        {% endif %}
 
-        {% for reg in module.registers if reg.mode == "rw" or reg.mode == "pulse" %}
-        {% if reg.mode == "rw" %}
-          {% set sig_name = module.bus.short_name + "_rw_regs_i." %}
-        {% elif reg.mode == "pulse" %}
-          {% set sig_name = module.bus.short_name + "_pulse_regs_cycle." %}
-        {% endif %}
-        elsif unsigned(register_sel_wr) = resize(unsigned(C_ADDR_{{ reg.name.upper() }}), C_MODULE_ADDR_WIDTH) then
-
-          {% if reg.sig_type == "fields" %}
-          {% for field in reg.fields %}
-          {{ sig_name }}{{ reg.name }}.{{ field.name }} <= {{ wdata }}({{ field.get_pos_vhdl() }});
-          {% endfor %}
-        {% elif reg.sig_type == "default" %}
-          {{ sig_name }}{{ reg.name }} <= {{ wdata }};
-        {% elif reg.sig_type == "slv" %}
-          {{ sig_name }}{{ reg.name }} <= {{ wdata }}({{ reg.width - 1 }} downto 0);
-        {% elif reg.sig_type == "sl" %}
-          {{ sig_name }}{{ reg.name }} <= {{ wdata }}(0);
-        {% endif %}
-        {% if bus.bus_type == "ipbus" %}
-        {% if reg.stall %}
-          wr_stall_ack <= '1';
-        {% else %}
-          wr_ack <= '1';
-        {% endif %}
-        {% endif %}
-
-        {% endfor %}
+      {% import "vhdl/module/pif_write_logic.j2" as pif_macros %}
+      {% macro pif() %}{{ pif_macros.write_logic(module, "wdata", "register_sel_wr", False) }}{% endmacro %}
+        {{ pif()|indent(8) }}
         end if;
       end if;
 
