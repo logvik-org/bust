@@ -18,7 +18,7 @@ class Documentation(object):
         s = tex_top
         s += "\n\n"
         s += r"\title{" + utf8tolatex(self.module.name) + "}\n"
-        s += r"\author{" + self.module.version + "}\n"
+        s += r"\author{ Version: " + self.module.version + "}\n"
         s += r"\date{\today\ \currenttime}" + "\n"
         s += "\n"
         s += r"\pagestyle{fancy}" + "\n"
