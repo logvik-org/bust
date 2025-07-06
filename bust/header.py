@@ -1,4 +1,4 @@
-from bust.enums import RegisterType
+from bust.enums import RegisterMode, RegisterType
 from bust.utils import indent_string
 
 
@@ -179,7 +179,7 @@ class Header(object):
                 reg.name, reg.address, reg.get_mode(), reg.description, reg.reset
             )
 
-            if reg.mode == "pulse":
+            if reg.mode == RegisterMode.PULSE:
                 par += ";pulse_cycles={}".format(reg.pulse_cycles)
             if reg.stall:
                 par += ";stall_cycles={}".format(reg.stall_cycles)
