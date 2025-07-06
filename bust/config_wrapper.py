@@ -14,6 +14,7 @@ All rights reserved.
 License: see LICENSE file in the root of this project.
 """
 
+
 class ConfigWrapper:
     """
     A utility class to wrap and manage configuration dictionaries with support

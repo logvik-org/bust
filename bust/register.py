@@ -48,7 +48,9 @@ class Register:
         self.description = self._config.get("description")
         self.mode = self._config.get("mode").lower()
         self.type = self._config.get("type").lower()
-        self.width = self._config.get("width") # Width can be overridden depending on register type
+        self.width = self._config.get(
+            "width"
+        )  # Width can be overridden depending on register type
         self.reset = self._config.get("reset")
         self.fields = []
 
@@ -65,8 +67,6 @@ class Register:
         if self.stall:
             if self.stall_cycles < 2 or self.stall_cycles > 255:
                 raise InvalidStallValue(self.stall_cycles)
-
-
 
         # Assign width
         if self.type == "default":
