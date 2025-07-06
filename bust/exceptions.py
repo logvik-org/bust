@@ -78,8 +78,8 @@ class UndefinedRegisterType(RuntimeError):
 class UndefinedFieldType(RuntimeError):
     """! @brief Raised when trying to parse an field type that is not supported."""
 
-    def __init__(self, sig_type):
-        msg = "Could not parse field type: " + sig_type
+    def __init__(self, type):
+        msg = "Could not parse field type: " + type
         super().__init__(msg)
 
 

@@ -7,33 +7,33 @@ from bust.utils import NL, indent_string
 # Helper function to determine VHDL type
 def get_vhdl_type(reg, module_name):
     """Returns the correct VHDL type based on the register's type."""
-    if reg.sig_type == "default" or (reg.sig_type == "slv" and reg.width == 32):
+    if reg.type == "default" or (reg.type == "slv" and reg.width == 32):
         return f"t_{module_name}_data"
-    elif reg.sig_type == "slv":
+    elif reg.type == "slv":
         return f"std_logic_vector({reg.width - 1} downto 0)"
-    elif reg.sig_type == "sl":
+    elif reg.type == "sl":
         return "std_logic"
-    elif reg.sig_type == "fields":
+    elif reg.type == "fields":
         return f"t_{module_name}_{reg.mode}_{reg.name}"
     else:
-        raise RuntimeError(f"Unknown signal type: {reg.sig_type}")
+        raise RuntimeError(f"Unknown signal type: {reg.type}")
 
 
 # Helper function to format reset values
 def get_reset_value(reg):
     """Returns the formatted VHDL reset value."""
-    if reg.sig_type in ["default", "slv"]:
+    if reg.type in ["default", "slv"]:
         return (
             "(others => '0')"
             if reg.reset == "0x0"
             else f'{reg.width}X"{int(reg.reset, 16):X}"'
         )
-    elif reg.sig_type == "fields":
+    elif reg.type == "fields":
         return f"({', '.join([f'{field.name} => {field.get_reset_vhdl()}' for field in reg.fields])})"
-    elif reg.sig_type == "sl":
+    elif reg.type == "sl":
         return f"'{int(reg.reset, 16):X}'"
     else:
-        raise RuntimeError(f"Unknown reset type: {reg.sig_type}")
+        raise RuntimeError(f"Unknown reset type: {reg.type}")
 
 
 class ModuleVHDLGen:

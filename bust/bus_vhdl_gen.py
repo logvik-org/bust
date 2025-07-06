@@ -333,7 +333,7 @@ class BusVHDLGen:
                 par += reg.name.upper() + "), C_MODULE_ADDR_WIDTH) then\n\n"
                 logic += indent_string(par, 1)
                 par = ""
-                if reg.sig_type == "fields":
+                if reg.type == "fields":
 
                     for field in reg.fields:
                         par += sig_name + reg.name + "." + field.name
@@ -341,12 +341,12 @@ class BusVHDLGen:
                         par += field.get_pos_vhdl()
                         par += ");\n"
 
-                elif reg.sig_type == "default":
+                elif reg.type == "default":
                     par += sig_name + reg.name + " <= wdata;\n"
-                elif reg.sig_type == "slv":
+                elif reg.type == "slv":
                     par += sig_name + reg.name + " <= wdata("
                     par += str(reg.width - 1) + " downto 0);\n"
-                elif reg.sig_type == "sl":
+                elif reg.type == "sl":
                     par += sig_name + reg.name + " <= wdata(0);\n"
 
                 logic += indent_string(par, 2)
@@ -521,7 +521,7 @@ class BusVHDLGen:
             logic += par
             par = ""
 
-            if reg.sig_type == "fields":
+            if reg.type == "fields":
 
                 for field in reg.fields:
                     par += "reg_data_out("
@@ -535,7 +535,7 @@ class BusVHDLGen:
                         raise Exception("Unknown error occurred")
                     par += reg.name + "." + field.name + ";\n"
 
-            elif reg.sig_type == "default":
+            elif reg.type == "default":
                 par += "reg_data_out <= "
                 if reg.mode == "rw":
                     par += "axi_rw_regs_i."
@@ -545,7 +545,7 @@ class BusVHDLGen:
                     raise Exception("Unknown error occurred")
                 par += reg.name + ";\n"
 
-            elif reg.sig_type == "slv":
+            elif reg.type == "slv":
                 par += "reg_data_out("
                 par += str(reg.width - 1) + " downto 0) <= "
                 if reg.mode == "rw":
@@ -556,7 +556,7 @@ class BusVHDLGen:
                     raise Exception("Unknown error occurred")
                 par += reg.name + ";\n"
 
-            elif reg.sig_type == "sl":
+            elif reg.type == "sl":
                 par += "reg_data_out(0) <= "
                 if reg.mode == "rw":
                     par += "axi_rw_regs_i."
@@ -718,7 +718,7 @@ class BusVHDLGen:
                 par += reg.name.upper() + "), C_MODULE_ADDR_WIDTH) then\n\n"
                 logic_string += indent_string(par)
                 par = ""
-                if reg.sig_type == "fields":
+                if reg.type == "fields":
 
                     for field in reg.fields:
                         par += sig_name + reg.name + "." + field.name
@@ -726,12 +726,12 @@ class BusVHDLGen:
                         par += field.get_pos_vhdl()
                         par += ");\n"
 
-                elif reg.sig_type == "default":
+                elif reg.type == "default":
                     par += sig_name + reg.name + " <= ipb_in.ipb_wdata;\n"
-                elif reg.sig_type == "slv":
+                elif reg.type == "slv":
                     par += sig_name + reg.name + " <= ipb_in.ipb_wdata("
                     par += str(reg.width - 1) + " downto 0);\n"
-                elif reg.sig_type == "sl":
+                elif reg.type == "sl":
                     par += sig_name + reg.name + " <= ipb_in.ipb_wdata(0);\n"
                 if reg.stall:
                     par += "wr_stall_ack <= '1';\n"
@@ -814,7 +814,7 @@ class BusVHDLGen:
             logic_string += indent_string(par)
             par = ""
 
-            if reg.sig_type == "fields":
+            if reg.type == "fields":
 
                 for field in reg.fields:
                     par += "reg_data_out("
@@ -828,7 +828,7 @@ class BusVHDLGen:
                         raise Exception("Unknown error occurred")
                     par += reg.name + "." + field.name + ";\n"
 
-            elif reg.sig_type == "default":
+            elif reg.type == "default":
                 par += "reg_data_out <= "
                 if reg.mode == "rw":
                     par += "ipb_rw_regs_i."
@@ -838,7 +838,7 @@ class BusVHDLGen:
                     raise Exception("Unknown error occurred")
                 par += reg.name + ";\n"
 
-            elif reg.sig_type == "slv":
+            elif reg.type == "slv":
                 par += "reg_data_out("
                 par += str(reg.width - 1) + " downto 0) <= "
                 if reg.mode == "rw":
@@ -849,7 +849,7 @@ class BusVHDLGen:
                     raise Exception("Unknown error occurred")
                 par += reg.name + ";\n"
 
-            elif reg.sig_type == "sl":
+            elif reg.type == "sl":
                 par += "reg_data_out(0) <= "
                 if reg.mode == "rw":
                     par += "ipb_rw_regs_i."

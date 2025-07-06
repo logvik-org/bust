@@ -8,9 +8,9 @@ class Field(object):
 
     supported_types = ["slv", "sl"]
 
-    def __init__(self, name, sig_type, width, reset, description, pos_low):
+    def __init__(self, name, type, width, reset, description, pos_low):
         self.name = name
-        self.sig_type = sig_type
+        self.type = type
         self.width = width
         self.reset = reset
         self.description = description
@@ -18,15 +18,15 @@ class Field(object):
         self.pos_high = pos_low + width - 1
 
     def get_pos_str(self):
-        if self.sig_type == "sl":
+        if self.type == "sl":
             return str(self.pos_low)
-        elif self.sig_type == "slv":
+        elif self.type == "slv":
             return str(self.pos_high) + ":" + str(self.pos_low)
 
     def get_pos_vhdl(self):
-        if self.sig_type == "sl":
+        if self.type == "sl":
             return str(self.pos_low)
-        elif self.sig_type == "slv":
+        elif self.type == "slv":
             return str(self.pos_high) + " downto " + str(self.pos_low)
 
     def get_mask(self):
@@ -35,7 +35,7 @@ class Field(object):
     def get_dictionary(self, reset, description):
         dict = OrderedDict()
         dict["name"] = self.name
-        dict["type"] = self.sig_type
+        dict["type"] = self.type
         dict["width"] = self.width
         if reset:
             dict["reset"] = self.reset
@@ -47,7 +47,7 @@ class Field(object):
         row = [
             num,
             self.name,
-            self.sig_type,
+            self.type,
             self.get_pos_str,
             self.width,
             self.reset,
@@ -58,8 +58,8 @@ class Field(object):
     def return_dic(self):
         dic = OrderedDict()
         dic["name"] = self.name
-        dic["type"] = self.sig_type
-        if self.sig_type == "slv":
+        dic["type"] = self.type
+        if self.type == "slv":
             dic["width"] = self.width
         if self.reset != "0x0":
             dic["reset"] = self.reset
@@ -69,27 +69,27 @@ class Field(object):
 
     @property
     def range_vhdl(self):
-        if self.sig_type == "slv":
+        if self.type == "slv":
             return f"{self.width - 1} downto 0"
         raise ValueError("Only slv fields have a range")
 
     @property
-    def sig_type_vhdl(self):
-        if self.sig_type == "slv":
+    def type_vhdl(self):
+        if self.type == "slv":
             return f"std_logic_vector({self.range_vhdl})"
-        elif self.sig_type == "sl":
+        elif self.type == "sl":
             return "std_logic"
 
     @property
     def reset_val_vhdl(self):
-        if self.sig_type == "slv":
+        if self.type == "slv":
             if self.reset == "0x0":
                 val = "(others => '0')"
             else:
                 val = str(self.width) + 'X"'
                 val += format(int(self.reset, 16), "X") + '"'
 
-        elif self.sig_type == "sl":
+        elif self.type == "sl":
             val = "'" + format(int(self.reset, 16), "X") + "'"
 
         return val

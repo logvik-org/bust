@@ -33,10 +33,10 @@ class Module:
             mod,
             required_keys=["name",],
             defaults={
-                "byte_addressable": bus.bus_type == "axi",
-                "version": "",
                 "description": "",
-                "git_hash": None,  # Currently not used
+                "version": "",
+                "git_hash": None,
+                "byte_addressable": bus.bus_type == "axi",
             },
         )
 
@@ -46,7 +46,7 @@ class Module:
         # Store some config values for easy access
         self.description = self._config.get("description")
         self.version = self._config.get("version")
-        self.git_hash = self._config.get("git_hash")
+        self.git_hash = self._config.get("git_hash") # Currently not used
         self.byte_addressable = self._config.get("byte_addressable")
 
         self.addr_width = bus.addr_width
@@ -205,25 +205,25 @@ class Module:
             reg_dic["mode"] = reg.mode
             if reg.mode == "pulse":
                 reg_dic["pulse_cycles"] = reg.pulse_cycles
-            reg_dic["type"] = reg.sig_type
+            reg_dic["type"] = reg.type
 
             if include_address:
                 reg_dic["address"] = str(hex(reg.address))
 
             if (
-                reg.sig_type != "default"
-                and reg.sig_type != "fields"
-                and reg.sig_type != "sl"
+                reg.type != "default"
+                and reg.type != "fields"
+                and reg.type != "sl"
             ):
                 reg_dic["width"] = reg.width
 
-            if reg.sig_type != "fields":
+            if reg.type != "fields":
                 reg_dic["reset"] = reg.reset
 
             if reg.stall is True:
                 reg_dic["stall_cycles"] = reg.stall_cycles
 
-            if reg.sig_type == "fields" and len(reg.fields) > 0:
+            if reg.type == "fields" and len(reg.fields) > 0:
                 reg_dic["fields"] = []
                 for field in reg.fields:
                     reg_dic["fields"].append(field.return_dic())
