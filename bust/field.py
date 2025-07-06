@@ -82,20 +82,9 @@ class Field(object):
         elif self.type == "slv":
             return str(self.pos_high) + " downto " + str(self.pos_low)
 
-    def get_mask(self):
+    @property
+    def mask(self):
         return pow(2, self.width) - 1 << self.pos_low
-
-    def get_table_row(self, num):
-        row = [
-            num,
-            self.name,
-            self.type,
-            self.get_pos_str,
-            self.width,
-            self.reset,
-            self.description,
-        ]
-        return row
 
     def return_dic(self):
         dic = OrderedDict()
