@@ -3,22 +3,23 @@ Contains the Editor class
 
 """
 
+from collections import OrderedDict
 from cursesmenu import CursesMenu
 from cursesmenu.items import FunctionItem
-from collections import OrderedDict
 from prettytable import PrettyTable
 
-from bust.utils import json_parser
-from bust.utils import cont
-from bust.utils import is_int
-from bust.utils import clear_screen
-from bust.utils import write_string_to_file
-from bust.utils import get_list_choice
-from bust.utils import get_int
-from bust.utils import add_line_breaks
+from bust.utils import (
+    json_parser,
+    cont,
+    is_int,
+    clear_screen,
+    write_string_to_file,
+    get_list_choice,
+    get_int,
+    add_line_breaks,
+)
 from bust.module import Module
 from bust.bus import Bus
-from bust.register import Register
 from bust.vhdl_util import get_identifier
 from bust.settings import Settings
 from bust.enums import FieldType, RegisterType
