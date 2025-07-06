@@ -465,7 +465,7 @@ class Testbench(object):
                 raise Exception("Invalid register type")
 
             s += self.bus.uvvm_check(c_addr, bus_val, msg)
-        elif reg.mode == "pulse":
+        elif reg.mode == RegisterMode.PULSE:
 
             s += self.bus.uvvm_write(c_addr, bus_val, msg)
 
@@ -522,7 +522,7 @@ class Testbench(object):
                     signal_field = "{}.{}".format(signal, field.name)
                     s += self.log_hdr("Check all bit fields {}".format(field.name))
                     s += "\n"
-                    if field.type == "sl":
+                    if field.type == FieldType.SL:
                         s += self.check_bit_rw_sl(
                             c_addr, signal_field, msg, field.pos_low
                         )
@@ -543,7 +543,7 @@ class Testbench(object):
                     signal_field = "{}.{}".format(signal, field.name)
                     s += self.log_hdr("Check all bit fields {}".format(field.name))
                     s += "\n"
-                    if field.type == "sl":
+                    if field.type == FieldType.SL:
                         s += self.check_bit_ro_sl(
                             c_addr, signal_field, msg, field.pos_low
                         )
@@ -555,7 +555,7 @@ class Testbench(object):
             else:
                 raise Exception("Invalid register type")
 
-        elif reg.mode == "pulse":
+        elif reg.mode == RegisterMode.PULSE:
             if reg.type == RegisterType.SL:
                 s += self.check_bit_pulse_sl(c_addr, signal, reg, msg)
             elif reg.type in [RegisterType.SLV, RegisterType.DEFAULT]:
@@ -565,7 +565,7 @@ class Testbench(object):
                     signal_field = "{}.{}".format(signal, field.name)
                     s += self.log_hdr("Check all bit fields {}".format(field.name))
                     s += "\n"
-                    if field.type == "sl":
+                    if field.type == FieldType.SL:
                         s += self.check_bit_pulse_sl(
                             c_addr,
                             signal_field,
@@ -690,7 +690,7 @@ class Testbench(object):
         s += self.check_value(signal, sig_val, msg)
         s += self.await_stable(signal, clk_cycles, msg)
         s += self.check_value(signal, sig_val, msg)
-        sig_val = self.sig_value(reset, "sl")
+        sig_val = self.sig_value(reset, RegisterType.SL)
         s += self.await_value(signal, sig_val, msg)
         return s
 
