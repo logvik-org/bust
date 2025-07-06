@@ -39,7 +39,7 @@ class ConfigEnum(Enum):
     @classmethod
     def valid_values(cls):
         """Return a list of valid enum values as strings."""
-        return list(cls)
+        return list(e.value for e in cls)
 
 
 class FieldType(ConfigEnum):

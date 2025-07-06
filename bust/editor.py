@@ -22,7 +22,7 @@ from bust.module import Module
 from bust.bus import Bus
 from bust.vhdl_util import get_identifier
 from bust.settings import Settings
-from bust.enums import FieldType, RegisterType
+from bust.enums import FieldType, RegisterMode, RegisterType
 
 
 class Editor(object):
@@ -194,7 +194,7 @@ class Editor(object):
             reg["name"] = get_identifier("Name: ", reg_names)
             reg["description"] = input("Description: ")
             reg["mode"] = get_list_choice(
-                "Choose register mode: ", RegisterType.valid_values(), "lower", 0
+                "Choose register mode: ", RegisterMode.valid_values(), "lower", 0
             )
 
             fields = []
