@@ -23,7 +23,7 @@ package {{ module.name }}_pif_pkg is
 
   {% if module.num_rw_regs > 0 %}
   -- RW Register Record Definitions
-  {% for reg in module.registers if reg.mode|string == "rw" and reg.type == "fields" %}
+  {% for reg in module.registers if reg.mode.value == "rw" and reg.type.value == "fields" %}
 
   type t_{{ module.name }}_rw_{{ reg.name }} is record
   {% for field in reg.fields %}
@@ -43,7 +43,7 @@ package {{ module.name }}_pif_pkg is
   constant c_{{ module.name }}_rw_regs : t_{{ module.name }}_rw_regs := (
     {% for reg in module.registers if reg.mode|string == "rw" %}
     {{ reg.name }} =>
-    {%- if reg.type != "fields" %}
+    {%- if reg.type|string != "fields" %}
  {{ reg.reset_val_vhdl }}{% if not loop.last %},{{ '\n' }}{% endif %}
     {% else %}
  (
@@ -56,7 +56,7 @@ package {{ module.name }}_pif_pkg is
 
   {% if module.num_ro_regs > 0 %}
   -- RO Register Record Definitions
-  {% for reg in module.registers if reg.mode|string == "ro" and reg.type == "fields" %}
+  {% for reg in module.registers if reg.mode|string == "ro" and reg.type|string == "fields" %}
 
   type t_{{ module.name }}_ro_{{ reg.name }} is record
   {% for field in reg.fields %}
@@ -76,7 +76,7 @@ package {{ module.name }}_pif_pkg is
   constant c_{{ module.name }}_ro_regs : t_{{ module.name }}_ro_regs := (
     {% for reg in module.registers if reg.mode|string == "ro" %}
     {{ reg.name }} =>
-    {%- if reg.type != "fields" %}
+    {%- if reg.type|string != "fields" %}
  {{ reg.reset_val_vhdl }}{% if not loop.last %},{{ '\n' }}{% endif %}
     {% else %}
  (
@@ -89,7 +89,7 @@ package {{ module.name }}_pif_pkg is
 
   {% if module.num_pulse_regs > 0 %}
   -- PULSE Register Record Definitions
-  {% for reg in module.registers if reg.mode|string == "pulse" and reg.type == "fields" %}
+  {% for reg in module.registers if reg.mode|string == "pulse" and reg.type|string == "fields" %}
 
   type t_{{ module.name }}_pulse_{{ reg.name }} is record
   {% for field in reg.fields %}
@@ -109,7 +109,7 @@ package {{ module.name }}_pif_pkg is
   constant c_{{ module.name }}_pulse_regs : t_{{ module.name }}_pulse_regs := (
     {% for reg in module.registers if reg.mode|string == "pulse" %}
     {{ reg.name }} =>
-    {%- if reg.type != "fields" %}
+    {%- if reg.type|string != "fields" %}
  {{ reg.reset_val_vhdl }}{% if not loop.last %},{{ '\n' }}{% endif %}
     {% else %}
  (
