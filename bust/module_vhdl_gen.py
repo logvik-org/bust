@@ -1,7 +1,8 @@
 from jinja2 import Environment, FileSystemLoader
 import os
 
-from bust.utils import NL, indent_string
+from bust.utils import indent_string
+from bust.jinja_utils.filters import indent_all
 
 
 # Helper function to determine VHDL type
@@ -57,6 +58,7 @@ class ModuleVHDLGen:
         # Register custom filters
         env.filters["get_vhdl_type"] = get_vhdl_type
         env.filters["get_reset_value"] = get_reset_value
+        env.filters["indent_all"] = indent_all
 
         # Load the template
         template = env.get_template("vhdl/module/pif_pkg.j2")

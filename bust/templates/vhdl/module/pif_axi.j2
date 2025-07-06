@@ -228,8 +228,8 @@ begin
       null;
 
     {% import "vhdl/module/pif_read_logic.j2" as pif_macros %}
-      {% macro pif() %}{{ pif_macros.read_logic(module) }}{% endmacro %}
-        {{ pif()[:-1]|indent() }}
+    {% macro pif() %}{{ pif_macros.read_logic(module) }}{% endmacro %}
+{{ pif()[:-1]|indent_all(4) }}
 
     end if;
 
