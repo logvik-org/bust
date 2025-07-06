@@ -11,7 +11,7 @@
 
   Assumes that module.has_stall_regs() is True
 -#}
-{% macro pif_stall(module, clk_name, reset_name, reset_active_high, addr_width, short_name) %}
+{% macro process_stall(module, clk_name, reset_name, reset_active_high, addr_width, short_name) %}
 p_stall : process({{ clk_name }})
   variable v_cnt : natural := 0;
 begin

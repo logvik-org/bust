@@ -106,8 +106,7 @@ begin
           null;
 
       {% import "vhdl/module/pif/statement_write_reg.j2" as pif_macros %}
-      {% macro pif() %}{{ pif_macros.write_logic(module, "wdata", "register_sel_wr", False) }}{% endmacro %}
-        {{ pif()|indent(8) }}
+{{ pif_macros.statement_write_reg(module, "wdata", "register_sel_wr", False)|indent_all(8) }}
         end if;
       end if;
 
@@ -116,7 +115,7 @@ begin
 
   {% import 'vhdl/module/pif/process_pulse.j2' as pif_macros %}
   {% for reg in module.registers if reg.mode in ["pulse"] %}
-{{ pif_macros.pif_pulse(
+{{ pif_macros.process_pulse(
     clk_name='clk',
     reset_name='areset_n',
     proc_name='p_pulse_' + reg.name,
@@ -183,10 +182,8 @@ begin
 
       null;
 
-    {% import "vhdl/module/pif/statement_read_reg.j2" as pif_macros %}
-    {% macro pif() %}{{ pif_macros.read_logic(module) }}{% endmacro %}
-{{ pif()[:-1]|indent_all(4) }}
-
+      {% import "vhdl/module/pif/statement_read_reg.j2" as pif_macros %}
+{{ pif_macros.statement_read_reg(module)|indent_all(4) }}
     end if;
 
   end process p_mm_select_read;

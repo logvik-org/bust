@@ -6,7 +6,7 @@
     use_ack:       boolean; if true, generate wr_ack/wr_stall_ack
 #}
 
-{% macro write_logic(module, wdata, reg_sel_sig, use_ack=False) %}
+{% macro statement_write_reg(module, wdata, reg_sel_sig, use_ack=False) %}
   {% for reg in module.registers if reg.mode in ["rw", "pulse"] %}
     {% if reg.mode == "rw" %}
       {% set sig_name = module.bus.short_name + "_rw_regs_i." %}

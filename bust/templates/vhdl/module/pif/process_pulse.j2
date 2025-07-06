@@ -12,7 +12,7 @@
     reset_active_high   : Whether reset is active high (true/false)
     indent_all          : Custom filter that indents multiline blocks
 #}
-{% macro pif_pulse(clk_name, reset_name, proc_name, const_name, reg_name, reg_tmp_name, pulse_cycles, reset_active_high) %}
+{% macro process_pulse(clk_name, reset_name, proc_name, const_name, reg_name, reg_tmp_name, pulse_cycles, reset_active_high) %}
 {% set has_counter = pulse_cycles > 1 %}
 {{ proc_name }} : process({{ clk_name }})
 {% if has_counter %}

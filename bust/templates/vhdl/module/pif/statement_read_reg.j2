@@ -2,7 +2,7 @@
   Parameters:
     module:        module object
 #}
-{% macro read_logic(module) %}
+{% macro statement_read_reg(module) %}
 {% if module.bus.bus_type == "ipbus" %}
   {% for reg in module.registers if reg.mode in ["ro", "rw"] %}
 elsif unsigned(register_sel) = resize(unsigned(C_ADDR_{{ reg.name | upper }}), C_MODULE_ADDR_WIDTH) then
