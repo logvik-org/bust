@@ -135,7 +135,7 @@ begin
     const_name="c_" + module.name + "_pulse_regs." + reg.name,
     reg_name=module.bus.short_name + "_pulse_regs_i." + reg.name,
     reg_tmp_name=module.bus.short_name + "_pulse_regs_cycle." + reg.name,
-    pulse_cycles=0,
+    pulse_cycles=reg.pulse_cycles,
     reset_active_high=False)|indent_all(2)}}
 
   {% endfor %}
