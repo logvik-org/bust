@@ -191,7 +191,7 @@ class Header(object):
                 for field in reg.fields:
                     par2 = '<node id="{}" mask="{}" description="{}" parameters="reset={}"/>\n'.format(
                         field.name,
-                        hex(field.get_mask()),
+                        hex(field.mask),
                         field.description,
                         field.reset,
                     )
