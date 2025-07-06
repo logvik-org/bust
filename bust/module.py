@@ -186,10 +186,10 @@ class Module:
             reg_dic = OrderedDict()
 
             reg_dic["name"] = reg.name
-            reg_dic["mode"] = reg.mode
-            if reg.mode == "pulse":
+            reg_dic["mode"] = reg.mode.value
+            if reg.mode == RegisterMode.PULSE:
                 reg_dic["pulse_cycles"] = reg.pulse_cycles
-            reg_dic["type"] = reg.type
+            reg_dic["type"] = reg.type.value
 
             if include_address:
                 reg_dic["address"] = str(hex(reg.address))

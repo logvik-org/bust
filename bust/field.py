@@ -84,7 +84,7 @@ class Field(object):
     def return_dic(self):
         dic = OrderedDict()
         dic["name"] = self.name
-        dic["type"] = self.type
+        dic["type"] = self.type.value
         if self.type == FieldType.SLV:
             dic["width"] = self.width
         if self.reset != "0x0":

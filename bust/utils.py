@@ -86,12 +86,13 @@ def write_string_to_file(string, output_file, output_dir, force_overwrite=False)
             and input("Do you want to overwrite " + joined + "? (y/N):").upper() != "Y"
         ):
             logger.warning("Did not write " + joined)
-            return
+            return False
 
     logger.debug("Writing string to " + joined)
 
     with open(joined, "w") as strfile:
         strfile.write(string)
+    return True
 
 
 def update_module_top_level(existing_file, new_top_level):
