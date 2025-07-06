@@ -1,3 +1,4 @@
+from bust.enums import RegisterMode, RegisterType
 from bust.utils import indent_string
 
 
@@ -17,13 +18,13 @@ class Header(object):
 
         for reg in self.module.registers:
             s += "/* Register: " + reg.name + " */\n"
-            s += f'#define {reg.name.upper()}_MODE "{reg.mode}";\n'
+            s += f'#define {reg.name.upper()}_MODE "{reg.mode.value}";\n'
             s += f"#define {reg.name.upper()}_WIDTH {reg.width};\n"
             s += f"#define {reg.name.upper()}_OFFSET {str(hex(reg.address))};\n"
             s += f"#define {reg.name.upper()}_RESET {reg.reset};\n"
             s += "\n"
 
-            if reg.sig_type == "fields":
+            if reg.type == RegisterType.FIELDS:
                 for field in reg.fields:
                     s += "/* Field: " + field.name + " */\n"
                     s += (
@@ -79,7 +80,7 @@ class Header(object):
 
         for reg in self.module.registers:
             s += "/* Register: " + reg.name + " */\n"
-            s += f'const uint32_t {reg.name.upper()}_MODE = "{reg.mode}";\n'
+            s += f'const uint32_t {reg.name.upper()}_MODE = "{reg.mode.value}";\n'
             s += f"const uint32_t {reg.name.upper()}_WIDTH = {reg.width};\n"
             s += (
                 f"const uint32_t {reg.name.upper()}_OFFSET = {str(hex(reg.address))};\n"
@@ -87,7 +88,7 @@ class Header(object):
             s += f"const uint32_t {reg.name.upper()}_RESET = {reg.reset};\n"
             s += "\n"
 
-            if reg.sig_type == "fields":
+            if reg.type == RegisterType.FIELDS:
                 for field in reg.fields:
                     s += "/* Field: " + field.name + " */\n"
                     s += (
@@ -138,14 +139,14 @@ class Header(object):
         for reg in self.module.registers:
             s += "\n"
             s += indent_string('"""Register: ' + reg.name + '"""\n', 2)
-            s += indent_string(f'{reg.name.upper()}_MODE = "{reg.mode}"\n', 2)
+            s += indent_string(f'{reg.name.upper()}_MODE = "{reg.mode.value}"\n', 2)
             s += indent_string(f"{reg.name.upper()}_WIDTH = {reg.width}\n", 2)
             s += indent_string(
                 f"{reg.name.upper()}_OFFSET = {str(hex(reg.address))}\n", 2
             )
             s += indent_string(f"{reg.name.upper()}_RESET = {reg.reset}\n", 2)
 
-            if reg.sig_type == "fields":
+            if reg.type == RegisterType.FIELDS:
                 for field in reg.fields:
                     s += "\n"
                     s += indent_string('""" Field: ' + field.name + ' """\n', 2)
@@ -178,20 +179,20 @@ class Header(object):
                 reg.name, reg.address, reg.get_mode(), reg.description, reg.reset
             )
 
-            if reg.mode == "pulse":
+            if reg.mode == RegisterMode.PULSE:
                 par += ";pulse_cycles={}".format(reg.pulse_cycles)
             if reg.stall:
                 par += ";stall_cycles={}".format(reg.stall_cycles)
-            if reg.sig_type == "fields":
+            if reg.type == RegisterType.FIELDS:
                 par += '">\n'
             else:
                 par += '"/>\n'
 
-            if reg.sig_type == "fields":
+            if reg.type == RegisterType.FIELDS:
                 for field in reg.fields:
                     par2 = '<node id="{}" mask="{}" description="{}" parameters="reset={}"/>\n'.format(
                         field.name,
-                        hex(field.get_mask()),
+                        hex(field.mask),
                         field.description,
                         field.reset,
                     )

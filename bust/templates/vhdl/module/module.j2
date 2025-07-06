@@ -68,13 +68,13 @@ architecture rtl of {{ module.name }} is
   signal axi_out_i : t_axi_miso;
   {% endif %}
   -- Register Signals
-  {% if module.n_rw_regs > 0 %}
+  {% if module.num_rw_regs > 0 %}
   signal {{bus.short_name }}_rw_regs    : t_{{ module.name }}_rw_regs    := c_{{ module.name }}_rw_regs;
   {% endif %}
-  {% if module.n_ro_regs > 0 %}
+  {% if module.num_ro_regs > 0 %}
   signal {{bus.short_name }}_ro_regs    : t_{{ module.name }}_ro_regs    := c_{{ module.name }}_ro_regs;
   {% endif %}
-  {% if module.n_pulse_regs > 0 %}
+  {% if module.num_pulse_regs > 0 %}
   signal {{bus.short_name }}_pulse_regs : t_{{ module.name }}_pulse_regs := c_{{ module.name }}_pulse_regs;
   {% endif %}
 
@@ -87,12 +87,12 @@ begin
   {% if bus.bus_type == "ipbus" %}
   ipb_out <= ipb_out_i;
 
-  {% macro pif_inst() %}{% include "vhdl/module/pif_instantiation_ipbus.j2" %}{% endmacro %}
+  {% macro pif_inst() %}{% include "vhdl/module/pif/instantiation_ipbus.j2" %}{% endmacro %}
   {{ pif_inst()|indent(2) }}
   {% elif bus.bus_type == "axi" %}
   axi_out <= axi_out_i;
 
-  {% macro pif_inst() %}{% include "vhdl/module/pif_instantiation_axi.j2" %}{% endmacro %}
+  {% macro pif_inst() %}{% include "vhdl/module/pif/instantiation_axi.j2" %}{% endmacro %}
   {{ pif_inst()|indent(2) }}
   {% endif %}
 
