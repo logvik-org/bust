@@ -3,25 +3,27 @@ Contains the Editor class
 
 """
 
+import logging
+from collections import OrderedDict
 from cursesmenu import CursesMenu
 from cursesmenu.items import FunctionItem
-from collections import OrderedDict
 from prettytable import PrettyTable
 
-from bust.utils import json_parser
-from bust.utils import cont
-from bust.utils import is_int
-from bust.utils import clear_screen
-from bust.utils import write_string_to_file
-from bust.utils import get_list_choice
-from bust.utils import get_int
-from bust.utils import add_line_breaks
+from bust.utils import (
+    json_parser,
+    cont,
+    is_int,
+    clear_screen,
+    write_string_to_file,
+    get_list_choice,
+    get_int,
+    add_line_breaks,
+)
 from bust.module import Module
 from bust.bus import Bus
-from bust.register import Register
-from bust.field import Field
 from bust.vhdl_util import get_identifier
 from bust.settings import Settings
+from bust.enums import FieldType, RegisterMode, RegisterType
 
 
 class Editor(object):
@@ -32,6 +34,8 @@ class Editor(object):
 
         Either reconstructs a module object from JSON, or create a new based on user input
         """
+        self.logger = logging.getLogger(__name__)
+
         self.jsonfile = jsonfile
         self.output_dir = output_dir
         self.recently_saved = False
@@ -45,10 +49,10 @@ class Editor(object):
                 self.mod = Module(json["module"], self.bus, self.settings)
                 self.recently_saved = True
             except Exception as e:
-                print("An unresolvable error has occurred:")
-                print(str(e))
-                print("Exiting...")
-                exit()
+                self.logger.error("An unresolvable error has occurred:")
+                self.logger.error(str(e))
+                self.logger.error("Exiting...")
+                raise e
         else:
             bus_dic = OrderedDict()
             bus_dic["type"] = get_list_choice("Choose a bus type: ", Bus.supported_bus)
@@ -122,7 +126,7 @@ class Editor(object):
                             reg.name,
                             reg.mode,
                             hex(reg.address),
-                            reg.sig_type,
+                            reg.type,
                             reg.width,
                             reg.reset,
                             add_line_breaks(reg.description, 25),
@@ -171,7 +175,7 @@ class Editor(object):
                     [
                         i,
                         field.name,
-                        field.sig_type,
+                        field.type,
                         field.get_pos_str(),
                         field.width,
                         field.reset,
@@ -193,7 +197,7 @@ class Editor(object):
             reg["name"] = get_identifier("Name: ", reg_names)
             reg["description"] = input("Description: ")
             reg["mode"] = get_list_choice(
-                "Choose register mode: ", Register.supported_modes, "lower", 0
+                "Choose register mode: ", RegisterMode.valid_values(), "lower", 0
             )
 
             fields = []
@@ -208,7 +212,7 @@ class Editor(object):
                 elif add_fields.upper() == "Y" or add_fields == "":
                     field_dic["name"] = get_identifier("Field name: ", field_names)
                     field_dic["type"] = get_list_choice(
-                        "Field type: ", Field.supported_types
+                        "Field type: ", FieldType.valid_values()
                     )
 
                     if field_dic["type"] == "slv":
@@ -270,7 +274,7 @@ class Editor(object):
 
             else:
                 reg["type"] = get_list_choice(
-                    "Register type: ", Register.supported_types, None, 0
+                    "Register type: ", RegisterType.valid_values(), None, 0
                 )
 
             # Make sure reg width is set to help calculate max reset later
@@ -473,17 +477,19 @@ class Editor(object):
         cont()
 
     def save_JSON(self):
-        print("Saving " + self.jsonfile + " ...")
+        self.logger.info(f"Saving {self.jsonfile} ...")
 
         # Get JSON with addresses
         json = self.mod.return_JSON(True)
+        self.logger.debug("JSON contents created, saving to file...")
         try:
-            write_string_to_file(json, self.jsonfile, ".")
+            result = write_string_to_file(json, self.jsonfile, ".")
         except Exception as e:
-            print("Saving failed...")
-            print(e)
-            cont()
-            return
+            self.logger.error("Saving failed...")
+            self.logger.error(e)
+            raise e
+        if result:
+            self.logger.info(f"JSON contents saved successfully in {self.jsonfile} !")
 
         self.recently_saved = True
         cont()

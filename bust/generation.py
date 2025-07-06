@@ -51,7 +51,7 @@ def generate_output(
     except Exception as e:
         logger.error("ERROR: Could not create output directories")
         logger.error(e)
-        exit(1)
+
     else:
         logger.debug("Successfully created all output directories")
 
@@ -64,8 +64,7 @@ def generate_output(
             )
         except Exception as e:
             logger.error("ERROR: Could not generate Bus VHDL Package File")
-            logger.error(e)
-            exit(1)
+            raise e
 
     if gen_settings["gen_mod"]:
         logger.info("Generating Module VHDL Files...")
@@ -106,8 +105,7 @@ def generate_output(
 
         except Exception as e:
             logger.error("ERROR: Could not generate Module VHDL Files")
-            logger.error(e)
-            exit(1)
+            raise e
 
     if gen_settings["gen_header"]:
         logger.info("Generating Module Include Files...")
@@ -141,8 +139,7 @@ def generate_output(
 
         except Exception as e:
             logger.error("ERROR: Could not generate Module Include Files")
-            logger.error(e)
-            exit(1)
+            raise e
 
     if gen_settings["gen_tb"]:
         if settings.uvvm_rel_path is None:
@@ -176,8 +173,7 @@ def generate_output(
 
             except Exception as e:
                 logger.error("ERROR: Could not generate PIF Testbench Files")
-                logger.error(e)
-                exit(1)
+                raise e
 
     if gen_settings["gen_doc"]:
         logger.info("Generating Module Documentation...")
@@ -191,8 +187,7 @@ def generate_output(
             )
         except Exception as e:
             logger.error("ERROR: Could not generate Module Documentation")
-            logger.error(e)
-            exit(1)
+            raise e
 
     if gen_settings["gen_pdf"]:
         logger.info("Generating Documentation PDF...")
@@ -208,4 +203,3 @@ def generate_output(
             )
         except Exception:
             logger.error("ERROR: PDF Generation Failed")
-            exit(1)

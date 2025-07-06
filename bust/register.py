@@ -1,3 +1,5 @@
+import logging
+
 from bust.exceptions import (
     ModuleDataBitsExceeded,
     UndefinedRegisterType,
@@ -7,105 +9,121 @@ from bust.exceptions import (
     InvalidStallValue,
 )
 from bust.field import Field
-from bust.utils import add_line_breaks, indent_string
+from bust.utils import indent_string
 from bust.vhdl_util import is_unique, is_valid_VHDL
+from bust.config_wrapper import ConfigWrapper
+from bust.enums import RegisterMode, RegisterType
 
 
 class Register:
     """! @brief Managing register information"""
 
-    supported_types = ["default", "slv", "sl"]
-    supported_modes = ["RW", "RO", "PULSE"]
-
     def __init__(self, reg, address, module_name, module_data_width):
-        self.name = reg["name"]
-        self.mode = reg["mode"].lower()
-        self.description = reg["description"]
-        self.description_with_breaks = add_line_breaks(reg["description"], 25)
-        self.address = address
+
+        self.logger = logging.getLogger(__name__)
+
         self.module_name = module_name
         self.module_data_width = module_data_width
+        self.address = address
 
-        if self.mode == "pulse":
-            # Check if pulse_cycles is set
-            if "pulse_cycles" in reg:
-                self.pulse_cycles = reg["pulse_cycles"]
-            else:
-                self.pulse_cycles = 1
+        self._config = ConfigWrapper(
+            reg,
+            required_keys=["name"],
+            defaults={
+                "description": "",
+                "mode": RegisterMode.RW.value,
+                "type": RegisterType.DEFAULT.value,
+                "width": module_data_width,
+                "reset": "0x0",
+                "pulse_cycles": 1,
+                "stall_cycles": 0,
+            },
+        )
 
-        self.stall = False
-        if "stall_cycles" in reg:
-            if reg["stall_cycles"] < 2 or reg["stall_cycles"] > 255:
-                raise InvalidStallValue(reg["stall_cycles"])
-            self.stall = True
-            self.stall_cycles = reg["stall_cycles"]
+        self.name = self._config.require("name")
+        is_valid_VHDL(self.name)
 
-        self.reset = "0x0"
-        self.width = 0
+        self.description = self._config.get("description")
+        self.mode = RegisterMode.from_string(self._config.get("mode"))
+        self.type = RegisterType.from_string(self._config.get("type"))
+        self.width = self._config.get(
+            "width"
+        )  # Width can be overridden depending on register type
+        self.reset = self._config.get("reset")
+        self.pulse_cycles = self._config.get("pulse_cycles")
+        self.stall_cycles = self._config.get("stall_cycles")
+        self.stall = self.stall_cycles > 0
         self.fields = []
 
-        if "width" in reg:
-            tmp_width = reg["width"]
-        else:
-            tmp_width = 1  # Setting to 1, in case std_logic
+        # If set, stall cycles must be between 2 and 255
+        if self.stall:
+            if self.stall_cycles < 2 or self.stall_cycles > 255:
+                raise InvalidStallValue(self.stall_cycles)
 
-        if "type" in reg:
-            self.sig_type = reg["type"]
-        else:
-            self.sig_type = "fields"
-
-        # Assign the reg type and register data width
-        if self.sig_type == "default":
-            self.width = module_data_width
-
-        elif self.sig_type == "slv":
-            self.width = tmp_width
-
-        elif self.sig_type == "sl":
-            self.sig_type = "sl"
-
-            if tmp_width != 1:
-                raise UndefinedRegisterType("SL cannot have width other than 1")
-            self.width = tmp_width
-
-        elif self.sig_type == "fields" or "fields" in reg:
-            if len(reg["fields"]) > 0:
-                for field in reg["fields"]:
-                    self.add_field(field)
-            else:
-                InvalidFieldFormat("Fields are missing in reg: " + self.name)
-
-        else:
-            raise UndefinedRegisterType(self.sig_type)
-
-        if "reset" in reg:
-            # Reset value is not allowed if sig_type is record
-            if self.sig_type == "record":
-                raise InvalidRegisterFormat(
-                    "Reset value is not allowed for record type register: " + self.name
+        # Assign width
+        if self.type == RegisterType.DEFAULT:
+            # Check if the width was explicitly set in the config,
+            # and if it matches the module data width
+            if (
+                self._config.is_set("width")
+                and self._config.get("width") != module_data_width
+            ):
+                self.logger.warning(
+                    f"User-specified width of default register does not match the expected width ({module_data_width}). Ignoring configured width."
                 )
-            else:
-                # Check whether reset value matches register width
-                # maxvalue is given by 2^width
-                maxvalue = (2**self.width) - 1
-                if maxvalue < int(reg["reset"], 16):
-                    raise InvalidRegisterFormat(
-                        "Reset value does not match register: " + self.name
-                    )
-                else:
-                    self.reset = reg["reset"]
+            self.width = module_data_width
+        elif self.type == RegisterType.SLV:
+            pass
+        elif self.type == RegisterType.SL:
+            # Check if the width was explicitly set in the config, and if it matches the module data width
+            if self._config.is_set("width") and self._config.get("width") != 1:
+                self.logger.warning(
+                    "User-specified width of SL register does not match the expected width (1). Ignoring configured width."
+                )
+            self.width = 1
+
+        elif self.type == RegisterType.FIELDS or self._config.is_set("fields"):
+            self.width = 0
+            self._init_fields()
+
+        else:
+            raise UndefinedRegisterType(self.type)
+
+        # Check that the user-specified reset value is valid
+        self.validate_reset_value()
 
         # Perform check that data bits are not exceeded
         self.check_register_data_width(module_data_width)
+
+    def _init_fields(self):
+        fields = self._config.require("fields")
+        for field in fields:
+            self.add_field(field)
+
+    def validate_reset_value(self):
+        if self._config.is_set("reset"):
+            # Reset value is not allowed if type is record
+            if self.type == "record":
+                raise InvalidRegisterFormat(
+                    "Reset value is not allowed for record type register: " + self.name
+                )
+
+            # Check whether reset value matches register width
+            # maxvalue is given by 2^width
+            maxvalue = (2**self.width) - 1
+            if maxvalue < int(self.reset, 16):
+                raise InvalidRegisterFormat(
+                    "Reset value does not match register: " + self.name
+                )
 
     def __str__(self):
         string = "Name: " + self.name + "\n"
         string += "Address: " + hex(self.address) + "\n"
         string += "Mode: " + self.mode + "\n"
-        string += "Type: " + self.sig_type + "\n"
+        string += "Type: " + self.type + "\n"
         string += "Width: " + str(self.width) + "\n"
         string += "Reset: " + self.reset
-        if self.sig_type == "record":
+        if self.type == "record":
 
             for i in self.fields:
                 string += "\n"
@@ -125,95 +143,57 @@ class Register:
 
     @property
     def range_vhdl(self):
-        if self.sig_type == "slv":
+        if self.type == RegisterType.SLV:
             return f"{self.width - 1} downto 0"
         raise ValueError("Only slv fields have a range")
 
     @property
-    def sig_type_vhdl(self):
-        if self.sig_type == "default" or (
-            self.sig_type == "slv" and self.width == self.module_data_width
+    def type_vhdl(self):
+        if self.type == RegisterType.DEFAULT or (
+            self.type == RegisterType.SLV and self.width == self.module_data_width
         ):
             return f"t_{self.module_name}_data"
-        elif self.sig_type == "slv":
+        elif self.type == RegisterType.SLV:
             return f"std_logic_vector({self.range_vhdl})"
-        elif self.sig_type == "sl":
+        elif self.type == RegisterType.SL:
             return "std_logic"
         else:
-            return f"t_{self.module_name}_{self.mode}_{self.name}"
+            return f"t_{self.module_name}_{self.mode.value}_{self.name}"
 
     @property
     def reset_val_vhdl(self):
-        if self.sig_type in ["default", "slv"]:
+        if self.type in [RegisterType.DEFAULT, RegisterType.SLV]:
             if self.reset == "0x0":
                 return "(others => '0')"
             else:
                 val = str(self.width) + 'X"'
                 val += format(int(self.reset, 16), "X") + '"'
                 return val
-        elif self.sig_type == "sl":
+        elif self.type == RegisterType.SL:
             return "'" + format(int(self.reset, 16), "X") + "'"
 
         raise ValueError(
             "Only default, slv and sl registers can extract reset value directly"
         )
 
-    def add_field(self, field):
-        # Check that all required keys exist
-        if not all(key in field for key in ("name", "type")):
-            raise InvalidFieldFormat(self.name)
+    def add_field(self, field_cfg):
 
-        # Make sure field name is valid VHDL
-        is_valid_VHDL(field["name"])
+        field = Field(field_cfg, self.get_next_pos_low(), self.name)
 
-        # Make sure the field name is unique in this register
-        field_names = [field.name for field in self.fields]
-        is_unique(field["name"], field_names)
-
-        if field["type"] == "slv":
-            if "width" not in field:
-                raise InvalidFieldFormat(self.name)
-            width = field["width"]
-
-        elif field["type"] == "sl":
-            width = 1
-
-        else:
-            raise UndefinedFieldType(field["type"])
+        # Validate uniqueness of field name
+        existing_names = [f.name for f in self.fields]
+        is_unique(field.name, existing_names)
 
         # Increment register width
-        self.width += width
-
-        if "reset" in field:
-            reset = field["reset"]
-            # Check whether reset value matches field width
-            # maxvalue is given by 2^width
-            maxvalue = (2**width) - 1
-            if maxvalue < int(field["reset"], 16):
-                raise InvalidFieldFormat(
-                    "Reset value does not match field: "
-                    + field["name"]
-                    + " in reg: "
-                    + self.name
-                )
-        else:
-            reset = "0x0"
-
-        if "description" in field:
-            description = field["description"]
-        else:
-            description = ""
-
-        next_low = self.get_next_pos_low()
-        self.fields.append(
-            Field(field["name"], field["type"], width, reset, description, next_low)
-        )
+        self.width += field.width
 
         # Maintain the register reset value
         reg_reset_int = int(self.reset, 16)
-        field_reset_int = int(reset, 16)
-        reg_reset_int += field_reset_int << next_low
+        field_reset_int = int(field.reset, 16)
+        reg_reset_int += field_reset_int << field.pos_low
         self.reset = hex(reg_reset_int)
+
+        self.fields.append(field)
 
     def check_register_data_width(self, module):
         """! @brief Controls that the combined data bits in fields does not
@@ -232,12 +212,12 @@ class Register:
 
     def get_mode(self):
         """Get the register mode in r/w/rw format - pulse = w"""
-        if self.mode == "pulse":
+        if self.mode == RegisterMode.PULSE:
             return "w"
-        elif self.mode == "ro":
+        elif self.mode == RegisterMode.RO:
             return "r"
         else:
-            return self.mode
+            return self.mode.value
 
     def return_stall_string(self):
         if self.stall:

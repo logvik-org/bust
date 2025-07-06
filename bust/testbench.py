@@ -1,4 +1,5 @@
 import logging
+from bust.enums import FieldType, RegisterMode, RegisterType
 from bust.utils import indent_string
 from bust.bus import Bus
 
@@ -257,19 +258,19 @@ class Testbench(object):
             init_reset = "'1'"
 
         s += indent_string("-- component ports\n")
-        if self.module.count_rw_regs() > 0:
+        if self.module.num_rw_regs > 0:
             s += indent_string(
                 "signal {0}_rw_regs    : t_{1}_rw_regs    := c_{1}_rw_regs;\n".format(
                     self.bus.short_name, self.module.name
                 )
             )
-        if self.module.count_ro_regs() > 0:
+        if self.module.num_ro_regs > 0:
             s += indent_string(
                 "signal {0}_ro_regs    : t_{1}_ro_regs    := c_{1}_ro_regs;\n".format(
                     self.bus.short_name, self.module.name
                 )
             )
-        if self.module.count_pulse_regs() > 0:
+        if self.module.num_pulse_regs > 0:
             s += indent_string(
                 "signal {0}_pulse_regs : t_{1}_pulse_regs := c_{1}_pulse_regs;\n".format(
                     self.bus.short_name, self.module.name
@@ -394,26 +395,26 @@ class Testbench(object):
         s = self.log_hdr("Check Default Value")
         s += "\n"
         msg = "{} default value".format(reg.name)
-        signal = "{}_{}_regs.{}".format(self.bus.short_name, reg.mode, reg.name)
-        if reg.sig_type in ["sl", "slv", "default"]:
+        signal = "{}_{}_regs.{}".format(self.bus.short_name, reg.mode.value, reg.name)
+        if reg.type in [RegisterType.SL, RegisterType.SLV, RegisterType.DEFAULT]:
             s += self.check_value(
-                signal, self.sig_value(reg.reset, reg.sig_type, reg.width), msg
+                signal, self.sig_value(reg.reset, reg.type, reg.width), msg
             )
-        elif reg.sig_type == "fields":
+        elif reg.type == RegisterType.FIELDS:
             for field in reg.fields:
                 msg_field = "{}.{} default value".format(reg.name, field.name)
                 signal_field = "{}.{}".format(signal, field.name)
                 s += self.check_value(
                     signal_field,
-                    self.sig_value(field.reset, field.sig_type, field.width),
+                    self.sig_value(field.reset, field.type, field.width),
                     msg_field,
                 )
 
-        if reg.mode in ["rw", "ro"]:
+        if reg.mode in [RegisterMode.RW, RegisterMode.RO]:
             c_addr = "C_ADDR_{}".format(reg.name.upper())
-            exp_value = self.sig_value(reg.reset, "default", reg.width)
+            exp_value = self.sig_value(reg.reset, RegisterType.DEFAULT, reg.width)
             s += self.bus.uvvm_check(c_addr, exp_value, msg)
-        elif reg.mode == "pulse":
+        elif reg.mode == RegisterMode.PULSE:
             pass
 
         return s
@@ -422,22 +423,22 @@ class Testbench(object):
         s = self.log_hdr("Set&Check Zero Value")
         s += "\n"
         c_addr = "C_ADDR_{}".format(reg.name.upper())
-        signal = "{}_{}_regs.{}".format(self.bus.short_name, reg.mode, reg.name)
+        signal = "{}_{}_regs.{}".format(self.bus.short_name, reg.mode.value, reg.name)
         msg = "Setting all bits to zero"
-        bus_val = self.sig_value("0", "default")
-        if reg.mode == "rw":
+        bus_val = self.sig_value("0", RegisterType.DEFAULT)
+        if reg.mode == RegisterMode.RW:
 
             s += self.bus.uvvm_write(c_addr, bus_val, msg)
 
-            if reg.sig_type in ["sl", "slv", "default"]:
-                sig_val = self.sig_value("0", reg.sig_type, reg.width)
+            if reg.type in [RegisterType.SL, RegisterType.SLV, RegisterType.DEFAULT]:
+                sig_val = self.sig_value("0", reg.type, reg.width)
                 s += self.check_value(signal, sig_val, msg)
-            elif reg.sig_type == "fields":
+            elif reg.type == RegisterType.FIELDS:
                 for field in reg.fields:
                     signal_field = "{}.{}".format(signal, field.name)
                     s += self.check_value(
                         signal_field,
-                        self.sig_value("0", field.sig_type, field.width),
+                        self.sig_value("0", field.type, field.width),
                         msg,
                     )
             else:
@@ -445,48 +446,46 @@ class Testbench(object):
 
             s += self.bus.uvvm_check(c_addr, bus_val, msg)
 
-        elif reg.mode == "ro":
+        elif reg.mode == RegisterMode.RO:
 
-            if reg.sig_type in ["sl", "slv", "default"]:
-                sig_val = self.sig_value("0", reg.sig_type, reg.width)
+            if reg.type in [RegisterType.SL, RegisterType.SLV, RegisterType.DEFAULT]:
+                sig_val = self.sig_value("0", reg.type, reg.width)
                 s += "{} <= {};\n".format(signal, sig_val)
                 s += self.await_value(signal, sig_val, msg)
-            elif reg.sig_type == "fields":
+            elif reg.type == RegisterType.FIELDS:
                 for field in reg.fields:
                     signal_field = "{}.{}".format(signal, field.name)
-                    s += "{} <= {};\n".format(
-                        signal_field, self.to_zero(field.sig_type)
-                    )
+                    s += "{} <= {};\n".format(signal_field, self.to_zero(field.type))
                 for field in reg.fields:
                     signal_field = "{}.{}".format(signal, field.name)
-                    sig_val = self.sig_value("0", field.sig_type, field.width)
+                    sig_val = self.sig_value("0", field.type, field.width)
                     s += self.await_value(signal_field, sig_val, msg)
 
             else:
                 raise Exception("Invalid register type")
 
             s += self.bus.uvvm_check(c_addr, bus_val, msg)
-        elif reg.mode == "pulse":
+        elif reg.mode == RegisterMode.PULSE:
 
             s += self.bus.uvvm_write(c_addr, bus_val, msg)
 
-            if reg.sig_type in ["sl", "slv", "default"]:
+            if reg.type in [RegisterType.SL, RegisterType.SLV, RegisterType.DEFAULT]:
                 s += self.set_check_zero_pulse(signal, reg, msg)
 
-            elif reg.sig_type == "fields":
+            elif reg.type == RegisterType.FIELDS:
                 signal_field = list()
                 for field in reg.fields:
                     signal_field.append("{}.{}".format(signal, field.name))
                 for i, field in enumerate(reg.fields):
-                    sig_val = self.sig_value("0", field.sig_type, field.width)
+                    sig_val = self.sig_value("0", field.type, field.width)
                     s += self.check_value(signal_field[i], sig_val, msg)
                 for i, field in enumerate(reg.fields):
                     s += self.await_stable(signal_field[i], reg.pulse_cycles, msg)
                 for i, field in enumerate(reg.fields):
-                    sig_val = self.sig_value("0", field.sig_type, field.width)
+                    sig_val = self.sig_value("0", field.type, field.width)
                     s += self.check_value(signal_field[i], sig_val, msg)
                 for i, field in enumerate(reg.fields):
-                    sig_val = self.sig_value(field.reset, field.sig_type, field.width)
+                    sig_val = self.sig_value(field.reset, field.type, field.width)
                     s += self.await_value(signal_field[i], sig_val, msg)
 
             else:
@@ -495,60 +494,60 @@ class Testbench(object):
         return s
 
     def set_check_zero_pulse(self, signal, reg, msg):
-        sig_val = self.sig_value("0", reg.sig_type, reg.width)
+        sig_val = self.sig_value("0", reg.type, reg.width)
         s = self.check_value(signal, sig_val, msg)
         s += self.await_stable(signal, reg.pulse_cycles, msg)
         s += self.check_value(signal, sig_val, msg)
         s += self.await_value(
-            signal, self.sig_value(reg.reset, reg.sig_type, reg.width), msg
+            signal, self.sig_value(reg.reset, reg.type, reg.width), msg
         )
         return s
 
     def check_bit_fields(self, reg):
         s = ""
-        if reg.sig_type in ["sl", "slv", "default"]:
+        if reg.type in [RegisterType.SL, RegisterType.SLV, RegisterType.DEFAULT]:
             s += self.log_hdr("Check all bit fields")
             s += "\n"
 
         c_addr = "C_ADDR_{}".format(reg.name.upper())
         msg = "Check all bit fields"
-        signal = "{}_{}_regs.{}".format(self.bus.short_name, reg.mode, reg.name)
-        if reg.mode == "rw":
-            if reg.sig_type == "sl":
+        signal = "{}_{}_regs.{}".format(self.bus.short_name, reg.mode.value, reg.name)
+        if reg.mode == RegisterMode.RW:
+            if reg.type == RegisterType.SL:
                 s += self.check_bit_rw_sl(c_addr, signal, msg)
-            elif reg.sig_type in ["slv", "default"]:
+            elif reg.type in [RegisterType.SLV, RegisterType.DEFAULT]:
                 s += self.check_bit_rw_slv(c_addr, signal, reg, msg)
-            elif reg.sig_type == "fields":
+            elif reg.type == RegisterType.FIELDS:
                 for field in reg.fields:
                     signal_field = "{}.{}".format(signal, field.name)
                     s += self.log_hdr("Check all bit fields {}".format(field.name))
                     s += "\n"
-                    if field.sig_type == "sl":
+                    if field.type == FieldType.SL:
                         s += self.check_bit_rw_sl(
                             c_addr, signal_field, msg, field.pos_low
                         )
-                    elif field.sig_type in ["slv", "default"]:
+                    elif field.type in [FieldType.SLV]:
                         s += self.check_bit_rw_slv(
                             c_addr, signal_field, field, msg, field.pos_low
                         )
                     s += "\n"
             else:
                 raise Exception("Invalid register type")
-        elif reg.mode == "ro":
-            if reg.sig_type == "sl":
+        elif reg.mode == RegisterMode.RO:
+            if reg.type == RegisterType.SL:
                 s += self.check_bit_ro_sl(c_addr, signal, msg)
-            elif reg.sig_type in ["slv", "default"]:
+            elif reg.type in [RegisterType.SLV, RegisterType.DEFAULT]:
                 s += self.check_bit_ro_slv(c_addr, signal, reg, msg)
-            elif reg.sig_type == "fields":
+            elif reg.type == RegisterType.FIELDS:
                 for field in reg.fields:
                     signal_field = "{}.{}".format(signal, field.name)
                     s += self.log_hdr("Check all bit fields {}".format(field.name))
                     s += "\n"
-                    if field.sig_type == "sl":
+                    if field.type == FieldType.SL:
                         s += self.check_bit_ro_sl(
                             c_addr, signal_field, msg, field.pos_low
                         )
-                    elif field.sig_type in ["slv", "default"]:
+                    elif field.type in [FieldType.SLV]:
                         s += self.check_bit_ro_slv(
                             c_addr, signal_field, field, msg, field.pos_low
                         )
@@ -556,17 +555,17 @@ class Testbench(object):
             else:
                 raise Exception("Invalid register type")
 
-        elif reg.mode == "pulse":
-            if reg.sig_type == "sl":
+        elif reg.mode == RegisterMode.PULSE:
+            if reg.type == RegisterType.SL:
                 s += self.check_bit_pulse_sl(c_addr, signal, reg, msg)
-            elif reg.sig_type in ["slv", "default"]:
+            elif reg.type in [RegisterType.SLV, RegisterType.DEFAULT]:
                 s += self.check_bit_pulse_slv(c_addr, signal, reg, msg)
-            elif reg.sig_type == "fields":
+            elif reg.type == RegisterType.FIELDS:
                 for field in reg.fields:
                     signal_field = "{}.{}".format(signal, field.name)
                     s += self.log_hdr("Check all bit fields {}".format(field.name))
                     s += "\n"
-                    if field.sig_type == "sl":
+                    if field.type == FieldType.SL:
                         s += self.check_bit_pulse_sl(
                             c_addr,
                             signal_field,
@@ -575,7 +574,7 @@ class Testbench(object):
                             field.pos_low,
                             reg.pulse_cycles,
                         )
-                    elif field.sig_type in ["slv", "default"]:
+                    elif field.type in [FieldType.SLV]:
                         s += self.check_bit_pulse_slv(
                             c_addr,
                             signal_field,
@@ -586,7 +585,7 @@ class Testbench(object):
                         )
                     s += "\n"
         # For consistant line endings
-        if reg.sig_type != "fields":
+        if reg.type != RegisterType.FIELDS:
             s += "\n"
         return s
 
@@ -602,8 +601,8 @@ class Testbench(object):
         par += self.await_value(signal, sig_val, msg)
         par += self.bus.uvvm_check(c_addr, bus_val, msg)
         par += "-- Return to zero\n"
-        sig_val = self.sig_value("0", "slv", reg.width)
-        bus_val = self.sig_value("0", "default")
+        sig_val = self.sig_value("0", RegisterType.SLV, reg.width)
+        bus_val = self.sig_value("0", RegisterType.DEFAULT)
         par += "{} <= {};\n".format(signal, sig_val)
         par += self.await_value(signal, sig_val, msg)
         par += self.bus.uvvm_check(c_addr, bus_val, msg)
@@ -623,8 +622,8 @@ class Testbench(object):
         par += self.check_value(signal, sig_val, msg)
         par += self.bus.uvvm_check(c_addr, bus_val, msg)
         par += "-- Return to zero\n"
-        sig_val = self.sig_value("0", "slv", reg.width)
-        bus_val = self.sig_value("0", "default")
+        sig_val = self.sig_value("0", RegisterType.SLV, reg.width)
+        bus_val = self.sig_value("0", RegisterType.DEFAULT)
         par += self.bus.uvvm_write(c_addr, bus_val, msg)
         par += self.check_value(signal, sig_val, msg)
         par += self.bus.uvvm_check(c_addr, bus_val, msg)
@@ -647,35 +646,35 @@ class Testbench(object):
         par += self.check_value(signal, sig_val, msg)
         par += self.await_stable(signal, clk_cycles, msg)
         par += self.check_value(signal, sig_val, msg)
-        sig_val = self.sig_value(reset, reg.sig_type, reg.width)
+        sig_val = self.sig_value(reset, reg.type, reg.width)
         par += self.await_value(signal, sig_val, msg)
         s += indent_string(par)
         s += "end loop;\n"
         return s
 
     def check_bit_ro_sl(self, c_addr, signal, msg, offset=0):
-        sig_val = self.sig_value("1", "sl")
-        bus_val = self.sig_value(hex(1 << offset), "default")
+        sig_val = self.sig_value("1", RegisterType.SL)
+        bus_val = self.sig_value(hex(1 << offset), RegisterType.DEFAULT)
         s = "{} <= {};\n".format(signal, sig_val)
         s += self.await_value(signal, sig_val, msg)
         s += self.bus.uvvm_check(c_addr, bus_val, msg)
         s += "-- Return to zero\n"
-        sig_val = self.sig_value("0", "sl")
-        bus_val = self.sig_value("0", "default")
+        sig_val = self.sig_value("0", RegisterType.SL)
+        bus_val = self.sig_value("0", RegisterType.DEFAULT)
         s += "{} <= {};\n".format(signal, sig_val)
         s += self.await_value(signal, sig_val, msg)
         s += self.bus.uvvm_check(c_addr, bus_val, msg)
         return s
 
     def check_bit_rw_sl(self, c_addr, signal, msg, offset=0):
-        sig_val = self.sig_value("1", "sl")
-        bus_val = self.sig_value(hex(1 << offset), "default")
+        sig_val = self.sig_value("1", RegisterType.SL)
+        bus_val = self.sig_value(hex(1 << offset), RegisterType.DEFAULT)
         s = self.bus.uvvm_write(c_addr, bus_val, msg)
         s += self.check_value(signal, sig_val, msg)
         s += self.bus.uvvm_check(c_addr, bus_val, msg)
         s += "-- Return to zero\n"
-        sig_val = self.sig_value("0", "sl")
-        bus_val = self.sig_value("0", "default")
+        sig_val = self.sig_value("0", RegisterType.SL)
+        bus_val = self.sig_value("0", RegisterType.DEFAULT)
         s += self.bus.uvvm_write(c_addr, bus_val, msg)
         s += self.check_value(signal, sig_val, msg)
         s += self.bus.uvvm_check(c_addr, bus_val, msg)
@@ -685,25 +684,25 @@ class Testbench(object):
         if clk_cycles is None:
             clk_cycles = reg.pulse_cycles
         reset = reg.reset
-        sig_val = self.sig_value("1", "sl")
-        bus_val = self.sig_value(hex(1 << offset), "default")
+        sig_val = self.sig_value("1", RegisterType.SL)
+        bus_val = self.sig_value(hex(1 << offset), RegisterType.DEFAULT)
         s = self.bus.uvvm_write(c_addr, bus_val, msg)
         s += self.check_value(signal, sig_val, msg)
         s += self.await_stable(signal, clk_cycles, msg)
         s += self.check_value(signal, sig_val, msg)
-        sig_val = self.sig_value(reset, "sl")
+        sig_val = self.sig_value(reset, RegisterType.SL)
         s += self.await_value(signal, sig_val, msg)
         return s
 
     def reg_hdr(self, reg):
-        if reg.sig_type == "sl":
+        if reg.type == RegisterType.SL:
             reg_type = "std_logic"
-        elif reg.sig_type in ["slv", "default"]:
+        elif reg.type in [RegisterType.SLV, RegisterType.DEFAULT]:
             reg_type = "{} bit std_logic_vector".format(reg.width)
-        elif reg.sig_type == "fields":
+        elif reg.type == RegisterType.FIELDS:
             reg_type = "fields"
-        par = "Checking Register {} - {} {}".format(
-            reg.name, reg.mode.upper(), reg_type
+        par = (
+            f"Checking Register {reg.name} - {reg.mode.value.upper()} - {reg.type.name}"
         )
         return self.log_hdr_large(par)
 
@@ -754,23 +753,24 @@ class Testbench(object):
         )
         return s
 
-    def sig_value(self, value, sig_type, width=0):
-        if sig_type == "sl":
+    def sig_value(self, value, type, width=0):
+        if type in [RegisterType.SL, FieldType.SL]:
             s = "'{}'".format(int(value, 16))
-        elif sig_type == "slv":
+        elif type in [RegisterType.SLV, FieldType.SLV]:
             s = '{}X"{:x}"'.format(width, int(value, 16))
-        elif sig_type == "default":
+        elif type == RegisterType.DEFAULT:
             s = '{}X"{:X}"'.format(self.bus.addr_width, int(value, 16))
         else:
-            print(sig_type)
+            print(type)
             raise Exception("Invalid signal type")
         return s
 
     @staticmethod
-    def to_zero(sig_type):
-        if sig_type == "sl":
+    def to_zero(type):
+        if type in [RegisterType.SL, FieldType.SL]:
             return "'0'"
-        elif sig_type == "slv":
+        elif type in [RegisterType.SLV, FieldType.SLV]:
             return "(others => '0')"
         else:
+            print(type)
             raise Exception("Invalid signal type")

@@ -3,14 +3,17 @@ Contains the Module class and relevant exceptions
 
 """
 
+import logging
 import json
 from collections import OrderedDict
 
+from bust.enums import RegisterMode, RegisterType
 from bust.exceptions import InvalidAddress, InvalidRegister
 from bust.module_vhdl_gen import ModuleVHDLGen
 from bust.register import Register
-from bust.utils import add_line_breaks, indent_string
+from bust.utils import indent_string
 from bust.vhdl_util import is_unique, is_valid_VHDL
+from bust.config_wrapper import ConfigWrapper
 
 
 class Module:
@@ -23,34 +26,37 @@ class Module:
     def __init__(self, mod, bus, settings):
         """! @brief"""
 
+        self.logger = logging.getLogger(__name__)
+
         self.bus = bus
         self.settings = settings
         self.registers = []
         self.addresses = []
 
-        is_valid_VHDL(mod["name"])
-        self.name = mod["name"]
-        self.description = mod["description"]
-        self.description_with_breaks = add_line_breaks(mod["description"], 25)
-        if "version" in mod:
-            self.version = mod["version"]
-        else:
-            self.version = None
-        self.git_hash = None  # not used
+        self._config = ConfigWrapper(
+            mod,
+            required_keys=[
+                "name",
+            ],
+            defaults={
+                "description": "",
+                "version": "",
+                "git_hash": None,
+                "byte_addressable": bus.bus_type == "axi",
+            },
+        )
+
+        self.name = self._config.require("name")
+        is_valid_VHDL(self.name)
+
+        # Store some config values for easy access
+        self.description = self._config.get("description")
+        self.version = self._config.get("version")
+        self.git_hash = self._config.get("git_hash")  # Currently not used
+        self.byte_addressable = self._config.get("byte_addressable")
 
         self.addr_width = bus.addr_width
         self.data_width = bus.data_width
-
-        if "byte_addressable" in mod:
-            if mod["byte_addressable"] == "True":
-                self.byte_addressable = True
-            else:
-                self.byte_addressable = False
-        else:
-            if self.bus.bus_type == "axi":  # axi usually is byte addressable
-                self.byte_addressable = True
-            else:
-                self.byte_addressable = False
 
         for reg in mod["register"]:
             if "stall_cycles" in reg and bus.bus_type != "ipbus":
@@ -59,33 +65,26 @@ class Module:
                 )
             self.add_register(reg)
 
-    def get_version(self):
-        if self.version is None:
-            return ""
-        else:
-            return "Version: {}".format(self.version)
-
     def add_register(self, reg):
-        if self.register_valid(reg):
-            if "address" in reg:
-                addr = int(reg["address"], 16)
-                if self.is_address_free(addr):
-                    if self.is_address_out_of_range(addr):
-                        raise RuntimeError(
-                            "Address " + hex(addr) + " is definitely out of range..."
-                        )
-                    self.addresses.append(addr)
-                    self.registers.append(
-                        Register(reg, addr, self.name, self.data_width)
-                    )
-                else:
-                    raise InvalidAddress(reg["name"], addr)
-            else:
-                addr = self.get_next_address()
-                self.addresses.append(addr)
+        if "address" in reg:
+            addr = int(reg["address"], 16)
+            if not self.is_address_free(addr):
+                raise InvalidAddress(reg["name"], addr)
+            if self.is_address_out_of_range(addr):
+                raise RuntimeError(
+                    "Address " + hex(addr) + " is definitely out of range..."
+                )
+            self.addresses.append(addr)
+            try:
                 self.registers.append(Register(reg, addr, self.name, self.data_width))
+            except Exception as e:
+                self.logger.error(str(e))
+                raise InvalidRegister(reg) from e
+
         else:
-            raise InvalidRegister(reg)
+            addr = self.get_next_address()
+            self.addresses.append(addr)
+            self.registers.append(Register(reg, addr, self.name, self.data_width))
 
     def get_next_address(self):
         """! @brief Will get the next address based on the byte-addressed scheme"""
@@ -138,35 +137,17 @@ class Module:
             self.addresses.append(addr)
             reg.address = addr
 
-    def register_valid(self, reg):
-        """Returns True if register is semi-valid. May raise exceptions which must be catched"""
+    @property
+    def num_ro_regs(self):
+        return sum(1 for reg in self.registers if reg.mode == RegisterMode.RO)
 
-        # Check if all required register keys exists
-        if not (
-            {"name", "mode", "type", "description"}.issubset(reg)
-            or {"name", "mode", "fields", "description"}.issubset(reg)
-        ):
-            return False
+    @property
+    def num_rw_regs(self):
+        return sum(1 for reg in self.registers if reg.mode == RegisterMode.RW)
 
-        """Check if name is valid VHDL, if not it will raise an exception which must be
-        catched in calling function"""
-        is_valid_VHDL(reg["name"])
-
-        """Get a list of the currently used reg names and compare the chosen reg names to this list
-        If it is already taken it will raise an exception which must be catched in calling function"""
-        reg_names = [r.name for r in self.registers]
-        is_unique(reg["name"], reg_names)
-
-        return True
-
-    def count_ro_regs(self):
-        return len([reg for reg in self.registers if reg.mode == "ro"])
-
-    def count_rw_regs(self):
-        return len([reg for reg in self.registers if reg.mode == "rw"])
-
-    def count_pulse_regs(self):
-        return len([reg for reg in self.registers if reg.mode == "pulse"])
+    @property
+    def num_pulse_regs(self):
+        return sum(1 for reg in self.registers if reg.mode == RegisterMode.PULSE)
 
     def has_stall_regs(self):
         if len([reg for reg in self.registers if reg.stall]) > 0:
@@ -205,28 +186,28 @@ class Module:
             reg_dic = OrderedDict()
 
             reg_dic["name"] = reg.name
-            reg_dic["mode"] = reg.mode
-            if reg.mode == "pulse":
+            reg_dic["mode"] = reg.mode.value
+            if reg.mode == RegisterMode.PULSE:
                 reg_dic["pulse_cycles"] = reg.pulse_cycles
-            reg_dic["type"] = reg.sig_type
+            reg_dic["type"] = reg.type.value
 
             if include_address:
                 reg_dic["address"] = str(hex(reg.address))
 
             if (
-                reg.sig_type != "default"
-                and reg.sig_type != "fields"
-                and reg.sig_type != "sl"
+                reg.type != RegisterType.DEFAULT
+                and reg.type != RegisterType.FIELDS
+                and reg.type != RegisterType.SL
             ):
                 reg_dic["width"] = reg.width
 
-            if reg.sig_type != "fields":
+            if reg.type != RegisterType.FIELDS:
                 reg_dic["reset"] = reg.reset
 
             if reg.stall is True:
                 reg_dic["stall_cycles"] = reg.stall_cycles
 
-            if reg.sig_type == "fields" and len(reg.fields) > 0:
+            if reg.type == RegisterType.FIELDS and len(reg.fields) > 0:
                 reg_dic["fields"] = []
                 for field in reg.fields:
                     reg_dic["fields"].append(field.return_dic())
@@ -244,16 +225,16 @@ class Module:
 
     def return_module_pkg_VHDL(self):
         gen_obj = self._get_vhdl_gen_obj()
-        return gen_obj.return_module_pkg_VHDL()
+        return gen_obj.return_module_pkg_VHDL(self)
 
     def return_module_VHDL(self):
         gen_obj = self._get_vhdl_gen_obj()
-        return gen_obj.return_module_VHDL()
+        return gen_obj.return_module_VHDL(self)
 
     def get_instantiation(self, instance_name, intern_out=False):
         """Also a VHDL method."""
         gen_obj = self._get_vhdl_gen_obj()
-        return gen_obj.get_instantiation(instance_name, intern_out)
+        return gen_obj.get_instantiation(self, instance_name, intern_out)
 
     def _get_vhdl_gen_obj(self):
         o = ModuleVHDLGen(

@@ -175,7 +175,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg0 - RW std_logic");
+    log_hdr_large("Checking Register reg0 - RW - SL");
 
     log_hdr("Check Default Value");
 
@@ -200,7 +200,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg1 - RW std_logic");
+    log_hdr_large("Checking Register reg1 - RW - SL");
 
     log_hdr("Check Default Value");
 
@@ -225,7 +225,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg2 - RO std_logic");
+    log_hdr_large("Checking Register reg2 - RO - SL");
 
     log_hdr("Check Default Value");
 
@@ -250,7 +250,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg3 - RW 8 bit std_logic_vector");
+    log_hdr_large("Checking Register reg3 - RW - SLV");
 
     log_hdr("Check Default Value");
 
@@ -277,7 +277,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg4 - RO 14 bit std_logic_vector");
+    log_hdr_large("Checking Register reg4 - RO - SLV");
 
     log_hdr("Check Default Value");
 
@@ -304,7 +304,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg5 - RW 32 bit std_logic_vector");
+    log_hdr_large("Checking Register reg5 - RW - DEFAULT");
 
     log_hdr("Check Default Value");
 
@@ -331,7 +331,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg6 - RO 32 bit std_logic_vector");
+    log_hdr_large("Checking Register reg6 - RO - DEFAULT");
 
     log_hdr("Check Default Value");
 
@@ -358,7 +358,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg7 - RW fields");
+    log_hdr_large("Checking Register reg7 - RW - FIELDS");
 
     log_hdr("Check Default Value");
 
@@ -423,7 +423,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg8 - RO fields");
+    log_hdr_large("Checking Register reg8 - RO - FIELDS");
 
     log_hdr("Check Default Value");
 
@@ -491,7 +491,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg9 - PULSE std_logic");
+    log_hdr_large("Checking Register reg9 - PULSE - SL");
 
     log_hdr("Check Default Value");
 
@@ -515,7 +515,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg10 - PULSE 4 bit std_logic_vector");
+    log_hdr_large("Checking Register reg10 - PULSE - SLV");
 
     log_hdr("Check Default Value");
 
@@ -541,7 +541,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg11 - PULSE fields");
+    log_hdr_large("Checking Register reg11 - PULSE - FIELDS");
 
     log_hdr("Check Default Value");
 
