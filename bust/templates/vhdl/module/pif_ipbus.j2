@@ -66,63 +66,19 @@ begin
     end if;
   end process p_write;
 
-  ....p_pulse_reg9 : process(clk)
-    variable cnt : natural range 0 to 3 := 0;
-  begin
-    if rising_edge(clk) then
-      if reset = '1' then
-        ipb_pulse_regs_i.reg9 <= c_{{ module.name }}_pulse_regs.reg9;
-      else
-        if ipb_pulse_regs_cycle.reg9 /= c_{{ module.name }}_pulse_regs.reg9 then
-          cnt := 3;
-          ipb_pulse_regs_i.reg9 <= ipb_pulse_regs_cycle.reg9;
-        else
-          if cnt > 0 then
-            cnt := cnt - 1;
-          else
-            ipb_pulse_regs_i.reg9 <= c_{{ module.name }}_pulse_regs.reg9;
-          end if;
-        end if;
-      end if;
-    end if;
-  end process p_pulse_reg9;
+  {% import 'vhdl/module/pif_pulse.j2' as pif_macros %}
+  {% for reg in module.registers if reg.mode in ["pulse"] %}
+{{ pif_macros.pif_pulse(
+    clk_name='clk',
+    reset_name='reset',
+    proc_name='p_pulse_' + reg.name,
+    const_name="c_" + module.name + "_pulse_regs." + reg.name,
+    reg_name=module.bus.short_name + "_pulse_regs_i." + reg.name,
+    reg_tmp_name=module.bus.short_name + "_pulse_regs_cycle." + reg.name,
+    pulse_cycles=reg.pulse_cycles,
+    reset_active_high=True)|indent_all(2)}}
 
-  ....p_pulse_reg10 : process(clk)
-  begin
-    if rising_edge(clk) then
-      if reset = '1' then
-        ipb_pulse_regs_i.reg10 <= c_{{ module.name }}_pulse_regs.reg10;
-      else
-        if ipb_pulse_regs_cycle.reg10 /= c_{{ module.name }}_pulse_regs.reg10 then
-          ipb_pulse_regs_i.reg10 <= ipb_pulse_regs_cycle.reg10;
-        else
-          ipb_pulse_regs_i.reg10 <= c_{{ module.name }}_pulse_regs.reg10;
-        end if;
-      end if;
-    end if;
-  end process p_pulse_reg10;
-
-  ...p_pulse_reg11 : process(clk)
-    variable cnt : natural range 0 to 49 := 0;
-  begin
-    if rising_edge(clk) then
-      if reset = '1' then
-        ipb_pulse_regs_i.reg11 <= c_{{ module.name }}_pulse_regs.reg11;
-      else
-        if ipb_pulse_regs_cycle.reg11 /= c_{{ module.name }}_pulse_regs.reg11 then
-          cnt := 49;
-          ipb_pulse_regs_i.reg11 <= ipb_pulse_regs_cycle.reg11;
-        else
-          if cnt > 0 then
-            cnt := cnt - 1;
-          else
-            ipb_pulse_regs_i.reg11 <= c_{{ module.name }}_pulse_regs.reg11;
-          end if;
-        end if;
-      end if;
-    end if;
-  end process p_pulse_reg11;
-
+  {% endfor %}
 
   reg_rden <= (ipb_in.ipb_strobe and (not ipb_in.ipb_write)) and not (rd_ack or rd_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err or rd_stall_ack or stall);
 
