@@ -135,9 +135,30 @@ begin
         rd_err <= '0';
       else
 
-  {% import "vhdl/module/pif_read_logic.j2" as pif_macros %}
-      {% macro pif() %}{{ pif_macros.read_logic(module) }}{% endmacro %}
-        {{ pif()[:-1]|indent(8) }}
+        -- default values
+        rd_ack <= '0';
+        rd_err <= '0';
+        {% if module.has_stall_regs() %}
+        rd_stall_ack <= '0';
+        {% endif %}
+
+        if (reg_rden) then
+          reg_data_out <= (others => '0');
+
+          if (valid_baseaddr = '0') then
+
+            rd_err <= '1';
+
+            {% import "vhdl/module/pif_read_logic.j2" as pif_macros %}
+            {% macro pif() %}{{ pif_macros.read_logic(module) }}{% endmacro %}
+{{ pif()|indent_all(10) }}
+          else
+
+            reg_data_out <= 32X"DEADBEEF";
+            rd_err <= '1';
+
+          end if;
+        end if;
       end if;
     end if;
   end process p_read;
