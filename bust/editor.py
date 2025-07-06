@@ -122,7 +122,7 @@ class Editor(object):
                             reg.name,
                             reg.mode,
                             hex(reg.address),
-                            reg.sig_type,
+                            reg.type,
                             reg.width,
                             reg.reset,
                             add_line_breaks(reg.description, 25),
@@ -171,7 +171,7 @@ class Editor(object):
                     [
                         i,
                         field.name,
-                        field.sig_type,
+                        field.type,
                         field.get_pos_str(),
                         field.width,
                         field.reset,

@@ -92,3 +92,7 @@ class ConfigWrapper:
         if key not in self._config:
             raise KeyError(f"Missing required config key: {key}")
         return self.get(key)
+
+    def is_set(self, key):
+        """Return True if the key was explicitly set in the config."""
+        return key in self._config
