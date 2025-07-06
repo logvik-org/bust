@@ -33,7 +33,7 @@ class EnumWithStr(str, Enum):
             return cls(value.lower())
         except ValueError as exp:
             raise ValueError(
-                f"Invalid {cls.__name__}: '{value}' (valid: {cls.valid_values()})"
+                f"Invalid {cls.__name__}: '{value}'. Did you mean one of these? {[e.value for e in cls]}"
             ) from exp
 
     @classmethod
