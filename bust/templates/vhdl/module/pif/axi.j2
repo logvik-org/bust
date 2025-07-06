@@ -182,8 +182,16 @@ begin
 
       null;
 
+      {% for reg in module.registers if reg.mode in ["ro", "rw"] %}
       {% import "vhdl/module/pif/statement_read_reg.j2" as pif_macros %}
-{{ pif_macros.statement_read_reg(module)|indent_all(4) }}
+{{ pif_macros.statement_read_reg(
+  reg,
+  module.bus.bus_type,
+  internal_signal_name = "axi_rw_regs_i" if reg.mode == "rw" else "axi_ro_regs",
+  ack = False,
+  register_sel = "register_sel_rd"
+  ) | indent_all(4) }}
+      {% endfor %}
     end if;
 
   end process p_mm_select_read;
