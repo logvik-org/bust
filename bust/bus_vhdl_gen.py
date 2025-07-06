@@ -130,7 +130,7 @@ class BusVHDLGen:
         env.filters["indent_all"] = indent_all
 
         # Load the IPBus-specific module template
-        template = env.get_template("vhdl/module/pif.j2")
+        template = env.get_template("vhdl/module/pif/pif.j2")
 
         # Define context for template rendering
         context = {

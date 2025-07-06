@@ -61,7 +61,7 @@ class ModuleVHDLGen:
         env.filters["indent_all"] = indent_all
 
         # Load the template
-        template = env.get_template("vhdl/module/pif_pkg.j2")
+        template = env.get_template("vhdl/module/pif/pkg.j2")
 
         # Define context for template rendering
         context = {

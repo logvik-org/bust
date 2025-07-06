@@ -87,12 +87,12 @@ begin
   {% if bus.bus_type == "ipbus" %}
   ipb_out <= ipb_out_i;
 
-  {% macro pif_inst() %}{% include "vhdl/module/pif_instantiation_ipbus.j2" %}{% endmacro %}
+  {% macro pif_inst() %}{% include "vhdl/module/pif/instantiation_ipbus.j2" %}{% endmacro %}
   {{ pif_inst()|indent(2) }}
   {% elif bus.bus_type == "axi" %}
   axi_out <= axi_out_i;
 
-  {% macro pif_inst() %}{% include "vhdl/module/pif_instantiation_axi.j2" %}{% endmacro %}
+  {% macro pif_inst() %}{% include "vhdl/module/pif/instantiation_axi.j2" %}{% endmacro %}
   {{ pif_inst()|indent(2) }}
   {% endif %}
 
