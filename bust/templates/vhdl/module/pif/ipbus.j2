@@ -56,7 +56,22 @@ begin
             wr_err <= '1';
 
       {% import "vhdl/module/pif/statement_write_reg.j2" as pif_macros %}
-{{ pif_macros.statement_write_reg(module, "ipb_in.ipb_wdata", "register_sel", True)|indent_all(10) }}
+      {% for reg in module.registers if reg.mode in ["rw", "pulse"] %}
+        {% if reg.mode == "rw" %}
+          {% set internal_signal_name = module.bus.short_name + "_rw_regs_i." %}
+        {% elif reg.mode == "pulse" %}
+          {% set internal_signal_name = module.bus.short_name + "_pulse_regs_cycle." %}
+        {% endif %}
+{{ pif_macros.statement_write_reg(
+  reg,
+  internal_signal_name = internal_signal_name,
+  out_signal_name = "ipb_in.ipb_wdata",
+  register_sel = "register_sel",
+  use_ack = True
+  ) | indent_all(10) }}
+      {% endfor %}
+          else
+
             wr_err <= '1';
 
           end if;
@@ -108,9 +123,8 @@ begin
       {% import "vhdl/module/pif/statement_read_reg.j2" as pif_macros %}
 {{ pif_macros.statement_read_reg(
   reg,
-  module.bus.bus_type,
   internal_signal_name = "ipb_rw_regs_i" if reg.mode == "rw" else "ipb_ro_regs",
-  ack = True,
+  use_ack = True,
   register_sel = "register_sel"
   ) | indent_all(10) }}
       {% endfor %}
