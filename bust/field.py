@@ -37,7 +37,7 @@ class Field(object):
         self.description = self._config.get("description")
 
         # Assign width
-        if self.type == "sl":
+        if self.type == FieldType.SL:
             # Check if the width was explicitly set in the config, and if it matches the module data width
             if self._config.is_set("width") and self._config.get("width") != 1:
                 self.logger.warning(
@@ -66,15 +66,15 @@ class Field(object):
                 )
 
     def get_pos_str(self):
-        if self.type == "sl":
+        if self.type == FieldType.SL:
             return str(self.pos_low)
-        elif self.type == "slv":
+        elif self.type == FieldType.SLV:
             return str(self.pos_high) + ":" + str(self.pos_low)
 
     def get_pos_vhdl(self):
-        if self.type == "sl":
+        if self.type == FieldType.SL:
             return str(self.pos_low)
-        elif self.type == "slv":
+        elif self.type == FieldType.SLV:
             return str(self.pos_high) + " downto " + str(self.pos_low)
 
     @property
@@ -85,7 +85,7 @@ class Field(object):
         dic = OrderedDict()
         dic["name"] = self.name
         dic["type"] = self.type
-        if self.type == "slv":
+        if self.type == FieldType.SLV:
             dic["width"] = self.width
         if self.reset != "0x0":
             dic["reset"] = self.reset
@@ -95,27 +95,27 @@ class Field(object):
 
     @property
     def range_vhdl(self):
-        if self.type == "slv":
+        if self.type == FieldType.SLV:
             return f"{self.width - 1} downto 0"
         raise ValueError("Only slv fields have a range")
 
     @property
     def type_vhdl(self):
-        if self.type == "slv":
+        if self.type == FieldType.SLV:
             return f"std_logic_vector({self.range_vhdl})"
-        elif self.type == "sl":
+        elif self.type == FieldType.SL:
             return "std_logic"
 
     @property
     def reset_val_vhdl(self):
-        if self.type == "slv":
+        if self.type == FieldType.SLV:
             if self.reset == "0x0":
                 val = "(others => '0')"
             else:
                 val = str(self.width) + 'X"'
                 val += format(int(self.reset, 16), "X") + '"'
 
-        elif self.type == "sl":
+        elif self.type == FieldType.SL:
             val = "'" + format(int(self.reset, 16), "X") + "'"
 
         return val

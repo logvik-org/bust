@@ -7,7 +7,7 @@ import logging
 import json
 from collections import OrderedDict
 
-from bust.enums import RegisterMode
+from bust.enums import RegisterMode, RegisterType
 from bust.exceptions import InvalidAddress, InvalidRegister
 from bust.module_vhdl_gen import ModuleVHDLGen
 from bust.register import Register
@@ -194,16 +194,20 @@ class Module:
             if include_address:
                 reg_dic["address"] = str(hex(reg.address))
 
-            if reg.type != "default" and reg.type != "fields" and reg.type != "sl":
+            if (
+                reg.type != RegisterType.DEFAULT
+                and reg.type != RegisterType.FIELDS
+                and reg.type != RegisterType.SL
+            ):
                 reg_dic["width"] = reg.width
 
-            if reg.type != "fields":
+            if reg.type != RegisterType.FIELDS:
                 reg_dic["reset"] = reg.reset
 
             if reg.stall is True:
                 reg_dic["stall_cycles"] = reg.stall_cycles
 
-            if reg.type == "fields" and len(reg.fields) > 0:
+            if reg.type == RegisterType.FIELDS and len(reg.fields) > 0:
                 reg_dic["fields"] = []
                 for field in reg.fields:
                     reg_dic["fields"].append(field.return_dic())

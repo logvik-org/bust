@@ -1,6 +1,7 @@
 from jinja2 import Environment, FileSystemLoader
 import os
 
+from bust.enums import FieldType, RegisterType
 from bust.utils import indent_string
 from bust.jinja_utils.filters import indent_all
 
@@ -8,13 +9,15 @@ from bust.jinja_utils.filters import indent_all
 # Helper function to determine VHDL type
 def get_vhdl_type(reg, module_name):
     """Returns the correct VHDL type based on the register's type."""
-    if reg.type == "default" or (reg.type == "slv" and reg.width == 32):
+    if reg.type == RegisterType.DEFAULT or (
+        reg.type in [RegisterType.SLV, FieldType.SLV] and reg.width == 32
+    ):
         return f"t_{module_name}_data"
-    elif reg.type == "slv":
+    elif reg.type in [RegisterType.SLV, FieldType.SLV]:
         return f"std_logic_vector({reg.width - 1} downto 0)"
-    elif reg.type == "sl":
+    elif reg.type in [RegisterType.SL, FieldType.SL]:
         return "std_logic"
-    elif reg.type == "fields":
+    elif reg.type == RegisterType.FIELDS:
         return f"t_{module_name}_{reg.mode}_{reg.name}"
     else:
         raise RuntimeError(f"Unknown signal type: {reg.type}")
@@ -23,15 +26,15 @@ def get_vhdl_type(reg, module_name):
 # Helper function to format reset values
 def get_reset_value(reg):
     """Returns the formatted VHDL reset value."""
-    if reg.type in ["default", "slv"]:
+    if reg.type in [RegisterType.DEFAULT, RegisterType.SLV]:
         return (
             "(others => '0')"
             if reg.reset == "0x0"
             else f'{reg.width}X"{int(reg.reset, 16):X}"'
         )
-    elif reg.type == "fields":
+    elif reg.type == RegisterType.FIELDS:
         return f"({', '.join([f'{field.name} => {field.get_reset_vhdl()}' for field in reg.fields])})"
-    elif reg.type == "sl":
+    elif reg.type == RegisterType.SL:
         return f"'{int(reg.reset, 16):X}'"
     else:
         raise RuntimeError(f"Unknown reset type: {reg.type}")
