@@ -201,57 +201,6 @@ class BusVHDLGen:
 
         return s
 
-    def pulse_reg_process(self, mod, reg):
-
-        clk_name = self.clk_name
-        reset_name = str.strip(self.reset_name)
-        proc_name = "p_pulse_" + reg.name
-        const_name = "c_" + mod.name + "_pulse_regs." + reg.name
-        reg_name = self.short_name + "_pulse_regs_i." + reg.name
-        reg_tmp_name = self.short_name + "_pulse_regs_cycle." + reg.name
-        if reg.pulse_cycles > 1:
-            variables = [
-                "cnt : natural range 0 to " + str(reg.pulse_cycles - 1) + " := 0"
-            ]
-        else:
-            variables = []
-
-        reset_string = reg_name + " <= " + const_name + ";"
-
-        logic_string = "if " + reg_tmp_name
-        logic_string += " /= " + const_name
-        logic_string += " then\n"
-
-        par = ""
-        if reg.pulse_cycles > 1:
-            par = "cnt := " + str(reg.pulse_cycles - 1) + ";\n"
-        par += reg_name + " <= " + reg_tmp_name + ";\n"
-        logic_string += indent_string(par)
-
-        logic_string += "else\n"
-        if reg.pulse_cycles > 1:
-            logic_string += indent_string("if cnt > 0 then\n")
-            logic_string += indent_string("cnt := cnt - 1;\n", 2)
-            logic_string += indent_string("else\n")
-
-        par = reg_name + " <= " + const_name + ";\n"
-        if reg.pulse_cycles > 1:
-            logic_string += indent_string(par, 2)
-        else:
-            logic_string += indent_string(par, 1)
-        if reg.pulse_cycles > 1:
-            logic_string += indent_string("end if;\n")
-        logic_string += "end if;"
-        return _seq_process_sync_reset(
-            proc_name,
-            clk_name,
-            logic_string,
-            reset_name,
-            reset_string,
-            self.reset_active_high,
-            variables,
-        )
-
     def get_uvvm_lib(self):
         if self.bus_type == "axi":
             s = (
