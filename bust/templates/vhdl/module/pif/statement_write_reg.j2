@@ -1,30 +1,24 @@
 {#
   Parameters:
-    module:        module object
+    reg:           reg object
     wdata:         string representing write data signal (e.g., "ipb_in.ipb_wdata" or "wdata")
-    reg_sel_sig:   string like "register_sel" or "register_sel_wr"
+    register_sel:   string like "register_sel" or "register_sel_wr"
     use_ack:       boolean; if true, generate wr_ack/wr_stall_ack
 #}
 
-{% macro statement_write_reg(module, wdata, reg_sel_sig, use_ack=False) %}
-  {% for reg in module.registers if reg.mode in ["rw", "pulse"] %}
-    {% if reg.mode == "rw" %}
-      {% set sig_name = module.bus.short_name + "_rw_regs_i." %}
-    {% elif reg.mode == "pulse" %}
-      {% set sig_name = module.bus.short_name + "_pulse_regs_cycle." %}
-    {% endif %}
-elsif unsigned({{ reg_sel_sig }}) = resize(unsigned(C_ADDR_{{ reg.name.upper() }}), C_MODULE_ADDR_WIDTH) then
+{% macro statement_write_reg(reg, internal_signal_name, out_signal_name, register_sel, use_ack) %}
+elsif unsigned({{ register_sel }}) = resize(unsigned(C_ADDR_{{ reg.name.upper() }}), C_MODULE_ADDR_WIDTH) then
 
     {% if reg.type == "fields" %}
       {% for field in reg.fields %}
-  {{ sig_name }}{{ reg.name }}.{{ field.name }} <= {{ wdata }}({{ field.get_pos_vhdl() }});
+  {{ internal_signal_name }}{{ reg.name }}.{{ field.name }} <= {{ out_signal_name }}({{ field.get_pos_vhdl() }});
       {% endfor %}
     {% elif reg.type == "default" %}
-  {{ sig_name }}{{ reg.name }} <= {{ wdata }};
+  {{ internal_signal_name }}{{ reg.name }} <= {{ out_signal_name }};
     {% elif reg.type == "slv" %}
-  {{ sig_name }}{{ reg.name }} <= {{ wdata }}({{ reg.width - 1 }} downto 0);
+  {{ internal_signal_name }}{{ reg.name }} <= {{ out_signal_name }}({{ reg.width - 1 }} downto 0);
     {% elif reg.type == "sl" %}
-  {{ sig_name }}{{ reg.name }} <= {{ wdata }}(0);
+  {{ internal_signal_name }}{{ reg.name }} <= {{ out_signal_name }}(0);
     {% endif %}
     {% if use_ack %}
       {% if reg.stall %}
@@ -36,8 +30,5 @@ elsif unsigned({{ reg_sel_sig }}) = resize(unsigned(C_ADDR_{{ reg.name.upper() }
 {% endif %}
 {% else %}
 
-{% endif %}{% endfor %}
-{% if module.bus.bus_type == "ipbus" %}
-else
 {% endif %}
 {% endmacro %}

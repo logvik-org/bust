@@ -2,7 +2,7 @@
   Parameters:
     module:        module object
 #}
-{% macro statement_read_reg(reg, bus_type, internal_signal_name, ack, register_sel) %}
+{% macro statement_read_reg(reg, internal_signal_name, register_sel, use_ack) %}
 elsif unsigned({{ register_sel }}) = resize(unsigned(C_ADDR_{{ reg.name | upper }}), C_MODULE_ADDR_WIDTH) then
 
     {% if reg.type == "fields" %}
@@ -19,7 +19,7 @@ elsif unsigned({{ register_sel }}) = resize(unsigned(C_ADDR_{{ reg.name | upper 
     {% if reg.stall %}
   rd_stall_ack <= '1';
 
-    {% elif ack %}
+    {% elif use_ack %}
   rd_ack <= '1';
 
     {% else %}
