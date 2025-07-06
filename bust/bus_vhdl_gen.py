@@ -9,6 +9,7 @@ from bust.vhdl_gen import (
     _seq_process_sync_reset,
     seq_process,
 )
+from bust.jinja_utils.filters import indent_all
 
 
 class BusVHDLGen:
@@ -119,11 +120,14 @@ class BusVHDLGen:
     def return_bus_pif_VHDL(self, mod):
         # Set up Jinja2 environment
         template_dir = os.path.join(os.path.dirname(__file__), "templates")
+
         env = Environment(
             loader=FileSystemLoader(template_dir, followlinks=True),
             trim_blocks=True,
             lstrip_blocks=True,
         )
+
+        env.filters["indent_all"] = indent_all
 
         # Load the IPBus-specific module template
         template = env.get_template("vhdl/module/pif.j2")

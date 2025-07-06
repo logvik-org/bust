@@ -3,57 +3,33 @@
     module:        module object
 #}
 {% macro read_logic(module) %}
--- default values
 {% if module.bus.bus_type == "ipbus" %}
-rd_ack <= '0';
-rd_err <= '0';
-{% if module.has_stall_regs() %}
-rd_stall_ack <= '0';
-{% endif %}
+{% for reg in module.registers if reg.mode in ["ro", "rw"] %}
+elsif unsigned(register_sel) = resize(unsigned(C_ADDR_{{ reg.name | upper }}), C_MODULE_ADDR_WIDTH) then
 
-if (reg_rden) then
-  reg_data_out <= (others => '0');
+  {% if reg.type == "fields" %}
+    {% for field in reg.fields %}
+  reg_data_out({{ field.get_pos_vhdl() }}) <= {{ "ipb_rw_regs_i" if reg.mode == "rw" else "ipb_ro_regs" }}.{{ reg.name }}.{{ field.name }};
+    {% endfor %}
+  {% elif reg.type == "default" %}
+  reg_data_out <= {{ "ipb_rw_regs_i" if reg.mode == "rw" else "ipb_ro_regs" }}.{{ reg.name }};
+  {% elif reg.type == "slv" %}
+  reg_data_out({{ reg.width - 1 }} downto 0) <= {{ "ipb_rw_regs_i" if reg.mode == "rw" else "ipb_ro_regs" }}.{{ reg.name }};
+  {% elif reg.type == "sl" %}
+  reg_data_out(0) <= {{ "ipb_rw_regs_i" if reg.mode == "rw" else "ipb_ro_regs" }}.{{ reg.name }};
+  {% endif %}
+  {% if reg.stall %}
+  rd_stall_ack <= '1';
 
-  if (valid_baseaddr = '0') then
+  {% else %}
+  rd_ack <= '1';
 
-    rd_err <= '1';
+  {% endif %}
+  {% endfor %}
+{% elif module.bus.bus_type == "axi" %}
+
 
   {% for reg in module.registers if reg.mode in ["ro", "rw"] %}
-  elsif unsigned(register_sel) = resize(unsigned(C_ADDR_{{ reg.name | upper }}), C_MODULE_ADDR_WIDTH) then
-
-    {% if reg.type == "fields" %}
-      {% for field in reg.fields %}
-    reg_data_out({{ field.get_pos_vhdl() }}) <= {{ "ipb_rw_regs_i" if reg.mode == "rw" else "ipb_ro_regs" }}.{{ reg.name }}.{{ field.name }};
-      {% endfor %}
-    {% elif reg.type == "default" %}
-    reg_data_out <= {{ "ipb_rw_regs_i" if reg.mode == "rw" else "ipb_ro_regs" }}.{{ reg.name }};
-    {% elif reg.type == "slv" %}
-    reg_data_out({{ reg.width - 1 }} downto 0) <= {{ "ipb_rw_regs_i" if reg.mode == "rw" else "ipb_ro_regs" }}.{{ reg.name }};
-    {% elif reg.type == "sl" %}
-    reg_data_out(0) <= {{ "ipb_rw_regs_i" if reg.mode == "rw" else "ipb_ro_regs" }}.{{ reg.name }};
-    {% endif %}
-    {% if reg.stall %}
-    rd_stall_ack <= '1';
-
-    {% else %}
-    rd_ack <= '1';
-
-    {% endif %}
-  {% endfor %}
-  else
-
-    reg_data_out <= 32X"DEADBEEF";
-    rd_err <= '1';
-
-  end if;
-end if;
-{% elif module.bus.bus_type == "axi" %}
-reg_data_out <= (others => '0');
-
-if (valid_baseaddr_wr = '0') then
-  null;
-
-  {% for reg in registers if reg.mode in ["ro", "rw"] %}
   elsif unsigned(register_sel_rd) = resize(unsigned(C_ADDR_{{ reg.name | upper }}), C_MODULE_ADDR_WIDTH) then
     {% if reg.type == "fields" %}
       {% for field in reg.fields %}
