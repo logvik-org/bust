@@ -50,16 +50,10 @@ class Register:
             "width"
         )  # Width can be overridden depending on register type
         self.reset = self._config.get("reset")
-        self.fields = []
-
-        # Pulse-specific logic
-        self.pulse_cycles = (
-            self._config.get("pulse_cycles") if self.mode == "pulse" else None
-        )
-
-        # Stall-specific logic
+        self.pulse_cycles = self._config.get("pulse_cycles")
         self.stall_cycles = self._config.get("stall_cycles")
         self.stall = self.stall_cycles > 0
+        self.fields = []
 
         # If set, stall cycles must be between 2 and 255
         if self.stall:
