@@ -80,7 +80,7 @@ class Header(object):
 
         for reg in self.module.registers:
             s += "/* Register: " + reg.name + " */\n"
-            s += f'const uint32_t {reg.name.upper()}_MODE = "{reg.mode}";\n'
+            s += f'const uint32_t {reg.name.upper()}_MODE = "{reg.mode.value}";\n'
             s += f"const uint32_t {reg.name.upper()}_WIDTH = {reg.width};\n"
             s += (
                 f"const uint32_t {reg.name.upper()}_OFFSET = {str(hex(reg.address))};\n"
@@ -139,7 +139,7 @@ class Header(object):
         for reg in self.module.registers:
             s += "\n"
             s += indent_string('"""Register: ' + reg.name + '"""\n', 2)
-            s += indent_string(f'{reg.name.upper()}_MODE = "{reg.mode}"\n', 2)
+            s += indent_string(f'{reg.name.upper()}_MODE = "{reg.mode.value}"\n', 2)
             s += indent_string(f"{reg.name.upper()}_WIDTH = {reg.width}\n", 2)
             s += indent_string(
                 f"{reg.name.upper()}_OFFSET = {str(hex(reg.address))}\n", 2

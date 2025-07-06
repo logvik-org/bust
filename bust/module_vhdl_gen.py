@@ -18,7 +18,7 @@ def get_vhdl_type(reg, module_name):
     elif reg.type in [RegisterType.SL, FieldType.SL]:
         return "std_logic"
     elif reg.type == RegisterType.FIELDS:
-        return f"t_{module_name}_{reg.mode}_{reg.name}"
+        return f"t_{module_name}_{reg.mode.value}_{reg.name}"
     else:
         raise RuntimeError(f"Unknown signal type: {reg.type}")
 
