@@ -78,9 +78,9 @@ architecture behavior of {{ module.name }}_{{ bus.short_name }}_pif is
   {% endif %}
 
   {% if bus.bus_type == "ipbus" %}
-  {% include "vhdl/module/pif_ipbus.j2" %}
+  {% include "vhdl/module/pif/ipbus.j2" %}
   {% elif bus.bus_type == "axi" %}
-  {% include "vhdl/module/pif_axi.j2" %}
+  {% include "vhdl/module/pif/axi.j2" %}
   {% endif %}
 
 

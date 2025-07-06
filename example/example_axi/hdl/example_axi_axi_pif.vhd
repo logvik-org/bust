@@ -194,6 +194,7 @@ begin
           axi_pulse_regs_cycle.reg11.field0 <= wdata(14 downto 0);
           axi_pulse_regs_cycle.reg11.field1 <= wdata(15);
 
+
         end if;
       end if;
 
