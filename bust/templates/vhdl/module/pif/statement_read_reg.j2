@@ -1,7 +1,16 @@
 {#
+  Macro: statement_read_reg
+
+  Generates VHDL logic for reading from a register (or its fields) based on
+  register address match and optionally generates read acknowledgements.
+
   Parameters:
-    module:        module object
+    reg:                  Register object (must have .name, .type, .fields, .width, .stall)
+    internal_signal_name: Prefix for the signal being read (e.g., "axi_ro_regs" or "ipb_rw_regs_i")
+    register_sel:         Signal name used for address decoding (e.g., "register_sel_rd")
+    use_ack:              Boolean; if true, generate rd_ack or rd_stall_ack assignment
 #}
+
 {% macro statement_read_reg(reg, internal_signal_name, register_sel, use_ack) %}
 elsif unsigned({{ register_sel }}) = resize(unsigned(C_ADDR_{{ reg.name | upper }}), C_MODULE_ADDR_WIDTH) then
 
