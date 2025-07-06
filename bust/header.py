@@ -17,7 +17,7 @@ class Header(object):
 
         for reg in self.module.registers:
             s += "/* Register: " + reg.name + " */\n"
-            s += f'#define {reg.name.upper()}_MODE "{reg.mode}";\n'
+            s += f'#define {reg.name.upper()}_MODE "{reg.mode.value}";\n'
             s += f"#define {reg.name.upper()}_WIDTH {reg.width};\n"
             s += f"#define {reg.name.upper()}_OFFSET {str(hex(reg.address))};\n"
             s += f"#define {reg.name.upper()}_RESET {reg.reset};\n"

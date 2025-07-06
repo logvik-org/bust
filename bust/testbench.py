@@ -1,4 +1,5 @@
 import logging
+from bust.enums import RegisterType
 from bust.utils import indent_string
 from bust.bus import Bus
 
@@ -694,14 +695,14 @@ class Testbench(object):
         return s
 
     def reg_hdr(self, reg):
-        if reg.type == "sl":
+        if reg.type == RegisterType.SL:
             reg_type = "std_logic"
-        elif reg.type in ["slv", "default"]:
+        elif reg.type in [RegisterType.SLV, RegisterType.DEFAULT]:
             reg_type = "{} bit std_logic_vector".format(reg.width)
-        elif reg.type == "fields":
+        elif reg.type == RegisterType.FIELDS:
             reg_type = "fields"
-        par = "Checking Register {} - {} {}".format(
-            reg.name, reg.mode.upper(), reg_type
+        par = (
+            f"Checking Register {reg.name} - {reg.mode.value.upper()} - {reg.type.name}"
         )
         return self.log_hdr_large(par)
 
