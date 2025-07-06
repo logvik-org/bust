@@ -15,15 +15,15 @@
 {% macro statement_write_reg(reg, internal_signal_name, out_signal_name, register_sel, use_ack) %}
 elsif unsigned({{ register_sel }}) = resize(unsigned(C_ADDR_{{ reg.name.upper() }}), C_MODULE_ADDR_WIDTH) then
 
-    {% if reg.type|string == "fields" %}
+    {% if reg.type.value == "fields" %}
       {% for field in reg.fields %}
   {{ internal_signal_name }}{{ reg.name }}.{{ field.name }} <= {{ out_signal_name }}({{ field.get_pos_vhdl() }});
       {% endfor %}
-    {% elif reg.type|string == "default" %}
+    {% elif reg.type.value == "default" %}
   {{ internal_signal_name }}{{ reg.name }} <= {{ out_signal_name }};
-    {% elif reg.type|string == "slv" %}
+    {% elif reg.type.value == "slv" %}
   {{ internal_signal_name }}{{ reg.name }} <= {{ out_signal_name }}({{ reg.width - 1 }} downto 0);
-    {% elif reg.type|string == "sl" %}
+    {% elif reg.type.value == "sl" %}
   {{ internal_signal_name }}{{ reg.name }} <= {{ out_signal_name }}(0);
     {% endif %}
     {% if use_ack %}
