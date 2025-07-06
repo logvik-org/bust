@@ -104,11 +104,15 @@ def main():
                 NotImplementedError,
             ) as e:
                 logger.error(str(e))
+                if hasattr(e, "__cause__") and isinstance(e.__cause__, ValueError):
+                    logger.error(str(e.__cause__))
+                logger.debug("Detailed traceback:", exc_info=True)
                 exit(1)
 
             except Exception as e:
-                logger.error("\nERROR:\nAn unknown error has occurred...")
-                logger.debug(str(e))
+                logger.error("An unknown error has occurred...")
+                logger.error(f"{type(e).__name__}: {e}")
+                logger.debug("Detailed traceback:", exc_info=True)
                 exit(1)
 
             # File generation settings

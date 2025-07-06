@@ -3,6 +3,7 @@ Contains the Module class and relevant exceptions
 
 """
 
+import logging
 import json
 from collections import OrderedDict
 
@@ -23,6 +24,8 @@ class Module:
 
     def __init__(self, mod, bus, settings):
         """! @brief"""
+
+        self.logger = logging.getLogger(__name__)
 
         self.bus = bus
         self.settings = settings
@@ -62,26 +65,25 @@ class Module:
             self.add_register(reg)
 
     def add_register(self, reg):
-        if self.register_valid(reg):
-            if "address" in reg:
-                addr = int(reg["address"], 16)
-                if self.is_address_free(addr):
-                    if self.is_address_out_of_range(addr):
-                        raise RuntimeError(
-                            "Address " + hex(addr) + " is definitely out of range..."
-                        )
-                    self.addresses.append(addr)
-                    self.registers.append(
-                        Register(reg, addr, self.name, self.data_width)
-                    )
-                else:
-                    raise InvalidAddress(reg["name"], addr)
-            else:
-                addr = self.get_next_address()
-                self.addresses.append(addr)
+        if "address" in reg:
+            addr = int(reg["address"], 16)
+            if not self.is_address_free(addr):
+                raise InvalidAddress(reg["name"], addr)
+            if self.is_address_out_of_range(addr):
+                raise RuntimeError(
+                    "Address " + hex(addr) + " is definitely out of range..."
+                )
+            self.addresses.append(addr)
+            try:
                 self.registers.append(Register(reg, addr, self.name, self.data_width))
+            except Exception as e:
+                self.logger.error(str(e))
+                raise InvalidRegister(reg) from e
+
         else:
-            raise InvalidRegister(reg)
+            addr = self.get_next_address()
+            self.addresses.append(addr)
+            self.registers.append(Register(reg, addr, self.name, self.data_width))
 
     def get_next_address(self):
         """! @brief Will get the next address based on the byte-addressed scheme"""
@@ -133,27 +135,6 @@ class Module:
             addr = self.get_next_address()
             self.addresses.append(addr)
             reg.address = addr
-
-    def register_valid(self, reg):
-        """Returns True if register is semi-valid. May raise exceptions which must be catched"""
-
-        # Check if all required register keys exists
-        if not (
-            {"name", "mode", "type", "description"}.issubset(reg)
-            or {"name", "mode", "fields", "description"}.issubset(reg)
-        ):
-            return False
-
-        """Check if name is valid VHDL, if not it will raise an exception which must be
-        catched in calling function"""
-        is_valid_VHDL(reg["name"])
-
-        """Get a list of the currently used reg names and compare the chosen reg names to this list
-        If it is already taken it will raise an exception which must be catched in calling function"""
-        reg_names = [r.name for r in self.registers]
-        is_unique(reg["name"], reg_names)
-
-        return True
 
     @property
     def num_ro_regs(self):
