@@ -23,8 +23,8 @@ All rights reserved.
 from enum import Enum
 
 
-class EnumWithStr(str, Enum):
-    """Base class for string-based enumerations."""
+class ConfigEnum(Enum):
+    """Base class for enumerations for configs."""
 
     @classmethod
     def from_string(cls, value):
@@ -42,7 +42,7 @@ class EnumWithStr(str, Enum):
         return list(cls)
 
 
-class FieldType(EnumWithStr):
+class FieldType(ConfigEnum):
     """Enumeration of supported field types within a register.
 
     Values:
@@ -56,7 +56,7 @@ class FieldType(EnumWithStr):
     SL = "sl"
 
 
-class RegisterType(EnumWithStr):
+class RegisterType(ConfigEnum):
     """Enumeration of register data types.
 
     Values:
@@ -74,7 +74,7 @@ class RegisterType(EnumWithStr):
     FIELDS = "fields"
 
 
-class RegisterMode(EnumWithStr):
+class RegisterMode(ConfigEnum):
     """Enumeration of access modes for a register.
 
     Values:

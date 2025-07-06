@@ -175,9 +175,15 @@ def main():
                     print(e)
                     return
             else:
-                generate_output(
-                    settings, bus, module, header, documentation, testbench, gs
-                )
+                try:
+                    generate_output(
+                        settings, bus, module, header, documentation, testbench, gs
+                    )
+                except Exception as e:
+                    logger.error("An error occurred during output generation...")
+                    logger.error(f"{type(e).__name__}: {e}")
+                    logger.debug("Detailed traceback:", exc_info=True)
+                    exit(1)
 
     except Exception:
         logger.exception("An unresolvable error has occurred...")

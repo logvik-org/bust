@@ -31,8 +31,8 @@ class Register:
             required_keys=["name"],
             defaults={
                 "description": "",
-                "mode": RegisterMode.RW,
-                "type": RegisterType.DEFAULT,
+                "mode": RegisterMode.RW.value,
+                "type": RegisterType.DEFAULT.value,
                 "width": module_data_width,
                 "reset": "0x0",
                 "pulse_cycles": 1,
@@ -67,7 +67,7 @@ class Register:
                 raise InvalidStallValue(self.stall_cycles)
 
         # Assign width
-        if self.type == "default":
+        if self.type == RegisterType.DEFAULT:
             # Check if the width was explicitly set in the config,
             # and if it matches the module data width
             if (
@@ -78,9 +78,9 @@ class Register:
                     f"User-specified width of default register does not match the expected width ({module_data_width}). Ignoring configured width."
                 )
             self.width = module_data_width
-        elif self.type == "slv":
+        elif self.type == RegisterType.SLV:
             pass
-        elif self.type == "sl":
+        elif self.type == RegisterType.SL:
             # Check if the width was explicitly set in the config, and if it matches the module data width
             if self._config.is_set("width") and self._config.get("width") != 1:
                 self.logger.warning(
@@ -88,7 +88,7 @@ class Register:
                 )
             self.width = 1
 
-        elif self.type == "fields" or self._config.is_set("fields"):
+        elif self.type == RegisterType.FIELDS or self._config.is_set("fields"):
             self.width = 0
             self._init_fields()
 
