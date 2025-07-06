@@ -454,9 +454,7 @@ class Testbench(object):
             elif reg.type == "fields":
                 for field in reg.fields:
                     signal_field = "{}.{}".format(signal, field.name)
-                    s += "{} <= {};\n".format(
-                        signal_field, self.to_zero(field.type)
-                    )
+                    s += "{} <= {};\n".format(signal_field, self.to_zero(field.type))
                 for field in reg.fields:
                     signal_field = "{}.{}".format(signal, field.name)
                     sig_val = self.sig_value("0", field.type, field.width)

@@ -31,7 +31,9 @@ class Module:
 
         self._config = ConfigWrapper(
             mod,
-            required_keys=["name",],
+            required_keys=[
+                "name",
+            ],
             defaults={
                 "description": "",
                 "version": "",
@@ -46,7 +48,7 @@ class Module:
         # Store some config values for easy access
         self.description = self._config.get("description")
         self.version = self._config.get("version")
-        self.git_hash = self._config.get("git_hash") # Currently not used
+        self.git_hash = self._config.get("git_hash")  # Currently not used
         self.byte_addressable = self._config.get("byte_addressable")
 
         self.addr_width = bus.addr_width
@@ -210,11 +212,7 @@ class Module:
             if include_address:
                 reg_dic["address"] = str(hex(reg.address))
 
-            if (
-                reg.type != "default"
-                and reg.type != "fields"
-                and reg.type != "sl"
-            ):
+            if reg.type != "default" and reg.type != "fields" and reg.type != "sl":
                 reg_dic["width"] = reg.width
 
             if reg.type != "fields":

@@ -15,15 +15,15 @@
     {% endif %}
 elsif unsigned({{ reg_sel_sig }}) = resize(unsigned(C_ADDR_{{ reg.name.upper() }}), C_MODULE_ADDR_WIDTH) then
 
-    {% if reg.sig_type == "fields" %}
+    {% if reg.type == "fields" %}
       {% for field in reg.fields %}
   {{ sig_name }}{{ reg.name }}.{{ field.name }} <= {{ wdata }}({{ field.get_pos_vhdl() }});
       {% endfor %}
-    {% elif reg.sig_type == "default" %}
+    {% elif reg.type == "default" %}
   {{ sig_name }}{{ reg.name }} <= {{ wdata }};
-    {% elif reg.sig_type == "slv" %}
+    {% elif reg.type == "slv" %}
   {{ sig_name }}{{ reg.name }} <= {{ wdata }}({{ reg.width - 1 }} downto 0);
-    {% elif reg.sig_type == "sl" %}
+    {% elif reg.type == "sl" %}
   {{ sig_name }}{{ reg.name }} <= {{ wdata }}(0);
     {% endif %}
     {% if use_ack %}
