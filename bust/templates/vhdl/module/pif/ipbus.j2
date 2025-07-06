@@ -104,8 +104,16 @@ begin
 
             rd_err <= '1';
 
+      {% for reg in module.registers if reg.mode in ["ro", "rw"] %}
       {% import "vhdl/module/pif/statement_read_reg.j2" as pif_macros %}
-{{ pif_macros.statement_read_reg(module)|indent_all(10) }}
+{{ pif_macros.statement_read_reg(
+  reg,
+  module.bus.bus_type,
+  internal_signal_name = "ipb_rw_regs_i" if reg.mode == "rw" else "ipb_ro_regs",
+  ack = True,
+  register_sel = "register_sel"
+  ) | indent_all(10) }}
+      {% endfor %}
           else
 
             reg_data_out <= 32X"DEADBEEF";
@@ -119,7 +127,14 @@ begin
 
   {% import 'vhdl/module/pif/process_stall.j2' as pif_macros %}
   {% if module.has_stall_regs() %}
-{{ pif_macros.process_stall(module, clk_name='clk', reset_name='reset', reset_active_high=True, addr_width=module.data_width, short_name=module.bus.short_name) | indent_all(2) }}
+{{ pif_macros.process_stall(
+  module,
+  clk_name='clk',
+  reset_name='reset',
+  reset_active_high=True,
+  addr_width=module.data_width,
+  short_name=module.bus.short_name
+  ) | indent_all(2) }}
   {% endif %}
 
   p_output : process(all)
