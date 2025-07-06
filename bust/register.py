@@ -158,7 +158,7 @@ class Register:
         elif self.type == RegisterType.SL:
             return "std_logic"
         else:
-            return f"t_{self.module_name}_{self.mode}_{self.name}"
+            return f"t_{self.module_name}_{self.mode.value}_{self.name}"
 
     @property
     def reset_val_vhdl(self):

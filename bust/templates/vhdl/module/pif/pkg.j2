@@ -34,7 +34,7 @@ package {{ module.name }}_pif_pkg is
 
   type t_{{ module.name }}_rw_regs is record
     {% for reg in module.registers if reg.mode.value == "rw" %}
-    {{ reg.name }} : {{ reg.type_vhdl }};
+    {{ reg.name }} : {{ reg | get_vhdl_type(module.name) }};
     {% endfor %}
   end record;
 
