@@ -85,17 +85,6 @@ class Field(object):
     def get_mask(self):
         return pow(2, self.width) - 1 << self.pos_low
 
-    def get_dictionary(self, reset, description):
-        dict = OrderedDict()
-        dict["name"] = self.name
-        dict["type"] = self.type
-        dict["width"] = self.width
-        if reset:
-            dict["reset"] = self.reset
-        if description:
-            dict["description"] = self.description
-        return dict
-
     def get_table_row(self, num):
         row = [
             num,
