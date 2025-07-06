@@ -56,10 +56,10 @@ begin
             wr_err <= '1';
 
       {% import "vhdl/module/pif/statement_write_reg.j2" as pif_macros %}
-      {% for reg in module.registers if reg.mode in ["rw", "pulse"] %}
-        {% if reg.mode == "rw" %}
+      {% for reg in module.registers if reg.mode|string in ["rw", "pulse"] %}
+        {% if reg.mode|string == "rw" %}
           {% set internal_signal_name = module.bus.short_name + "_rw_regs_i." %}
-        {% elif reg.mode == "pulse" %}
+        {% elif reg.mode|string == "pulse" %}
           {% set internal_signal_name = module.bus.short_name + "_pulse_regs_cycle." %}
         {% endif %}
 {{ pif_macros.statement_write_reg(
@@ -81,7 +81,7 @@ begin
   end process p_write;
 
   {% import 'vhdl/module/pif/process_pulse.j2' as pif_macros %}
-  {% for reg in module.registers if reg.mode in ["pulse"] %}
+  {% for reg in module.registers if reg.mode|string in ["pulse"] %}
 {{ pif_macros.process_pulse(
     clk_name='clk',
     reset_name='reset',
@@ -119,11 +119,11 @@ begin
 
             rd_err <= '1';
 
-      {% for reg in module.registers if reg.mode in ["ro", "rw"] %}
+      {% for reg in module.registers if reg.mode|string in ["ro", "rw"] %}
       {% import "vhdl/module/pif/statement_read_reg.j2" as pif_macros %}
 {{ pif_macros.statement_read_reg(
   reg,
-  internal_signal_name = "ipb_rw_regs_i" if reg.mode == "rw" else "ipb_ro_regs",
+  internal_signal_name = "ipb_rw_regs_i" if reg.mode|string == "rw" else "ipb_ro_regs",
   use_ack = True,
   register_sel = "register_sel"
   ) | indent_all(10) }}

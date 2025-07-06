@@ -1,6 +1,7 @@
 from pylatexenc.latexencode import utf8tolatex
 from bust.utils import indent_string
 from bust._version import __VERSION__
+from bust.enums import RegisterType
 
 
 class Documentation(object):
@@ -45,7 +46,7 @@ class Documentation(object):
                 "0x{0:0{1}X}".format(reg.address, int(self.module.addr_width / 4))
                 + "} & "
             )
-            p += reg.type.upper() + " & "
+            p += reg.type.value.upper() + " & "
             p += str(reg.width) + " & "
             p += r"\texttt{"
             p += "0x" + format(int(reg.reset, 16), "X") + "} \\\\\n"
@@ -59,7 +60,7 @@ class Documentation(object):
 
             s += r"\begin{register}{H}{" + utf8tolatex(reg.name) + " - "
             s += reg.mode.value.upper()
-            if reg.mode.lower() == "pulse":
+            if reg.mode.value.lower() == "pulse":
                 s += " for " + str(reg.pulse_cycles) + " cycles "
             if reg.stall:
                 s += " - STALL for {} cycles".format(reg.stall_cycles)
@@ -79,7 +80,7 @@ class Documentation(object):
                 p += str(reg.width) + "}{-}\n"
                 s += indent_string(p)
 
-            if reg.type != "fields":
+            if reg.type != RegisterType.FIELDS:
 
                 p = r"\regfield{}{" + str(reg.width) + "}{0}{"
                 if reg.width < 2:
@@ -104,7 +105,7 @@ class Documentation(object):
 
             s += r"\reglabel{Reset}\regnewline" + "\n"
 
-            if reg.type == "fields":
+            if reg.type == RegisterType.FIELDS:
 
                 p = r"\begin{regdesc}\begin{reglist}["
                 # Get the longest field name and indent the list based on that width

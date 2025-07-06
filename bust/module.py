@@ -7,6 +7,7 @@ import logging
 import json
 from collections import OrderedDict
 
+from bust.enums import RegisterMode
 from bust.exceptions import InvalidAddress, InvalidRegister
 from bust.module_vhdl_gen import ModuleVHDLGen
 from bust.register import Register
@@ -138,15 +139,15 @@ class Module:
 
     @property
     def num_ro_regs(self):
-        return sum(1 for reg in self.registers if reg.mode == "ro")
+        return sum(1 for reg in self.registers if reg.mode == RegisterMode.RO)
 
     @property
     def num_rw_regs(self):
-        return sum(1 for reg in self.registers if reg.mode == "rw")
+        return sum(1 for reg in self.registers if reg.mode == RegisterMode.RW)
 
     @property
     def num_pulse_regs(self):
-        return sum(1 for reg in self.registers if reg.mode == "pulse")
+        return sum(1 for reg in self.registers if reg.mode == RegisterMode.PULSE)
 
     def has_stall_regs(self):
         if len([reg for reg in self.registers if reg.stall]) > 0:
