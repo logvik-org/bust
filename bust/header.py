@@ -1,3 +1,4 @@
+from bust.enums import RegisterType
 from bust.utils import indent_string
 
 
@@ -23,7 +24,7 @@ class Header(object):
             s += f"#define {reg.name.upper()}_RESET {reg.reset};\n"
             s += "\n"
 
-            if reg.type == "fields":
+            if reg.type == RegisterType.FIELDS:
                 for field in reg.fields:
                     s += "/* Field: " + field.name + " */\n"
                     s += (
@@ -87,7 +88,7 @@ class Header(object):
             s += f"const uint32_t {reg.name.upper()}_RESET = {reg.reset};\n"
             s += "\n"
 
-            if reg.type == "fields":
+            if reg.type == RegisterType.FIELDS:
                 for field in reg.fields:
                     s += "/* Field: " + field.name + " */\n"
                     s += (
@@ -145,7 +146,7 @@ class Header(object):
             )
             s += indent_string(f"{reg.name.upper()}_RESET = {reg.reset}\n", 2)
 
-            if reg.type == "fields":
+            if reg.type == RegisterType.FIELDS:
                 for field in reg.fields:
                     s += "\n"
                     s += indent_string('""" Field: ' + field.name + ' """\n', 2)
@@ -182,12 +183,12 @@ class Header(object):
                 par += ";pulse_cycles={}".format(reg.pulse_cycles)
             if reg.stall:
                 par += ";stall_cycles={}".format(reg.stall_cycles)
-            if reg.type == "fields":
+            if reg.type == RegisterType.FIELDS:
                 par += '">\n'
             else:
                 par += '"/>\n'
 
-            if reg.type == "fields":
+            if reg.type == RegisterType.FIELDS:
                 for field in reg.fields:
                     par2 = '<node id="{}" mask="{}" description="{}" parameters="reset={}"/>\n'.format(
                         field.name,

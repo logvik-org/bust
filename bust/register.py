@@ -143,33 +143,33 @@ class Register:
 
     @property
     def range_vhdl(self):
-        if self.type == "slv":
+        if self.type == RegisterType.SLV:
             return f"{self.width - 1} downto 0"
         raise ValueError("Only slv fields have a range")
 
     @property
     def type_vhdl(self):
-        if self.type == "default" or (
-            self.type == "slv" and self.width == self.module_data_width
+        if self.type == RegisterType.DEFAULT or (
+            self.type == RegisterType.SLV and self.width == self.module_data_width
         ):
             return f"t_{self.module_name}_data"
-        elif self.type == "slv":
+        elif self.type == RegisterType.SLV:
             return f"std_logic_vector({self.range_vhdl})"
-        elif self.type == "sl":
+        elif self.type == RegisterType.SL:
             return "std_logic"
         else:
             return f"t_{self.module_name}_{self.mode}_{self.name}"
 
     @property
     def reset_val_vhdl(self):
-        if self.type in ["default", "slv"]:
+        if self.type in [RegisterType.DEFAULT, RegisterType.SLV]:
             if self.reset == "0x0":
                 return "(others => '0')"
             else:
                 val = str(self.width) + 'X"'
                 val += format(int(self.reset, 16), "X") + '"'
                 return val
-        elif self.type == "sl":
+        elif self.type == RegisterType.SL:
             return "'" + format(int(self.reset, 16), "X") + "'"
 
         raise ValueError(
