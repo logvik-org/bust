@@ -1,6 +1,7 @@
 import logging
 from collections import OrderedDict
 
+from bust.enums import FieldType
 from bust.exceptions import InvalidFieldFormat, UndefinedFieldType
 from bust.vhdl_util import is_valid_VHDL
 from bust.config_wrapper import ConfigWrapper
@@ -8,8 +9,6 @@ from bust.config_wrapper import ConfigWrapper
 
 class Field(object):
     """Documentation for Field"""
-
-    supported_types = ["slv", "sl"]
 
     def __init__(self, field, pos_low, parent_register_name):
 
@@ -30,14 +29,10 @@ class Field(object):
         self.name = self._config.require("name")
         is_valid_VHDL(self.name)
 
-        self.type = self._config.require("type").lower()
-        if self.type not in self.supported_types:
-            raise UndefinedFieldType(self.type)
-
+        self.type = FieldType.from_string(self._config.require("type"))
         self.width = self._config.get(
             "width"
         )  # Width can be overridden depending on register type
-
         self.reset = self._config.get("reset")
         self.description = self._config.get("description")
 

@@ -12,13 +12,11 @@ from bust.field import Field
 from bust.utils import indent_string
 from bust.vhdl_util import is_unique, is_valid_VHDL
 from bust.config_wrapper import ConfigWrapper
+from bust.enums import RegisterMode, RegisterType
 
 
 class Register:
     """! @brief Managing register information"""
-
-    supported_types = ["default", "slv", "sl"]
-    supported_modes = ["RW", "RO", "PULSE"]
 
     def __init__(self, reg, address, module_name, module_data_width):
 
@@ -33,8 +31,8 @@ class Register:
             required_keys=["name"],
             defaults={
                 "description": "",
-                "mode": "rw",
-                "type": "default",
+                "mode": RegisterMode.RW,
+                "type": RegisterType.DEFAULT,
                 "width": module_data_width,
                 "reset": "0x0",
                 "pulse_cycles": 1,
@@ -46,8 +44,8 @@ class Register:
         is_valid_VHDL(self.name)
 
         self.description = self._config.get("description")
-        self.mode = self._config.get("mode").lower()
-        self.type = self._config.get("type").lower()
+        self.mode = RegisterMode.from_string(self._config.get("mode"))
+        self.type = RegisterType.from_string(self._config.get("type"))
         self.width = self._config.get(
             "width"
         )  # Width can be overridden depending on register type

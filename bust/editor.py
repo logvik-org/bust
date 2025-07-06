@@ -19,9 +19,9 @@ from bust.utils import add_line_breaks
 from bust.module import Module
 from bust.bus import Bus
 from bust.register import Register
-from bust.field import Field
 from bust.vhdl_util import get_identifier
 from bust.settings import Settings
+from bust.enums import FieldType, RegisterType
 
 
 class Editor(object):
@@ -193,7 +193,7 @@ class Editor(object):
             reg["name"] = get_identifier("Name: ", reg_names)
             reg["description"] = input("Description: ")
             reg["mode"] = get_list_choice(
-                "Choose register mode: ", Register.supported_modes, "lower", 0
+                "Choose register mode: ", RegisterType.valid_values(), "lower", 0
             )
 
             fields = []
@@ -208,7 +208,7 @@ class Editor(object):
                 elif add_fields.upper() == "Y" or add_fields == "":
                     field_dic["name"] = get_identifier("Field name: ", field_names)
                     field_dic["type"] = get_list_choice(
-                        "Field type: ", Field.supported_types
+                        "Field type: ", FieldType.valid_values()
                     )
 
                     if field_dic["type"] == "slv":
@@ -270,7 +270,7 @@ class Editor(object):
 
             else:
                 reg["type"] = get_list_choice(
-                    "Register type: ", Register.supported_types, None, 0
+                    "Register type: ", RegisterType.valid_values(), None, 0
                 )
 
             # Make sure reg width is set to help calculate max reset later
