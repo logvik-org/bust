@@ -184,62 +184,24 @@ class Register:
             "Only default, slv and sl registers can extract reset value directly"
         )
 
-    def add_field(self, field):
-        # Check that all required keys exist
-        if not all(key in field for key in ("name", "type")):
-            raise InvalidFieldFormat(self.name)
+    def add_field(self, field_cfg):
 
-        # Make sure field name is valid VHDL
-        is_valid_VHDL(field["name"])
+        field = Field(field_cfg, self.get_next_pos_low(), self.name)
 
-        # Make sure the field name is unique in this register
-        field_names = [field.name for field in self.fields]
-        is_unique(field["name"], field_names)
-
-        if field["type"] == "slv":
-            if "width" not in field:
-                raise InvalidFieldFormat(self.name)
-            width = field["width"]
-
-        elif field["type"] == "sl":
-            width = 1
-
-        else:
-            raise UndefinedFieldType(field["type"])
+        # Validate uniqueness of field name
+        existing_names = [f.name for f in self.fields]
+        is_unique(field.name, existing_names)
 
         # Increment register width
-        self.width += width
-
-        if "reset" in field:
-            reset = field["reset"]
-            # Check whether reset value matches field width
-            # maxvalue is given by 2^width
-            maxvalue = (2**width) - 1
-            if maxvalue < int(field["reset"], 16):
-                raise InvalidFieldFormat(
-                    "Reset value does not match field: "
-                    + field["name"]
-                    + " in reg: "
-                    + self.name
-                )
-        else:
-            reset = "0x0"
-
-        if "description" in field:
-            description = field["description"]
-        else:
-            description = ""
-
-        next_low = self.get_next_pos_low()
-        self.fields.append(
-            Field(field["name"], field["type"], width, reset, description, next_low)
-        )
+        self.width += field.width
 
         # Maintain the register reset value
         reg_reset_int = int(self.reset, 16)
-        field_reset_int = int(reset, 16)
-        reg_reset_int += field_reset_int << next_low
+        field_reset_int = int(field.reset, 16)
+        reg_reset_int += field_reset_int << field.pos_low
         self.reset = hex(reg_reset_int)
+
+        self.fields.append(field)
 
     def check_register_data_width(self, module):
         """! @brief Controls that the combined data bits in fields does not
