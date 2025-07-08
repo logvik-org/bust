@@ -1,0 +1,155 @@
+{% macro pif_instantiation(bus, name, inter) %}
+{%- if bus.bus_type == 'axi' %}
+    awaddr              => {{ bus.short_name }}_in.awaddr(C_{{ name | upper }}_ADDR_WIDTH-1 downto 0),
+    awvalid             => {{ bus.short_name }}_in.awvalid,
+    awready             => {{ bus.short_name }}_out{{ inter }}.awready,
+    wdata               => {{ bus.short_name }}_in.wdata(C_{{ name | upper }}_DATA_WIDTH-1 downto 0),
+    wvalid              => {{ bus.short_name }}_in.wvalid,
+    wready              => {{ bus.short_name }}_out{{ inter }}.wready,
+    bresp               => {{ bus.short_name }}_out{{ inter }}.bresp,
+    bvalid              => {{ bus.short_name }}_out{{ inter }}.bvalid,
+    bready              => {{ bus.short_name }}_in.bready,
+    araddr              => {{ bus.short_name }}_in.araddr(C_{{ name | upper }}_ADDR_WIDTH-1 downto 0),
+    arvalid             => {{ bus.short_name }}_in.arvalid,
+    arready             => {{ bus.short_name }}_out{{ inter }}.arready,
+    rdata               => {{ bus.short_name }}_out{{ inter }}.rdata(C_{{ name | upper }}_DATA_WIDTH-1 downto 0),
+    rresp               => {{ bus.short_name }}_out{{ inter }}.rresp,
+    rvalid              => {{ bus.short_name }}_out{{ inter }}.rvalid,
+    rready              => {{ bus.short_name }}_in.rready
+{%- elif bus.bus_type == 'ipbus' %}
+    ipb_in              => ipb_in,
+    ipb_out             => ipb_out{{ inter }}
+{%- endif %}
+{% endmacro %}
+{% macro uvvm_lib(bus) -%}
+{%- if bus.bus_type == "axi" %}
+library bitvis_vip_axilite;
+use bitvis_vip_axilite.axilite_bfm_pkg.all;
+{%- elif bus.bus_type == "ipbus" %}
+library vip_ipbus;
+use vip_ipbus.ipbus_bfm_pkg.all;
+{%- endif %}
+{%- endmacro %}
+{% macro uvvm_signals(bus) -%}
+{%- if bus.bus_type == "axi" %}-- Bitvis UVVM AXILITE BFM
+{%- elif bus.bus_type == "ipbus" %}-- vip_ipbus BFM
+{%- endif %}
+constant data_width : natural := {{ bus.data_width }};
+constant addr_width : natural := {{ bus.addr_width }};
+
+{%- if bus.bus_type == "axi" %}
+signal axilite_if : t_axilite_if(write_address_channel(awaddr(addr_width -1 downto 0)),
+                                 write_data_channel(wdata(data_width -1 downto 0),
+                                                    wstrb((data_width/8) -1 downto 0)),
+                                 read_address_channel(araddr(addr_width -1 downto 0)),
+                                 read_data_channel(rdata(data_width -1 downto 0))) := init_axilite_if_signals(data_width, addr_width);
+signal axilite_bfm_config : t_axilite_bfm_config := C_AXILITE_BFM_CONFIG_DEFAULT;
+
+-- Unused AXILITE signals
+signal dummy_arprot : std_logic_vector(2 downto 0);
+signal dummy_awprot : std_logic_vector(2 downto 0);
+signal dummy_wstrb  : std_logic_vector((data_width/8)-1 downto 0);
+{%- elif bus.bus_type == "ipbus" %}
+signal ipbus_if : t_ipbus_if := init_ipbus_if_signals;
+signal ipbus_bfm_config : t_ipbus_bfm_config := C_IPBUS_BFM_CONFIG_DEFAULT;
+{%- endif %}
+{%- endmacro %}
+{% macro uvvm_signal_assignment(bus) -%}
+{%- if bus.bus_type == "axi" %}
+axilite_bfm_config.clock_period      <= C_CLK_PERIOD;
+axilite_bfm_config.setup_time        <= C_CLK_PERIOD/8;
+axilite_bfm_config.hold_time         <= C_CLK_PERIOD/8;
+axilite_bfm_config.num_b_pipe_stages <= 0;
+
+axi_in.araddr  <= axilite_if.read_address_channel.araddr;
+dummy_arprot   <= axilite_if.read_address_channel.arprot;
+axi_in.arvalid <= axilite_if.read_address_channel.arvalid;
+axi_in.awaddr  <= axilite_if.write_address_channel.awaddr;
+dummy_awprot   <= axilite_if.write_address_channel.awprot;
+axi_in.awvalid <= axilite_if.write_address_channel.awvalid;
+axi_in.bready  <= axilite_if.write_response_channel.bready;
+axi_in.rready  <= axilite_if.read_data_channel.rready;
+axi_in.wdata   <= axilite_if.write_data_channel.wdata;
+dummy_wstrb    <= axilite_if.write_data_channel.wstrb;
+axi_in.wvalid  <= axilite_if.write_data_channel.wvalid;
+
+axilite_if.read_address_channel.arready  <= axi_out.arready;
+axilite_if.write_address_channel.awready <= axi_out.awready;
+axilite_if.write_response_channel.bresp  <= axi_out.bresp;
+axilite_if.write_response_channel.bvalid <= axi_out.bvalid;
+axilite_if.read_data_channel.rdata       <= axi_out.rdata;
+axilite_if.read_data_channel.rresp       <= axi_out.rresp;
+axilite_if.read_data_channel.rvalid      <= axi_out.rvalid;
+axilite_if.write_data_channel.wready     <= axi_out.wready;
+{%- elif bus.bus_type == "ipbus" %}
+ipbus_bfm_config.clock_period    <= C_CLK_PERIOD;
+ipbus_bfm_config.setup_time      <= C_CLK_PERIOD/8;
+ipbus_bfm_config.hold_time       <= C_CLK_PERIOD/8;
+ipbus_bfm_config.max_wait_cycles <= 256;
+
+ipb_in.ipb_wdata  <= ipbus_if.wdata;
+ipb_in.ipb_write  <= ipbus_if.wr;
+ipb_in.ipb_addr   <= ipbus_if.addr;
+ipb_in.ipb_strobe <= ipbus_if.strobe;
+
+ipbus_if.rdata <= ipb_out.ipb_rdata;
+ipbus_if.ack   <= ipb_out.ipb_ack;
+ipbus_if.err   <= ipb_out.ipb_err;
+{%- endif %}
+{%- endmacro %}
+{% macro uvvm_overloads(bus) -%}
+{%- set ext_name = "axilite" if bus.bus_type == "axi" else bus.bus_type %}
+procedure write(
+  constant addr_value : in unsigned;
+  constant data_value : in std_logic_vector;
+  constant msg        : in string) is
+begin
+  {{ ext_name }}_write(addr_value,
+                data_value,
+                msg,
+                {{ bus.short_name }}_{{ bus.clk_name }},
+                {{ ext_name }}_if,
+                C_SCOPE,
+                shared_msg_id_panel,
+                {{ ext_name }}_bfm_config);
+end;
+
+procedure read(
+  constant addr_value : in  unsigned;
+  variable data_value : out std_logic_vector;
+  constant msg        : in  string) is
+begin
+  {{ ext_name }}_read(addr_value,
+               data_value,
+               msg,
+               {{ bus.short_name }}_{{ bus.clk_name }},
+               {{ ext_name }}_if,
+               C_SCOPE,
+               shared_msg_id_panel,
+               {{ ext_name }}_bfm_config);
+end;
+
+variable dummy_data : std_logic_vector(31 downto 0);
+
+procedure check(
+  constant addr_value : in unsigned;
+  constant data_exp   : in std_logic_vector;
+  constant msg        : in string) is
+begin
+  {{ ext_name }}_check(addr_value,
+                data_exp,
+                msg,
+                {{ bus.short_name }}_{{ bus.clk_name }},
+                {{ ext_name }}_if,
+                error,
+                C_SCOPE,
+                shared_msg_id_panel,
+                {{ ext_name }}_bfm_config);
+end;
+{%- endmacro %}
+{% macro uvvm_write(bus, reg_addr, value, msg) -%}
+write(f_addr(g_{{ bus.short_name }}_baseaddr, {{ reg_addr }}), {{ value }}, "{{ msg }}");
+{%- endmacro %}
+{% macro uvvm_check(bus, reg_addr, data_exp, msg) -%}
+check(f_addr(g_{{ bus.short_name }}_baseaddr, {{ reg_addr }}), {{ data_exp }}, "{{ msg }}");
+{%- endmacro %}
