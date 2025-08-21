@@ -14,7 +14,7 @@ from bust.vhdl import is_unique, is_valid_VHDL
 class Register:
     """! @brief Managing register information"""
 
-    supported_types = ["default", "slv", "sl"]
+    supported_types = ["default", "vector", "bit"]
     supported_modes = ["RW", "RO", "PULSE"]
 
     def __init__(self, reg, address, mod_data_width):
@@ -56,14 +56,14 @@ class Register:
         if self.sig_type == "default":
             self.width = mod_data_width
 
-        elif self.sig_type == "slv":
+        elif self.sig_type == "vector":
             self.width = tmp_width
 
-        elif self.sig_type == "sl":
-            self.sig_type = "sl"
+        elif self.sig_type == "bit":
+            self.sig_type = "bit"
 
             if tmp_width != 1:
-                raise UndefinedRegisterType("SL cannot have width other than 1")
+                raise UndefinedRegisterType("BIT cannot have width other than 1")
             self.width = tmp_width
 
         elif self.sig_type == "fields" or "fields" in reg:
@@ -133,12 +133,12 @@ class Register:
         field_names = [field.name for field in self.fields]
         is_unique(field["name"], field_names)
 
-        if field["type"] == "slv":
+        if field["type"] == "vector":
             if "width" not in field:
                 raise InvalidFieldFormat(self.name)
             width = field["width"]
 
-        elif field["type"] == "sl":
+        elif field["type"] == "bit":
             width = 1
 
         else:
