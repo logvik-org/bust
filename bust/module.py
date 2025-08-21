@@ -214,7 +214,7 @@ class Module:
             if (
                 reg.sig_type != "default"
                 and reg.sig_type != "fields"
-                and reg.sig_type != "sl"
+                and reg.sig_type != "bit"
             ):
                 reg_dic["width"] = reg.width
 

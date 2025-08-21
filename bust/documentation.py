@@ -44,7 +44,13 @@ class Documentation(object):
                 "0x{0:0{1}X}".format(reg.address, int(self.module.addr_width / 4))
                 + "} & "
             )
-            p += reg.sig_type.upper() + " & "
+            # Convert internal type names back to legacy VHDL names for documentation
+            doc_type = reg.sig_type
+            if reg.sig_type == "bit":
+                doc_type = "sl"
+            elif reg.sig_type == "vector":
+                doc_type = "slv"
+            p += doc_type.upper() + " & "
             p += str(reg.width) + " & "
             p += r"\texttt{"
             p += "0x" + format(int(reg.reset, 16), "X") + "} \\\\\n"

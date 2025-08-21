@@ -6,7 +6,7 @@ from bust.utils import add_line_breaks
 class Field(object):
     """Documentation for Field"""
 
-    supported_types = ["slv", "sl"]
+    supported_types = ["vector", "bit"]
 
     def __init__(self, name, sig_type, width, reset, description, pos_low):
         self.name = name
@@ -19,15 +19,15 @@ class Field(object):
         self.pos_high = pos_low + width - 1
 
     def get_pos_str(self):
-        if self.sig_type == "sl":
+        if self.sig_type == "bit":
             return str(self.pos_low)
-        elif self.sig_type == "slv":
+        elif self.sig_type == "vector":
             return str(self.pos_high) + ":" + str(self.pos_low)
 
     def get_pos_vhdl(self):
-        if self.sig_type == "sl":
+        if self.sig_type == "bit":
             return str(self.pos_low)
-        elif self.sig_type == "slv":
+        elif self.sig_type == "vector":
             return str(self.pos_high) + " downto " + str(self.pos_low)
 
     def get_mask(self):
@@ -60,7 +60,7 @@ class Field(object):
         dic = OrderedDict()
         dic["name"] = self.name
         dic["type"] = self.sig_type
-        if self.sig_type == "slv":
+        if self.sig_type == "vector":
             dic["width"] = self.width
         if self.reset != "0x0":
             dic["reset"] = self.reset

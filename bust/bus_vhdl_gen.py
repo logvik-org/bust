@@ -473,10 +473,10 @@ class BusVHDLGen:
 
                 elif reg.sig_type == "default":
                     par += sig_name + reg.name + " <= wdata;\n"
-                elif reg.sig_type == "slv":
+                elif reg.sig_type == "vector":
                     par += sig_name + reg.name + " <= wdata("
                     par += str(reg.width - 1) + " downto 0);\n"
-                elif reg.sig_type == "sl":
+                elif reg.sig_type == "bit":
                     par += sig_name + reg.name + " <= wdata(0);\n"
 
                 logic_string += indent_string(par, 2)
@@ -677,7 +677,7 @@ class BusVHDLGen:
                     raise Exception("Unknown error occurred")
                 par += reg.name + ";\n"
 
-            elif reg.sig_type == "slv":
+            elif reg.sig_type == "vector":
                 par += "reg_data_out("
                 par += str(reg.width - 1) + " downto 0) <= "
                 if reg.mode == "rw":
@@ -688,7 +688,7 @@ class BusVHDLGen:
                     raise Exception("Unknown error occurred")
                 par += reg.name + ";\n"
 
-            elif reg.sig_type == "sl":
+            elif reg.sig_type == "bit":
                 par += "reg_data_out(0) <= "
                 if reg.mode == "rw":
                     par += "axi_rw_regs_i."
@@ -860,10 +860,10 @@ class BusVHDLGen:
 
                 elif reg.sig_type == "default":
                     par += sig_name + reg.name + " <= ipb_in.ipb_wdata;\n"
-                elif reg.sig_type == "slv":
+                elif reg.sig_type == "vector":
                     par += sig_name + reg.name + " <= ipb_in.ipb_wdata("
                     par += str(reg.width - 1) + " downto 0);\n"
-                elif reg.sig_type == "sl":
+                elif reg.sig_type == "bit":
                     par += sig_name + reg.name + " <= ipb_in.ipb_wdata(0);\n"
                 if reg.stall:
                     par += "wr_stall_ack <= '1';\n"
@@ -970,7 +970,7 @@ class BusVHDLGen:
                     raise Exception("Unknown error occurred")
                 par += reg.name + ";\n"
 
-            elif reg.sig_type == "slv":
+            elif reg.sig_type == "vector":
                 par += "reg_data_out("
                 par += str(reg.width - 1) + " downto 0) <= "
                 if reg.mode == "rw":
@@ -981,7 +981,7 @@ class BusVHDLGen:
                     raise Exception("Unknown error occurred")
                 par += reg.name + ";\n"
 
-            elif reg.sig_type == "sl":
+            elif reg.sig_type == "bit":
                 par += "reg_data_out(0) <= "
                 if reg.mode == "rw":
                     par += "ipb_rw_regs_i."
