@@ -223,6 +223,66 @@ class Test_Suite(unittest.TestCase):
                     "doc must match manual file",
                 )
 
+    ############## Pydantic Models Testing ##################
+
+    def test_pydantic_models(self):
+        """Test the Pydantic models for validation and normalization"""
+        from bust.models import FieldDef, RegisterDef, RegMap, GenOptions, ValidateResult
+        
+        self.logger.info("Testing Pydantic models...")
+        
+        # Test FieldDef
+        field = FieldDef(name="test_field", lsb=0, msb=3, access="rw")
+        self.assertEqual(field.width, 4)
+        
+        # Test that invalid field raises error
+        with self.assertRaises(ValueError):
+            FieldDef(name="bad_field", lsb=5, msb=3, access="rw")
+        
+        # Test RegisterDef with hex address
+        reg = RegisterDef(name="test_reg", addr="0x100", mode="rw", reset=0x42)
+        self.assertEqual(reg.addr, 0x100)
+        
+        # Test RegisterDef with int address
+        reg2 = RegisterDef(name="test_reg2", addr=256, mode="ro")
+        self.assertEqual(reg2.addr, 256)
+        
+        # Test RegMap validation
+        regmap = RegMap(
+            name="test_map",
+            bus="axi",
+            registers=[
+                RegisterDef(name="reg0", addr="0x0", mode="rw"),
+                RegisterDef(name="reg1", addr="0x4", mode="ro"),
+            ]
+        )
+        self.assertEqual(len(regmap.registers), 2)
+        
+        # Test canonical hash generation
+        hash1 = regmap.canonical_hash()
+        self.assertTrue(hash1.startswith("sha256:"))
+        
+        # Test duplicate address validation
+        with self.assertRaises(ValueError):
+            RegMap(
+                name="bad_map",
+                bus="ipbus",
+                registers=[
+                    RegisterDef(name="reg0", addr="0x0", mode="rw"),
+                    RegisterDef(name="reg1", addr="0x0", mode="ro"),  # duplicate!
+                ]
+            )
+        
+        # Test GenOptions
+        opts = GenOptions(targets=["vhdl", "docs"])
+        self.assertEqual(opts.template_pack, "default-v1")
+        self.assertEqual(opts.output_naming, "bust")
+        
+        # Test ValidateResult
+        result = ValidateResult(valid=True, warnings=["Minor issue"])
+        self.assertTrue(result.valid)
+        self.assertEqual(len(result.warnings), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

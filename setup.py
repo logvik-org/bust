@@ -34,6 +34,7 @@ setup(
         "pylatexenc>=2.1",
         "curses-menu>=0.9.0",
         "prettytable>=2.5.0",
+        "pydantic>=2.0.0",
     ],
     extras_require={
         "dev": ["pytest", "pylint"],
