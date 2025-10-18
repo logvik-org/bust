@@ -182,6 +182,7 @@ begin  -- architecture tb
     check_value(ipb_rw_regs.reg0, '0', error, "reg0 default value");
     check(f_addr(g_ipb_baseaddr, C_ADDR_REG0), 32X"0", "reg0 default value");
 
+
     log_hdr("Set&Check Zero Value");
 
     write(f_addr(g_ipb_baseaddr, C_ADDR_REG0), 32X"0", "Setting all bits to zero");
@@ -198,6 +199,7 @@ begin  -- architecture tb
     check_value(ipb_rw_regs.reg0, '0', error, "Check all bit fields");
     check(f_addr(g_ipb_baseaddr, C_ADDR_REG0), 32X"0", "Check all bit fields");
 
+
     --
 
     log_hdr_large("Checking Register reg1 - RW - SL");
@@ -206,6 +208,7 @@ begin  -- architecture tb
 
     check_value(ipb_rw_regs.reg1, '1', error, "reg1 default value");
     check(f_addr(g_ipb_baseaddr, C_ADDR_REG1), 32X"1", "reg1 default value");
+
 
     log_hdr("Set&Check Zero Value");
 
@@ -223,6 +226,7 @@ begin  -- architecture tb
     check_value(ipb_rw_regs.reg1, '0', error, "Check all bit fields");
     check(f_addr(g_ipb_baseaddr, C_ADDR_REG1), 32X"0", "Check all bit fields");
 
+
     --
 
     log_hdr_large("Checking Register reg2 - RO - SL");
@@ -232,7 +236,9 @@ begin  -- architecture tb
     check_value(ipb_ro_regs.reg2, '0', error, "reg2 default value");
     check(f_addr(g_ipb_baseaddr, C_ADDR_REG2), 32X"0", "reg2 default value");
 
+
     log_hdr("Set&Check Zero Value");
+
 
     ipb_ro_regs.reg2 <= '0';
     await_value(ipb_ro_regs.reg2, '0', 0 ns, 1 ns, error, "Setting all bits to zero");
@@ -256,6 +262,7 @@ begin  -- architecture tb
 
     check_value(ipb_rw_regs.reg3, 8X"3", error, "reg3 default value");
     check(f_addr(g_ipb_baseaddr, C_ADDR_REG3), 32X"3", "reg3 default value");
+
 
     log_hdr("Set&Check Zero Value");
 
@@ -284,7 +291,9 @@ begin  -- architecture tb
     check_value(ipb_ro_regs.reg4, 14X"0", error, "reg4 default value");
     check(f_addr(g_ipb_baseaddr, C_ADDR_REG4), 32X"0", "reg4 default value");
 
+
     log_hdr("Set&Check Zero Value");
+
 
     ipb_ro_regs.reg4 <= 14X"0";
     await_value(ipb_ro_regs.reg4, 14X"0", 0 ns, 1 ns, error, "Setting all bits to zero");
@@ -310,6 +319,7 @@ begin  -- architecture tb
 
     check_value(ipb_rw_regs.reg5, 32X"ffffffff", error, "reg5 default value");
     check(f_addr(g_ipb_baseaddr, C_ADDR_REG5), 32X"ffffffff", "reg5 default value");
+
 
     log_hdr("Set&Check Zero Value");
 
@@ -338,7 +348,9 @@ begin  -- architecture tb
     check_value(ipb_ro_regs.reg6, 32X"0", error, "reg6 default value");
     check(f_addr(g_ipb_baseaddr, C_ADDR_REG6), 32X"0", "reg6 default value");
 
+
     log_hdr("Set&Check Zero Value");
+
 
     ipb_ro_regs.reg6 <= 32X"0";
     await_value(ipb_ro_regs.reg6, 32X"0", 0 ns, 1 ns, error, "Setting all bits to zero");
@@ -368,6 +380,7 @@ begin  -- architecture tb
     check_value(ipb_rw_regs.reg7.field3, 15X"2b", error, "reg7.field3 default value");
     check(f_addr(g_ipb_baseaddr, C_ADDR_REG7), 32X"ad7", "reg7 default value");
 
+
     log_hdr("Set&Check Zero Value");
 
     write(f_addr(g_ipb_baseaddr, C_ADDR_REG7), 32X"0", "Setting all bits to zero");
@@ -376,6 +389,7 @@ begin  -- architecture tb
     check_value(ipb_rw_regs.reg7.field2, '0', error, "Setting all bits to zero");
     check_value(ipb_rw_regs.reg7.field3, 15X"0", error, "Setting all bits to zero");
     check(f_addr(g_ipb_baseaddr, C_ADDR_REG7), 32X"0", "Setting all bits to zero");
+
 
     log_hdr("Check all bit fields field0");
 
@@ -421,6 +435,8 @@ begin  -- architecture tb
       check(f_addr(g_ipb_baseaddr, C_ADDR_REG7), 32X"0", "Check all bit fields");
     end loop;
 
+
+
     --
 
     log_hdr_large("Checking Register reg8 - RO - FIELDS");
@@ -433,7 +449,9 @@ begin  -- architecture tb
     check_value(ipb_ro_regs.reg8.field3, 3X"0", error, "reg8.field3 default value");
     check(f_addr(g_ipb_baseaddr, C_ADDR_REG8), 32X"0", "reg8 default value");
 
+
     log_hdr("Set&Check Zero Value");
+
 
     ipb_ro_regs.reg8.field0 <= '0';
     ipb_ro_regs.reg8.field1 <= (others => '0');
@@ -444,6 +462,7 @@ begin  -- architecture tb
     await_value(ipb_ro_regs.reg8.field2, '0', 0 ns, 1 ns, error, "Setting all bits to zero");
     await_value(ipb_ro_regs.reg8.field3, 3X"0", 0 ns, 1 ns, error, "Setting all bits to zero");
     check(f_addr(g_ipb_baseaddr, C_ADDR_REG8), 32X"0", "Setting all bits to zero");
+
 
     log_hdr("Check all bit fields field0");
 
@@ -489,6 +508,7 @@ begin  -- architecture tb
       check(f_addr(g_ipb_baseaddr, C_ADDR_REG8), 32X"0", "Check all bit fields");
     end loop;
 
+
     --
 
     log_hdr_large("Checking Register reg9 - PULSE - SL");
@@ -497,13 +517,16 @@ begin  -- architecture tb
 
     check_value(ipb_pulse_regs.reg9, '1', error, "reg9 default value");
 
+
     log_hdr("Set&Check Zero Value");
+
 
     write(f_addr(g_ipb_baseaddr, C_ADDR_REG9), 32X"0", "Setting all bits to zero");
     check_value(ipb_pulse_regs.reg9, '0', error, "Setting all bits to zero");
     await_stable(ipb_pulse_regs.reg9, 4*C_CLK_PERIOD, FROM_LAST_EVENT, 4*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Setting all bits to zero");
     check_value(ipb_pulse_regs.reg9, '0', error, "Setting all bits to zero");
     await_value(ipb_pulse_regs.reg9, '1', 0 ns, 1 ns, error, "Setting all bits to zero");
+
 
     log_hdr("Check all bit fields");
 
@@ -521,13 +544,16 @@ begin  -- architecture tb
 
     check_value(ipb_pulse_regs.reg10, 4X"a", error, "reg10 default value");
 
+
     log_hdr("Set&Check Zero Value");
+
 
     write(f_addr(g_ipb_baseaddr, C_ADDR_REG10), 32X"0", "Setting all bits to zero");
     check_value(ipb_pulse_regs.reg10, 4X"0", error, "Setting all bits to zero");
     await_stable(ipb_pulse_regs.reg10, 1*C_CLK_PERIOD, FROM_LAST_EVENT, 1*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Setting all bits to zero");
     check_value(ipb_pulse_regs.reg10, 4X"0", error, "Setting all bits to zero");
     await_value(ipb_pulse_regs.reg10, 4X"a", 0 ns, 1 ns, error, "Setting all bits to zero");
+
 
     log_hdr("Check all bit fields");
 
@@ -548,7 +574,9 @@ begin  -- architecture tb
     check_value(ipb_pulse_regs.reg11.field0, 15X"3", error, "reg11.field0 default value");
     check_value(ipb_pulse_regs.reg11.field1, '0', error, "reg11.field1 default value");
 
+
     log_hdr("Set&Check Zero Value");
+
 
     write(f_addr(g_ipb_baseaddr, C_ADDR_REG11), 32X"0", "Setting all bits to zero");
     check_value(ipb_pulse_regs.reg11.field0, 15X"0", error, "Setting all bits to zero");
@@ -559,6 +587,8 @@ begin  -- architecture tb
     check_value(ipb_pulse_regs.reg11.field1, '0', error, "Setting all bits to zero");
     await_value(ipb_pulse_regs.reg11.field0, 15X"3", 0 ns, 1 ns, error, "Setting all bits to zero");
     await_value(ipb_pulse_regs.reg11.field1, '0', 0 ns, 1 ns, error, "Setting all bits to zero");
+
+
 
     log_hdr("Check all bit fields field0");
 
@@ -577,6 +607,7 @@ begin  -- architecture tb
     await_stable(ipb_pulse_regs.reg11.field1, 50*C_CLK_PERIOD, FROM_LAST_EVENT, 50*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Check all bit fields");
     check_value(ipb_pulse_regs.reg11.field1, '1', error, "Check all bit fields");
     await_value(ipb_pulse_regs.reg11.field1, '0', 0 ns, 1 ns, error, "Check all bit fields");
+
 
     --
 

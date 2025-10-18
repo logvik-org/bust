@@ -102,11 +102,15 @@ begin  -- architecture tb
 
     {{ uvvm.check_bit_fields(reg, bus) | indent(4) }}
     {% endfor %}
-
 {% if bus.bus_type == 'ipbus' %}
-    -- Check invalid register
+    --
+
     log_hdr_large("Checking that invalid register returns ERR");
+
     ipbus_bfm_config.expected_response <= ERR;
+
+    log_hdr("Check erroneous read");
+
     read(f_addr(g_ipb_baseaddr, 32x"ffff"), dummy_data, "Read from register that does not exist");
     check_value(dummy_data, 32X"DEADBEEF", error, "Check that the returned data is rubbish");
 
