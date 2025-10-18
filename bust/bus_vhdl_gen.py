@@ -45,14 +45,14 @@ class BusVHDLGen:
 
         if self.reset_active_high:
             if self.bus_reset == "async":
-                self.reset_name = "areset  "
+                self.reset_name = "areset"
             else:
-                self.reset_name = "reset   "
+                self.reset_name = "reset"
         else:
             if self.bus_reset == "async":
                 self.reset_name = "areset_n"
             else:
-                self.reset_name = "reset_n "
+                self.reset_name = "reset_n"
 
     def return_bus_pkg_VHDL(self):
         if self.bus_type == "axi":

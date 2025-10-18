@@ -89,8 +89,8 @@ begin  -- architecture tb
     -- report_global_ctrl(VOID);
     -- report_msg_id_panel(VOID);
 
-    -- Reset
     gen_pulse({{ bus.short_name }}_{{ bus.reset_name.strip() }}, {% if bus.reset_active_high %}'1'{% else %}'0'{% endif %}, 500 ns, BLOCKING, "Reset for 500 ns");
+
 {% for reg in module.registers %}
     --
 
