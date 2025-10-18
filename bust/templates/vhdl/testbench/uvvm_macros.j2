@@ -170,13 +170,13 @@ procedure read(
   constant msg        : in  string) is
 begin
   {{ ext_name }}_read(addr_value,
-             data_value,
-             msg,
-             {{ bus.short_name }}_{{ bus.clk_name.strip() }},
-             {{ ext_name }}_if,
-             C_SCOPE,
-             shared_msg_id_panel,
-             {{ ext_name }}_bfm_config);
+                   data_value,
+                   msg,
+                   {{ bus.short_name }}_{{ bus.clk_name.strip() }},
+                   {{ ext_name }}_if,
+                   C_SCOPE,
+                   shared_msg_id_panel,
+                   {{ ext_name }}_bfm_config);
 end;
 variable dummy_data : std_logic_vector(31 downto 0);
 
@@ -186,14 +186,14 @@ procedure check(
   constant msg        : in string) is
 begin
   {{ ext_name }}_check(addr_value,
-                 data_exp,
-                 msg,
-                 {{ bus.short_name }}_{{ bus.clk_name.strip() }},
-                 {{ ext_name }}_if,
-                 error,
-                 C_SCOPE,
-                 shared_msg_id_panel,
-                 {{ ext_name }}_bfm_config);
+                    data_exp,
+                    msg,
+                    {{ bus.short_name }}_{{ bus.clk_name.strip() }},
+                    {{ ext_name }}_if,
+                    error,
+                    C_SCOPE,
+                    shared_msg_id_panel,
+                    {{ ext_name }}_bfm_config);
 end;
 {%- endmacro %}
 
@@ -242,7 +242,8 @@ log_hdr_large("Checking Register {{ reg.name }}{% if reg.type.value == 'sl' %} -
 
 {% macro check_default_value(reg, bus) -%}
 log_hdr("Check Default Value");
-{%- if reg.type.value == 'sl' %}
+
+{% if reg.type.value == 'sl' -%}
 check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, '{{ (reg.reset[2:]|int(base=16)) % 2 }}', error, "{{ reg.name }} default value");
 {% elif reg.type.value == 'slv' -%}
 check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, {{ reg.width }}X"{{ '%X' | format(reg.reset[2:]|int(base=16)) }}", error, "{{ reg.name }} default value");
@@ -258,8 +259,7 @@ check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32
 
 {% macro set_check_zero_value(reg, bus) -%}
 log_hdr("Set&Check Zero Value");
-{%- if reg.mode.value == 'rw' %}
-
+{% if reg.mode.value == 'rw' -%}
 write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Setting all bits to zero");
 {% if reg.type.value == 'sl' -%}
 check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, '0', error, "Setting all bits to zero");
@@ -336,7 +336,7 @@ await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ fie
 
 {% macro check_bit_fields(reg, bus) -%}
 log_hdr("Check all bit fields");
-{%- if reg.mode.value == 'rw' %}
+{% if reg.mode.value == 'rw' -%}
 {% if reg.type.value == 'sl' -%}
 write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"1", "Check all bit fields");
 check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, '1', error, "Check all bit fields");
