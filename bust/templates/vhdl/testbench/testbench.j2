@@ -6,6 +6,7 @@ use ieee.numeric_std.all;
 {% if bus.bus_type == 'ipbus' -%}
 library ipbus;
 use ipbus.ipbus.all;
+
 {% else -%}
 {% if bus.comp_library != 'work' -%}
 library {{ bus.comp_library }};
@@ -66,12 +67,12 @@ begin  -- architecture tb
 
   -- component instantiation
   {{ uvvm.pif_instantiation(module, bus, module.name.upper(), '') | indent(2) }}
-
   -- clock generator
   clock_generator({{ bus.short_name }}_{{ bus.clk_name.strip() }}, C_CLK_PERIOD);
 
   -- main testbench
   p_main : process
+
     {{ uvvm.uvvm_overloads(bus) | indent(4) }}
   begin
 
@@ -83,7 +84,7 @@ begin  -- architecture tb
     -- enable_log_msg(ID_BFM, QUIET);
     -- enable_log_msg(ID_CLOCK_GEN, QUIET);
     -- enable_log_msg(ID_GEN_PULSE, QUIET);
-    -- enable_log_msg(ID_POS_ACK, QUIET);
+    -- enable_log_msg(ID_POS_ACK, QUIET);6
 
     -- report_global_ctrl(VOID);
     -- report_msg_id_panel(VOID);
