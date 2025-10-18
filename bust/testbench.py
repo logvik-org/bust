@@ -222,7 +222,7 @@ class Testbench(object):
         # Define context for template rendering
         context = {
             "module": self.module,
-            "bus": self.module.bus,
+            "bus": self.bus,
             "NL": "\n",  # Ensures newline formatting if needed
         }
         return template.render(context)
