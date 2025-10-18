@@ -84,7 +84,7 @@ begin  -- architecture tb
     -- enable_log_msg(ID_BFM, QUIET);
     -- enable_log_msg(ID_CLOCK_GEN, QUIET);
     -- enable_log_msg(ID_GEN_PULSE, QUIET);
-    -- enable_log_msg(ID_POS_ACK, QUIET);6
+    -- enable_log_msg(ID_POS_ACK, QUIET);
 
     -- report_global_ctrl(VOID);
     -- report_msg_id_panel(VOID);
@@ -104,15 +104,15 @@ begin  -- architecture tb
     {% endfor %}
 
 {% if bus.bus_type == 'ipbus' %}
-      -- Check invalid register
-      log_hdr_large("Checking that invalid register returns ERR");
-      ipbus_bfm_config.expected_response <= ERR;
-      read(f_addr(g_ipb_baseaddr, 32x"ffff"), dummy_data, "Read from register that does not exist");
-      check_value(dummy_data, 32X"DEADBEEF", error, "Check that the returned data is rubbish");
+    -- Check invalid register
+    log_hdr_large("Checking that invalid register returns ERR");
+    ipbus_bfm_config.expected_response <= ERR;
+    read(f_addr(g_ipb_baseaddr, 32x"ffff"), dummy_data, "Read from register that does not exist");
+    check_value(dummy_data, 32X"DEADBEEF", error, "Check that the returned data is rubbish");
 
-      log_hdr("Check erroneous write");
+    log_hdr("Check erroneous write");
 
-      write(32X"FFFFFFFF", 32X"0", "Write to register that does not exist");
+    write(32X"FFFFFFFF", 32X"0", "Write to register that does not exist");
 {% endif %}
 
     --==================================================================================================
