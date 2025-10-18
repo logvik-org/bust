@@ -11,8 +11,7 @@ use ipbus.ipbus.all;
 library {{ bus.comp_library }};
 {% endif -%}
 use {{ bus.comp_library }}.{{ bus.bus_type }}_pkg.all;
-{% endif -%}
-
+{% endif %}
 use work.{{ module.name }}_pif_pkg.all;
 
 library uvvm_util;
@@ -45,7 +44,7 @@ architecture tb of {{ module.name }}_{{ bus.short_name }}_pif_tb is
 {% endif -%}
 {% if module.num_pulse_regs > 0 %}  signal {{ bus.short_name }}_pulse_regs : t_{{ module.name }}_pulse_regs := c_{{ module.name }}_pulse_regs;
 {% endif %}  signal {{ bus.short_name }}_{{ bus.clk_name.strip() }}        : std_logic                   := '1';
-  signal {{ bus.short_name }}_{{ bus.reset_name.strip() }}   : std_logic                   := {% if bus.reset_active_high %}'0'{% else %}'1'{% endif %};
+  signal {{ bus.short_name }}_{{ bus.reset_name.strip() }}{% if bus.reset_name.strip() == 'reset' %}      {% else %}   {% endif %}: std_logic                   := {% if bus.reset_active_high %}'0'{% else %}'1'{% endif %};
   signal {{ bus.short_name }}_in         : {{ bus.in_type }};
   signal {{ bus.short_name }}_out        : {{ bus.out_type }};
 
@@ -68,6 +67,7 @@ begin  -- architecture tb
 
   -- component instantiation
   {{ uvvm.pif_instantiation(module, bus, module.name.upper(), '') | indent(2) }}
+
 
   -- clock generator
   clock_generator({{ bus.short_name }}_{{ bus.clk_name.strip() }}, C_CLK_PERIOD);
@@ -92,8 +92,7 @@ begin  -- architecture tb
 
     -- Reset
     gen_pulse({{ bus.short_name }}_{{ bus.reset_name.strip() }}, {% if bus.reset_active_high %}'1'{% else %}'0'{% endif %}, 500 ns, BLOCKING, "Reset for 500 ns");
-
-    {% for reg in module.registers -%}
+{% for reg in module.registers %}
     --
 
     {{ uvvm.reg_hdr(reg) | indent(4) }}
@@ -105,14 +104,14 @@ begin  -- architecture tb
     {{ uvvm.check_bit_fields(reg, bus) | indent(4) }}
     {% endfor %}
 
-    {% if bus.bus_type == 'ipbus' %}
+{% if bus.bus_type == 'ipbus' %}
       -- Check invalid register
       log_hdr_large("Checking that invalid register returns ERR");
       ipbus_bfm_config.expected_response <= ERR;
       read(f_addr(g_ipb_baseaddr, 32x"ffff"), dummy_data, "Read from register that does not exist");
       check_value(dummy_data, 32X"DEADBEEF", error, "Check that the returned data is rubbish");
       write(32X"FFFFFFFF", 32X"0", "Write to register that does not exist");
-    {% endif %}
+{% endif %}
 
     --==================================================================================================
     -- Ending the simulation

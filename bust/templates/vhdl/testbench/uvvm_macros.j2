@@ -1,3 +1,18 @@
+{# Value formatting helpers #}
+{% macro format_value(value, type, width=32) -%}
+{%- if type == 'sl' -%}
+'{{ (value|int) % 2 }}'
+{%- else -%}
+{{ width }}X"{{ '%0*X' | format((width + 3) // 4, value|int) }}"
+{%- endif -%}
+{%- endmacro %}
+
+{% macro format_32bit_value(value) -%}
+32X"{{ '%08X' | format(value|int) }}"
+{%- endmacro %}
+
+
+
 {% macro pif_instantiation(module, bus, name, inter) %}
 DUT : entity work.{{ module.name }}_{{ bus.short_name }}_pif
   generic map (
@@ -11,7 +26,7 @@ DUT : entity work.{{ module.name }}_{{ bus.short_name }}_pif
 {% endif -%}
 {% if module.num_pulse_regs > 0 %}    {{ bus.short_name }}_pulse_regs      => {{ bus.short_name }}_pulse_regs,
 {% endif %}    {{ bus.clk_name.strip() }}                 => {{ bus.short_name }}_{{ bus.clk_name.strip() }},
-    {{ bus.reset_name.strip() }}            => {{ bus.short_name }}_{{ bus.reset_name.strip() }},
+    {{ bus.reset_name.strip() }}{% if bus.reset_name.strip() == 'reset' %}            {% else %}               {% endif %}=> {{ bus.short_name }}_{{ bus.reset_name.strip() }},
 {% if bus.bus_type == 'axi' %}
     awaddr              => {{ bus.short_name }}_in.awaddr(C_{{ name | upper }}_ADDR_WIDTH-1 downto 0),
     awvalid             => {{ bus.short_name }}_in.awvalid,
@@ -67,6 +82,7 @@ signal axilite_bfm_config : t_axilite_bfm_config := C_AXILITE_BFM_CONFIG_DEFAULT
 signal dummy_arprot : std_logic_vector(2 downto 0);
 signal dummy_awprot : std_logic_vector(2 downto 0);
 signal dummy_wstrb  : std_logic_vector((data_width/8)-1 downto 0);
+
 {% elif bus.bus_type == "ipbus" %}
 
 signal ipbus_if : t_ipbus_if := init_ipbus_if_signals;
@@ -109,12 +125,12 @@ ipbus_bfm_config.max_wait_cycles <= 256;
 
 ipb_in.ipb_wdata  <= ipbus_if.wdata;
 ipb_in.ipb_write  <= ipbus_if.wr;
-ipb_in.ipb_addr   <= ipbus_if.addr;
-ipb_in.ipb_strobe <= ipbus_if.strobe;
+ipb_in.ipb_addr  <= ipbus_if.addr;
+ipb_in.ipb_strobe  <= ipbus_if.strobe;
 
-ipbus_if.rdata <= ipb_out.ipb_rdata;
-ipbus_if.ack   <= ipb_out.ipb_ack;
-ipbus_if.err   <= ipb_out.ipb_err;
+ipbus_if.rdata  <= ipb_out.ipb_rdata;
+ipbus_if.ack  <= ipb_out.ipb_ack;
+ipbus_if.err  <= ipb_out.ipb_err;
 {%- endif %}
 {%- endmacro %}
 
@@ -140,13 +156,13 @@ procedure write(
   constant msg        : in string) is
 begin
   {{ ext_name }}_write(addr_value,
-                data_value,
-                msg,
-                {{ bus.short_name }}_{{ bus.clk_name.strip() }},
-                {{ ext_name }}_if,
-                C_SCOPE,
-                shared_msg_id_panel,
-                {{ ext_name }}_bfm_config);
+                        data_value,
+                        msg,
+                        {{ bus.short_name }}_{{ bus.clk_name.strip() }},
+                        {{ ext_name }}_if,
+                        C_SCOPE,
+                        shared_msg_id_panel,
+                        {{ ext_name }}_bfm_config);
 end;
 
 procedure read(
@@ -155,38 +171,317 @@ procedure read(
   constant msg        : in  string) is
 begin
   {{ ext_name }}_read(addr_value,
-               data_value,
-               msg,
-               {{ bus.short_name }}_{{ bus.clk_name.strip() }},
-               {{ ext_name }}_if,
-               C_SCOPE,
-               shared_msg_id_panel,
-               {{ ext_name }}_bfm_config);
+                       data_value,
+                       msg,
+                       {{ bus.short_name }}_{{ bus.clk_name.strip() }},
+                       {{ ext_name }}_if,
+                       C_SCOPE,
+                       shared_msg_id_panel,
+                       {{ ext_name }}_bfm_config);
 end;
-
 variable dummy_data : std_logic_vector(31 downto 0);
+
+procedure check(
+  constant addr_value : in unsigned;
+  constant data_exp   : in std_logic_vector;
+  constant msg        : in string) is
+begin
+  {{ ext_name }}_check(addr_value,
+                        data_exp,
+                        msg,
+                        {{ bus.short_name }}_{{ bus.clk_name.strip() }},
+                        {{ ext_name }}_if,
+                        error,
+                        C_SCOPE,
+                        shared_msg_id_panel,
+                        {{ ext_name }}_bfm_config);
+end;
 {%- endmacro %}
 
-{# Register test macros - simplified versions #}
-{% macro reg_hdr(reg) -%}
-{%- if reg.type == 'SL' -%}
-{%- set reg_type = "SL" -%}
-{%- elif reg.type in ['SLV', 'DEFAULT'] -%}
-{%- set reg_type = reg.type -%}
-{%- elif reg.type == 'FIELDS' -%}
-{%- set reg_type = "FIELDS" -%}
+{# Utility macros for common operations #}
+{% macro check_value_call(signal, value, msg) -%}
+check_value({{ signal }}, {{ value }}, error, "{{ msg }}");
+{%- endmacro %}
+
+{% macro write_call(addr, data, msg) -%}
+write({{ addr }}, {{ data }}, "{{ msg }}");
+{%- endmacro %}
+
+{% macro check_call(addr, data, msg) -%}
+check({{ addr }}, {{ data }}, "{{ msg }}");
+{%- endmacro %}
+
+{% macro await_value_call(signal, value, msg) -%}
+await_value({{ signal }}, {{ value }}, 0 ns, 1 ns, error, "{{ msg }}");
+{%- endmacro %}
+
+{% macro await_stable_call(signal, cycles, msg) -%}
+await_stable({{ signal }}, {{ cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, {{ cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, error, "{{ msg }}");
+{%- endmacro %}
+
+{# Helper macros for generating proper VHDL values #}
+{% macro format_value(value, reg_type, width=32) -%}
+{%- if reg_type == 'sl' -%}
+'{{ (value|int) % 2 }}'
+{%- elif reg_type == 'slv' -%}
+{{ width }}X"{{ '%0*X' | format((width + 3) // 4, value|int) }}"
+{%- elif reg_type == 'default' -%}
+32X"{{ '%08X' | format(value|int) }}"
+{%- else -%}
+{{ value }}
 {%- endif -%}
-log_hdr_large("Checking Register " + reg.name + " - " + reg.mode.value.upper() + " - " + reg_type);
+{%- endmacro %}
+
+{% macro format_32bit_value(value) -%}
+32X"{{ '%X' | format(value|int) }}"
+{%- endmacro %}
+
+{# Register test macros - these generate full register test sequences #}
+{% macro reg_hdr(reg) -%}
+log_hdr_large("Checking Register {{ reg.name }}{% if reg.type.value == 'sl' %} - {{ reg.mode.value.upper() }} - SL{% elif reg.type.value in ['slv', 'default'] %} - {{ reg.mode.value.upper() }} - {{ reg.type.value.upper() }}{% elif reg.type.value == 'fields' %} - {{ reg.mode.value.upper() }} - FIELDS{% endif %}");
 {%- endmacro %}
 
 {% macro check_default_value(reg, bus) -%}
--- TODO: Implement default value checking
+log_hdr("Check Default Value");
+{% if reg.type.value == 'sl' -%}
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, '{{ (reg.reset[2:]|int(base=16)) % 2 }}', error, "{{ reg.name }} default value");
+{% elif reg.type.value == 'slv' -%}
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, {{ reg.width }}X"{{ '%0*X' | format((reg.width + 3) // 4, reg.reset[2:]|int(base=16)) }}", error, "{{ reg.name }} default value");
+{% elif reg.type.value == 'default' -%}
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, 32X"{{ '%08X' | format(reg.reset[2:]|int(base=16)) }}", error, "{{ reg.name }} default value");
+{% elif reg.type.value == 'fields' -%}
+{% for field in reg.fields -%}
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, {% if field.type.value == 'sl' %}'{{ (field.reset[2:]|int(base=16)) % 2 }}'{% else %}{{ field.width }}X"{{ '%0*X' | format((field.width + 3) // 4, field.reset[2:]|int(base=16)) }}"{% endif %}, error, "{{ reg.name }}.{{ field.name }} default value");
+{% endfor -%}
+{% endif -%}
+check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"{{ '%X' | format(reg.reset[2:]|int(base=16)) }}", "{{ reg.name }} default value");
 {%- endmacro %}
 
 {% macro set_check_zero_value(reg, bus) -%}
--- TODO: Implement zero value setting and checking
+log_hdr("Set&Check Zero Value");
+{% if reg.mode.value == 'rw' -%}
+
+write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Setting all bits to zero");
+{% if reg.type.value == 'sl' -%}
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, '0', error, "Setting all bits to zero");
+{% elif reg.type.value == 'slv' -%}
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, {{ reg.width }}X"0", error, "Setting all bits to zero");
+{% elif reg.type.value == 'default' -%}
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, 32X"0", error, "Setting all bits to zero");
+{% elif reg.type.value == 'fields' -%}
+{% for field in reg.fields -%}
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, {% if field.type.value == 'sl' %}'0'{% else %}{{ field.width }}X"0"{% endif %}, error, "Setting all bits to zero");
+{% endfor -%}
+{% endif -%}
+check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Setting all bits to zero");
+
+{%- elif reg.mode.value == 'ro' %}
+
+{%- if reg.type.value == 'sl' %}
+{{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }} <= '0';
+await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, '0', 0 ns, 1 ns, error, "Setting all bits to zero");
+{%- elif reg.type.value in ['slv', 'default'] %}
+{%- if reg.type.value == 'slv' %}
+{{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }} <= {{ reg.width }}X"0";
+await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, {{ reg.width }}X"0", 0 ns, 1 ns, error, "Setting all bits to zero");
+{%- else %}
+{{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }} <= 32X"0";
+await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, 32X"0", 0 ns, 1 ns, error, "Setting all bits to zero");
+{%- endif %}
+{%- elif reg.type.value == 'fields' %}
+{%- for field in reg.fields %}
+{{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }} <= {% if field.type.value == 'sl' %}'0'{% else %}(others => '0'){% endif %};
+{%- endfor %}
+{%- for field in reg.fields %}
+await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, {% if field.type.value == 'sl' %}'0'{% else %}{{ field.width }}X"0"{% endif %}, 0 ns, 1 ns, error, "Setting all bits to zero");
+{%- endfor %}
+{%- endif %}
+check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Setting all bits to zero");
+
+{%- elif reg.mode.value == 'pulse' %}
+
+write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Setting all bits to zero");
+{%- if reg.type.value == 'sl' %}
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, '0', error, "Setting all bits to zero");
+await_stable({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Setting all bits to zero");
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, '0', error, "Setting all bits to zero");
+await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, '{{ (reg.reset[2:]|int(base=16)) % 2 }}', 0 ns, 1 ns, error, "Setting all bits to zero");
+{%- elif reg.type.value in ['slv', 'default'] %}
+{%- if reg.type.value == 'slv' %}
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, {{ reg.width }}X"0", error, "Setting all bits to zero");
+await_stable({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Setting all bits to zero");
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, {{ reg.width }}X"0", error, "Setting all bits to zero");
+await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, {{ reg.width }}X"{{ '%0*X' | format((reg.width + 3) // 4, reg.reset[2:]|int(base=16)) }}", 0 ns, 1 ns, error, "Setting all bits to zero");
+{%- else %}
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, 32X"0", error, "Setting all bits to zero");
+await_stable({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Setting all bits to zero");
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, 32X"0", error, "Setting all bits to zero");
+await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, 32X"{{ '%08X' | format(reg.reset[2:]|int(base=16)) }}", 0 ns, 1 ns, error, "Setting all bits to zero");
+{%- endif %}
+{%- elif reg.type.value == 'fields' %}
+{%- for field in reg.fields %}
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, {% if field.type.value == 'sl' %}'0'{% else %}{{ field.width }}X"0"{% endif %}, error, "Setting all bits to zero");
+{%- endfor %}
+{%- for field in reg.fields %}
+await_stable({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Setting all bits to zero");
+{%- endfor %}
+{%- for field in reg.fields %}
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, {% if field.type.value == 'sl' %}'0'{% else %}{{ field.width }}X"0"{% endif %}, error, "Setting all bits to zero");
+await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, {% if field.type.value == 'sl' %}'{{ (field.reset[2:]|int(base=16)) % 2 }}'{% else %}{{ field.width }}X"{{ '%0*X' | format((field.width + 3) // 4, field.reset[2:]|int(base=16)) }}"{% endif %}, 0 ns, 1 ns, error, "Setting all bits to zero");
+{%- endfor %}
+{%- endif %}
+{%- endif %}
 {%- endmacro %}
 
 {% macro check_bit_fields(reg, bus) -%}
--- TODO: Implement bit field checking
+log_hdr("Check all bit fields");
+{% if reg.mode.value == 'rw' -%}
+{% if reg.type.value == 'sl' -%}
+write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"1", "Check all bit fields");
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, '1', error, "Check all bit fields");
+check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"1", "Check all bit fields");
+-- Return to zero
+write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, '0', error, "Check all bit fields");
+check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
+{%- elif reg.type.value in ['slv', 'default'] %}
+for i in 0 to {{ reg.width - 1 }} loop
+  write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
+{%- if reg.type.value == 'slv' %}
+  check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, std_logic_vector(to_unsigned(1, {{ reg.width }}) sll i), error, "Check all bit fields");
+{%- else %}
+  check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, std_logic_vector(to_unsigned(1, {{ reg.width }}) sll i), error, "Check all bit fields");
+{%- endif %}
+  check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
+  -- Return to zero
+  write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
+{%- if reg.type.value == 'slv' %}
+  check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, {{ reg.width }}X"0", error, "Check all bit fields");
+{%- else %}
+  check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, 32X"0", error, "Check all bit fields");
+{%- endif %}
+  check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
+end loop;
+{%- elif reg.type.value == 'fields' %}
+{%- for field in reg.fields %}
+log_hdr("Check all bit fields {{ field.name }}");
+{% if field.type.value == 'sl' -%}
+write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"{{ '%X' | format(2**field.pos_low) }}", "Check all bit fields");
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, '1', error, "Check all bit fields");
+check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"{{ '%X' | format(2**field.pos_low) }}", "Check all bit fields");
+-- Return to zero
+write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, '0', error, "Check all bit fields");
+check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
+{%- else %}
+for i in 0 to {{ field.width - 1 }} loop
+  write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), std_logic_vector(to_unsigned(1, data_width) sll i+{{ field.pos_low }}), "Check all bit fields");
+  check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, std_logic_vector(to_unsigned(1, {{ field.width }}) sll i), error, "Check all bit fields");
+  check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), std_logic_vector(to_unsigned(1, data_width) sll i+{{ field.pos_low }}), "Check all bit fields");
+  -- Return to zero
+  write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
+  check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, {{ field.width }}X"0", error, "Check all bit fields");
+  check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
+end loop;
+{%- endif %}
+{%- endfor %}
+{%- endif %}
+
+{%- elif reg.mode.value == 'ro' %}
+{%- if reg.type.value == 'sl' %}
+{{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }} <= '1';
+await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, '1', 0 ns, 1 ns, error, "Check all bit fields");
+check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"1", "Check all bit fields");
+-- Return to zero
+{{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }} <= '0';
+await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, '0', 0 ns, 1 ns, error, "Check all bit fields");
+check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
+{%- elif reg.type.value in ['slv', 'default'] %}
+for i in 0 to {{ reg.width - 1 }} loop
+{%- if reg.type.value == 'slv' %}
+  {{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }} <= std_logic_vector(to_unsigned(1, {{ reg.width }}) sll i);
+  await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, std_logic_vector(to_unsigned(1, {{ reg.width }}) sll i), 0 ns, 1 ns, error, "Check all bit fields");
+{%- else %}
+  {{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }} <= std_logic_vector(to_unsigned(1, {{ reg.width }}) sll i);
+  await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, std_logic_vector(to_unsigned(1, {{ reg.width }}) sll i), 0 ns, 1 ns, error, "Check all bit fields");
+{%- endif %}
+  check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
+  -- Return to zero
+{%- if reg.type.value == 'slv' %}
+  {{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }} <= {{ reg.width }}X"0";
+  await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, {{ reg.width }}X"0", 0 ns, 1 ns, error, "Check all bit fields");
+{%- else %}
+  {{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }} <= 32X"0";
+  await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, 32X"0", 0 ns, 1 ns, error, "Check all bit fields");
+{%- endif %}
+  check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
+end loop;
+{%- elif reg.type.value == 'fields' %}
+{%- for field in reg.fields %}
+log_hdr("Check all bit fields {{ field.name }}");
+{% if field.type.value == 'sl' -%}
+{{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }} <= '1';
+await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, '1', 0 ns, 1 ns, error, "Check all bit fields");
+check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"{{ '%X' | format(2**field.pos_low) }}", "Check all bit fields");
+-- Return to zero
+{{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }} <= '0';
+await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, '0', 0 ns, 1 ns, error, "Check all bit fields");
+check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
+{%- else %}
+for i in 0 to {{ field.width - 1 }} loop
+  {{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }} <= std_logic_vector(to_unsigned(1, {{ field.width }}) sll i);
+  await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, std_logic_vector(to_unsigned(1, {{ field.width }}) sll i), 0 ns, 1 ns, error, "Check all bit fields");
+  check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), std_logic_vector(to_unsigned(1, data_width) sll i+{{ field.pos_low }}), "Check all bit fields");
+  -- Return to zero
+  {{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }} <= {{ field.width }}X"0";
+  await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, {{ field.width }}X"0", 0 ns, 1 ns, error, "Check all bit fields");
+  check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
+end loop;
+{%- endif %}
+{%- endfor %}
+{%- endif %}
+
+{%- elif reg.mode.value == 'pulse' %}
+{%- if reg.type.value == 'sl' %}
+write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"1", "Check all bit fields");
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, '1', error, "Check all bit fields");
+await_stable({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Check all bit fields");
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, '1', error, "Check all bit fields");
+await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, '{{ (reg.reset[2:]|int(base=16)) % 2 }}', 0 ns, 1 ns, error, "Check all bit fields");
+{%- elif reg.type.value in ['slv', 'default'] %}
+for i in 0 to {{ reg.width - 1 }} loop
+  write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), std_logic_vector(to_unsigned(1, data_width) sll i), "Check all bit fields");
+{%- if reg.type.value == 'slv' %}
+  check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, std_logic_vector(to_unsigned(1, {{ reg.width }}) sll i), error, "Check all bit fields");
+  await_stable({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Check all bit fields");
+  check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, std_logic_vector(to_unsigned(1, {{ reg.width }}) sll i), error, "Check all bit fields");
+  await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, {{ reg.width }}X"{{ '%0*X' | format((reg.width + 3) // 4, reg.reset[2:]|int(base=16)) }}", 0 ns, 1 ns, error, "Check all bit fields");
+{%- else %}
+  check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, std_logic_vector(to_unsigned(1, {{ reg.width }}) sll i), error, "Check all bit fields");
+  await_stable({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Check all bit fields");
+  check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, std_logic_vector(to_unsigned(1, {{ reg.width }}) sll i), error, "Check all bit fields");
+  await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}, 32X"{{ '%08X' | format(reg.reset[2:]|int(base=16)) }}", 0 ns, 1 ns, error, "Check all bit fields");
+{%- endif %}
+end loop;
+{%- elif reg.type.value == 'fields' %}
+{%- for field in reg.fields %}
+log_hdr("Check all bit fields {{ field.name }}");
+{% if field.type.value == 'sl' -%}
+write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"{{ '%X' | format(2**field.pos_low) }}", "Check all bit fields");
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, '1', error, "Check all bit fields");
+await_stable({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Check all bit fields");
+check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, '1', error, "Check all bit fields");
+await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, '{{ (field.reset[2:]|int(base=16)) % 2 }}', 0 ns, 1 ns, error, "Check all bit fields");
+{%- else %}
+for i in 0 to {{ field.width - 1 }} loop
+  write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), std_logic_vector(to_unsigned(1, data_width) sll i+{{ field.pos_low }}), "Check all bit fields");
+  check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, std_logic_vector(to_unsigned(1, {{ field.width }}) sll i), error, "Check all bit fields");
+  await_stable({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Check all bit fields");
+  check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, std_logic_vector(to_unsigned(1, {{ field.width }}) sll i), error, "Check all bit fields");
+  await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, {{ field.width }}X"{{ '%0*X' | format((field.width + 3) // 4, field.reset[2:]|int(base=16)) }}", 0 ns, 1 ns, error, "Check all bit fields");
+end loop;
+{%- endif %}
+{%- endfor %}
+{%- endif %}
+{%- endif %}
 {%- endmacro %}
