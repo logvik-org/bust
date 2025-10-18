@@ -33,51 +33,76 @@ architecture tb of {{ module.name }}_{{ bus.short_name }}_pif_tb is
   constant C_SCOPE      : string := C_TB_SCOPE_DEFAULT;
   constant C_CLK_PERIOD : time   := 10 ns;
 
+  -- component generics
   constant g_{{ bus.short_name }}_baseaddr   : std_logic_vector(31 downto 0) := 32X"FFAA0000";
   constant g_check_baseaddr    : boolean                       := true;
   constant g_module_addr_width : integer                       := 16;
 
-  -- Component Ports
-  {% if module.num_rw_regs > 0 %}signal {{ bus.short_name }}_rw_regs    : t_{{ module.name }}_rw_regs    := c_{{ module.name }}_rw_regs;{% endif %}
-  {% if module.num_ro_regs > 0 %}signal {{ bus.short_name }}_ro_regs    : t_{{ module.name }}_ro_regs    := c_{{ module.name }}_ro_regs;{% endif %}
-  {% if module.num_pulse_regs > 0 %}signal {{ bus.short_name }}_pulse_regs : t_{{ module.name }}_pulse_regs := c_{{ module.name }}_pulse_regs;{% endif %}
-
-  signal {{ bus.short_name }}_{{ bus.clk_name }}   : std_logic := '1';
-  signal {{ bus.short_name }}_{{ bus.reset_name }} : std_logic := {% if bus.reset_active_high %}'0'{% else %}'1'{% endif %};
-  signal {{ bus.short_name }}_in  : {{ bus.in_type }};
-  signal {{ bus.short_name }}_out : {{ bus.out_type }};
+  -- component ports
+{% if module.num_rw_regs > 0 %}  signal {{ bus.short_name }}_rw_regs    : t_{{ module.name }}_rw_regs    := c_{{ module.name }}_rw_regs;
+{% endif -%}
+{% if module.num_ro_regs > 0 %}  signal {{ bus.short_name }}_ro_regs    : t_{{ module.name }}_ro_regs    := c_{{ module.name }}_ro_regs;
+{% endif -%}
+{% if module.num_pulse_regs > 0 %}  signal {{ bus.short_name }}_pulse_regs : t_{{ module.name }}_pulse_regs := c_{{ module.name }}_pulse_regs;
+{% endif %}  signal {{ bus.short_name }}_{{ bus.clk_name.strip() }}        : std_logic                   := '1';
+  signal {{ bus.short_name }}_{{ bus.reset_name.strip() }}   : std_logic                   := {% if bus.reset_active_high %}'0'{% else %}'1'{% endif %};
+  signal {{ bus.short_name }}_in         : {{ bus.in_type }};
+  signal {{ bus.short_name }}_out        : {{ bus.out_type }};
 
   {{ uvvm.uvvm_signals(bus) | indent(2) }}
 
-begin
+  function f_addr (
+    BASE : std_logic_vector(31 downto 0);
+    REG  : std_logic_vector(31 downto 0))
+    return unsigned is
+    variable tmp : unsigned(31 downto 0);
+  begin  -- function f_addr
+    tmp := unsigned(BASE);
+    tmp := tmp + unsigned(REG);
+    return tmp;
+  end function f_addr;
+
+begin  -- architecture tb
 
   {{ uvvm.uvvm_signal_assignment(bus) | indent(2) }}
 
-  -- Component Instantiation
-  {{ uvvm.pif_instantiation(module.bus, 'DUT', False) | indent(2) }}
+  -- component instantiation
+  {{ uvvm.pif_instantiation(module, bus, module.name.upper(), '') | indent(2) }}
 
-  -- Clock Generator
-  clock_generator({{ bus.short_name }}_{{ bus.clk_name }}, C_CLK_PERIOD);
+  -- clock generator
+  clock_generator({{ bus.short_name }}_{{ bus.clk_name.strip() }}, C_CLK_PERIOD);
 
-  -- Main Test Process
+  -- main testbench
   p_main : process
     {{ uvvm.uvvm_overloads(bus) | indent(4) }}
   begin
 
-    -- Logging
+    -- enable_log_msg(ALL_MESSAGES);
     disable_log_msg(ALL_MESSAGES, QUIET);
     enable_log_msg(ID_LOG_HDR, QUIET);
     enable_log_msg(ID_LOG_HDR_LARGE, QUIET);
     enable_log_msg(ID_SEQUENCER, QUIET);
+    -- enable_log_msg(ID_BFM, QUIET);
+    -- enable_log_msg(ID_CLOCK_GEN, QUIET);
+    -- enable_log_msg(ID_GEN_PULSE, QUIET);
+    -- enable_log_msg(ID_POS_ACK, QUIET);
+
+    -- report_global_ctrl(VOID);
+    -- report_msg_id_panel(VOID);
 
     -- Reset
-    gen_pulse({{ bus.short_name }}_{{ bus.reset_name }}, {% if bus.reset_active_high %}'1'{% else %}'0'{% endif %}, 500 ns, BLOCKING, "Reset for 500 ns");
+    gen_pulse({{ bus.short_name }}_{{ bus.reset_name.strip() }}, {% if bus.reset_active_high %}'1'{% else %}'0'{% endif %}, 500 ns, BLOCKING, "Reset for 500 ns");
 
     {% for reg in module.registers -%}
-      --
-      {# {{ uvvm.check_default_value(reg) | indent(6) }}
-      {# {{ uvvm.set_check_zero_value(reg) | indent(6) }}  #}
-      {# {{ uvvm.check_bit_fields(reg) | indent(6) }}  #}
+    --
+
+    {{ uvvm.reg_hdr(reg) | indent(4) }}
+
+    {{ uvvm.check_default_value(reg, bus) | indent(4) }}
+
+    {{ uvvm.set_check_zero_value(reg, bus) | indent(4) }}
+
+    {{ uvvm.check_bit_fields(reg, bus) | indent(4) }}
     {% endfor %}
 
     {% if bus.bus_type == 'ipbus' %}
@@ -89,10 +114,14 @@ begin
       write(32X"FFFFFFFF", 32X"0", "Write to register that does not exist");
     {% endif %}
 
-    -- Ending Simulation
-    wait for 100 ns;
-    report_alert_counters(FINAL);
+    --==================================================================================================
+    -- Ending the simulation
+    --------------------------------------------------------------------------------------
+    wait for 100 ns;                    -- to allow some time for completion
+    report_alert_counters(FINAL);  -- Report final counters and print conclusion for simulation (Success/Fail)
     log(ID_LOG_HDR, "SIMULATION COMPLETED", C_SCOPE);
+
+    -- Finish the simulation
     std.env.stop;
     wait;                               -- to stop completely
   end process p_main;

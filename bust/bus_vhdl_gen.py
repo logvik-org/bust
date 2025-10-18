@@ -135,7 +135,7 @@ class BusVHDLGen:
         # Define context for template rendering
         context = {
             "module": mod,
-            "bus": mod.bus,  # Assumes `module` has an attribute `bus`
+            "bus": self,
             "NL": "\n",  # Ensures newline formatting if needed
         }
         return template.render(context)
