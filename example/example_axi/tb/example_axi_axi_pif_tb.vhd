@@ -342,8 +342,8 @@ begin  -- architecture tb
 
     log_hdr("Check Default Value");
 
-    check_value(axi_rw_regs.reg5, 32X"FFFFFFFF", error, "reg5 default value");
-    check(f_addr(g_axi_baseaddr, C_ADDR_REG5), 32X"FFFFFFFF", "reg5 default value");
+    check_value(axi_rw_regs.reg5, 32X"ffffffff", error, "reg5 default value");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG5), 32X"ffffffff", "reg5 default value");
 
     log_hdr("Set&Check Zero Value");
 
@@ -400,7 +400,7 @@ begin  -- architecture tb
     check_value(axi_rw_regs.reg7.field1, 4X"b", error, "reg7.field1 default value");
     check_value(axi_rw_regs.reg7.field2, '0', error, "reg7.field2 default value");
     check_value(axi_rw_regs.reg7.field3, 15X"2b", error, "reg7.field3 default value");
-    check(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"AD7", "reg7 default value");
+    check(f_addr(g_axi_baseaddr, C_ADDR_REG7), 32X"ad7", "reg7 default value");
 
     log_hdr("Set&Check Zero Value");
 
