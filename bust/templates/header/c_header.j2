@@ -1,0 +1,23 @@
+#ifndef {{ module.name.upper() }}_H
+#define {{ module.name.upper() }}_H
+
+
+{% for reg in module.registers %}
+/* Register: {{ reg.name }} */
+#define {{ reg.name.upper() }}_MODE "{{ reg.mode.value }}";
+#define {{ reg.name.upper() }}_WIDTH {{ reg.width }};
+#define {{ reg.name.upper() }}_OFFSET {{ "0x%x" | format(reg.address) }};
+#define {{ reg.name.upper() }}_RESET {{ reg.reset }};
+
+{% if reg.type == reg_type_fields %}
+{% for field in reg.fields %}
+/* Field: {{ field.name }} */
+#define {{ reg.name.upper() }}_{{ field.name.upper() }}_OFFSET {{ field.pos_low }}
+#define {{ reg.name.upper() }}_{{ field.name.upper() }}_WIDTH {{ field.width }}
+#define {{ reg.name.upper() }}_{{ field.name.upper() }}_RESET {{ field.reset }}
+#define {{ reg.name.upper() }}_{{ field.name.upper() }}_MASK {{ "0x%x" | format(((2**field.width - 1) * (2**field.pos_low))) }}
+
+{% endfor %}
+{% endif %}
+{% endfor %}
+#endif

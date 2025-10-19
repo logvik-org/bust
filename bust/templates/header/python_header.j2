@@ -1,0 +1,22 @@
+class {{ module.name.upper() }}_H:
+{% for reg in module.registers %}
+
+    """Register: {{ reg.name }}"""
+    {{ reg.name.upper() }}_MODE = "{{ reg.mode.value }}"
+    {{ reg.name.upper() }}_WIDTH = {{ reg.width }}
+    {{ reg.name.upper() }}_OFFSET = {{ "0x%x" | format(reg.address) }}
+    {{ reg.name.upper() }}_RESET = {{ reg.reset }}
+{% if reg.type == reg_type_fields %}
+
+{% for field in reg.fields %}
+    """ Field: {{ field.name }} """
+    {{ reg.name.upper() }}_{{ field.name.upper() }}_OFFSET = {{ field.pos_low }}
+    {{ reg.name.upper() }}_{{ field.name.upper() }}_WIDTH = {{ field.width }}
+    {{ reg.name.upper() }}_{{ field.name.upper() }}_RESET = {{ field.reset }}
+    {{ reg.name.upper() }}_{{ field.name.upper() }}_MASK = {{ "0x%x" | format(((2**field.width - 1) * (2**field.pos_low))) }}
+{% if not loop.last %}
+
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
