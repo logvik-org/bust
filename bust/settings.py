@@ -80,7 +80,9 @@ class Settings(object):
                 )
                 self.vip_ipbus_rel_path = cast(Optional[str], None)
             else:
-                self.vip_ipbus_rel_path = cast(Optional[str], settings["vip_ipbus_rel_path"])
+                self.vip_ipbus_rel_path = cast(
+                    Optional[str], settings["vip_ipbus_rel_path"]
+                )
 
             if "coverage" not in settings:
                 self.logger.info("Coverage is not specified. Choosing default: False")

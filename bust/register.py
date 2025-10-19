@@ -19,7 +19,9 @@ from bust.enums import RegisterMode, RegisterType
 class Register:
     """! @brief Managing register information"""
 
-    def __init__(self, reg: Dict, address: int, module_name: str, module_data_width: int) -> None:
+    def __init__(
+        self, reg: Dict, address: int, module_name: str, module_data_width: int
+    ) -> None:
 
         self.logger = logging.getLogger(__name__)
 
