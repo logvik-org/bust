@@ -1,6 +1,5 @@
-from jinja2 import Environment, FileSystemLoader
-import os
-from bust.enums import RegisterMode, RegisterType
+from bust.enums import RegisterType
+from bust.jinja_utils.environment import get_environment
 
 
 class Header(object):
@@ -11,13 +10,8 @@ class Header(object):
 
     def _render_template(self, template_name):
         """Helper method to render templates with common context"""
-        # Set up Jinja2 environment
-        template_dir = os.path.join(os.path.dirname(__file__), "templates")
-        env = Environment(
-            loader=FileSystemLoader(template_dir, followlinks=True),
-            trim_blocks=True,
-            lstrip_blocks=True,
-        )
+        # Get standardized Jinja2 environment with all filters
+        env = get_environment()
 
         # Load the template
         template = env.get_template(template_name)
