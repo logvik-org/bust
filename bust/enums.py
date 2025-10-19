@@ -1,5 +1,4 @@
-"""
-enum_types.py
+"""Strongly typed enumerations for bust.
 
 This module defines strongly typed enumerations used throughout the `bust` tool
 for register and field configuration. These enums ensure consistent values and
