@@ -1,0 +1,115 @@
+# Set default error behaviour
+if {[batch_mode]} {
+  onerror {abort all; exit -f -code 1}
+} else {
+  onerror {abort all}
+}
+
+# Shut down running simulation
+quit -sim
+
+# Set project paths
+set {{ module.name }}_path "../"
+set bus_path "{{ settings.return_sim_bus_path(bus.bus_type) }}"
+set UVVM_path "{{ settings.return_sim_uvvm_path() }}"
+{% if bus.bus_type == "ipbus" %}
+set vip_ipbus_path "{{ settings.return_vip_ipbus_path() }}"
+{% endif %}
+
+# Compile UVVM Dependencies
+do $UVVM_path/script/compile_all.do $UVVM_path/script ${{ module.name }}_path/{{ settings.sim_dir }} ${{ module.name }}_path/{{ settings.script_dir }}/component_list.txt
+
+# Set vcom args
+set vcom_args "-quiet{% if settings.coverage %} +cover=sbt{% endif %}"
+
+{% if bus.comp_library != bus.default_comp_library or bus.bus_type == "ipbus" %}
+###########################################################################
+# Compile bus source files into library
+###########################################################################
+
+# Set up library and sim path
+set lib_name "{{ bus.comp_library }}"
+{% if bus.bus_type == "ipbus" %}
+set bus_sim_path "${{ module.name }}_path/{{ settings.sim_dir }}"
+{% else %}
+set bus_sim_path "$bus_path/{{ settings.sim_dir }}"
+{% endif %}
+
+# (Re-)Generate library and Compile source files
+echo "\nRe-gen lib and compile $lib_name source\n"
+if {[file exists $bus_sim_path/$lib_name]} {
+  file delete -force $bus_sim_path/$lib_name
+}
+
+vlib $bus_sim_path/$lib_name
+vmap $lib_name $bus_sim_path/$lib_name
+
+set vhdldirectives "-2008 -work $lib_name"
+
+{% if bus.bus_type == "ipbus" %}
+eval vcom $vcom_args $vhdldirectives $bus_path/components/ipbus_core/firmware/hdl/ipbus_package.vhd
+
+# Compile vip_ipbus Dependencies
+do $vip_ipbus_path/scripts/compile_src.do $vip_ipbus_path $vip_ipbus_path/sim
+{% else %}
+eval vcom $vcom_args $vhdldirectives $bus_path/hdl/{{ bus.bus_type }}_pkg.vhd
+{% endif %}
+{% endif %}
+
+
+###########################################################################
+# Compile source files into library
+###########################################################################
+
+# Set up library and sim path
+set lib_name "{{ module.name }}"
+set {{ module.name }}_sim_path "${{ module.name }}_path/{{ settings.sim_dir }}"
+
+# (Re-)Generate library and Compile source files
+echo "\nRe-gen lib and compile $lib_name source\n"
+if {[file exists ${{ module.name }}_sim_path/$lib_name]} {
+  file delete -force ${{ module.name }}_sim_path/$lib_name
+}
+
+vlib ${{ module.name }}_sim_path/$lib_name
+vmap $lib_name ${{ module.name }}_sim_path/$lib_name
+
+set vhdldirectives "-2008 -work $lib_name"
+
+{% if bus.comp_library == bus.default_comp_library %}
+eval vcom $vcom_args $vhdldirectives $bus_path/hdl/{{ bus.bus_type }}_pkg.vhd
+{% endif %}
+eval vcom $vcom_args $vhdldirectives ${{ module.name }}_path/hdl/{{ module.name }}_pif_pkg.vhd
+eval vcom $vcom_args $vhdldirectives ${{ module.name }}_path/hdl/{{ module.name }}_{{ bus.short_name }}_pif.vhd
+
+###########################################################################
+# Compile testbench files into library
+###########################################################################
+set vcom_args "-quiet"
+eval vcom $vcom_args $vhdldirectives ${{ module.name }}_path/tb/{{ module.name }}_{{ bus.short_name }}_pif_tb.vhd
+
+###########################################################################
+# Simulate
+###########################################################################
+vsim -quiet {% if settings.coverage %}-coverage {% endif %}{{ module.name }}.{{ module.name }}_{{ bus.short_name }}_pif_tb
+
+# Trick to avoid metastability warnings
+set NumericStdNoWarnings 1
+run 1 ns;
+set NumericStdNoWarnings 0
+run -all
+
+{% if settings.coverage %}
+{% if bus.bus_type == "axi" %}
+coverage exclude -du {{ module.name }}_{{ bus.short_name }}_pif -togglenode araddr
+coverage exclude -du {{ module.name }}_{{ bus.short_name }}_pif -togglenode araddr_i
+coverage exclude -du {{ module.name }}_{{ bus.short_name }}_pif -togglenode awaddr
+coverage exclude -du {{ module.name }}_{{ bus.short_name }}_pif -togglenode awaddr_i
+coverage exclude -du {{ module.name }}_{{ bus.short_name }}_pif -togglenode bresp
+coverage exclude -du {{ module.name }}_{{ bus.short_name }}_pif -togglenode bresp_i
+coverage exclude -du {{ module.name }}_{{ bus.short_name }}_pif -togglenode rresp
+coverage exclude -du {{ module.name }}_{{ bus.short_name }}_pif -togglenode rresp_i
+{% endif %}
+coverage report
+coverage report -html -htmldir covhtmlreport -code bcefst
+{% endif %}

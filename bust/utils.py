@@ -75,7 +75,7 @@ def write_string_to_file(string, output_file, output_dir, force_overwrite=False)
 
     # Make sure output directory exists
     if not os.path.isdir(output_dir):
-        raise RuntimeError("Output dir does not exist: {}".format(output_dir))
+        raise RuntimeError(f"Output dir does not exist: {output_dir}")
 
     joined = os.path.join(output_dir, output_file)
 
