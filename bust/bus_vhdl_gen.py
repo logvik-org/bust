@@ -57,7 +57,7 @@ class BusVHDLGen:
                 "data_width": self.data_width,
                 "addr_width": self.addr_width,
             }
-            result = template.render(context)
+            result: str = template.render(context)
             # Ensure final newline is preserved
             if not result.endswith("\n"):
                 result += "\n"
@@ -81,4 +81,4 @@ class BusVHDLGen:
             "bus": self,
             "NL": "\n",  # Ensures newline formatting if needed
         }
-        return template.render(context)
+        return str(template.render(context))
