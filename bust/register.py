@@ -78,7 +78,6 @@ class Register:
             UndefinedRegisterType: If register type is not supported.
             ValueError: If register name is not a valid VHDL identifier.
         """
-
         self.logger = logging.getLogger(__name__)
 
         self.module_name = module_name
@@ -279,7 +278,6 @@ class Register:
         Raises:
             ValueError: If field name is not unique within this register.
         """
-
         field = Field(field_cfg, self.get_next_pos_low(), self.name)
 
         # Validate uniqueness of field name

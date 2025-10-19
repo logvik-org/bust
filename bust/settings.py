@@ -162,7 +162,6 @@ class Settings(object):
         Returns:
             Relative path string suitable for simulation compilation scripts.
         """
-
         if bus_type == "ipbus":
             if self.ipbus_rel_path is not None:
                 path = os.path.join("../", self.ipbus_rel_path)
@@ -180,7 +179,6 @@ class Settings(object):
         Returns:
             Relative path string to IPBus VIP directory.
         """
-
         if self.vip_ipbus_rel_path is not None:
             path = os.path.join("../", self.vip_ipbus_rel_path)
         else:

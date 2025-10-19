@@ -54,7 +54,6 @@ class Field(object):
             InvalidFieldFormat: If reset value doesn't fit in specified width.
             ValueError: If field name is not a valid VHDL identifier.
         """
-
         self.logger = logging.getLogger(__name__)
 
         self.parent_register_name = parent_register_name
@@ -205,7 +204,7 @@ class Field(object):
 
     @property
     def reset_val_vhdl(self) -> str:
-        """Generate VHDL literal for the field's reset value.
+        r"""Generate VHDL literal for the field's reset value.
 
         Returns:
             VHDL literal as string, e.g., "'0'" for SL, "4X\"F\"" for SLV.
