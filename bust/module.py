@@ -87,13 +87,12 @@ class Module:
                 raise InvalidRegister(reg) from e
 
         else:
-            addr = self.next_available_address
+            addr = self.get_next_address()
             self.addresses.append(addr)
             self.registers.append(Register(reg, addr, self.name, self.data_width))
 
-    @property
-    def next_available_address(self) -> int:
-        """Get the next available address based on the byte-addressed scheme."""
+    def get_next_address(self) -> int:
+        """! @brief Will get the next address based on the byte-addressed scheme"""
         addr = 0
         found_addr = False
         while not found_addr:
@@ -114,10 +113,6 @@ class Module:
         raise RuntimeError(
             "Failed to find available address - this should never happen"
         )
-
-    def get_next_address(self) -> int:
-        """Deprecated: Use next_available_address property instead."""
-        return self.next_available_address
 
     def is_address_out_of_range(self, addr: int) -> bool:
         """Returns True if address is out of range, False if not"""
@@ -146,7 +141,7 @@ class Module:
     def update_addresses(self) -> None:
         self.addresses = []
         for reg in self.registers:
-            addr = self.next_available_address
+            addr = self.get_next_address()
             self.addresses.append(addr)
             reg.address = addr
 
