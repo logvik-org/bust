@@ -54,7 +54,7 @@ class BusVHDLGen:
             else:
                 self.reset_name = "reset_n"
 
-    def return_bus_pkg_VHDL(self):
+    def return_bus_pkg_VHDL(self) -> str:
         if self.bus_type == "axi":
 
             s = "library ieee;\n"
@@ -117,7 +117,7 @@ class BusVHDLGen:
 
         return s
 
-    def return_bus_pif_VHDL(self, mod):
+    def return_bus_pif_VHDL(self, mod) -> str:
         # Set up Jinja2 environment
         template_dir = os.path.join(os.path.dirname(__file__), "templates")
 

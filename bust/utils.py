@@ -1,13 +1,11 @@
-"""! @package utils
-
-
-"""
+"""! @package utils"""
 
 import re
 import json
 import os
 from functools import reduce
 import logging
+from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -15,18 +13,18 @@ spaces_in_tab = 2
 NL = "\n"
 
 
-def indent_string(string, tabs=1, break_line=False):
+def indent_string(string: str, tabs: int = 1, break_line: bool = False) -> str:
     """! @brief adds indent spaces to all lines in string"""
 
     indent = spaces_in_tab * tabs * (" ")
     # Add indent to every line and recreate string
-    string = [indent + line for line in re.split(r"\n", string)]
+    string_list = [indent + line for line in re.split(r"\n", string)]
 
     # Remove indent in empty lines
-    for i, s in enumerate(string):
+    for i, s in enumerate(string_list):
         if s == indent:
-            string[i] = ""
-    string = "\n".join(string)
+            string_list[i] = ""
+    string = "\n".join(string_list)
 
     # Remove last string if it only contains indent
     string = fix_last_indent_only_line(string, tabs)
@@ -36,13 +34,13 @@ def indent_string(string, tabs=1, break_line=False):
     return string
 
 
-def json_parser(filename="module.json"):
+def json_parser(filename: str = "module.json") -> Any:
     with open(filename) as json_data:
         d = json.load(json_data)
         return d
 
 
-def fix_last_indent_only_line(string, tabs):
+def fix_last_indent_only_line(string: str, tabs: int) -> str:
     """! @brief Will edit the last line if it only contains indentation to an
     empty string
     """
@@ -54,7 +52,7 @@ def fix_last_indent_only_line(string, tabs):
     return string
 
 
-def compare_JSON(json1, json2, raise_error=False):
+def compare_JSON(json1: str, json2: str, raise_error: bool = False) -> bool:
     """! @brief Will compare two JSON strings, and return False if they differ. An
     extra argument can be used to force the function to raise an error with the line
     the difference was observed.
@@ -70,7 +68,9 @@ def compare_JSON(json1, json2, raise_error=False):
     return True
 
 
-def write_string_to_file(string, output_file, output_dir, force_overwrite=False):
+def write_string_to_file(
+    string: str, output_file: str, output_dir: str, force_overwrite: bool = False
+) -> bool:
     """! @brief Write string to file"""
 
     # Make sure output directory exists
@@ -95,7 +95,7 @@ def write_string_to_file(string, output_file, output_dir, force_overwrite=False)
     return True
 
 
-def update_module_top_level(existing_file, new_top_level):
+def update_module_top_level(existing_file: str, new_top_level: str) -> str:
     # Check if file exists at all...
     if os.path.isfile(existing_file):
         # Read the file and get the user edited parts...
@@ -119,7 +119,7 @@ def update_module_top_level(existing_file, new_top_level):
         return new_top_level
 
 
-def analyze_top_level_file(existing_file):
+def analyze_top_level_file(existing_file: str) -> List[str]:
     string_list = [""] * 5
     list_num = 0
     with open(existing_file) as infile:
@@ -156,7 +156,7 @@ def analyze_top_level_file(existing_file):
     return string_list
 
 
-def restore_user_in_top_level(user, new_top_level):
+def restore_user_in_top_level(user: List[str], new_top_level: str) -> str:
 
     new_top_lines = splitkeepsep(new_top_level, "\n")
 
@@ -185,7 +185,7 @@ def restore_user_in_top_level(user, new_top_level):
     return "".join(top_lines_with_user)
 
 
-def splitkeepsep(s, sep):
+def splitkeepsep(s: str, sep: str) -> List[str]:
     return reduce(
         lambda acc, elem: acc[:-1] + [acc[-1] + elem] if elem == sep else acc + [elem],
         re.split("(%s)" % re.escape(sep), s),
@@ -193,14 +193,14 @@ def splitkeepsep(s, sep):
     )
 
 
-def cont():
+def cont() -> None:
     try:
         input("Press enter to continue...")
     except SyntaxError:
         pass
 
 
-def is_int(s):
+def is_int(s: Any) -> bool:
     try:
         int(s)
         return True
@@ -219,14 +219,14 @@ def is_int(s):
 
 
 def get_int(
-    msg,
-    base=10,
-    range_min=None,
-    range_max=None,
-    range_min_msg=None,
-    range_max_msg=None,
-    default=None,
-):
+    msg: str,
+    base: int = 10,
+    range_min: Optional[int] = None,
+    range_max: Optional[int] = None,
+    range_min_msg: Optional[str] = None,
+    range_max_msg: Optional[str] = None,
+    default: Optional[int] = None,
+) -> int:
     while True:
         try:
             s = input(msg)
@@ -250,7 +250,9 @@ def get_int(
             print("That is not a valid integer...")
 
 
-def get_list_choice(msg, ls, case=None, default=None):
+def get_list_choice(
+    msg: str, ls: List[str], case: Optional[str] = None, default: Optional[int] = None
+) -> str:
     while True:
         try:
             print(msg)
@@ -277,11 +279,11 @@ def get_list_choice(msg, ls, case=None, default=None):
             print("That is not a valid choice...")
 
 
-def clear_screen():
+def clear_screen() -> None:
     os.system("cls" if os.name == "nt" else "clear")
 
 
-def add_line_breaks(string, min_length):
+def add_line_breaks(string: str, min_length: int) -> str:
     """! @brief Adds line breaks on the next space after the minimum length of a line"""
     requirement = min_length
     replace = False
@@ -299,7 +301,7 @@ def add_line_breaks(string, min_length):
     return string
 
 
-def is_mixed(string):
+def is_mixed(string: str) -> bool:
     upper = False
     lower = False
     for letter in string:

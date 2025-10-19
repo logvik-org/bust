@@ -1,5 +1,6 @@
 from jinja2 import Environment, FileSystemLoader
 import os
+from typing import cast
 
 from bust.enums import FieldType, RegisterType
 from bust.utils import indent_string
@@ -49,7 +50,7 @@ class ModuleVHDLGen:
         self.data_width = data_width
         self.addr_width = addr_width
 
-    def return_module_pkg_VHDL(self, module):
+    def return_module_pkg_VHDL(self, module) -> str:
 
         template_dir = os.path.join(os.path.dirname(__file__), "templates")
         env = Environment(
@@ -75,7 +76,7 @@ class ModuleVHDLGen:
 
         return template.render(context)
 
-    def return_module_VHDL(self, module):
+    def return_module_VHDL(self, module) -> str:
         # Set up Jinja2 environment
         template_dir = os.path.join(os.path.dirname(__file__), "templates")
         env = Environment(
@@ -95,7 +96,7 @@ class ModuleVHDLGen:
         }
         return template.render(context)
 
-    def get_instantiation(self, module, instance_name, intern_out=True):
+    def get_instantiation(self, module, instance_name, intern_out=True) -> str:
         s = instance_name + " "
         s += ": entity work." + self.name + "_" + self.bus.short_name + "_pif\n"
         s += indent_string("generic map (\n")
@@ -154,4 +155,4 @@ class ModuleVHDLGen:
         par += ");\n"
 
         s += indent_string(par, 2)
-        return s
+        return cast(str, s)
