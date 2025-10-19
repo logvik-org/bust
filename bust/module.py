@@ -106,7 +106,7 @@ class Module:
                     )  # force integer division to prevent float
                 else:
                     addr += 1
-        return 0  # This should never be reached but mypy requires it
+        raise RuntimeError("Failed to find available address - this should never happen")
 
     def is_address_out_of_range(self, addr: int) -> bool:
         """Returns True if address is out of range, False if not"""
