@@ -1,4 +1,5 @@
 import logging
+from typing import Dict, Any, List
 
 from bust.exceptions import (
     ModuleDataBitsExceeded,
@@ -18,13 +19,14 @@ from bust.enums import RegisterMode, RegisterType
 class Register:
     """! @brief Managing register information"""
 
-    def __init__(self, reg, address, module_name, module_data_width):
+    def __init__(self, reg: Dict[str, Any], address: int, module_name: str, module_data_width: int) -> None:
 
         self.logger = logging.getLogger(__name__)
 
         self.module_name = module_name
         self.module_data_width = module_data_width
         self.address = address
+        self.fields: List[Any] = []
 
         self._config = ConfigWrapper(
             reg,
@@ -53,7 +55,6 @@ class Register:
         self.pulse_cycles = self._config.get("pulse_cycles")
         self.stall_cycles = self._config.get("stall_cycles")
         self.stall = self.stall_cycles > 0
-        self.fields = []
 
         # If set, stall cycles must be between 2 and 255
         if self.stall:
@@ -95,12 +96,12 @@ class Register:
         # Perform check that data bits are not exceeded
         self.check_register_data_width(module_data_width)
 
-    def _init_fields(self):
+    def _init_fields(self) -> None:
         fields = self._config.require("fields")
         for field in fields:
             self.add_field(field)
 
-    def validate_reset_value(self):
+    def validate_reset_value(self) -> None:
         if self._config.is_set("reset"):
             # Reset value is not allowed if type is record
             if self.type == "record":
@@ -116,18 +117,18 @@ class Register:
                     "Reset value does not match register: " + self.name
                 )
 
-    def __str__(self):
-        string = "Name: " + self.name + "\n"
+    def __str__(self) -> str:
+        string: str = "Name: " + self.name + "\n"
         string += "Address: " + hex(self.address) + "\n"
-        string += "Mode: " + self.mode + "\n"
-        string += "Type: " + self.type + "\n"
+        string += "Mode: " + str(self.mode) + "\n"
+        string += "Type: " + str(self.type) + "\n"
         string += "Width: " + str(self.width) + "\n"
         string += "Reset: " + self.reset
         if self.type == "record":
 
             for i in self.fields:
                 string += "\n"
-                string += indent_string(
+                indented: str = indent_string(
                     "Name: "
                     + i["name"]
                     + " Type: "
@@ -137,18 +138,20 @@ class Register:
                     + " Reset: "
                     + i["reset"]
                 )
+                string += indented
 
-        string += "\nDescription: " + self.description + "\n\n"
-        return string
+        string += "\nDescription: " + str(self.description) + "\n\n"
+        result: str = string
+        return result
 
     @property
-    def range_vhdl(self):
+    def range_vhdl(self) -> str:
         if self.type == RegisterType.SLV:
             return f"{self.width - 1} downto 0"
         raise ValueError("Only slv fields have a range")
 
     @property
-    def type_vhdl(self):
+    def type_vhdl(self) -> str:
         if self.type == RegisterType.DEFAULT or (
             self.type == RegisterType.SLV and self.width == self.module_data_width
         ):
@@ -161,7 +164,7 @@ class Register:
             return f"t_{self.module_name}_{self.mode.value}_{self.name}"
 
     @property
-    def reset_val_vhdl(self):
+    def reset_val_vhdl(self) -> str:
         if self.type in [RegisterType.DEFAULT, RegisterType.SLV]:
             if self.reset == "0x0":
                 return "(others => '0')"
@@ -176,7 +179,7 @@ class Register:
             "Only default, slv and sl registers can extract reset value directly"
         )
 
-    def add_field(self, field_cfg):
+    def add_field(self, field_cfg: Dict[str, Any]) -> None:
 
         field = Field(field_cfg, self.get_next_pos_low(), self.name)
 
@@ -195,7 +198,7 @@ class Register:
 
         self.fields.append(field)
 
-    def check_register_data_width(self, module):
+    def check_register_data_width(self, module: int) -> None:
         """! @brief Controls that the combined data bits in fields does not
         exceed data bits of module
 
@@ -203,27 +206,27 @@ class Register:
         if self.width > module:
             raise ModuleDataBitsExceeded(self.name, self.width, module)
 
-    def get_next_pos_low(self):
+    def get_next_pos_low(self) -> int:
         if len(self.fields) > 0:
-            last_pos_high = self.fields[-1].pos_high
+            last_pos_high: int = self.fields[-1].pos_high
             return last_pos_high + 1
         else:
             return 0
 
-    def get_mode(self):
+    def get_mode(self) -> str:
         """Get the register mode in r/w/rw format - pulse = w"""
         if self.mode == RegisterMode.PULSE:
             return "w"
         elif self.mode == RegisterMode.RO:
             return "r"
         else:
-            return self.mode.value
+            return str(self.mode.value)
 
-    def return_stall_string(self):
+    def return_stall_string(self) -> str:
         if self.stall:
             return "/STALL"
         else:
             return ""
 
-    def get_stall_cycles_str(self):
+    def get_stall_cycles_str(self) -> str:
         return str(self.stall_cycles - 2)

@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from typing import Dict, Any
 
 from bust.bus_vhdl_gen import BusVHDLGen
 from bust.exceptions import InvalidBusType
@@ -11,7 +12,7 @@ class Bus(object):
     default_comp_library = "work"
     default_comp_library_ipbus = "ipbus"
 
-    def __init__(self, bus):
+    def __init__(self, bus: Dict[str, Any]) -> None:
         if bus["type"] in Bus.supported_bus:
             self.bus_type = bus["type"]
         else:
@@ -35,7 +36,7 @@ class Bus(object):
             self.short_name = "ipb"
             self.bus_reset = "sync"
 
-    def return_JSON(self):
+    def return_JSON(self) -> OrderedDict:
         json = OrderedDict()
         json["type"] = self.bus_type
         json["addr_width"] = self.addr_width
@@ -45,7 +46,7 @@ class Bus(object):
             json["comp_library"] = self.comp_library
         return json
 
-    def get_VHDL_generator(self):
+    def get_VHDL_generator(self) -> BusVHDLGen:
         return BusVHDLGen(
             bus_type=self.bus_type,
             comp_library=self.comp_library,
@@ -53,10 +54,12 @@ class Bus(object):
             addr_width=self.addr_width,
         )
 
-    def return_bus_pkg_VHDL(self):
+    def return_bus_pkg_VHDL(self) -> str:
         v_gen = self.get_VHDL_generator()
-        return v_gen.return_bus_pkg_VHDL()
+        result: str = v_gen.return_bus_pkg_VHDL()
+        return result
 
-    def return_bus_pif_VHDL(self, mod):
+    def return_bus_pif_VHDL(self, mod: Any) -> str:
         v_gen = self.get_VHDL_generator()
-        return v_gen.return_bus_pif_VHDL(mod=mod)
+        result: str = v_gen.return_bus_pif_VHDL(mod=mod)
+        return result
