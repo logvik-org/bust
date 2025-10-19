@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List
+from typing import Dict, List, cast
 
 from bust.exceptions import (
     ModuleDataBitsExceeded,
@@ -45,7 +45,7 @@ class Register:
         self.name = self._config.require("name")
         is_valid_VHDL(self.name)
 
-        self.description = self._config.get("description")
+        self.description: str = self._config.get("description")
         self.mode = RegisterMode.from_string(self._config.get("mode"))
         self.type = RegisterType.from_string(self._config.get("type"))
         self.width = self._config.get(
@@ -140,7 +140,7 @@ class Register:
                 )
 
         string += "\nDescription: " + self.description + "\n\n"
-        return string  # type: ignore[no-any-return]
+        return cast(str, string)
 
     @property
     def range_vhdl(self) -> str:

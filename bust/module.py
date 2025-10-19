@@ -6,7 +6,7 @@ Contains the Module class and relevant exceptions
 import logging
 import json
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, cast
 
 from bust.enums import RegisterMode, RegisterType
 from bust.exceptions import InvalidAddress, InvalidRegister
@@ -55,7 +55,7 @@ class Module:
         is_valid_VHDL(self.name)
 
         # Store some config values for easy access
-        self.description = self._config.get("description")
+        self.description: str = self._config.get("description")
         self.version = self._config.get("version")
         self.git_hash = self._config.get("git_hash")  # Currently not used
         self.byte_addressable = self._config.get("byte_addressable")
@@ -169,7 +169,7 @@ class Module:
         string += "Registers: \n"
         for i, reg in enumerate(self.registers):
             string += indent_string(str(reg), 1)
-        return string  # type: ignore[no-any-return]
+        return cast(str, string)
 
     def return_JSON(self, include_address: bool = False) -> str:
         """! @brief Returns JSON string"""
@@ -231,16 +231,16 @@ class Module:
 
     def return_module_pkg_VHDL(self) -> str:
         gen_obj = self._get_vhdl_gen_obj()
-        return gen_obj.return_module_pkg_VHDL(self)  # type: ignore[no-any-return]
+        return gen_obj.return_module_pkg_VHDL(self)
 
     def return_module_VHDL(self) -> str:
         gen_obj = self._get_vhdl_gen_obj()
-        return gen_obj.return_module_VHDL(self)  # type: ignore[no-any-return]
+        return gen_obj.return_module_VHDL(self)
 
     def get_instantiation(self, instance_name: str, intern_out: bool = False) -> str:
         """Also a VHDL method."""
         gen_obj = self._get_vhdl_gen_obj()
-        return gen_obj.get_instantiation(self, instance_name, intern_out)  # type: ignore[no-any-return]
+        return gen_obj.get_instantiation(self, instance_name, intern_out)
 
     def _get_vhdl_gen_obj(self) -> ModuleVHDLGen:
         o = ModuleVHDLGen(
