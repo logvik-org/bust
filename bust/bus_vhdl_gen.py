@@ -43,7 +43,7 @@ class BusVHDLGen:
             else:
                 self.reset_name = "reset_n"
 
-    def return_bus_pkg_VHDL(self):
+    def return_bus_pkg_VHDL(self) -> str:
         if self.bus_type == "axi":
             # Get standardized Jinja2 environment with all filters
             env = get_environment()
@@ -68,7 +68,7 @@ class BusVHDLGen:
             f"Only 'axi' bus type is currently supported."
         )
 
-    def return_bus_pif_VHDL(self, mod):
+    def return_bus_pif_VHDL(self, mod) -> str:
         # Get standardized Jinja2 environment with all filters
         env = get_environment()
 
