@@ -97,7 +97,8 @@ class Settings(object):
         self.header_dir = "header"
         self.sim_dir = "sim"
 
-    def return_JSON(self):
+    def to_json(self):
+        """Convert settings to JSON-serializable OrderedDict."""
         json = OrderedDict()
         json["mod_subdir"] = self.mod_subdir
         json["bus_subdir"] = self.bus_subdir
@@ -109,6 +110,10 @@ class Settings(object):
             json["vip_ipbus_rel_path"] = self.vip_ipbus_rel_path  # type: ignore[assignment]
         json["coverage"] = self.coverage
         return json
+
+    def return_JSON(self):
+        """Deprecated: Use to_json() instead."""
+        return self.to_json()
 
     def return_sim_bus_path(self, bus_type):
         """Return bus path used for simulation compilation scripts"""
