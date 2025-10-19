@@ -1,3 +1,5 @@
+from typing import cast
+
 from bust.enums import FieldType, RegisterType
 from bust.utils import indent_string
 from bust.jinja_utils.environment import get_environment
@@ -46,7 +48,7 @@ class ModuleVHDLGen:
         self.data_width = data_width
         self.addr_width = addr_width
 
-    def return_module_pkg_VHDL(self, module):
+    def return_module_pkg_VHDL(self, module) -> str:
         # Get environment with additional filters for this module
         additional_filters = {
             "get_vhdl_type": get_vhdl_type,
@@ -66,7 +68,7 @@ class ModuleVHDLGen:
 
         return template.render(context)
 
-    def return_module_VHDL(self, module):
+    def return_module_VHDL(self, module) -> str:
         # Get standardized Jinja2 environment with all filters
         env = get_environment()
 
@@ -81,7 +83,7 @@ class ModuleVHDLGen:
         }
         return template.render(context)
 
-    def get_instantiation(self, module, instance_name, intern_out=True):
+    def get_instantiation(self, module, instance_name, intern_out=True) -> str:
         s = instance_name + " "
         s += ": entity work." + self.name + "_" + self.bus.short_name + "_pif\n"
         s += indent_string("generic map (\n")
@@ -140,4 +142,4 @@ class ModuleVHDLGen:
         par += ");\n"
 
         s += indent_string(par, 2)
-        return s
+        return cast(str, s)
