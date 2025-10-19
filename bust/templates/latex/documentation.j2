@@ -77,9 +77,9 @@
 \reglabel{Reset}\regnewline
 {% if reg.type == reg_type_fields %}
   \begin{{ '{' }}regdesc{{ '}' }}\begin{{ '{' }}reglist{{ '}' }}[{{ reg.fields | map(attribute='name') | min | utf8tolatex }}]
-    {%- for field in reg.fields -%}
-\item [{{ field.name | utf8tolatex }}] {{ field.description | utf8tolatex }}{%- if not loop.last %}    {%- endif -%}
-{%- endfor %}  \end{{ '{' }}reglist{{ '}' }}\end{{ '{' }}regdesc{{ '}' }}
+{% for field in reg.fields %}
+    \item [{{ field.name | utf8tolatex }}] {{ field.description | utf8tolatex }}
+{% endfor %}  \end{{ '{' }}reglist{{ '}' }}\end{{ '{' }}regdesc{{ '}' }}
 {% endif %}
 \end{register}
 
