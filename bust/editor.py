@@ -8,6 +8,7 @@ from collections import OrderedDict
 from cursesmenu import CursesMenu
 from cursesmenu.items import FunctionItem
 from prettytable import PrettyTable
+from typing import Union, List
 
 from bust.utils import (
     json_parser,
@@ -54,7 +55,7 @@ class Editor(object):
                 self.logger.error("Exiting...")
                 raise e
         else:
-            bus_dic = OrderedDict()
+            bus_dic: OrderedDict[str, Union[str, int]] = OrderedDict()
             bus_dic["type"] = get_list_choice("Choose a bus type: ", Bus.supported_bus)
             bus_dic["addr_width"] = 32
             bus_dic["data_width"] = 32
@@ -200,7 +201,7 @@ class Editor(object):
                 "Choose register mode: ", RegisterMode.valid_values(), "lower", 0
             )
 
-            fields = []
+            fields: List[OrderedDict] = []
 
             width_consumed = 0
             while True:

@@ -121,7 +121,7 @@ class Settings(object):
         else:
             path = "../"
             if self.bus_subdir:
-                path = os.path.join(path, "../{}/".format(bus_type))
+                path = os.path.join(path, f"../{bus_type}/")
         return path
 
     def return_vip_ipbus_path(self):

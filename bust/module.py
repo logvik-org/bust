@@ -6,14 +6,14 @@ Contains the Module class and relevant exceptions
 import logging
 import json
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Dict, List, cast
 
 from bust.enums import RegisterMode, RegisterType
 from bust.exceptions import InvalidAddress, InvalidRegister
 from bust.module_vhdl_gen import ModuleVHDLGen
 from bust.register import Register
 from bust.utils import indent_string
-from bust.vhdl_util import is_unique, is_valid_VHDL
+from bust.vhdl_util import is_valid_VHDL
 from bust.config_wrapper import ConfigWrapper
 
 if TYPE_CHECKING:
@@ -169,7 +169,7 @@ class Module:
         string += "Data width: " + str(self.data_width) + "\n"
         string += "Description: " + self.description + "\n\n"
         string += "Registers: \n"
-        for i, reg in enumerate(self.registers):
+        for reg in self.registers:
             string += indent_string(str(reg), 1)
         return cast(str, string)
 
@@ -238,11 +238,6 @@ class Module:
     def return_module_VHDL(self) -> str:
         gen_obj = self._get_vhdl_gen_obj()
         return gen_obj.return_module_VHDL(self)
-
-    def get_instantiation(self, instance_name: str, intern_out: bool = False) -> str:
-        """Also a VHDL method."""
-        gen_obj = self._get_vhdl_gen_obj()
-        return gen_obj.get_instantiation(self, instance_name, intern_out)
 
     def _get_vhdl_gen_obj(self) -> ModuleVHDLGen:
         o = ModuleVHDLGen(
