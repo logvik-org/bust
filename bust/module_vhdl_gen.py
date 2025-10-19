@@ -1,42 +1,4 @@
-from typing import cast
-
-from bust.enums import FieldType, RegisterType
-from bust.utils import indent_string
 from bust.jinja_utils.environment import get_environment
-
-
-# Helper function to determine VHDL type
-def get_vhdl_type(reg, module_name):
-    """Returns the correct VHDL type based on the register's type."""
-    if reg.type == RegisterType.DEFAULT or (
-        reg.type in [RegisterType.SLV, FieldType.SLV] and reg.width == 32
-    ):
-        return f"t_{module_name}_data"
-    elif reg.type in [RegisterType.SLV, FieldType.SLV]:
-        return f"std_logic_vector({reg.width - 1} downto 0)"
-    elif reg.type in [RegisterType.SL, FieldType.SL]:
-        return "std_logic"
-    elif reg.type == RegisterType.FIELDS:
-        return f"t_{module_name}_{reg.mode.value}_{reg.name}"
-    else:
-        raise RuntimeError(f"Unknown signal type: {reg.type}")
-
-
-# Helper function to format reset values
-def get_reset_value(reg):
-    """Returns the formatted VHDL reset value."""
-    if reg.type in [RegisterType.DEFAULT, RegisterType.SLV]:
-        return (
-            "(others => '0')"
-            if reg.reset == "0x0"
-            else f'{reg.width}X"{int(reg.reset, 16):X}"'
-        )
-    elif reg.type == RegisterType.FIELDS:
-        return f"({', '.join([f'{field.name} => {field.get_reset_vhdl()}' for field in reg.fields])})"
-    elif reg.type == RegisterType.SL:
-        return f"'{int(reg.reset, 16):X}'"
-    else:
-        raise RuntimeError(f"Unknown reset type: {reg.type}")
 
 
 class ModuleVHDLGen:
@@ -49,12 +11,8 @@ class ModuleVHDLGen:
         self.addr_width = addr_width
 
     def return_module_pkg_VHDL(self, module) -> str:
-        # Get environment with additional filters for this module
-        additional_filters = {
-            "get_vhdl_type": get_vhdl_type,
-            "get_reset_value": get_reset_value,
-        }
-        env = get_environment(additional_filters)
+        # Get standardized Jinja2 environment
+        env = get_environment()
 
         # Load the template
         template = env.get_template("vhdl/module/pif/pkg.j2")
@@ -66,7 +24,7 @@ class ModuleVHDLGen:
             "data_width": self.data_width,
         }
 
-        return template.render(context)
+        return str(template.render(context))
 
     def return_module_VHDL(self, module) -> str:
         # Get standardized Jinja2 environment with all filters
@@ -81,65 +39,4 @@ class ModuleVHDLGen:
             "bus": self.bus,  # Assumes `module` has an attribute `bus`
             "NL": "\n",  # Ensures newline formatting if needed
         }
-        return template.render(context)
-
-    def get_instantiation(self, module, instance_name, intern_out=True) -> str:
-        s = instance_name + " "
-        s += ": entity work." + self.name + "_" + self.bus.short_name + "_pif\n"
-        s += indent_string("generic map (\n")
-        par = f"g_{self.bus.short_name}_baseaddr      => g_{self.bus.short_name}_baseaddr,\n"
-        par += "g_check_baseaddr    => g_check_baseaddr,\n"
-        par += "g_module_addr_width => g_module_addr_width)\n"
-        s += indent_string(par, 2)
-
-        s += indent_string("port map (\n")
-        if intern_out:
-            inter = "_i"
-        else:
-            inter = ""
-
-        par = ""
-        if module.num_rw_regs > 0:
-            par += (
-                self.bus.short_name
-                + "_rw_regs         => "
-                + self.bus.short_name
-                + "_rw_regs,\n"
-            )
-        if module.num_ro_regs > 0:
-            par += (
-                self.bus.short_name
-                + "_ro_regs         => "
-                + self.bus.short_name
-                + "_ro_regs,\n"
-            )
-        if module.num_pulse_regs > 0:
-            par += (
-                self.bus.short_name
-                + "_pulse_regs      => "
-                + self.bus.short_name
-                + "_pulse_regs,\n"
-            )
-
-        par += (
-            self.bus.clk_name
-            + "                 => "
-            + self.bus.short_name
-            + "_"
-            + self.bus.clk_name
-            + ",\n"
-        )
-        par += (
-            self.bus.reset_name
-            + "            => "
-            + self.bus.short_name
-            + "_"
-            + str.strip(self.bus.reset_name)
-            + ",\n"
-        )
-        par += self.bus.get_instantiation(self.name, inter)
-
-        par += ");\n"
-
-        s += indent_string(par, 2)
-        return cast(str, s)
+        return str(template.render(context))
