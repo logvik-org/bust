@@ -1,8 +1,11 @@
 from collections import OrderedDict
-from typing import Dict, Any
+from typing import TYPE_CHECKING, Dict
 
 from bust.bus_vhdl_gen import BusVHDLGen
 from bust.exceptions import InvalidBusType
+
+if TYPE_CHECKING:
+    from bust.module import Module
 
 
 class Bus(object):
@@ -12,7 +15,7 @@ class Bus(object):
     default_comp_library = "work"
     default_comp_library_ipbus = "ipbus"
 
-    def __init__(self, bus: Dict[str, Any]) -> None:
+    def __init__(self, bus: Dict) -> None:
         if bus["type"] in Bus.supported_bus:
             self.bus_type = bus["type"]
         else:
@@ -56,10 +59,8 @@ class Bus(object):
 
     def return_bus_pkg_VHDL(self) -> str:
         v_gen = self.get_VHDL_generator()
-        result: str = v_gen.return_bus_pkg_VHDL()
-        return result
+        return v_gen.return_bus_pkg_VHDL()  # type: ignore[no-any-return]
 
-    def return_bus_pif_VHDL(self, mod: Any) -> str:
+    def return_bus_pif_VHDL(self, mod: "Module") -> str:
         v_gen = self.get_VHDL_generator()
-        result: str = v_gen.return_bus_pif_VHDL(mod=mod)
-        return result
+        return v_gen.return_bus_pif_VHDL(mod=mod)  # type: ignore[no-any-return]
