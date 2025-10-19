@@ -28,6 +28,16 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+    - name: Check code formatting with black
+      run: |
+        black --check bust/ tests/
+    - name: Check import sorting with isort
+      run: |
+        isort --check-only bust/ tests/
+    - name: Lint with flake8
+      run: |
+        flake8 bust/ tests/ --count --statistics
     - name: Run setup tests
       run: |
         pytest

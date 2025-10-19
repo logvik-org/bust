@@ -1,8 +1,8 @@
-import os
 import logging
+import os
 import subprocess
 
-from bust.utils import write_string_to_file, update_module_top_level
+from bust.utils import update_module_top_level, write_string_to_file
 
 logger = logging.getLogger(__name__)
 

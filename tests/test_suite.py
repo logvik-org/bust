@@ -1,12 +1,13 @@
-import unittest
 import logging.config
-from bust.utils import json_parser
-from bust.module import Module
+import unittest
+
 from bust.bus import Bus
-from bust.settings import Settings
-from bust.testbench import Testbench
 from bust.documentation import Documentation
 from bust.header import Header
+from bust.module import Module
+from bust.settings import Settings
+from bust.testbench import Testbench
+from bust.utils import json_parser
 
 
 class BusHolder:
@@ -49,7 +50,7 @@ class Test_Suite(unittest.TestCase):
         )
         self.logger = logging.getLogger(__name__)
 
-    ############## Module Testing ##################
+    # Module Testing
 
     def test_pif(self):
         for holder in self.buzz:
@@ -105,7 +106,7 @@ class Test_Suite(unittest.TestCase):
             holder.bus.return_bus_pkg_VHDL(), string, "bus pkg must match manual file"
         )
 
-    ############## Testbench Testing ##################
+    # Testbench Testing
 
     def test_bench_scripts(self):
         for holder in self.buzz:
@@ -150,7 +151,7 @@ class Test_Suite(unittest.TestCase):
                     holder.tb.return_vhdl_tb(), string, ".vhd TB must match manual file"
                 )
 
-    ############## Header Testing ##################
+    # Header Testing
 
     def test_hdr(self):
         for holder in self.buzz:
@@ -205,7 +206,7 @@ class Test_Suite(unittest.TestCase):
                         "python header must match manual file",
                     )
 
-    ############## Header Testing ##################
+    # Documentation Testing
 
     def test_doc(self):
         for holder in self.buzz:

@@ -1,7 +1,4 @@
-"""! @package exceptions
-
-
-"""
+"""! @package exceptions"""
 
 
 class FormatError(Exception):

@@ -1,9 +1,10 @@
-from jinja2 import Environment, FileSystemLoader
 import os
 
+from jinja2 import Environment, FileSystemLoader
+
 from bust.enums import FieldType, RegisterType
-from bust.utils import indent_string
 from bust.jinja_utils.filters import indent_all
+from bust.utils import indent_string
 
 
 # Helper function to determine VHDL type

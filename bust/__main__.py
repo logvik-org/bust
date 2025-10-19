@@ -2,12 +2,12 @@
 """bust register tool
 
 Usage:
-  bust.py FILE [-o DIR] [[[-F | -f] [-u] [-d | -p] [-b] [-t] [-i] [-m]] | [-a] | [-c | -e]]
+  bust.py FILE [-o DIR] [[[-F | -f] [-u] [-d | -p] [-b] [-t] [-i] [-m]] | [-a] | [-c | -e]]  # noqa: E501
   bust.py --version
   bust.py -h | --help
 
 Options:
-  -o DIR         Specify output directory. Overrides settings (either JSON dir, or specified project dir in JSON)
+  -o DIR         Specify output directory. Overrides settings (either JSON dir, or specified project dir in JSON)  # noqa: E501
   -f             Force overwrite of existing files except module top level VHDL file
   -F             Force overwrite of ALL existing files
   -u             Try to update top-level file - MAY OVERWRITE USER EDITS!
@@ -28,27 +28,28 @@ Arguments:
   DIR          Output directory for VHDL, header files and documentation
 
 """
-from docopt import docopt
-import sys
 import logging
+import sys
 
-from bust.utils import json_parser, write_string_to_file
-from bust.module import Module
+from docopt import docopt
+
+from bust._version import __VERSION__
 from bust.bus import Bus
-from bust.header import Header
 from bust.documentation import Documentation
-from bust.settings import Settings
-from bust.testbench import Testbench
-from bust.generation import generate_output
+from bust.editor import Editor
 from bust.exceptions import (
     FormatError,
     InvalidAddress,
-    InvalidRegister,
     InvalidBusType,
+    InvalidRegister,
     InvalidResetMode,
 )
-from bust.editor import Editor
-from bust._version import __VERSION__
+from bust.generation import generate_output
+from bust.header import Header
+from bust.module import Module
+from bust.settings import Settings
+from bust.testbench import Testbench
+from bust.utils import json_parser, write_string_to_file
 
 
 def main():

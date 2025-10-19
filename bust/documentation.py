@@ -1,7 +1,8 @@
 from pylatexenc.latexencode import utf8tolatex
-from bust.utils import indent_string
+
 from bust._version import __VERSION__
 from bust.enums import RegisterType
+from bust.utils import indent_string
 
 
 class Documentation(object):

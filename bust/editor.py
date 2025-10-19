@@ -5,25 +5,26 @@ Contains the Editor class
 
 import logging
 from collections import OrderedDict
+
 from cursesmenu import CursesMenu
 from cursesmenu.items import FunctionItem
 from prettytable import PrettyTable
 
-from bust.utils import (
-    json_parser,
-    cont,
-    is_int,
-    clear_screen,
-    write_string_to_file,
-    get_list_choice,
-    get_int,
-    add_line_breaks,
-)
-from bust.module import Module
 from bust.bus import Bus
-from bust.vhdl_util import get_identifier
-from bust.settings import Settings
 from bust.enums import FieldType, RegisterMode, RegisterType
+from bust.module import Module
+from bust.settings import Settings
+from bust.utils import (
+    add_line_breaks,
+    clear_screen,
+    cont,
+    get_int,
+    get_list_choice,
+    is_int,
+    json_parser,
+    write_string_to_file,
+)
+from bust.vhdl_util import get_identifier
 
 
 class Editor(object):

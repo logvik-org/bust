@@ -1,18 +1,16 @@
 import logging
 
+from bust.config_wrapper import ConfigWrapper
+from bust.enums import RegisterMode, RegisterType
 from bust.exceptions import (
+    InvalidRegisterFormat,
+    InvalidStallValue,
     ModuleDataBitsExceeded,
     UndefinedRegisterType,
-    UndefinedFieldType,
-    InvalidRegisterFormat,
-    InvalidFieldFormat,
-    InvalidStallValue,
 )
 from bust.field import Field
 from bust.utils import indent_string
 from bust.vhdl_util import is_unique, is_valid_VHDL
-from bust.config_wrapper import ConfigWrapper
-from bust.enums import RegisterMode, RegisterType
 
 
 class Register:
@@ -69,16 +67,19 @@ class Register:
                 and self._config.get("width") != module_data_width
             ):
                 self.logger.warning(
-                    f"User-specified width of default register does not match the expected width ({module_data_width}). Ignoring configured width."
+                    f"User-specified width of default register does not match "
+                    f"the expected width ({module_data_width}). "
+                    f"Ignoring configured width."
                 )
             self.width = module_data_width
         elif self.type == RegisterType.SLV:
             pass
         elif self.type == RegisterType.SL:
-            # Check if the width was explicitly set in the config, and if it matches the module data width
+            # Check if width was explicitly set and matches module data width
             if self._config.is_set("width") and self._config.get("width") != 1:
                 self.logger.warning(
-                    "User-specified width of SL register does not match the expected width (1). Ignoring configured width."
+                    "User-specified width of SL register does not match "
+                    "the expected width (1). Ignoring configured width."
                 )
             self.width = 1
 

@@ -1,10 +1,10 @@
 import logging
-from jinja2 import Environment, FileSystemLoader
-from bust.jinja_utils.filters import indent_all
 import os
-from bust.enums import FieldType, RegisterMode, RegisterType
-from bust.utils import indent_string
+
+from jinja2 import Environment, FileSystemLoader
+
 from bust.bus import Bus
+from bust.jinja_utils.filters import indent_all
 
 
 class Testbench(object):

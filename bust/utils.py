@@ -1,13 +1,10 @@
-"""! @package utils
+"""! @package utils"""
 
-
-"""
-
-import re
 import json
-import os
-from functools import reduce
 import logging
+import os
+import re
+from functools import reduce
 
 logger = logging.getLogger(__name__)
 
@@ -273,7 +270,7 @@ def get_list_choice(msg, ls, case=None, default=None):
                     return ls[select - 1].upper()
                 else:
                     return ls[select - 1]
-        except Exception as e:
+        except Exception:
             print("That is not a valid choice...")
 
 

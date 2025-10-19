@@ -1,5 +1,5 @@
 from bust.utils import NL, indent_string
-from bust.vhdl_gen_if import if_stmt, if_else_stmt, if_elseif_stmt
+from bust.vhdl_gen_if import if_else_stmt, if_elseif_stmt, if_stmt
 
 
 def clock_condition(clk_identifier):

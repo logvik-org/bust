@@ -37,7 +37,14 @@ setup(
         "Jinja2==3.1.5",
     ],
     extras_require={
-        "dev": ["pytest", "pylint"],
+        "dev": [
+            "pytest>=8.0.0",
+            "pylint",
+            "black>=23.0.0",
+            "flake8>=6.0.0",
+            "isort>=5.12.0",
+            "pre-commit>=3.0.0",
+        ],
     },
     python_requires=">=3.9.0",  # For Python 3.9.0 and up
     description=description,

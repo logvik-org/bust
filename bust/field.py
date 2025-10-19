@@ -1,10 +1,10 @@
 import logging
 from collections import OrderedDict
 
-from bust.enums import FieldType
-from bust.exceptions import InvalidFieldFormat, UndefinedFieldType
-from bust.vhdl_util import is_valid_VHDL
 from bust.config_wrapper import ConfigWrapper
+from bust.enums import FieldType
+from bust.exceptions import InvalidFieldFormat
+from bust.vhdl_util import is_valid_VHDL
 
 
 class Field(object):

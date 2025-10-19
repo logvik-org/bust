@@ -1,6 +1,6 @@
 import re
 
-from bust.utils import is_mixed, NL
+from bust.utils import NL, is_mixed
 
 
 def get_identifier(msg, ls=None):

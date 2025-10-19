@@ -71,7 +71,49 @@ The latest development version can be found in the [dev branch](https://github.c
 
 `python -m bust`
 
+## Development Setup
 
+For contributors and developers working on the bust codebase:
+
+### Install Development Dependencies
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+### Setup Pre-commit Hooks
+
+Pre-commit hooks automatically check your code before committing:
+
+```bash
+pre-commit install
+```
+
+### Code Formatting and Linting
+
+The project uses the following tools for code quality:
+- **black** for code formatting (88 character line length)
+- **isort** for import sorting
+- **flake8** for style checking
+
+Before committing, format your code:
+
+```bash
+# Format code with black
+black bust/ tests/
+
+# Sort imports with isort
+isort bust/ tests/
+
+# Check for style issues with flake8
+flake8 bust/ tests/
+```
+
+The pre-commit hooks will automatically run these checks when you commit. You can also run them manually:
+
+```bash
+pre-commit run --all-files
+```
 
 ## Release Notes
 
