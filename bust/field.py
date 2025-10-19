@@ -1,5 +1,6 @@
 import logging
 from collections import OrderedDict
+from typing import Dict, Any
 
 from bust.enums import FieldType
 from bust.exceptions import InvalidFieldFormat, UndefinedFieldType
@@ -10,7 +11,7 @@ from bust.config_wrapper import ConfigWrapper
 class Field(object):
     """Documentation for Field"""
 
-    def __init__(self, field, pos_low, parent_register_name):
+    def __init__(self, field: Dict[str, Any], pos_low: int, parent_register_name: str) -> None:
 
         self.logger = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ class Field(object):
         # Check that the user-specified reset value is valid
         self.validate_reset_value()
 
-    def validate_reset_value(self):
+    def validate_reset_value(self) -> None:
         if self._config.is_set("reset"):
             # Check whether reset value matches register width
             # maxvalue is given by 2^width
@@ -65,23 +66,25 @@ class Field(object):
                     + self.parent_register_name
                 )
 
-    def get_pos_str(self):
+    def get_pos_str(self) -> str:
         if self.type == FieldType.SL:
             return str(self.pos_low)
         elif self.type == FieldType.SLV:
             return str(self.pos_high) + ":" + str(self.pos_low)
+        return ""
 
-    def get_pos_vhdl(self):
+    def get_pos_vhdl(self) -> str:
         if self.type == FieldType.SL:
             return str(self.pos_low)
         elif self.type == FieldType.SLV:
             return str(self.pos_high) + " downto " + str(self.pos_low)
+        return ""
 
     @property
-    def mask(self):
-        return pow(2, self.width) - 1 << self.pos_low
+    def mask(self) -> int:
+        return int((pow(2, self.width) - 1) << self.pos_low)
 
-    def return_dic(self):
+    def return_dic(self) -> OrderedDict:
         dic = OrderedDict()
         dic["name"] = self.name
         dic["type"] = self.type.value
@@ -94,20 +97,21 @@ class Field(object):
         return dic
 
     @property
-    def range_vhdl(self):
+    def range_vhdl(self) -> str:
         if self.type == FieldType.SLV:
             return f"{self.width - 1} downto 0"
         raise ValueError("Only slv fields have a range")
 
     @property
-    def type_vhdl(self):
+    def type_vhdl(self) -> str:
         if self.type == FieldType.SLV:
             return f"std_logic_vector({self.range_vhdl})"
         elif self.type == FieldType.SL:
             return "std_logic"
+        return ""
 
     @property
-    def reset_val_vhdl(self):
+    def reset_val_vhdl(self) -> str:
         if self.type == FieldType.SLV:
             if self.reset == "0x0":
                 val = "(others => '0')"
