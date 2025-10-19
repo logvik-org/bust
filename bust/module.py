@@ -88,7 +88,6 @@ class Module:
 
         else:
             addr = self.get_next_address()
-            self.addresses.append(addr)
             self.registers.append(Register(reg, addr, self.name, self.data_width))
 
     def get_next_address(self) -> int:
@@ -142,7 +141,6 @@ class Module:
         self.addresses = []
         for reg in self.registers:
             addr = self.get_next_address()
-            self.addresses.append(addr)
             reg.address = addr
 
     @property
