@@ -31,6 +31,7 @@ Arguments:
 from docopt import docopt
 import sys
 import logging
+from typing import Dict, Union
 
 from bust.utils import json_parser, write_string_to_file
 from bust.module import Module
@@ -87,8 +88,8 @@ def main():
 
             if args["-e"] and json_file is not None:
                 try:
-                    e = Editor(True, json_file)
-                    e.show_menu()
+                    editor = Editor(True, json_file)
+                    editor.show_menu()
                 except Exception as e:
                     logger.error("Failed to open editor for " + json_file)
                     logger.error(f"{type(e).__name__}: {e}")
@@ -128,7 +129,7 @@ def main():
                 exit(1)
 
             # File generation settings
-            gs = {}
+            gs: Dict[str, Union[bool, str]] = {}
 
             if args["-o"] is None:
                 gs["dir"] = settings.project_path
