@@ -71,14 +71,14 @@ class Field(object):
             return str(self.pos_low)
         elif self.type == FieldType.SLV:
             return str(self.pos_high) + ":" + str(self.pos_low)
-        return ""
+        raise ValueError(f"Unsupported field type: {self.type}")
 
     def get_pos_vhdl(self) -> str:
         if self.type == FieldType.SL:
             return str(self.pos_low)
         elif self.type == FieldType.SLV:
             return str(self.pos_high) + " downto " + str(self.pos_low)
-        return ""
+        raise ValueError(f"Unsupported field type: {self.type}")
 
     @property
     def mask(self) -> int:
@@ -108,7 +108,7 @@ class Field(object):
             return f"std_logic_vector({self.range_vhdl})"
         elif self.type == FieldType.SL:
             return "std_logic"
-        return ""
+        raise ValueError(f"Unsupported field type: {self.type}")
 
     @property
     def reset_val_vhdl(self) -> str:
