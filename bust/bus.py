@@ -59,8 +59,8 @@ class Bus(object):
 
     def return_bus_pkg_VHDL(self) -> str:
         v_gen = self.get_VHDL_generator()
-        return v_gen.return_bus_pkg_VHDL()  # type: ignore[no-any-return]
+        return v_gen.return_bus_pkg_VHDL()
 
     def return_bus_pif_VHDL(self, mod: "Module") -> str:
         v_gen = self.get_VHDL_generator()
-        return v_gen.return_bus_pif_VHDL(mod=mod)  # type: ignore[no-any-return]
+        return v_gen.return_bus_pif_VHDL(mod=mod)
