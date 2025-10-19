@@ -6,7 +6,7 @@ Contains the Module class and relevant exceptions
 import logging
 import json
 from collections import OrderedDict
-from typing import Dict, Any, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from bust.enums import RegisterMode, RegisterType
 from bust.exceptions import InvalidAddress, InvalidRegister
@@ -16,6 +16,10 @@ from bust.utils import indent_string
 from bust.vhdl_util import is_unique, is_valid_VHDL
 from bust.config_wrapper import ConfigWrapper
 
+if TYPE_CHECKING:
+    from bust.bus import Bus
+    from bust.settings import Settings
+
 
 class Module:
     """! @brief Managing module information
@@ -24,14 +28,14 @@ class Module:
     description of the module.
     """
 
-    def __init__(self, mod: Dict[str, Any], bus: Any, settings: Any) -> None:
+    def __init__(self, mod: Dict, bus: "Bus", settings: "Settings") -> None:
         """! @brief"""
 
         self.logger = logging.getLogger(__name__)
 
         self.bus = bus
         self.settings = settings
-        self.registers: List[Any] = []
+        self.registers: List[Register] = []
         self.addresses: List[int] = []
 
         self._config = ConfigWrapper(
@@ -66,7 +70,7 @@ class Module:
                 )
             self.add_register(reg)
 
-    def add_register(self, reg: Dict[str, Any]) -> None:
+    def add_register(self, reg: Dict) -> None:
         if "address" in reg:
             addr = int(reg["address"], 16)
             if not self.is_address_free(addr):
@@ -158,16 +162,14 @@ class Module:
             return False
 
     def __str__(self) -> str:
-        string: str = "Name: " + self.name + "\n"
+        string = "Name: " + self.name + "\n"
         string += "Address width: " + str(self.addr_width) + "\n"
         string += "Data width: " + str(self.data_width) + "\n"
-        string += "Description: " + str(self.description) + "\n\n"
+        string += "Description: " + self.description + "\n\n"
         string += "Registers: \n"
         for i, reg in enumerate(self.registers):
-            indented: str = indent_string(str(reg), 1)
-            string += indented
-        result: str = string
-        return result
+            string += indent_string(str(reg), 1)
+        return string  # type: ignore[no-any-return]
 
     def return_JSON(self, include_address: bool = False) -> str:
         """! @brief Returns JSON string"""
@@ -229,19 +231,16 @@ class Module:
 
     def return_module_pkg_VHDL(self) -> str:
         gen_obj = self._get_vhdl_gen_obj()
-        result: str = gen_obj.return_module_pkg_VHDL(self)
-        return result
+        return gen_obj.return_module_pkg_VHDL(self)  # type: ignore[no-any-return]
 
     def return_module_VHDL(self) -> str:
         gen_obj = self._get_vhdl_gen_obj()
-        result: str = gen_obj.return_module_VHDL(self)
-        return result
+        return gen_obj.return_module_VHDL(self)  # type: ignore[no-any-return]
 
     def get_instantiation(self, instance_name: str, intern_out: bool = False) -> str:
         """Also a VHDL method."""
         gen_obj = self._get_vhdl_gen_obj()
-        result: str = gen_obj.get_instantiation(self, instance_name, intern_out)
-        return result
+        return gen_obj.get_instantiation(self, instance_name, intern_out)  # type: ignore[no-any-return]
 
     def _get_vhdl_gen_obj(self) -> ModuleVHDLGen:
         o = ModuleVHDLGen(
