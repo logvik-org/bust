@@ -1,6 +1,5 @@
 import logging
 from bust.jinja_utils.environment import get_environment
-from bust.bus import Bus
 
 
 class Testbench(object):

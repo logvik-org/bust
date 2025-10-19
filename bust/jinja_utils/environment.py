@@ -31,11 +31,19 @@ def get_environment(additional_filters=None):
     )
 
     # Register common filters used across modules
-    from bust.jinja_utils.filters import hex_format, utf8tolatex, indent_all
+    from bust.jinja_utils.filters import (
+        hex_format,
+        utf8tolatex,
+        indent_all,
+        get_vhdl_type,
+        get_reset_value,
+    )
 
     env.filters["hex_format"] = hex_format
     env.filters["utf8tolatex"] = utf8tolatex
     env.filters["indent_all"] = indent_all
+    env.filters["get_vhdl_type"] = get_vhdl_type
+    env.filters["get_reset_value"] = get_reset_value
 
     # Register any additional filters provided
     if additional_filters:
