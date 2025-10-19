@@ -122,8 +122,8 @@ class Register:
     def __str__(self) -> str:
         string = "Name: " + self.name + "\n"
         string += "Address: " + hex(self.address) + "\n"
-        string += "Mode: " + str(self.mode) + "\n"
-        string += "Type: " + str(self.type) + "\n"
+        string += "Mode: " + str(self.mode.value) + "\n"
+        string += "Type: " + str(self.type.value) + "\n"
         string += "Width: " + str(self.width) + "\n"
         string += "Reset: " + self.reset
         if self.type == "record":
