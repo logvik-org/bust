@@ -87,12 +87,13 @@ class Module:
                 raise InvalidRegister(reg) from e
 
         else:
-            addr = self.get_next_address()
+            addr = self.next_available_address
             self.addresses.append(addr)
             self.registers.append(Register(reg, addr, self.name, self.data_width))
 
-    def get_next_address(self) -> int:
-        """! @brief Will get the next address based on the byte-addressed scheme"""
+    @property
+    def next_available_address(self) -> int:
+        """Get the next available address based on the byte-addressed scheme."""
         addr = 0
         found_addr = False
         while not found_addr:
@@ -113,6 +114,10 @@ class Module:
         raise RuntimeError(
             "Failed to find available address - this should never happen"
         )
+
+    def get_next_address(self) -> int:
+        """Deprecated: Use next_available_address property instead."""
+        return self.next_available_address
 
     def is_address_out_of_range(self, addr: int) -> bool:
         """Returns True if address is out of range, False if not"""
@@ -141,7 +146,7 @@ class Module:
     def update_addresses(self) -> None:
         self.addresses = []
         for reg in self.registers:
-            addr = self.get_next_address()
+            addr = self.next_available_address
             self.addresses.append(addr)
             reg.address = addr
 
@@ -173,12 +178,12 @@ class Module:
             string += indent_string(str(reg), 1)
         return cast(str, string)
 
-    def return_JSON(self, include_address: bool = False) -> str:
-        """! @brief Returns JSON string"""
+    def to_json(self, include_address: bool = False) -> str:
+        """Convert module configuration to JSON string."""
         dic = OrderedDict()
         mod = OrderedDict()
-        dic["settings"] = self.settings.return_JSON()
-        dic["bus"] = self.bus.return_JSON()
+        dic["settings"] = self.settings.to_json()
+        dic["bus"] = self.bus.to_json()
         dic["module"] = OrderedDict()
 
         mod["name"] = self.name
@@ -231,20 +236,39 @@ class Module:
 
         return s
 
+    def return_JSON(self, include_address: bool = False) -> str:
+        """Deprecated: Use to_json() instead."""
+        return self.to_json(include_address)
+
+    def generate_module_package_vhdl(self) -> str:
+        """Generate VHDL package for the module."""
+        gen_obj = self._create_vhdl_generator()
+        return gen_obj.generate_module_package_vhdl(self)
+
     def return_module_pkg_VHDL(self) -> str:
-        gen_obj = self._get_vhdl_gen_obj()
-        return gen_obj.return_module_pkg_VHDL(self)
+        """Deprecated: Use generate_module_package_vhdl() instead."""
+        return self.generate_module_package_vhdl()
+
+    def generate_module_vhdl(self) -> str:
+        """Generate VHDL module code."""
+        gen_obj = self._create_vhdl_generator()
+        return gen_obj.generate_module_vhdl(self)
 
     def return_module_VHDL(self) -> str:
-        gen_obj = self._get_vhdl_gen_obj()
-        return gen_obj.return_module_VHDL(self)
+        """Deprecated: Use generate_module_vhdl() instead."""
+        return self.generate_module_vhdl()
 
-    def _get_vhdl_gen_obj(self) -> ModuleVHDLGen:
+    def _create_vhdl_generator(self) -> ModuleVHDLGen:
+        """Create and return a VHDL generator for this module."""
         o = ModuleVHDLGen(
             name=self.name,
-            bus_gen=self.bus.get_VHDL_generator(),
+            bus_gen=self.bus.create_vhdl_generator(),
             regs=self.registers,
             data_width=self.data_width,
             addr_width=self.addr_width,
         )
         return o
+
+    def _get_vhdl_gen_obj(self) -> ModuleVHDLGen:
+        """Deprecated: Use _create_vhdl_generator() instead."""
+        return self._create_vhdl_generator()
