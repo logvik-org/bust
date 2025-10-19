@@ -95,13 +95,10 @@ begin  -- architecture tb
     --
 
     {{ uvvm.reg_hdr(reg) | indent(4) }}
-
     {{ uvvm.check_default_value(reg, bus) | indent(4) }}
-
     {{ uvvm.set_check_zero_value(reg, bus) | indent(4) }}
-
     {{ uvvm.check_bit_fields(reg, bus) | indent(4) }}
-    {% endfor %}
+{% endfor %}
 {% if bus.bus_type == 'ipbus' %}
     --
 

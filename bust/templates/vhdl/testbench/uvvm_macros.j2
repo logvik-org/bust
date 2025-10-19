@@ -236,7 +236,8 @@ check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ fie
 {% if reg.mode.value != 'pulse' -%}
 check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"{{ '%x' | format(reg.reset[2:]|int(base=16)) }}", "{{ reg.name }} default value");
 {% endif -%}
-{%- endmacro %}
+
+{% endmacro %}
 
 {% macro set_check_zero_value(reg, bus) -%}
 log_hdr("Set&Check Zero Value");
@@ -314,13 +315,13 @@ await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ fie
 {% endfor -%}
 {%- endif %}
 {%- endif %}
-{%- endmacro %}
+
+{% endmacro %}
 
 {% macro check_bit_fields(reg, bus) -%}
 {% if reg.type.value != 'fields' %}
 log_hdr("Check all bit fields");
 {% endif %}
-
 {% if reg.mode.value == 'rw' -%}
 {% if reg.type.value == 'sl' -%}
 write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"1", "Check all bit fields");
@@ -343,7 +344,6 @@ end loop;
 {%- elif reg.type.value == 'fields' %}
 {%- for field in reg.fields -%}
 log_hdr("Check all bit fields {{ field.name }}");
-
 {% if field.type.value == 'sl' -%}
 write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"{{ '%x' | format(2**field.pos_low) }}", "Check all bit fields");
 check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, '1', error, "Check all bit fields");
@@ -352,7 +352,6 @@ check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32
 write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
 check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, '0', error, "Check all bit fields");
 check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
-
 {% else -%}
 for i in 0 to {{ field.width - 1 }} loop
   write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), std_logic_vector(to_unsigned(1, data_width) sll i{% if field.pos_low > 0 %}+{{ field.pos_low }}{% endif %}), "Check all bit fields");
@@ -363,7 +362,6 @@ for i in 0 to {{ field.width - 1 }} loop
   check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, {{ field.width }}X"0", error, "Check all bit fields");
   check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
 end loop;
-
 {% endif -%}
 {% endfor -%}
 {% endif %}
@@ -390,7 +388,6 @@ end loop;
 {% elif reg.type.value == 'fields' %}
 {% for field in reg.fields -%}
 log_hdr("Check all bit fields {{ field.name }}");
-
 {% if field.type.value == 'sl' -%}
 {{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }} <= '1';
 await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, '1', 0 ns, 1 ns, error, "Check all bit fields");
@@ -399,7 +396,6 @@ check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32
 {{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }} <= '0';
 await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, '0', 0 ns, 1 ns, error, "Check all bit fields");
 check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
-
 {% else -%}
 for i in 0 to {{ field.width - 1 }} loop
   {{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }} <= std_logic_vector(to_unsigned(1, {{ field.width }}) sll i);
@@ -410,7 +406,6 @@ for i in 0 to {{ field.width - 1 }} loop
   await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, {{ field.width }}X"0", 0 ns, 1 ns, error, "Check all bit fields");
   check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
 end loop;
-
 {% endif -%}
 {% endfor -%}
 {%- endif %}
@@ -437,14 +432,12 @@ end loop;
 {% elif reg.type.value == 'fields' -%}
 {% for field in reg.fields -%}
 log_hdr("Check all bit fields {{ field.name }}");
-
 {% if field.type.value == 'sl' -%}
 write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"{{ '%x' | format(2**field.pos_low) }}", "Check all bit fields");
 check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, '1', error, "Check all bit fields");
 await_stable({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, {{ reg.pulse_cycles }}*C_CLK_PERIOD, FROM_LAST_EVENT, error, "Check all bit fields");
 check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, '1', error, "Check all bit fields");
 await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, '{{ (field.reset[2:]|int(base=16)) % 2 }}', 0 ns, 1 ns, error, "Check all bit fields");
-
 {% else -%}
 for i in 0 to {{ field.width - 1 }} loop
   write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), std_logic_vector(to_unsigned(1, data_width) sll i{% if field.pos_low > 0 %}+{{ field.pos_low }}{% endif %}), "Check all bit fields");
@@ -453,9 +446,9 @@ for i in 0 to {{ field.width - 1 }} loop
   check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, std_logic_vector(to_unsigned(1, {{ field.width }}) sll i), error, "Check all bit fields");
   await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, {{ field.width }}X"{{ '%x' | format(field.reset[2:]|int(base=16)) }}", 0 ns, 1 ns, error, "Check all bit fields");
 end loop;
-
 {% endif -%}
 {% endfor -%}
 {%- endif %}
 {%- endif %}
-{%- endmacro %}
+
+{% endmacro %}
