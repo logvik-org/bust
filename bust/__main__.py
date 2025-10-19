@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""bust register tool
+"""bust register tool.
 
 Usage:
   bust.py FILE [-o DIR] [[[-F | -f] [-u] [-d | -p] [-b] [-t] [-i] [-m]] | [-a] | [-c | -e]]
