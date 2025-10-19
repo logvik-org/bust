@@ -1,4 +1,10 @@
-"""! @package utils"""
+"""Utility functions for bust.
+
+This module provides various utility functions for string manipulation,
+file I/O, JSON processing, and user interaction. These utilities are used
+throughout the bust tool for formatting output, managing files, and
+parsing configurations.
+"""
 
 import re
 import json
@@ -14,7 +20,16 @@ NL = "\n"
 
 
 def indent_string(string: str, tabs: int = 1, break_line: bool = False) -> str:
-    """! @brief adds indent spaces to all lines in string"""
+    """Add indentation to all lines in a string.
+
+    Args:
+        string: Input string to indent.
+        tabs: Number of tab levels to indent (default: 1).
+        break_line: Whether to add trailing newline (default: False).
+
+    Returns:
+        Indented string with spaces added to each line.
+    """
 
     indent = spaces_in_tab * tabs * (" ")
     # Add indent to every line and recreate string
@@ -35,14 +50,28 @@ def indent_string(string: str, tabs: int = 1, break_line: bool = False) -> str:
 
 
 def json_parser(filename: str = "module.json") -> Any:
+    """Parse JSON file and return contents.
+
+    Args:
+        filename: Path to JSON file (default: "module.json").
+
+    Returns:
+        Parsed JSON data as Python object.
+    """
     with open(filename) as json_data:
         d = json.load(json_data)
         return d
 
 
 def fix_last_indent_only_line(string: str, tabs: int) -> str:
-    """! @brief Will edit the last line if it only contains indentation to an
-    empty string
+    """Remove indentation from last line if it only contains spaces.
+
+    Args:
+        string: Input string to process.
+        tabs: Number of tab levels used for indentation.
+
+    Returns:
+        String with empty last line if it previously only had indentation.
     """
     string_list = re.split(r"\n", string)
     if string_list[-1] == (spaces_in_tab * tabs * (" ")):
@@ -53,9 +82,18 @@ def fix_last_indent_only_line(string: str, tabs: int) -> str:
 
 
 def compare_JSON(json1: str, json2: str, raise_error: bool = False) -> bool:
-    """! @brief Will compare two JSON strings, and return False if they differ. An
-    extra argument can be used to force the function to raise an error with the line
-    the difference was observed.
+    """Compare two JSON strings line by line.
+
+    Args:
+        json1: First JSON string.
+        json2: Second JSON string.
+        raise_error: If True, raise exception on first difference (default: False).
+
+    Returns:
+        True if JSON strings are identical, False otherwise.
+
+    Raises:
+        Exception: If raise_error is True and strings differ.
     """
     for linenumber, (line1, line2) in enumerate(
         zip(json1.splitlines(), json2.splitlines())
@@ -71,7 +109,20 @@ def compare_JSON(json1: str, json2: str, raise_error: bool = False) -> bool:
 def write_string_to_file(
     string: str, output_file: str, output_dir: str, force_overwrite: bool = False
 ) -> bool:
-    """! @brief Write string to file"""
+    """Write string content to a file with optional overwrite confirmation.
+
+    Args:
+        string: Content to write to file.
+        output_file: Filename to write.
+        output_dir: Directory path where file will be written.
+        force_overwrite: Skip confirmation if file exists (default: False).
+
+    Returns:
+        True if file was written, False if user declined overwrite.
+
+    Raises:
+        RuntimeError: If output directory doesn't exist.
+    """
 
     # Make sure output directory exists
     if not os.path.isdir(output_dir):
@@ -96,6 +147,22 @@ def write_string_to_file(
 
 
 def update_module_top_level(existing_file: str, new_top_level: str) -> str:
+    """Update top-level VHDL module preserving user-edited sections.
+
+    This function reads an existing top-level VHDL file, extracts user-edited
+    sections (marked with special comments), and merges them into a newly
+    generated top-level file.
+
+    Args:
+        existing_file: Path to existing top-level VHDL file.
+        new_top_level: Newly generated top-level VHDL content.
+
+    Returns:
+        Updated VHDL content with user sections preserved.
+
+    Raises:
+        Exception: If user cancels the update operation.
+    """
     # Check if file exists at all...
     if os.path.isfile(existing_file):
         # Read the file and get the user edited parts...
@@ -120,6 +187,15 @@ def update_module_top_level(existing_file: str, new_top_level: str) -> str:
 
 
 def analyze_top_level_file(existing_file: str) -> List[str]:
+    """Extract user-edited sections from existing top-level VHDL file.
+
+    Args:
+        existing_file: Path to existing VHDL file.
+
+    Returns:
+        List of 5 strings containing user sections: libraries, generics,
+        ports, architecture, and logic.
+    """
     string_list = [""] * 5
     list_num = 0
     with open(existing_file) as infile:
@@ -157,6 +233,15 @@ def analyze_top_level_file(existing_file: str) -> List[str]:
 
 
 def restore_user_in_top_level(user: List[str], new_top_level: str) -> str:
+    """Merge user-edited sections into new top-level VHDL content.
+
+    Args:
+        user: List of 5 user-edited sections from analyze_top_level_file().
+        new_top_level: Newly generated top-level VHDL content.
+
+    Returns:
+        Merged VHDL content with user sections inserted at markers.
+    """
 
     new_top_lines = splitkeepsep(new_top_level, "\n")
 
@@ -186,6 +271,15 @@ def restore_user_in_top_level(user: List[str], new_top_level: str) -> str:
 
 
 def splitkeepsep(s: str, sep: str) -> List[str]:
+    """Split string while keeping separator with each segment.
+
+    Args:
+        s: String to split.
+        sep: Separator string.
+
+    Returns:
+        List of strings where each element ends with the separator.
+    """
     return reduce(
         lambda acc, elem: acc[:-1] + [acc[-1] + elem] if elem == sep else acc + [elem],
         re.split("(%s)" % re.escape(sep), s),
@@ -194,6 +288,7 @@ def splitkeepsep(s: str, sep: str) -> List[str]:
 
 
 def cont() -> None:
+    """Pause execution and wait for user to press Enter."""
     try:
         input("Press enter to continue...")
     except SyntaxError:
@@ -201,6 +296,14 @@ def cont() -> None:
 
 
 def is_int(s: Any) -> bool:
+    """Check if a value can be converted to an integer.
+
+    Args:
+        s: Value to check.
+
+    Returns:
+        True if s can be converted to int, False otherwise.
+    """
     try:
         int(s)
         return True
@@ -227,6 +330,20 @@ def get_int(
     range_max_msg: Optional[str] = None,
     default: Optional[int] = None,
 ) -> int:
+    """Prompt user for integer input with validation.
+
+    Args:
+        msg: Prompt message to display.
+        base: Number base for parsing (default: 10).
+        range_min: Minimum allowed value (optional).
+        range_max: Maximum allowed value (optional).
+        range_min_msg: Custom error message for minimum violation (optional).
+        range_max_msg: Custom error message for maximum violation (optional).
+        default: Default value if user presses Enter without input (optional).
+
+    Returns:
+        Valid integer within specified range.
+    """
     while True:
         try:
             s = input(msg)
@@ -253,6 +370,17 @@ def get_int(
 def get_list_choice(
     msg: str, ls: List[str], case: Optional[str] = None, default: Optional[int] = None
 ) -> str:
+    """Prompt user to select from a list of options.
+
+    Args:
+        msg: Prompt message to display.
+        ls: List of options to choose from.
+        case: Optional case conversion ("lower", "upper", or None).
+        default: Default option index (0-based) if user presses Enter (optional).
+
+    Returns:
+        Selected string from the list, optionally case-converted.
+    """
     while True:
         try:
             print(msg)
@@ -280,11 +408,22 @@ def get_list_choice(
 
 
 def clear_screen() -> None:
+    """Clear the terminal screen (cross-platform)."""
     os.system("cls" if os.name == "nt" else "clear")
 
 
 def add_line_breaks(string: str, min_length: int) -> str:
-    """! @brief Adds line breaks on the next space after the minimum length of a line"""
+    """Add line breaks to long strings at word boundaries.
+
+    Inserts newlines after spaces once a line exceeds the minimum length.
+
+    Args:
+        string: Input string to process.
+        min_length: Minimum line length before inserting break.
+
+    Returns:
+        String with line breaks added at appropriate positions.
+    """
     requirement = min_length
     replace = False
     positions = []
@@ -302,6 +441,14 @@ def add_line_breaks(string: str, min_length: int) -> str:
 
 
 def is_mixed(string: str) -> bool:
+    """Check if string contains both uppercase and lowercase letters.
+
+    Args:
+        string: String to check.
+
+    Returns:
+        True if string has both upper and lowercase letters, False otherwise.
+    """
     upper = False
     lower = False
     for letter in string:

@@ -1,3 +1,14 @@
+"""Register module for bust.
+
+This module defines the Register class, which represents a memory-mapped
+register within a bus slave module. Registers can have various types
+(default, slv, sl, fields), access modes (RW, RO, PULSE), and optional
+features like stall cycles.
+
+Each register has a fixed address, configurable width, reset value, and
+can optionally contain multiple named bitfields.
+"""
+
 import logging
 from typing import Dict, List, cast
 
@@ -17,11 +28,56 @@ from bust.enums import RegisterMode, RegisterType
 
 
 class Register:
-    """! @brief Managing register information"""
+    """Represents a memory-mapped register in a bus slave module.
+
+    A Register encapsulates all information needed to generate a memory-mapped
+    register, including its address, data type, access mode, reset value, and
+    optional bitfields. Registers support various modes (read-write, read-only,
+    pulse) and types (default width, custom slv, single-bit, or composite fields).
+
+    Attributes:
+        name: Register name (must be valid VHDL identifier).
+        address: Memory address of the register.
+        mode: Access mode (RW, RO, or PULSE).
+        type: Data type (DEFAULT, SLV, SL, or FIELDS).
+        width: Data width in bits.
+        reset: Reset value as hex string.
+        description: Optional description of the register's purpose.
+        pulse_cycles: Duration of pulse signal for PULSE mode.
+        stall_cycles: Number of stall cycles (IPBus only, 2-255).
+        stall: True if stall_cycles > 0.
+        fields: List of Field objects for FIELDS type registers.
+        module_name: Name of parent module.
+        module_data_width: Data width of parent module.
+    """
 
     def __init__(
         self, reg: Dict, address: int, module_name: str, module_data_width: int
     ) -> None:
+        """Initialize a Register instance.
+
+        Args:
+            reg: Dictionary containing register configuration with keys:
+                - name: Register identifier (required)
+                - mode: Access mode "rw", "ro", or "pulse" (default: "rw")
+                - type: Register type "default", "slv", "sl", or "fields" (default: "default")
+                - width: Bit width (default: module_data_width)
+                - reset: Reset value as hex string (default: "0x0")
+                - description: Register description (default: "")
+                - pulse_cycles: Pulse duration for PULSE mode (default: 1)
+                - stall_cycles: Stall cycles for IPBus (default: 0, range: 0 or 2-255)
+                - fields: List of field dictionaries for FIELDS type
+            address: Memory address for this register.
+            module_name: Name of the parent module.
+            module_data_width: Data width of the parent module.
+
+        Raises:
+            InvalidRegisterFormat: If reset value doesn't match width or is invalid.
+            InvalidStallValue: If stall_cycles is not 0 or between 2-255.
+            ModuleDataBitsExceeded: If register width exceeds module data width.
+            UndefinedRegisterType: If register type is not supported.
+            ValueError: If register name is not a valid VHDL identifier.
+        """
 
         self.logger = logging.getLogger(__name__)
 
@@ -99,11 +155,18 @@ class Register:
         self.check_register_data_width(module_data_width)
 
     def _init_fields(self) -> None:
+        """Initialize fields from configuration for FIELDS type registers."""
         fields = self._config.require("fields")
         for field in fields:
             self.add_field(field)
 
     def validate_reset_value(self) -> None:
+        """Validate that the reset value fits within the register's bit width.
+
+        Raises:
+            InvalidRegisterFormat: If reset value exceeds maximum value for width
+                or if reset is specified for record type register.
+        """
         if self._config.is_set("reset"):
             # Reset value is not allowed if type is record
             if self.type == "record":
@@ -146,12 +209,29 @@ class Register:
 
     @property
     def range_vhdl(self) -> str:
+        """Return VHDL range string for SLV registers.
+
+        Returns:
+            VHDL range in "N-1 downto 0" format for SLV registers.
+
+        Raises:
+            ValueError: If called on non-SLV register type.
+        """
         if self.type == RegisterType.SLV:
             return f"{self.width - 1} downto 0"
         raise ValueError("Only slv fields have a range")
 
     @property
     def type_vhdl(self) -> str:
+        """Return VHDL type declaration for this register.
+
+        Returns:
+            Type name suitable for VHDL code generation:
+            - Module data type for DEFAULT registers
+            - std_logic_vector(...) for SLV registers
+            - std_logic for SL registers
+            - Custom record type for FIELDS registers
+        """
         if self.type == RegisterType.DEFAULT or (
             self.type == RegisterType.SLV and self.width == self.module_data_width
         ):
@@ -165,6 +245,14 @@ class Register:
 
     @property
     def reset_val_vhdl(self) -> str:
+        """Generate VHDL literal for the register's reset value.
+
+        Returns:
+            VHDL literal as string.
+
+        Raises:
+            ValueError: If called on FIELDS type (fields have individual reset values).
+        """
         if self.type in [RegisterType.DEFAULT, RegisterType.SLV]:
             if self.reset == "0x0":
                 return "(others => '0')"
@@ -180,6 +268,17 @@ class Register:
         )
 
     def add_field(self, field_cfg: Dict) -> None:
+        """Add a bitfield to this register.
+
+        Creates a Field object and adds it to the register, updating the
+        register's total width and reset value to incorporate the new field.
+
+        Args:
+            field_cfg: Dictionary containing field configuration (see Field.__init__).
+
+        Raises:
+            ValueError: If field name is not unique within this register.
+        """
 
         field = Field(field_cfg, self.get_next_pos_low(), self.name)
 
@@ -199,14 +298,23 @@ class Register:
         self.fields.append(field)
 
     def check_register_data_width(self, module_data_width: int) -> None:
-        """! @brief Controls that the combined data bits in fields does not
-        exceed data bits of module
+        """Verify that register width doesn't exceed module data width.
 
+        Args:
+            module_data_width: Maximum allowed data width in bits.
+
+        Raises:
+            ModuleDataBitsExceeded: If register width exceeds module width.
         """
         if self.width > module_data_width:
             raise ModuleDataBitsExceeded(self.name, self.width, module_data_width)
 
     def get_next_pos_low(self) -> int:
+        """Calculate the next available bit position for adding a field.
+
+        Returns:
+            Next free bit position (0 if no fields exist yet).
+        """
         if len(self.fields) > 0:
             last_pos_high: int = self.fields[-1].pos_high
             return last_pos_high + 1
@@ -214,7 +322,11 @@ class Register:
             return 0
 
     def get_mode(self) -> str:
-        """Get the register mode in r/w/rw format - pulse = w"""
+        """Get register access mode in short format.
+
+        Returns:
+            "r" for read-only, "w" for pulse (write-only), "rw" for read-write.
+        """
         if self.mode == RegisterMode.PULSE:
             return "w"
         elif self.mode == RegisterMode.RO:
@@ -223,10 +335,20 @@ class Register:
             return str(self.mode.value)
 
     def return_stall_string(self) -> str:
+        """Return stall indicator string for documentation.
+
+        Returns:
+            "/STALL" if stall is enabled, empty string otherwise.
+        """
         if self.stall:
             return "/STALL"
         else:
             return ""
 
     def get_stall_cycles_str(self) -> str:
+        """Return stall cycles count adjusted for VHDL representation.
+
+        Returns:
+            String representation of stall_cycles - 2 (VHDL encoding offset).
+        """
         return str(self.stall_cycles - 2)

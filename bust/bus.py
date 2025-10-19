@@ -1,3 +1,13 @@
+"""Bus module for bust.
+
+This module defines the Bus class, which represents a bus interface
+configuration for VHDL bus slave modules. It supports multiple bus
+standards including AXI4-Lite and IPBus.
+
+The Bus class handles bus-specific settings like data width, address width,
+reset type, and component library references.
+"""
+
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Dict
 
@@ -9,13 +19,47 @@ if TYPE_CHECKING:
 
 
 class Bus(object):
-    """! @brief Managing bus information"""
+    """Represents a bus interface configuration.
+
+    The Bus class encapsulates all configuration for a specific bus standard,
+    including type, data/address widths, and VHDL generation settings. It
+    provides methods for generating bus-specific VHDL code.
+
+    Supported bus types:
+        - axi: AXI4-Lite (async reset)
+        - ipbus: IPBus (sync reset)
+
+    Attributes:
+        bus_type: Bus standard identifier ("axi" or "ipbus").
+        data_width: Width of data bus in bits.
+        addr_width: Width of address bus in bits.
+        comp_library: VHDL library name for bus components.
+        short_name: Abbreviated bus name for code generation.
+        bus_reset: Reset type ("async" or "sync").
+
+    Class Attributes:
+        supported_bus: List of supported bus type strings.
+        default_comp_library: Default VHDL library ("work").
+        default_comp_library_ipbus: Default library for IPBus ("ipbus").
+    """
 
     supported_bus = ["axi", "ipbus"]
     default_comp_library = "work"
     default_comp_library_ipbus = "ipbus"
 
     def __init__(self, bus: Dict) -> None:
+        """Initialize a Bus instance.
+
+        Args:
+            bus: Dictionary containing bus configuration with keys:
+                - type: Bus type, must be "axi" or "ipbus" (required)
+                - data_width: Data bus width in bits (required)
+                - addr_width: Address bus width in bits (required)
+                - comp_library: VHDL component library (optional, defaults based on type)
+
+        Raises:
+            InvalidBusType: If bus type is not in supported_bus list.
+        """
         if bus["type"] in Bus.supported_bus:
             self.bus_type = bus["type"]
         else:
@@ -40,6 +84,12 @@ class Bus(object):
             self.bus_reset = "sync"
 
     def return_JSON(self) -> OrderedDict:
+        """Export bus configuration as an ordered dictionary.
+
+        Returns:
+            OrderedDict with bus configuration, omitting comp_library if it
+            matches the default value.
+        """
         json = OrderedDict()
         json["type"] = self.bus_type
         json["addr_width"] = self.addr_width
@@ -50,6 +100,11 @@ class Bus(object):
         return json
 
     def get_VHDL_generator(self) -> BusVHDLGen:
+        """Create a VHDL generator instance for this bus configuration.
+
+        Returns:
+            BusVHDLGen instance configured for this bus type.
+        """
         return BusVHDLGen(
             bus_type=self.bus_type,
             comp_library=self.comp_library,
@@ -58,9 +113,22 @@ class Bus(object):
         )
 
     def return_bus_pkg_VHDL(self) -> str:
+        """Generate VHDL package code for this bus interface.
+
+        Returns:
+            VHDL package source code as a string.
+        """
         v_gen = self.get_VHDL_generator()
         return v_gen.return_bus_pkg_VHDL()
 
     def return_bus_pif_VHDL(self, mod: "Module") -> str:
+        """Generate bus protocol interface VHDL code for a module.
+
+        Args:
+            mod: Module instance to generate interface code for.
+
+        Returns:
+            VHDL source code for the bus protocol interface.
+        """
         v_gen = self.get_VHDL_generator()
         return v_gen.return_bus_pif_VHDL(mod=mod)
