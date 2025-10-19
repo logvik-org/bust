@@ -27,7 +27,8 @@ class Testbench(object):
         )
         return s
 
-    def return_uvvm_component_list(self):
+    def generate_uvvm_component_list(self):
+        """Generate UVVM component list."""
         self.logger.debug("Generating UVVM Component List")
         string = "uvvm_util\n"
         string += "uvvm_vvc_framework\n"
@@ -37,7 +38,12 @@ class Testbench(object):
         string += "\n"
         return string
 
-    def return_tcl_script(self):
+    def return_uvvm_component_list(self):
+        """Deprecated: Use generate_uvvm_component_list() instead."""
+        return self.generate_uvvm_component_list()
+
+    def generate_tcl_script(self):
+        """Generate TCL simulation script."""
         self.logger.debug("Generating TCL Script")
 
         # Get standardized Jinja2 environment with all filters
@@ -58,7 +64,12 @@ class Testbench(object):
             result += "\n"
         return result
 
-    def return_vhdl_tb(self):
+    def return_tcl_script(self):
+        """Deprecated: Use generate_tcl_script() instead."""
+        return self.generate_tcl_script()
+
+    def generate_vhdl_testbench(self):
+        """Generate VHDL testbench."""
         # Get standardized Jinja2 environment with all filters
         env = get_environment()
 
@@ -72,3 +83,7 @@ class Testbench(object):
             "NL": "\n",  # Ensures newline formatting if needed
         }
         return template.render(context)
+
+    def return_vhdl_tb(self):
+        """Deprecated: Use generate_vhdl_testbench() instead."""
+        return self.generate_vhdl_testbench()
