@@ -321,6 +321,7 @@ await_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ fie
 {% macro check_bit_fields(reg, bus) -%}
 {% if reg.type.value != 'fields' %}
 log_hdr("Check all bit fields");
+
 {% endif %}
 {% if reg.mode.value == 'rw' -%}
 {% if reg.type.value == 'sl' -%}
@@ -342,8 +343,9 @@ for i in 0 to {{ reg.width - 1 }} loop
   check(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"0", "Check all bit fields");
 end loop;
 {%- elif reg.type.value == 'fields' %}
-{%- for field in reg.fields -%}
+{% for field in reg.fields %}
 log_hdr("Check all bit fields {{ field.name }}");
+
 {% if field.type.value == 'sl' -%}
 write(f_addr(g_{{ bus.short_name }}_baseaddr, C_ADDR_{{ reg.name.upper() }}), 32X"{{ '%x' | format(2**field.pos_low) }}", "Check all bit fields");
 check_value({{ bus.short_name }}_{{ reg.mode.value }}_regs.{{ reg.name }}.{{ field.name }}, '1', error, "Check all bit fields");
