@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, List
+from typing import Dict, List
 
 from bust.exceptions import (
     ModuleDataBitsExceeded,
@@ -19,14 +19,14 @@ from bust.enums import RegisterMode, RegisterType
 class Register:
     """! @brief Managing register information"""
 
-    def __init__(self, reg: Dict[str, Any], address: int, module_name: str, module_data_width: int) -> None:
+    def __init__(self, reg: Dict, address: int, module_name: str, module_data_width: int) -> None:
 
         self.logger = logging.getLogger(__name__)
 
         self.module_name = module_name
         self.module_data_width = module_data_width
         self.address = address
-        self.fields: List[Any] = []
+        self.fields: List["Field"] = []
 
         self._config = ConfigWrapper(
             reg,
@@ -118,7 +118,7 @@ class Register:
                 )
 
     def __str__(self) -> str:
-        string: str = "Name: " + self.name + "\n"
+        string = "Name: " + self.name + "\n"
         string += "Address: " + hex(self.address) + "\n"
         string += "Mode: " + str(self.mode) + "\n"
         string += "Type: " + str(self.type) + "\n"
@@ -126,23 +126,21 @@ class Register:
         string += "Reset: " + self.reset
         if self.type == "record":
 
-            for i in self.fields:
+            for field in self.fields:
                 string += "\n"
-                indented: str = indent_string(
+                string += indent_string(
                     "Name: "
-                    + i["name"]
+                    + field.name
                     + " Type: "
-                    + i["type"]
+                    + str(field.type.value)
                     + " Width: "
-                    + str(i["width"])
+                    + str(field.width)
                     + " Reset: "
-                    + i["reset"]
+                    + field.reset
                 )
-                string += indented
 
-        string += "\nDescription: " + str(self.description) + "\n\n"
-        result: str = string
-        return result
+        string += "\nDescription: " + self.description + "\n\n"
+        return string  # type: ignore[no-any-return]
 
     @property
     def range_vhdl(self) -> str:
@@ -179,7 +177,7 @@ class Register:
             "Only default, slv and sl registers can extract reset value directly"
         )
 
-    def add_field(self, field_cfg: Dict[str, Any]) -> None:
+    def add_field(self, field_cfg: Dict) -> None:
 
         field = Field(field_cfg, self.get_next_pos_low(), self.name)
 
@@ -198,13 +196,13 @@ class Register:
 
         self.fields.append(field)
 
-    def check_register_data_width(self, module: int) -> None:
+    def check_register_data_width(self, module_data_width: int) -> None:
         """! @brief Controls that the combined data bits in fields does not
         exceed data bits of module
 
         """
-        if self.width > module:
-            raise ModuleDataBitsExceeded(self.name, self.width, module)
+        if self.width > module_data_width:
+            raise ModuleDataBitsExceeded(self.name, self.width, module_data_width)
 
     def get_next_pos_low(self) -> int:
         if len(self.fields) > 0:

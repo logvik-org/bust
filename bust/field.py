@@ -1,6 +1,6 @@
 import logging
 from collections import OrderedDict
-from typing import Dict, Any
+from typing import Dict
 
 from bust.enums import FieldType
 from bust.exceptions import InvalidFieldFormat, UndefinedFieldType
@@ -11,7 +11,7 @@ from bust.config_wrapper import ConfigWrapper
 class Field(object):
     """Documentation for Field"""
 
-    def __init__(self, field: Dict[str, Any], pos_low: int, parent_register_name: str) -> None:
+    def __init__(self, field: Dict, pos_low: int, parent_register_name: str) -> None:
 
         self.logger = logging.getLogger(__name__)
 
