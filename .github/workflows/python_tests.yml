@@ -38,9 +38,9 @@ jobs:
     - name: Lint with flake8
       run: |
         # Run flake8 but allow line length violations (E501) since black handles formatting
-        flake8 bust/ tests/ --count --statistics --exit-zero || true
+        flake8 bust/ tests/ --count --statistics --exit-zero
         # Fail on actual code issues (not formatting)
-        flake8 bust/ tests/ --select=F,W --count
+        flake8 bust/ tests/ --select=F,W --count --statistics
     - name: Run setup tests
       run: |
         pytest
