@@ -99,7 +99,7 @@ class ModuleVHDLGen:
         s = instance_name + " "
         s += ": entity work." + self.name + "_" + self.bus.short_name + "_pif\n"
         s += indent_string("generic map (\n")
-        par = "g_{0}_baseaddr      => g_{0}_baseaddr,\n".format(self.bus.short_name)
+        par = f"g_{self.bus.short_name}_baseaddr      => g_{self.bus.short_name}_baseaddr,\n"
         par += "g_check_baseaddr    => g_check_baseaddr,\n"
         par += "g_module_addr_width => g_module_addr_width)\n"
         s += indent_string(par, 2)

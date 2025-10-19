@@ -22,3 +22,8 @@ def indent_all(text, spaces=4):
     return "\n".join(
         f"{prefix}{line}" if line.strip() else line for line in text.splitlines()
     )
+
+
+def hex_format(value, width):
+    """Format a value as hexadecimal with specified width."""
+    return f"{value:0{width}X}"
