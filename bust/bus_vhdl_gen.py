@@ -1,7 +1,9 @@
 from bust.jinja_utils.environment import get_environment
 
 
-class BusVHDLGen:
+class BusVhdlGenerator:
+    """VHDL code generator for Bus."""
+    
     def __init__(
         self,
         bus_type,
@@ -43,7 +45,8 @@ class BusVHDLGen:
             else:
                 self.reset_name = "reset_n"
 
-    def return_bus_pkg_VHDL(self) -> str:
+    def generate_bus_package_vhdl(self) -> str:
+        """Generate VHDL package for the bus."""
         if self.bus_type == "axi":
             # Get standardized Jinja2 environment with all filters
             env = get_environment()
@@ -68,7 +71,12 @@ class BusVHDLGen:
             f"Only 'axi' bus type is currently supported."
         )
 
-    def return_bus_pif_VHDL(self, mod) -> str:
+    def return_bus_pkg_VHDL(self) -> str:
+        """Deprecated: Use generate_bus_package_vhdl() instead."""
+        return self.generate_bus_package_vhdl()
+
+    def generate_bus_pif_vhdl(self, mod) -> str:
+        """Generate VHDL PIF (Physical Interface) for the bus."""
         # Get standardized Jinja2 environment with all filters
         env = get_environment()
 
@@ -82,3 +90,11 @@ class BusVHDLGen:
             "NL": "\n",  # Ensures newline formatting if needed
         }
         return str(template.render(context))
+
+    def return_bus_pif_VHDL(self, mod) -> str:
+        """Deprecated: Use generate_bus_pif_vhdl() instead."""
+        return self.generate_bus_pif_vhdl(mod)
+
+
+# Backward compatibility alias
+BusVHDLGen = BusVhdlGenerator
