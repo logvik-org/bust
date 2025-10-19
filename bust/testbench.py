@@ -1,7 +1,5 @@
 import logging
-from jinja2 import Environment, FileSystemLoader
-from bust.jinja_utils.filters import indent_all
-import os
+from bust.jinja_utils.environment import get_environment
 from bust.bus import Bus
 
 
@@ -43,15 +41,8 @@ class Testbench(object):
     def return_tcl_script(self):
         self.logger.debug("Generating TCL Script")
 
-        # Set up Jinja2 environment
-        template_dir = os.path.join(os.path.dirname(__file__), "templates")
-        env = Environment(
-            loader=FileSystemLoader(template_dir, followlinks=True),
-            trim_blocks=True,
-            lstrip_blocks=True,
-        )
-
-        env.filters["indent_all"] = indent_all
+        # Get standardized Jinja2 environment with all filters
+        env = get_environment()
 
         # Load the TCL script template
         template = env.get_template("tcl/simulate_script.j2")
@@ -69,19 +60,10 @@ class Testbench(object):
         return result
 
     def return_vhdl_tb(self):
+        # Get standardized Jinja2 environment with all filters
+        env = get_environment()
 
-        # Set up Jinja2 environment
-        template_dir = os.path.join(os.path.dirname(__file__), "templates")
-
-        env = Environment(
-            loader=FileSystemLoader(template_dir, followlinks=True),
-            trim_blocks=True,
-            lstrip_blocks=True,
-        )
-
-        env.filters["indent_all"] = indent_all
-
-        # Load the IPBus-specific module template
+        # Load the testbench template
         template = env.get_template("vhdl/testbench/testbench.j2")
 
         # Define context for template rendering

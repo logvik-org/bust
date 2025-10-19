@@ -1,8 +1,6 @@
-import os
-from jinja2 import Environment, FileSystemLoader
-from pylatexenc.latexencode import utf8tolatex
 from bust._version import __VERSION__
 from bust.enums import RegisterType
+from bust.jinja_utils.environment import get_environment
 
 
 class Documentation(object):
@@ -16,19 +14,8 @@ class Documentation(object):
         if version is None:
             version = __VERSION__
 
-        # Setup Jinja2 environment
-        template_dir = os.path.join(os.path.dirname(__file__), "templates")
-        env = Environment(
-            loader=FileSystemLoader(template_dir, followlinks=True),
-            trim_blocks=True,
-            lstrip_blocks=True,
-        )
-
-        # Add custom filters
-        from bust.jinja_utils.filters import hex_format, utf8tolatex
-
-        env.filters["hex_format"] = hex_format
-        env.filters["utf8tolatex"] = utf8tolatex
+        # Get standardized Jinja2 environment with all filters
+        env = get_environment()
 
         # Load the template
         template = env.get_template(template_name)

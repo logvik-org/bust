@@ -1,7 +1,4 @@
-from jinja2 import Environment, FileSystemLoader
-import os
-
-from bust.jinja_utils.filters import indent_all
+from bust.jinja_utils.environment import get_environment
 
 
 class BusVHDLGen:
@@ -48,15 +45,8 @@ class BusVHDLGen:
 
     def return_bus_pkg_VHDL(self):
         if self.bus_type == "axi":
-            # Set up Jinja2 environment
-            template_dir = os.path.join(os.path.dirname(__file__), "templates")
-            env = Environment(
-                loader=FileSystemLoader(template_dir, followlinks=True),
-                trim_blocks=True,
-                lstrip_blocks=True,
-            )
-
-            env.filters["indent_all"] = indent_all
+            # Get standardized Jinja2 environment with all filters
+            env = get_environment()
 
             # Load the AXI bus package template
             template = env.get_template("vhdl/bus/axi_pkg.j2")
@@ -73,19 +63,14 @@ class BusVHDLGen:
                 result += "\n"
             return result
 
-        return ""
-
-    def return_bus_pif_VHDL(self, mod):
-        # Set up Jinja2 environment
-        template_dir = os.path.join(os.path.dirname(__file__), "templates")
-
-        env = Environment(
-            loader=FileSystemLoader(template_dir, followlinks=True),
-            trim_blocks=True,
-            lstrip_blocks=True,
+        raise NotImplementedError(
+            f"Bus package generation not implemented for bus type '{self.bus_type}'. "
+            f"Only 'axi' bus type is currently supported."
         )
 
-        env.filters["indent_all"] = indent_all
+    def return_bus_pif_VHDL(self, mod):
+        # Get standardized Jinja2 environment with all filters
+        env = get_environment()
 
         # Load the IPBus-specific module template
         template = env.get_template("vhdl/module/pif/pif.j2")

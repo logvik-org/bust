@@ -1,9 +1,6 @@
-from jinja2 import Environment, FileSystemLoader
-import os
-
 from bust.enums import FieldType, RegisterType
 from bust.utils import indent_string
-from bust.jinja_utils.filters import indent_all
+from bust.jinja_utils.environment import get_environment
 
 
 # Helper function to determine VHDL type
@@ -50,18 +47,12 @@ class ModuleVHDLGen:
         self.addr_width = addr_width
 
     def return_module_pkg_VHDL(self, module):
-
-        template_dir = os.path.join(os.path.dirname(__file__), "templates")
-        env = Environment(
-            loader=FileSystemLoader(template_dir, followlinks=True),
-            trim_blocks=True,
-            lstrip_blocks=True,
-        )
-
-        # Register custom filters
-        env.filters["get_vhdl_type"] = get_vhdl_type
-        env.filters["get_reset_value"] = get_reset_value
-        env.filters["indent_all"] = indent_all
+        # Get environment with additional filters for this module
+        additional_filters = {
+            "get_vhdl_type": get_vhdl_type,
+            "get_reset_value": get_reset_value,
+        }
+        env = get_environment(additional_filters)
 
         # Load the template
         template = env.get_template("vhdl/module/pif/pkg.j2")
@@ -76,15 +67,10 @@ class ModuleVHDLGen:
         return template.render(context)
 
     def return_module_VHDL(self, module):
-        # Set up Jinja2 environment
-        template_dir = os.path.join(os.path.dirname(__file__), "templates")
-        env = Environment(
-            loader=FileSystemLoader(template_dir, followlinks=True),
-            trim_blocks=True,
-            lstrip_blocks=True,
-        )
+        # Get standardized Jinja2 environment with all filters
+        env = get_environment()
 
-        # Load the IPBus-specific module template
+        # Load the module template
         template = env.get_template("vhdl/module/module.j2")
 
         # Define context for template rendering
