@@ -45,8 +45,3 @@ warn_unreachable = true
 strict_equality = true
 show_error_codes = true
 ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "bust.*"
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
