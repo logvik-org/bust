@@ -1,19 +1,4 @@
-{# Value formatting helpers #}
-{% macro format_value(value, type, width=32) -%}
-{%- if type == 'sl' -%}
-'{{ (value|int) % 2 }}'
-{%- else -%}
-{{ width }}X"{{ '%x' | format(value|int) }}"
-{%- endif -%}
-{%- endmacro %}
-
-{% macro format_32bit_value(value) -%}
-32X"{{ '%x' | format(value|int) }}"
-{%- endmacro %}
-
-
-
-{% macro pif_instantiation(module, bus, name, inter) %}
+{% macro pif_instantiation(module, bus, name) %}
 DUT : entity work.{{ module.name }}_{{ bus.short_name }}_pif
   generic map (
     g_{{ bus.short_name }}_baseaddr      => g_{{ bus.short_name }}_baseaddr,
@@ -197,22 +182,7 @@ begin
 end;
 {% endmacro %}
 
-{# Helper macros for generating proper VHDL values #}
-{% macro format_value(value, reg_type, width=32) -%}
-{%- if reg_type == 'sl' -%}
-'{{ (value|int) % 2 }}'
-{%- elif reg_type == 'slv' -%}
-{{ width }}X"{{ '%x' | format(value|int) }}"
-{%- elif reg_type == 'default' -%}
-32X"{{ '%x' | format(value|int) }}"
-{%- else -%}
-{{ value }}
-{%- endif -%}
-{%- endmacro %}
 
-{% macro format_32bit_value(value) -%}
-32X"{{ '%x' | format(value|int) }}"
-{%- endmacro %}
 
 {# Register test macros - these generate full register test sequences #}
 {% macro reg_hdr(reg) -%}

@@ -66,7 +66,7 @@ begin  -- architecture tb
   {{ uvvm.uvvm_signal_assignment(bus) | indent(2) }}
 
   -- component instantiation
-  {{ uvvm.pif_instantiation(module, bus, module.name.upper(), '') | indent(2) }}
+  {{ uvvm.pif_instantiation(module, bus, module.name.upper()) | indent(2) }}
   -- clock generator
   clock_generator({{ bus.short_name }}_{{ bus.clk_name.strip() }}, C_CLK_PERIOD);
 
