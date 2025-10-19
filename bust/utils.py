@@ -1,7 +1,4 @@
-"""! @package utils
-
-
-"""
+"""! @package utils"""
 
 import re
 import json
@@ -71,7 +68,9 @@ def compare_JSON(json1: str, json2: str, raise_error: bool = False) -> bool:
     return True
 
 
-def write_string_to_file(string: str, output_file: str, output_dir: str, force_overwrite: bool = False) -> bool:
+def write_string_to_file(
+    string: str, output_file: str, output_dir: str, force_overwrite: bool = False
+) -> bool:
     """! @brief Write string to file"""
 
     # Make sure output directory exists
@@ -251,7 +250,9 @@ def get_int(
             print("That is not a valid integer...")
 
 
-def get_list_choice(msg: str, ls: List[str], case: Optional[str] = None, default: Optional[int] = None) -> str:
+def get_list_choice(
+    msg: str, ls: List[str], case: Optional[str] = None, default: Optional[int] = None
+) -> str:
     while True:
         try:
             print(msg)
