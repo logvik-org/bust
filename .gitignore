@@ -4,7 +4,6 @@ upload.sh
 test_upload.sh
 local_upgrade.sh
 local_upgrade_global.sh
-docs/
 workflow.txt
 *example_identifier*
 
@@ -94,8 +93,8 @@ target/
 celerybeat-schedule
 
 # dotenv
-.env
-.venv
+.env*
+.venv*
 .env_win
 .win_env
 venv/
