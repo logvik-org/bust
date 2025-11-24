@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.abspath('..'))
 
 project = 'bust'
 copyright = '2025, Grottviq' # Use current year
-author = 'Ola Grøttvik'
+author = 'Ola Groettvik'
 
 # The short X.Y version.
 version = '0.1.0'
