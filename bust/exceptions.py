@@ -1,7 +1,4 @@
-"""! @package exceptions
-
-
-"""
+"""! @package exceptions"""
 
 
 def error(msg):
