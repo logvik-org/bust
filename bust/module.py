@@ -110,6 +110,7 @@ class Module:
                     )  # force integer division to prevent float
                 else:
                     addr += 1
+
     def is_address_out_of_range(self, addr: int) -> bool:
         """Returns True if address is out of range, False if not"""
 
