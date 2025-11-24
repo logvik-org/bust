@@ -2,6 +2,7 @@
 Contains the Editor class
 
 """
+
 from cursesmenu import CursesMenu
 from cursesmenu.items import FunctionItem
 from collections import OrderedDict
