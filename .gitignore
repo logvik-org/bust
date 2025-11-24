@@ -4,7 +4,6 @@ upload.sh
 test_upload.sh
 local_upgrade.sh
 local_upgrade_global.sh
-docs/
 workflow.txt
 *example_identifier*
 
