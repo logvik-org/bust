@@ -22,7 +22,7 @@ entity {{ module.name }}_{{ bus.short_name }}_pif is
   port (
     -- {{bus.bus_type.upper()}} Bus Interface Ports
     {% if module.num_rw_regs + module.num_ro_regs + module.num_pulse_regs > 0 %}
-    {{bus.short_name}}_rw_regs    : out t_example_{{bus.bus_type}}_rw_regs    := c_example_{{bus.bus_type}}_rw_regs;
+    {{bus.short_name}}_rw_regs    : out t_{{ module.name }}_rw_regs    := c_{{ module.name }}_rw_regs;
     {% endif %}
     {% if module.num_ro_regs > 0 %}
     {{bus.short_name}}_ro_regs    : in  t_example_{{bus.bus_type}}_ro_regs    := c_example_{{bus.bus_type}}_ro_regs;
