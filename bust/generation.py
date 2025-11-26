@@ -60,7 +60,10 @@ def generate_output(
         try:
             filename = f"{bus.bus_type}_pkg.vhd"
             write_string_to_file(
-                bus.return_bus_pkg_VHDL(), filename, bus_hdl, gen_settings["force_ow"]
+                bus.generate_bus_package_vhdl(),
+                filename,
+                bus_hdl,
+                gen_settings["force_ow"],
             )
         except Exception as e:
             logger.error("ERROR: Could not generate Bus VHDL Package File")
@@ -72,7 +75,7 @@ def generate_output(
             # PIF
             filename = f"{module.name}_{bus.short_name}_pif.vhd"
             write_string_to_file(
-                bus.return_bus_pif_VHDL(module),
+                bus.generate_bus_pif_vhdl(module),
                 filename,
                 mod_hdl,
                 gen_settings["force_ow"],
@@ -80,7 +83,7 @@ def generate_output(
             # PIF Package
             filename = f"{module.name}_pif_pkg.vhd"
             write_string_to_file(
-                module.return_module_pkg_VHDL(),
+                module.generate_module_package_vhdl(),
                 filename,
                 mod_hdl,
                 gen_settings["force_ow"],
@@ -91,13 +94,13 @@ def generate_output(
             if gen_settings["update_top"]:
                 logger.info("Trying to update top level-file")
                 path = os.path.join(mod_hdl, filename)
-                new_top = update_module_top_level(path, module.return_module_VHDL())
+                new_top = update_module_top_level(path, module.generate_module_vhdl())
                 write_string_to_file(
                     new_top, filename, mod_hdl, gen_settings["force_ow_top"]
                 )
             else:
                 write_string_to_file(
-                    module.return_module_VHDL(),
+                    module.generate_module_vhdl(),
                     filename,
                     mod_hdl,
                     gen_settings["force_ow_top"],
@@ -112,18 +115,21 @@ def generate_output(
         try:
             filename = f"{module.name}.h"
             write_string_to_file(
-                header.return_c_header(), filename, mod_header, gen_settings["force_ow"]
+                header.generate_c_header(),
+                filename,
+                mod_header,
+                gen_settings["force_ow"],
             )
             filename = f"{module.name}.hpp"
             write_string_to_file(
-                header.return_cpp_header(),
+                header.generate_cpp_header(),
                 filename,
                 mod_header,
                 gen_settings["force_ow"],
             )
             filename = f"{module.name}.py"
             write_string_to_file(
-                header.return_python_header(),
+                header.generate_python_header(),
                 filename,
                 mod_header,
                 gen_settings["force_ow"],
@@ -131,7 +137,7 @@ def generate_output(
             if bus.bus_type == "ipbus":
                 filename = f"{module.name}.xml"
                 write_string_to_file(
-                    header.return_ipbus_addr_table(),
+                    header.generate_ipbus_addr_table(),
                     filename,
                     mod_header,
                     gen_settings["force_ow"],
@@ -151,21 +157,21 @@ def generate_output(
             try:
                 filename = "component_list.txt"
                 write_string_to_file(
-                    testbench.return_uvvm_component_list(),
+                    testbench.generate_uvvm_component_list(),
                     filename,
                     mod_script,
                     gen_settings["force_ow"],
                 )
                 filename = f"simulate_{bus.bus_type}_pif.do"
                 write_string_to_file(
-                    testbench.return_tcl_script(),
+                    testbench.generate_tcl_script(),
                     filename,
                     mod_script,
                     gen_settings["force_ow"],
                 )
                 filename = f"{module.name}_{bus.short_name}_pif_tb.vhd"
                 write_string_to_file(
-                    testbench.return_vhdl_tb(),
+                    testbench.generate_vhdl_testbench(),
                     filename,
                     mod_tb,
                     gen_settings["force_ow"],
@@ -180,7 +186,7 @@ def generate_output(
         try:
             filename = f"{module.name}.tex"
             write_string_to_file(
-                documentation.return_tex_documentation(),
+                documentation.generate_tex_documentation(),
                 filename,
                 mod_doc,
                 gen_settings["force_ow"],

@@ -111,10 +111,6 @@ class Settings:
         json["coverage"] = self.coverage
         return json
 
-    def return_JSON(self):
-        """Deprecated: Use to_json() instead."""
-        return self.to_json()
-
     def return_sim_bus_path(self, bus_type):
         """Return bus path used for simulation compilation scripts"""
 

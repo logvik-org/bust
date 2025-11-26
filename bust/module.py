@@ -227,27 +227,15 @@ class Module:
 
         return s
 
-    def return_JSON(self, include_address: bool = False) -> str:
-        """Deprecated: Use to_json() instead."""
-        return self.to_json(include_address)
-
     def generate_module_package_vhdl(self) -> str:
         """Generate VHDL package for the module."""
         gen_obj = self._create_vhdl_generator()
         return gen_obj.generate_module_package_vhdl(self)
 
-    def return_module_pkg_VHDL(self) -> str:
-        """Deprecated: Use generate_module_package_vhdl() instead."""
-        return self.generate_module_package_vhdl()
-
     def generate_module_vhdl(self) -> str:
         """Generate VHDL module code."""
         gen_obj = self._create_vhdl_generator()
         return gen_obj.generate_module_vhdl(self)
-
-    def return_module_VHDL(self) -> str:
-        """Deprecated: Use generate_module_vhdl() instead."""
-        return self.generate_module_vhdl()
 
     def _create_vhdl_generator(self) -> ModuleVHDLGen:
         """Create and return a VHDL generator for this module."""
@@ -259,7 +247,3 @@ class Module:
             addr_width=self.addr_width,
         )
         return o
-
-    def _get_vhdl_gen_obj(self) -> ModuleVHDLGen:
-        """Deprecated: Use _create_vhdl_generator() instead."""
-        return self._create_vhdl_generator()
