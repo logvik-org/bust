@@ -18,7 +18,7 @@ from bust.vhdl_util import is_valid_VHDL
 from bust.config_wrapper import ConfigWrapper
 
 
-class Field(object):
+class Field:
     """Represents a bitfield within a register.
 
     A Field is a named range of bits within a register that can be

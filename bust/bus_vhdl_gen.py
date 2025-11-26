@@ -1,7 +1,9 @@
-from bust.jinja_utils.environment import get_environment
+from bust.jinja_utils.environment import render_template
 
 
-class BusVHDLGen:
+class BusVhdlGenerator:
+    """VHDL code generator for Bus."""
+
     def __init__(
         self,
         bus_type,
@@ -43,42 +45,33 @@ class BusVHDLGen:
             else:
                 self.reset_name = "reset_n"
 
-    def return_bus_pkg_VHDL(self) -> str:
+    def generate_bus_package_vhdl(self) -> str:
+        """Generate VHDL package for the bus."""
         if self.bus_type == "axi":
-            # Get standardized Jinja2 environment with all filters
-            env = get_environment()
-
-            # Load the AXI bus package template
-            template = env.get_template("vhdl/bus/axi_pkg.j2")
-
-            # Define context for template rendering
-            context = {
-                "bus_type": self.bus_type,
-                "data_width": self.data_width,
-                "addr_width": self.addr_width,
-            }
-            result: str = template.render(context)
-            # Ensure final newline is preserved
-            if not result.endswith("\n"):
-                result += "\n"
-            return result
+            return render_template(
+                "vhdl/bus/axi_pkg.j2",
+                {
+                    "bus_type": self.bus_type,
+                    "data_width": self.data_width,
+                    "addr_width": self.addr_width,
+                },
+            )
 
         raise NotImplementedError(
             f"Bus package generation not implemented for bus type '{self.bus_type}'. "
             f"Only 'axi' bus type is currently supported."
         )
 
-    def return_bus_pif_VHDL(self, mod) -> str:
-        # Get standardized Jinja2 environment with all filters
-        env = get_environment()
+    def generate_bus_pif_vhdl(self, mod) -> str:
+        """Generate VHDL PIF (Physical Interface) for the bus."""
+        return render_template(
+            "vhdl/module/pif/pif.j2",
+            {
+                "module": mod,
+                "bus": self,
+            },
+        )
 
-        # Load the IPBus-specific module template
-        template = env.get_template("vhdl/module/pif/pif.j2")
 
-        # Define context for template rendering
-        context = {
-            "module": mod,
-            "bus": self,
-            "NL": "\n",  # Ensures newline formatting if needed
-        }
-        return str(template.render(context))
+# Backward compatibility alias
+BusVHDLGen = BusVhdlGenerator

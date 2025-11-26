@@ -6,10 +6,10 @@ testbenches for AXI and IPBus modules.
 """
 
 import logging
-from bust.jinja_utils.environment import get_environment
+from bust.jinja_utils.environment import render_template
 
 
-class Testbench(object):
+class Testbench:
     """Generates VHDL testbenches and simulation scripts.
 
     The Testbench class creates UVVM-based VHDL testbenches and TCL scripts
@@ -35,29 +35,7 @@ class Testbench(object):
         self.bus = bus
         self.settings = settings
 
-    @staticmethod
-    def get_addr_func():
-        """Generate VHDL address calculation function.
-
-        Returns:
-            VHDL function definition for f_addr that adds base and register
-            addresses.
-        """
-        s = (
-            "function f_addr (\n"
-            "  BASE : std_logic_vector(31 downto 0);\n"
-            "  REG  : std_logic_vector(31 downto 0))\n"
-            "  return unsigned is\n"
-            "  variable tmp : unsigned(31 downto 0);\n"
-            "begin  -- function f_addr\n"
-            "  tmp := unsigned(BASE);\n"
-            "  tmp := tmp + unsigned(REG);\n"
-            "  return tmp;\n"
-            "end function f_addr;\n"
-        )
-        return s
-
-    def return_uvvm_component_list(self):
+    def generate_uvvm_component_list(self):
         """Generate list of required UVVM components.
 
         Returns:
@@ -65,56 +43,34 @@ class Testbench(object):
             compilation, including bus-specific VIPs.
         """
         self.logger.debug("Generating UVVM Component List")
-        string = "uvvm_util\n"
-        string += "uvvm_vvc_framework\n"
-        string += "bitvis_vip_scoreboard"
-        if self.bus.bus_type == "axi":
-            string += "\nbitvis_vip_axilite"
-        string += "\n"
-        return string
+        return render_template("uvvm/component_list.j2", {"bus": self.bus})
 
-    def return_tcl_script(self):
+    def generate_tcl_script(self):
         """Generate TCL simulation script for ModelSim/QuestaSim.
 
         Returns:
             TCL script content for compiling and simulating the testbench.
         """
         self.logger.debug("Generating TCL Script")
+        return render_template(
+            "tcl/simulate_script.j2",
+            {
+                "module": self.module,
+                "bus": self.bus,
+                "settings": self.settings,
+            },
+        )
 
-        # Get standardized Jinja2 environment with all filters
-        env = get_environment()
-
-        # Load the TCL script template
-        template = env.get_template("tcl/simulate_script.j2")
-
-        # Define context for template rendering
-        context = {
-            "module": self.module,
-            "bus": self.bus,
-            "settings": self.settings,
-        }
-        result = template.render(context)
-        # Ensure final newline is preserved
-        if not result.endswith("\n"):
-            result += "\n"
-        return result
-
-    def return_vhdl_tb(self):
+    def generate_vhdl_testbench(self):
         """Generate VHDL testbench code.
 
         Returns:
             Complete VHDL testbench source code with UVVM integration.
         """
-        # Get standardized Jinja2 environment with all filters
-        env = get_environment()
-
-        # Load the testbench template
-        template = env.get_template("vhdl/testbench/testbench.j2")
-
-        # Define context for template rendering
-        context = {
-            "module": self.module,
-            "bus": self.bus,
-            "NL": "\n",  # Ensures newline formatting if needed
-        }
-        return template.render(context)
+        return render_template(
+            "vhdl/testbench/testbench.j2",
+            {
+                "module": self.module,
+                "bus": self.bus,
+            },
+        )
