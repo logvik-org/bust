@@ -74,8 +74,8 @@ def render_template(template_name, context, ensure_newline=True):
     env = get_environment()
     template = env.get_template(template_name)
     result = template.render(context)
-    
+
     if ensure_newline and not result.endswith("\n"):
         result += "\n"
-    
+
     return result
