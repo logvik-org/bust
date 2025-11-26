@@ -1,31 +1,22 @@
 from bust.enums import RegisterType
-from bust.jinja_utils.environment import get_environment
+from bust.jinja_utils.environment import render_template
 
 
-class Header(object):
-    """Documentation for Header"""
+class Header:
+    """Generates header files (C, C++, Python) for register definitions."""
 
     def __init__(self, module):
         self.module = module
 
     def _render_template(self, template_name):
         """Helper method to render templates with common context"""
-        # Get standardized Jinja2 environment with all filters
-        env = get_environment()
-
-        # Load the template
-        template = env.get_template(template_name)
-
-        # Define common context for template rendering
-        context = {
-            "module": self.module,
-            "reg_type_fields": RegisterType.FIELDS,
-        }
-        result = template.render(context)
-        # Ensure final newline is preserved
-        if not result.endswith("\n"):
-            result += "\n"
-        return result
+        return render_template(
+            template_name,
+            {
+                "module": self.module,
+                "reg_type_fields": RegisterType.FIELDS,
+            },
+        )
 
     def generate_c_header(self):
         """Generate C header file."""

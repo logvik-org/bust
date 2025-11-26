@@ -2,12 +2,13 @@
 #define {{ module.name.upper() }}_H
 
 #include <cstdint>
+#include <string>
 
 namespace {{ module.name.upper() }}
 {
 {% for reg in module.registers %}
 /* Register: {{ reg.name }} */
-const uint32_t {{ reg.name.upper() }}_MODE = "{{ reg.mode.value }}";
+const std::string {{ reg.name.upper() }}_MODE = "{{ reg.mode.value }}";
 const uint32_t {{ reg.name.upper() }}_WIDTH = {{ reg.width }};
 const uint32_t {{ reg.name.upper() }}_OFFSET = {{ "0x%x" | format(reg.address) }};
 const uint32_t {{ reg.name.upper() }}_RESET = {{ reg.reset }};
