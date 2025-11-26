@@ -1,5 +1,5 @@
 from bust.enums import RegisterType
-from bust.jinja_utils.environment import get_environment
+from bust.jinja_utils.environment import render_template
 
 
 class Header:
@@ -10,22 +10,13 @@ class Header:
 
     def _render_template(self, template_name):
         """Helper method to render templates with common context"""
-        # Get standardized Jinja2 environment with all filters
-        env = get_environment()
-
-        # Load the template
-        template = env.get_template(template_name)
-
-        # Define common context for template rendering
-        context = {
-            "module": self.module,
-            "reg_type_fields": RegisterType.FIELDS,
-        }
-        result = template.render(context)
-        # Ensure final newline is preserved
-        if not result.endswith("\n"):
-            result += "\n"
-        return result
+        return render_template(
+            template_name,
+            {
+                "module": self.module,
+                "reg_type_fields": RegisterType.FIELDS,
+            },
+        )
 
     def return_c_header(self):
         return self._render_template("header/c_header.j2")
