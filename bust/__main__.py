@@ -49,6 +49,7 @@ from bust.exceptions import (
     InvalidResetMode,
 )
 from bust.editor import Editor
+from bust.generator_factory import GeneratorFactory
 from bust._version import __VERSION__
 
 
@@ -106,8 +107,6 @@ def main():
                 module = Module(json_dict["module"], bus, settings)
                 header = Header(module)
                 documentation = Documentation(module)
-                from bust.generator_factory import GeneratorFactory
-
                 testbench = Testbench(
                     module, GeneratorFactory.create_bus_generator(bus), settings
                 )
