@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from bust.module import Module
 
 
-class Bus(object):
+class Bus:
     """! @brief Managing bus information"""
 
     supported_bus = ["axi", "ipbus"]

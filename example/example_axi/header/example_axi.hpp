@@ -2,53 +2,54 @@
 #define EXAMPLE_AXI_H
 
 #include <cstdint>
+#include <string>
 
 namespace EXAMPLE_AXI
 {
 /* Register: reg0 */
-const uint32_t REG0_MODE = "rw";
+const std::string REG0_MODE = "rw";
 const uint32_t REG0_WIDTH = 1;
 const uint32_t REG0_OFFSET = 0x0;
 const uint32_t REG0_RESET = 0x0;
 
 /* Register: reg1 */
-const uint32_t REG1_MODE = "rw";
+const std::string REG1_MODE = "rw";
 const uint32_t REG1_WIDTH = 1;
 const uint32_t REG1_OFFSET = 0x4;
 const uint32_t REG1_RESET = 0x1;
 
 /* Register: reg2 */
-const uint32_t REG2_MODE = "ro";
+const std::string REG2_MODE = "ro";
 const uint32_t REG2_WIDTH = 1;
 const uint32_t REG2_OFFSET = 0x8;
 const uint32_t REG2_RESET = 0x0;
 
 /* Register: reg3 */
-const uint32_t REG3_MODE = "rw";
+const std::string REG3_MODE = "rw";
 const uint32_t REG3_WIDTH = 8;
 const uint32_t REG3_OFFSET = 0xc;
 const uint32_t REG3_RESET = 0x3;
 
 /* Register: reg4 */
-const uint32_t REG4_MODE = "ro";
+const std::string REG4_MODE = "ro";
 const uint32_t REG4_WIDTH = 14;
 const uint32_t REG4_OFFSET = 0x10;
 const uint32_t REG4_RESET = 0x0;
 
 /* Register: reg5 */
-const uint32_t REG5_MODE = "rw";
+const std::string REG5_MODE = "rw";
 const uint32_t REG5_WIDTH = 32;
 const uint32_t REG5_OFFSET = 0x14;
 const uint32_t REG5_RESET = 0xffffffff;
 
 /* Register: reg6 */
-const uint32_t REG6_MODE = "ro";
+const std::string REG6_MODE = "ro";
 const uint32_t REG6_WIDTH = 32;
 const uint32_t REG6_OFFSET = 0x18;
 const uint32_t REG6_RESET = 0x0;
 
 /* Register: reg7 */
-const uint32_t REG7_MODE = "rw";
+const std::string REG7_MODE = "rw";
 const uint32_t REG7_WIDTH = 21;
 const uint32_t REG7_OFFSET = 0x1c;
 const uint32_t REG7_RESET = 0xad7;
@@ -78,7 +79,7 @@ const uint32_t REG7_FIELD3_RESET = 0x2b;
 const uint32_t REG7_FIELD3_MASK = 0x1fffc0;
 
 /* Register: reg8 */
-const uint32_t REG8_MODE = "ro";
+const std::string REG8_MODE = "ro";
 const uint32_t REG8_WIDTH = 24;
 const uint32_t REG8_OFFSET = 0x20;
 const uint32_t REG8_RESET = 0x0;
@@ -108,19 +109,19 @@ const uint32_t REG8_FIELD3_RESET = 0x0;
 const uint32_t REG8_FIELD3_MASK = 0xe00000;
 
 /* Register: reg9 */
-const uint32_t REG9_MODE = "pulse";
+const std::string REG9_MODE = "pulse";
 const uint32_t REG9_WIDTH = 1;
 const uint32_t REG9_OFFSET = 0x24;
 const uint32_t REG9_RESET = 0x1;
 
 /* Register: reg10 */
-const uint32_t REG10_MODE = "pulse";
+const std::string REG10_MODE = "pulse";
 const uint32_t REG10_WIDTH = 4;
 const uint32_t REG10_OFFSET = 0x28;
 const uint32_t REG10_RESET = 0xa;
 
 /* Register: reg11 */
-const uint32_t REG11_MODE = "pulse";
+const std::string REG11_MODE = "pulse";
 const uint32_t REG11_WIDTH = 16;
 const uint32_t REG11_OFFSET = 0x2c;
 const uint32_t REG11_RESET = 0x3;

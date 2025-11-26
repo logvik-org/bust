@@ -8,8 +8,8 @@ from bust.vhdl_util import is_valid_VHDL
 from bust.config_wrapper import ConfigWrapper
 
 
-class Field(object):
-    """Documentation for Field"""
+class Field:
+    """Class for a field in a register"""
 
     def __init__(self, field: Dict, pos_low: int, parent_register_name: str) -> None:
 

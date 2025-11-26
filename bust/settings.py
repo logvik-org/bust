@@ -4,7 +4,7 @@ from collections import OrderedDict
 from typing import Optional, cast
 
 
-class Settings(object):
+class Settings:
     """Class for containing paths and other settings"""
 
     default_val = {
