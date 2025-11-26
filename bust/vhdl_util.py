@@ -1,132 +1,28 @@
+"""VHDL identifier validation utilities for bust.
+
+This module provides functions for validating VHDL identifiers according to
+the VHDL language standard (IEEE 1076). It checks for reserved keywords,
+naming conventions, and uniqueness within a namespace.
+"""
+
 import re
 
-from bust.utils import indent_string
-from bust.utils import is_mixed
-
-
-def lib_declaration():
-    s = "library ieee;\n"
-    s += "use ieee.std_logic_1164.all;\n"
-    s += "use ieee.numeric_std.all;\n\n"
-    return s
-
-
-def ieee_math():
-    s = "library ieee;\n"
-    s += "use ieee.std_logic_1164.all;\n"
-    s += "use ieee.numeric_std.all;\n"
-    s += "use ieee.math_real.all;\n\n"
-    return s
-
-
-def sync_process(
-    clk_name,
-    reset_name,
-    process_name,
-    reset_string,
-    logic_string,
-    active_low=True,
-    variables=None,
-):
-    s = process_name + " : process(" + clk_name + ")\n"
-    if variables is not None:
-        for var in variables:
-            s += indent_string("variable " + var + ";\n")
-    s += "begin\n"
-    s += indent_string("if rising_edge(" + clk_name + ") then\n")
-    s += indent_string("if " + reset_name + " = ", 2)
-
-    if active_low:
-        s += "'0'"
-    else:
-        s += "'1'"
-
-    s += " then\n"
-
-    s += indent_string(reset_string, 3)
-    s += "\n"
-    s += indent_string("else\n", 2)
-
-    s += indent_string(logic_string, 3)
-    s += indent_string("end if;\n", 2)
-    s += indent_string("end if;\n")
-    s += "end process " + process_name + ";\n"
-    return s
-
-
-def async_process(
-    clk_name,
-    reset_name,
-    process_name,
-    reset_string,
-    logic_string,
-    active_low=True,
-    variables=None,
-):
-    s = process_name + " : process(" + clk_name + ", " + reset_name + ")\n"
-    if variables is not None:
-        for var in variables:
-            s += indent_string("variable " + var + ";\n")
-    s += "begin\n"
-    s += indent_string("if " + reset_name + " = ")
-
-    if active_low:
-        s += "'0'"
-    else:
-        s += "'1'"
-
-    s += " then\n"
-
-    s += indent_string(reset_string, 2)
-    s += "\n"
-    s += indent_string("elsif rising_edge(" + clk_name + ") then\n")
-
-    s += indent_string(logic_string, 2)
-    s += "\n"
-    s += indent_string("end if;\n")
-    s += "end process " + process_name + ";\n"
-
-    return s
-
-
-def comb_process(process_name, logic_string):
-    s = process_name + " : process(all)\n"
-    s += "begin\n\n"
-
-    s += indent_string(logic_string)
-
-    s += "end process " + process_name + ";\n"
-
-    return s
-
-
-def comb_process_with_reset(
-    reset_name, process_name, reset_string, logic_string, active_low=True
-):
-    s = process_name + " : process(all)\n"
-    s += "begin\n"
-    s += indent_string("if " + reset_name + " = ")
-    if active_low:
-        s += "'0'"
-    else:
-        s += "'1'"
-
-    s += " then\n"
-
-    s += indent_string(reset_string, 2)
-    s += "\n"
-    s += indent_string("else\n")
-
-    s += indent_string(logic_string, 2)
-    s += "\n"
-    s += indent_string("end if;\n")
-
-    s += "end process " + process_name + ";\n"
-
-    return s
+from bust.utils import is_mixed, NL
 
 
 def get_identifier(msg, ls=None):
+    """Prompt user for a valid VHDL identifier with validation.
+
+    Repeatedly prompts until a valid identifier is provided. Validates
+    against VHDL naming rules and optionally checks uniqueness.
+
+    Args:
+        msg: Prompt message to display.
+        ls: Optional list of existing identifiers to check uniqueness against.
+
+    Returns:
+        Valid VHDL identifier string.
+    """
     while True:
         try:
             identifier = input(msg)
@@ -139,6 +35,14 @@ def get_identifier(msg, ls=None):
 
 
 def is_VHDL_keyword(string):
+    """Check if string is a VHDL reserved keyword.
+
+    Args:
+        string: String to check.
+
+    Returns:
+        True if string is a VHDL keyword, False otherwise.
+    """
     keywords = [
         "abs",
         "access",
@@ -261,27 +165,89 @@ def is_VHDL_keyword(string):
 
 
 def contain_spaces(string):
+    """Check if string contains spaces.
+
+    Args:
+        string: String to check.
+
+    Returns:
+        True if string contains spaces.
+    """
     return " " in string
 
 
 def start_with_alphabetic_letter(string):
+    """Check if string starts with a letter.
+
+    Args:
+        string: String to check.
+
+    Returns:
+        True if first character is alphabetic.
+    """
     return string[0].isalpha()
 
 
 def ends_with_underscore(string):
+    """Check if string ends with underscore.
+
+    Args:
+        string: String to check.
+
+    Returns:
+        True if string ends with '_'.
+    """
     return string.endswith("_")
 
 
 def contain_two_successive_underscores(string):
+    """Check if string contains two consecutive underscores.
+
+    Args:
+        string: String to check.
+
+    Returns:
+        True if string contains '__'.
+    """
     return "__" in string
 
 
 def is_only_alpfanum_(string):
+    """Check if string contains only alphanumeric characters and underscores.
+
+    Args:
+        string: String to check.
+
+    Returns:
+        True if string contains only letters, digits, and underscores.
+    """
     regex = re.compile(r"\W")
     return regex.search(string) is None
 
 
 def is_valid_VHDL(string):
+    """Validate string as a VHDL identifier.
+
+    Checks all VHDL identifier rules from IEEE 1076:
+    - Must not be empty
+    - Must not be a reserved keyword
+    - Must not contain spaces
+    - Must start with a letter
+    - Must not end with underscore
+    - Must not contain consecutive underscores
+    - Must contain only letters, digits, and underscores
+    - Warns if longer than 16 characters
+    - Warns if mixing uppercase and lowercase
+
+    Args:
+        string: String to validate.
+
+    Returns:
+        True if valid (warnings are printed but don't prevent validation).
+
+    Raises:
+        InvalidVHDLIdentifier: If string violates VHDL naming rules.
+    """
     if len(string) < 1:
         raise InvalidVHDLIdentifier(string + " - identifier cannot be empty.")
     if is_VHDL_keyword(string):
@@ -305,19 +271,19 @@ def is_valid_VHDL(string):
     if not is_only_alpfanum_(string):
         raise InvalidVHDLIdentifier(
             string
-            + " - identifiers may only contain \n\n- alphabetic letters "
-            + "(‘A’ to ‘Z’ and ‘a’ to ‘z’), \n- decimal digits (‘0’ to ‘9’) "
-            + "\n- the underline character (‘_’)"
+            + f" - identifiers may only contain {NL}{NL}- alphabetic letters "
+            + f"(‘A’ to ‘Z’ and ‘a’ to ‘z’), {NL}- decimal digits (‘0’ to ‘9’) "
+            + f"{NL}- the underline character (‘_’)"
         )
     if len(string) > 16:
         print(
-            "\nWarning - "
+            f"{NL}Warning - "
             + string
             + " - identifier should probably not be longer than 16 characters."
         )
     if is_mixed(string):
         print(
-            "\nWarning - "
+            f"{NL}Warning - "
             + string
             + " - identifier should probably not contain a mix of uppercase"
             + " and lowercase letters."
@@ -326,6 +292,18 @@ def is_valid_VHDL(string):
 
 
 def is_unique(string, ls):
+    """Check if identifier is unique within a namespace.
+
+    Args:
+        string: Identifier to check.
+        ls: List of existing identifiers in the namespace.
+
+    Returns:
+        True if identifier is unique.
+
+    Raises:
+        NonUniqueIdentifer: If identifier already exists in the list.
+    """
     if string in ls:
         raise NonUniqueIdentifer(
             string + " - identifier is already used in the same namespace."
@@ -334,12 +312,34 @@ def is_unique(string, ls):
 
 
 class InvalidVHDLIdentifier(Exception):
+    """Raised when a string violates VHDL identifier naming rules.
+
+    This exception is raised during validation when an identifier doesn't
+    meet VHDL language requirements for naming.
+    """
+
     def __init__(self, msg):
-        s = "\nError in parsing identifier: " + msg
+        """Initialize InvalidVHDLIdentifier exception.
+
+        Args:
+            msg: Description of the validation error.
+        """
+        s = f"{NL}Error in parsing identifier: {msg}"
         super().__init__(s)
 
 
 class NonUniqueIdentifer(Exception):
+    """Raised when an identifier is not unique within its namespace.
+
+    This exception indicates an attempt to use an identifier that already
+    exists in the same scope (e.g., duplicate register or field names).
+    """
+
     def __init__(self, msg):
-        s = "\nError in parsing identifier: " + msg
+        """Initialize NonUniqueIdentifer exception.
+
+        Args:
+            msg: Description of the uniqueness violation.
+        """
+        s = f"{NL}Error in parsing identifier: {msg}"
         super().__init__(s)

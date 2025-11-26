@@ -1,0 +1,40 @@
+{#
+  Macro: statement_write_reg
+
+  Generates VHDL logic for writing to a register (or its fields) based on
+  register address match and optionally generates write acknowledgements.
+
+  Parameters:
+    reg:                  Register object (must have .name, .type, .fields, .width, .stall)
+    internal_signal_name: Prefix for the internal signal to assign the register to (e.g., "axi_rw_regs_i.")
+    out_signal_name:      Signal containing the write data (e.g., "wdata")
+    register_sel:         Signal name used for address decoding (e.g., "register_sel_wr")
+    use_ack:              Boolean; if true, generate wr_ack or wr_stall_ack assignment
+#}
+
+{% macro statement_write_reg(reg, internal_signal_name, out_signal_name, register_sel, use_ack) %}
+elsif unsigned({{ register_sel }}) = resize(unsigned(C_ADDR_{{ reg.name.upper() }}), C_MODULE_ADDR_WIDTH) then
+
+    {% if reg.type.value == "fields" %}
+      {% for field in reg.fields %}
+  {{ internal_signal_name }}{{ reg.name }}.{{ field.name }} <= {{ out_signal_name }}({{ field.get_pos_vhdl() }});
+      {% endfor %}
+    {% elif reg.type.value == "default" %}
+  {{ internal_signal_name }}{{ reg.name }} <= {{ out_signal_name }};
+    {% elif reg.type.value == "vector" %}
+  {{ internal_signal_name }}{{ reg.name }} <= {{ out_signal_name }}({{ reg.width - 1 }} downto 0);
+    {% elif reg.type.value == "bit" %}
+  {{ internal_signal_name }}{{ reg.name }} <= {{ out_signal_name }}(0);
+    {% endif %}
+    {% if use_ack %}
+      {% if reg.stall %}
+  wr_stall_ack <= '1';
+
+      {% else %}
+  wr_ack <= '1';
+
+{% endif %}
+{% else %}
+
+{% endif %}
+{% endmacro %}

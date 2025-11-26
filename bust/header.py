@@ -1,208 +1,83 @@
-from bust.utils import indent_string
+"""Header file generation module for bust.
+
+This module provides the Header class for generating register map header files
+in various programming languages (C, C++, Python) and formats (IPBus address
+tables). These headers allow software to access hardware registers with named
+constants and proper address mappings.
+"""
+
+from bust.enums import RegisterType
+from bust.jinja_utils.environment import render_template
 
 
-class Header(object):
-    """Documentation for Header"""
+class Header:
+    """Generates header files for register map access in various languages.
+
+    The Header class creates language-specific header files that define
+    constants for register addresses, bit positions, and masks. This enables
+    type-safe access to hardware registers from software.
+
+    Attributes:
+        module: Module instance containing register definitions.
+    """
 
     def __init__(self, module):
+        """Initialize Header generator for a module.
+
+        Args:
+            module: Module instance containing register map to export.
+        """
         self.module = module
 
-    def return_c_header(self):
-        s = ""
+    def _render_template(self, template_name):
+        """Render a Jinja2 template with module context.
 
-        s += "#ifndef " + self.module.name.upper() + "_H\n"
-        s += "#define " + self.module.name.upper() + "_H\n"
+        Args:
+            template_name: Path to template file relative to templates directory.
 
-        s += "\n\n"
+        Returns:
+            Rendered template content as string with trailing newline.
+        """
+        return render_template(
+            template_name,
+            {
+                "module": self.module,
+                "reg_type_fields": RegisterType.FIELDS,
+            },
+        )
 
-        for reg in self.module.registers:
-            s += "/* Register: " + reg.name + " */\n"
-            s += f'#define {reg.name.upper()}_MODE "{reg.mode}";\n'
-            s += f"#define {reg.name.upper()}_WIDTH {reg.width};\n"
-            s += f"#define {reg.name.upper()}_OFFSET {str(hex(reg.address))};\n"
-            s += f"#define {reg.name.upper()}_RESET {reg.reset};\n"
-            s += "\n"
+    def generate_c_header(self):
+        """Generate C header file with register definitions.
 
-            if reg.sig_type == "fields":
-                for field in reg.fields:
-                    s += "/* Field: " + field.name + " */\n"
-                    s += (
-                        "#define "
-                        + reg.name.upper()
-                        + "_"
-                        + field.name.upper()
-                        + "_OFFSET "
-                    )
-                    s += str(field.pos_low) + "\n"
-                    s += (
-                        "#define "
-                        + reg.name.upper()
-                        + "_"
-                        + field.name.upper()
-                        + "_WIDTH "
-                    )
-                    s += str(field.width) + "\n"
-                    s += (
-                        "#define "
-                        + reg.name.upper()
-                        + "_"
-                        + field.name.upper()
-                        + "_RESET "
-                    )
-                    s += field.reset + "\n"
-                    s += (
-                        "#define "
-                        + reg.name.upper()
-                        + "_"
-                        + field.name.upper()
-                        + "_MASK "
-                    )
-                    s += str(hex(pow(2, field.width) - 1 << field.pos_low)) + "\n"
-                    s += "\n"
+        Returns:
+            C header file content as string with #define statements for
+            register addresses, bit positions, and masks.
+        """
+        return self._render_template("header/c_header.j2")
 
-        s += "#endif"
-        s += "\n"
+    def generate_cpp_header(self):
+        """Generate C++ header file with register definitions.
 
-        return s
+        Returns:
+            C++ header file content as string with constexpr definitions
+            for register addresses, bit positions, and masks.
+        """
+        return self._render_template("header/cpp_header.j2")
 
-    def return_cpp_header(self):
-        s = ""
+    def generate_python_header(self):
+        """Generate Python module with register definitions.
 
-        s += "#ifndef " + self.module.name.upper() + "_H\n"
-        s += "#define " + self.module.name.upper() + "_H\n"
-        s += "\n"
+        Returns:
+            Python source file content as string with class and constant
+            definitions for register addresses and bit positions.
+        """
+        return self._render_template("header/python_header.j2")
 
-        s += "#include <cstdint>\n"
-        s += "#include <string>\n\n"
+    def generate_ipbus_addr_table(self):
+        """Generate IPBus XML address table.
 
-        s += "namespace " + self.module.name.upper() + "\n"
-        s += "{\n"
-
-        for reg in self.module.registers:
-            s += "/* Register: " + reg.name + " */\n"
-            s += f'const std::string {reg.name.upper()}_MODE = "{reg.mode}";\n'
-            s += f"const uint32_t {reg.name.upper()}_WIDTH = {reg.width};\n"
-            s += (
-                f"const uint32_t {reg.name.upper()}_OFFSET = {str(hex(reg.address))};\n"
-            )
-            s += f"const uint32_t {reg.name.upper()}_RESET = {reg.reset};\n"
-            s += "\n"
-
-            if reg.sig_type == "fields":
-                for field in reg.fields:
-                    s += "/* Field: " + field.name + " */\n"
-                    s += (
-                        "const uint32_t "
-                        + reg.name.upper()
-                        + "_"
-                        + field.name.upper()
-                        + "_OFFSET = "
-                    )
-                    s += str(field.pos_low) + ";\n"
-                    s += (
-                        "const uint32_t "
-                        + reg.name.upper()
-                        + "_"
-                        + field.name.upper()
-                        + "_WIDTH = "
-                    )
-                    s += str(field.width) + ";\n"
-                    s += (
-                        "const uint32_t "
-                        + reg.name.upper()
-                        + "_"
-                        + field.name.upper()
-                        + "_RESET = "
-                    )
-                    s += field.reset + ";\n"
-                    s += (
-                        "const uint32_t "
-                        + reg.name.upper()
-                        + "_"
-                        + field.name.upper()
-                        + "_MASK = "
-                    )
-                    s += str(hex(pow(2, field.width) - 1 << field.pos_low)) + ";\n"
-                    s += "\n"
-        s += "};\n\n"
-
-        s += "#endif"
-        s += "\n"
-
-        return s
-
-    def return_python_header(self):
-        s = ""
-
-        s += "class " + self.module.name.upper() + "_H:\n"
-
-        for reg in self.module.registers:
-            s += "\n"
-            s += indent_string('"""Register: ' + reg.name + '"""\n', 2)
-            s += indent_string(f'{reg.name.upper()}_MODE = "{reg.mode}"\n', 2)
-            s += indent_string(f"{reg.name.upper()}_WIDTH = {reg.width}\n", 2)
-            s += indent_string(
-                f"{reg.name.upper()}_OFFSET = {str(hex(reg.address))}\n", 2
-            )
-            s += indent_string(f"{reg.name.upper()}_RESET = {reg.reset}\n", 2)
-
-            if reg.sig_type == "fields":
-                for field in reg.fields:
-                    s += "\n"
-                    s += indent_string('""" Field: ' + field.name + ' """\n', 2)
-                    s += indent_string(
-                        reg.name.upper() + "_" + field.name.upper() + "_OFFSET = ", 2
-                    )
-                    s += str(field.pos_low) + "\n"
-                    s += indent_string(
-                        reg.name.upper() + "_" + field.name.upper() + "_WIDTH = ", 2
-                    )
-                    s += str(field.width) + "\n"
-                    s += indent_string(
-                        reg.name.upper() + "_" + field.name.upper() + "_RESET = ", 2
-                    )
-                    s += field.reset + "\n"
-                    s += indent_string(
-                        reg.name.upper() + "_" + field.name.upper() + "_MASK = ", 2
-                    )
-                    s += str(hex(pow(2, field.width) - 1 << field.pos_low))
-                    s += "\n"
-
-        return s
-
-    def return_ipbus_addr_table(self):
-        s = '<?xml version="1.0" encoding="ISO-8859-1"?>\n'
-        s += '<node id="{}">\n'.format(self.module.name)
-
-        for reg in self.module.registers:
-            par = '<node id="{}" address="0x{:08X}" permission="{}" description="{}" parameters="reset={}'.format(
-                reg.name, reg.address, reg.get_mode(), reg.description, reg.reset
-            )
-
-            if reg.mode == "pulse":
-                par += ";pulse_cycles={}".format(reg.pulse_cycles)
-            if reg.stall:
-                par += ";stall_cycles={}".format(reg.stall_cycles)
-            if reg.sig_type == "fields":
-                par += '">\n'
-            else:
-                par += '"/>\n'
-
-            if reg.sig_type == "fields":
-                for field in reg.fields:
-                    par2 = '<node id="{}" mask="{}" description="{}" parameters="reset={}"/>\n'.format(
-                        field.name,
-                        hex(field.get_mask()),
-                        field.description,
-                        field.reset,
-                    )
-                    par += indent_string(par2, 2)
-
-                par += "</node>\n"
-
-            s += indent_string(par, 2)
-
-        s += "</node>"
-        s += "\n"
-
-        return s
+        Returns:
+            XML address table content as string in IPBus format, mapping
+            register names to addresses for IPBus access.
+        """
+        return self._render_template("ipbus/addr_table.j2")
