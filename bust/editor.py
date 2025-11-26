@@ -13,21 +13,21 @@ from cursesmenu.items import FunctionItem
 from prettytable import PrettyTable
 from typing import Union, List
 
-from bust.utils import (
-    json_parser,
+from bust.utils.json_utils import json_parser
+from bust.utils.file_utils import (
     cont,
     is_int,
     clear_screen,
     write_string_to_file,
     get_list_choice,
     get_int,
-    add_line_breaks,
 )
-from bust.module import Module
-from bust.bus import Bus
-from bust.vhdl_util import get_identifier
+from bust.utils.formatting import add_line_breaks
+from bust.core.module import Module
+from bust.core.bus import Bus
+from bust.validation.vhdl_validator import get_identifier
 from bust.settings import Settings
-from bust.enums import FieldType, RegisterMode, RegisterType
+from bust.core.enums import FieldType, RegisterMode, RegisterType
 
 
 class Editor:
