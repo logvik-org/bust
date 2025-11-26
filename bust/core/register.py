@@ -15,9 +15,7 @@ from typing import Dict, List, cast
 from bust.exceptions import (
     ModuleDataBitsExceeded,
     UndefinedRegisterType,
-    UndefinedFieldType,
     InvalidRegisterFormat,
-    InvalidFieldFormat,
     InvalidStallValue,
 )
 from bust.core.field import Field

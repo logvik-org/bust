@@ -13,7 +13,7 @@ from collections import OrderedDict
 from typing import Dict
 
 from bust.core.enums import FieldType
-from bust.exceptions import InvalidFieldFormat, UndefinedFieldType
+from bust.exceptions import InvalidFieldFormat
 from bust.validation.vhdl_validator import is_valid_VHDL
 from bust.validation.config_validator import ConfigWrapper
 
