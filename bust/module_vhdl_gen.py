@@ -1,7 +1,9 @@
-from bust.jinja_utils.environment import get_environment
+from bust.jinja_utils.environment import render_template
 
 
-class ModuleVHDLGen:
+class ModuleVhdlGenerator:
+    """VHDL code generator for Module."""
+
     def __init__(self, name, bus_gen, regs, data_width, addr_width):
         """Code generator for the Module module."""
         self.name = name
@@ -10,33 +12,27 @@ class ModuleVHDLGen:
         self.data_width = data_width
         self.addr_width = addr_width
 
-    def return_module_pkg_VHDL(self, module) -> str:
-        # Get standardized Jinja2 environment
-        env = get_environment()
+    def generate_module_package_vhdl(self, module) -> str:
+        """Generate VHDL package for the module."""
+        return render_template(
+            "vhdl/module/pif/pkg.j2",
+            {
+                "module": module,
+                "addr_width": self.addr_width,
+                "data_width": self.data_width,
+            },
+        )
 
-        # Load the template
-        template = env.get_template("vhdl/module/pif/pkg.j2")
+    def generate_module_vhdl(self, module) -> str:
+        """Generate VHDL module code."""
+        return render_template(
+            "vhdl/module/module.j2",
+            {
+                "module": module,
+                "bus": self.bus,
+            },
+        )
 
-        # Define context for template rendering
-        context = {
-            "module": module,
-            "addr_width": self.addr_width,
-            "data_width": self.data_width,
-        }
 
-        return str(template.render(context))
-
-    def return_module_VHDL(self, module) -> str:
-        # Get standardized Jinja2 environment with all filters
-        env = get_environment()
-
-        # Load the module template
-        template = env.get_template("vhdl/module/module.j2")
-
-        # Define context for template rendering
-        context = {
-            "module": module,
-            "bus": self.bus,  # Assumes `module` has an attribute `bus`
-            "NL": "\n",  # Ensures newline formatting if needed
-        }
-        return str(template.render(context))
+# Backward compatibility alias
+ModuleVHDLGen = ModuleVhdlGenerator

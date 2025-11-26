@@ -11,7 +11,7 @@ from collections import OrderedDict
 from typing import Optional, cast
 
 
-class Settings(object):
+class Settings:
     """Manages project settings and path configurations.
 
     The Settings class encapsulates all project-level configuration including
@@ -135,7 +135,7 @@ class Settings(object):
         self.header_dir = "header"
         self.sim_dir = "sim"
 
-    def return_JSON(self):
+    def to_json(self):
         """Export settings as an ordered dictionary.
 
         Returns:

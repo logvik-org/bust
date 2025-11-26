@@ -319,19 +319,6 @@ class Register:
         else:
             return 0
 
-    def get_mode(self) -> str:
-        """Get register access mode in short format.
-
-        Returns:
-            "r" for read-only, "w" for pulse (write-only), "rw" for read-write.
-        """
-        if self.mode == RegisterMode.PULSE:
-            return "w"
-        elif self.mode == RegisterMode.RO:
-            return "r"
-        else:
-            return str(self.mode.value)
-
     def return_stall_string(self) -> str:
         """Return stall indicator string for documentation.
 
