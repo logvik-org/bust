@@ -11,7 +11,6 @@ reset type, and component library references.
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Dict
 
-from bust.bus_vhdl_gen import BusVHDLGen
 from bust.exceptions import InvalidBusType
 
 if TYPE_CHECKING:
@@ -98,37 +97,3 @@ class Bus:
         if self.comp_library != Bus.default_comp_library:
             json["comp_library"] = self.comp_library
         return json
-
-    def create_vhdl_generator(self) -> BusVHDLGen:
-        """Create a VHDL generator instance for this bus configuration.
-
-        Returns:
-            BusVHDLGen instance configured for this bus type.
-        """
-        return BusVHDLGen(
-            bus_type=self.bus_type,
-            comp_library=self.comp_library,
-            data_width=self.data_width,
-            addr_width=self.addr_width,
-        )
-
-    def generate_bus_package_vhdl(self) -> str:
-        """Generate VHDL package code for this bus interface.
-
-        Returns:
-            VHDL package source code as a string.
-        """
-        v_gen = self.create_vhdl_generator()
-        return v_gen.generate_bus_package_vhdl()
-
-    def generate_bus_pif_vhdl(self, mod: "Module") -> str:
-        """Generate bus protocol interface VHDL code for a module.
-
-        Args:
-            mod: Module instance to generate interface code for.
-
-        Returns:
-            VHDL source code for the bus protocol interface.
-        """
-        v_gen = self.create_vhdl_generator()
-        return v_gen.generate_bus_pif_vhdl(mod=mod)
