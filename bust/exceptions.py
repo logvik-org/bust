@@ -1,10 +1,6 @@
 """! @package exceptions"""
 
 
-def error(msg):
-    return "\nERROR:\n{}".format(msg)
-
-
 class FormatError(Exception):
     """! @brief Raised when input JSON is incorrect."""
 
@@ -18,7 +14,7 @@ class InvalidAddress(RuntimeError):
     def __init__(self, reg, addr):
         msg = "When specifying address for register " + reg + ", address "
         msg += hex(addr) + " is already assigned to other register"
-        super().__init__(error(msg))
+        super().__init__(msg)
 
 
 class InvalidRegister(RuntimeError):
@@ -27,9 +23,9 @@ class InvalidRegister(RuntimeError):
     """
 
     def __init__(self, reg):
-        msg = "Could not parse register. Lacking or misspelt JSON keys?\n"
-        msg += str(reg)
-        super().__init__(error(msg))
+        name = reg.get("name", "<unknown>")
+        msg = f"Could not parse register {name}. Lacking or misspelt JSON keys?\n{reg}"
+        super().__init__(msg)
 
 
 class InvalidBusType(RuntimeError):
@@ -37,7 +33,7 @@ class InvalidBusType(RuntimeError):
 
     def __init__(self, bus_type):
         msg = "Bus type is not valid: {}".format(bus_type)
-        super().__init__(error(msg))
+        super().__init__(msg)
 
 
 class InvalidResetMode(RuntimeError):
@@ -48,7 +44,7 @@ class InvalidResetMode(RuntimeError):
         msg += "- 'async' - asynchronous (default)\n"
         msg += "- 'sync'  - synchronous\n"
         msg += "but was: " + reset
-        super().__init__(error(msg))
+        super().__init__(msg)
 
 
 class ModuleDataBitsExceeded(Exception):
@@ -75,8 +71,8 @@ class UndefinedRegisterType(RuntimeError):
 class UndefinedFieldType(RuntimeError):
     """! @brief Raised when trying to parse an field type that is not supported."""
 
-    def __init__(self, sig_type):
-        msg = "Could not parse field type: " + sig_type
+    def __init__(self, type):
+        msg = "Could not parse field type: " + type
         super().__init__(msg)
 
 

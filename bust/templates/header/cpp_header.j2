@@ -1,0 +1,29 @@
+#ifndef {{ module.name.upper() }}_H
+#define {{ module.name.upper() }}_H
+
+#include <cstdint>
+#include <string>
+
+namespace {{ module.name.upper() }}
+{
+{% for reg in module.registers %}
+/* Register: {{ reg.name }} */
+const std::string {{ reg.name.upper() }}_MODE = "{{ reg.mode.value }}";
+const uint32_t {{ reg.name.upper() }}_WIDTH = {{ reg.width }};
+const uint32_t {{ reg.name.upper() }}_OFFSET = {{ "0x%x" | format(reg.address) }};
+const uint32_t {{ reg.name.upper() }}_RESET = {{ reg.reset }};
+
+{% if reg.type == reg_type_fields %}
+{% for field in reg.fields %}
+/* Field: {{ field.name }} */
+const uint32_t {{ reg.name.upper() }}_{{ field.name.upper() }}_OFFSET = {{ field.pos_low }};
+const uint32_t {{ reg.name.upper() }}_{{ field.name.upper() }}_WIDTH = {{ field.width }};
+const uint32_t {{ reg.name.upper() }}_{{ field.name.upper() }}_RESET = {{ field.reset }};
+const uint32_t {{ reg.name.upper() }}_{{ field.name.upper() }}_MASK = {{ "0x%x" | format(((2**field.width - 1) * (2**field.pos_low))) }};
+
+{% endfor %}
+{% endif %}
+{% endfor %}
+};
+
+#endif
