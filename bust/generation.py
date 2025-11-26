@@ -10,8 +10,8 @@ import os
 import logging
 import subprocess
 
-from bust.generator_factory import GeneratorFactory
-from bust.utils import write_string_to_file, update_module_top_level
+from bust.generators.factory import GeneratorFactory
+from bust.utils.file_utils import write_string_to_file, update_module_top_level
 
 logger = logging.getLogger(__name__)
 
