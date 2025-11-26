@@ -1,0 +1,86 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+library {{ bus.comp_library }};
+{% if bus.bus_type == "ipbus" %}
+use {{ bus.comp_library }}.ipbus.all;
+use work.{{ module.name }}_pif_pkg.all;
+{% elif bus.bus_type == "axi" %}
+use {{ bus.comp_library }}.axi_pkg.all;
+use work.{{ module.name }}_pif_pkg.all;
+{% endif %}
+
+entity {{ module.name }}_{{ bus.short_name }}_pif is
+
+  generic (
+    -- {{bus.bus_type.upper()}} Bus Interface Generics
+    g_{{ bus.short_name }}_baseaddr        : std_logic_vector(31 downto 0) := (others => '0');
+    g_check_baseaddr      : boolean := true;
+    g_module_addr_width   : integer := 0
+    );
+  port (
+    -- {{bus.bus_type.upper()}} Bus Interface Ports
+    {% if module.num_rw_regs + module.num_ro_regs + module.num_pulse_regs > 0 %}
+    {{bus.short_name}}_rw_regs    : out t_{{ module.name }}_rw_regs    := c_{{ module.name }}_rw_regs;
+    {% endif %}
+    {% if module.num_ro_regs > 0 %}
+    {{bus.short_name}}_ro_regs    : in  t_{{ module.name }}_ro_regs    := c_{{ module.name }}_ro_regs;
+    {% endif %}
+    {% if module.num_pulse_regs > 0 %}
+    {{bus.short_name}}_pulse_regs : out t_{{ module.name }}_pulse_regs := c_{{ module.name }}_pulse_regs;
+    {% endif %}
+
+    -- bus signals
+    {% if bus.bus_type == "ipbus" %}
+    clk            : in  std_logic;
+    reset          : in  std_logic;
+    ipb_in         : in  ipb_wbus;
+    ipb_out        : out ipb_rbus
+    {% elif bus.bus_type == "axi" %}
+    clk            : in  std_logic;
+    areset_n       : in  std_logic;
+    awaddr         : in  t_example_axi_addr;
+    awvalid        : in  std_logic;
+    awready        : out std_logic;
+    wdata          : in  t_{{ module.name }}_data;
+    wvalid         : in  std_logic;
+    wready         : out std_logic;
+    bresp          : out std_logic_vector(1 downto 0);
+    bvalid         : out std_logic;
+    bready         : in  std_logic;
+    araddr         : in  t_{{ module.name }}_addr;
+    arvalid        : in  std_logic;
+    arready        : out std_logic;
+    rdata          : out t_{{ module.name }}_data;
+    rresp          : out std_logic_vector(1 downto 0);
+    rvalid         : out std_logic;
+    rready         : in  std_logic
+    {% endif %}
+    );
+end {{ module.name }}_{{ bus.short_name }}_pif;
+
+architecture behavior of {{ module.name }}_{{ bus.short_name }}_pif is
+
+  {% if bus.bus_type == "ipbus" %}
+  constant C_BASEADDR : std_logic_vector(31 downto 0) := g_{{ bus.short_name }}_baseaddr;
+  {% else %}
+  constant C_BASEADDR : t_{{ bus.short_name }}_addr := g_{{ bus.short_name }}_baseaddr;
+  {% endif %}
+
+  -- internal signal for readback
+  {% if module.num_rw_regs > 0 %}
+  signal {{bus.short_name }}_rw_regs_i    : t_{{ module.name }}_rw_regs := c_{{ module.name }}_rw_regs;
+  {% endif %}
+  {% if module.num_pulse_regs > 0 %}
+  signal {{bus.short_name }}_pulse_regs_i : t_{{ module.name }}_pulse_regs := c_{{ module.name }}_pulse_regs;
+  signal {{bus.short_name }}_pulse_regs_cycle : t_{{ module.name }}_pulse_regs := c_{{ module.name }}_pulse_regs;
+  {% endif %}
+
+  {% if bus.bus_type == "ipbus" %}
+  {% include "vhdl/module/pif/ipbus.j2" %}
+  {% elif bus.bus_type == "axi" %}
+  {% include "vhdl/module/pif/axi.j2" %}
+  {% endif %}
+
+

@@ -1,0 +1,37 @@
+{#
+  Macro: statement_read_reg
+
+  Generates VHDL logic for reading from a register (or its fields) based on
+  register address match and optionally generates read acknowledgements.
+
+  Parameters:
+    reg:                  Register object (must have .name, .type, .fields, .width, .stall)
+    internal_signal_name: Prefix for the signal being read (e.g., "axi_ro_regs" or "ipb_rw_regs_i")
+    register_sel:         Signal name used for address decoding (e.g., "register_sel_rd")
+    use_ack:              Boolean; if true, generate rd_ack or rd_stall_ack assignment
+#}
+
+{% macro statement_read_reg(reg, internal_signal_name, register_sel, use_ack) %}
+elsif unsigned({{ register_sel }}) = resize(unsigned(C_ADDR_{{ reg.name | upper }}), C_MODULE_ADDR_WIDTH) then
+
+    {% if reg.type.value == "fields" %}
+      {% for field in reg.fields %}
+  reg_data_out({{ field.get_pos_vhdl() }}) <= {{ internal_signal_name }}.{{ reg.name }}.{{ field.name }};
+      {% endfor %}
+    {% elif reg.type.value == "default" %}
+  reg_data_out <= {{ internal_signal_name }}.{{ reg.name }};
+    {% elif reg.type.value == "vector" %}
+  reg_data_out({{ reg.width - 1 }} downto 0) <= {{ internal_signal_name }}.{{ reg.name }};
+    {% elif reg.type.value == "bit" %}
+  reg_data_out(0) <= {{ internal_signal_name }}.{{ reg.name }};
+    {% endif %}
+    {% if reg.stall %}
+  rd_stall_ack <= '1';
+
+    {% elif use_ack %}
+  rd_ack <= '1';
+
+    {% else %}
+
+    {% endif %}
+{% endmacro %}

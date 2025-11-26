@@ -1,3 +1,17 @@
+"""Register module for bust.
+
+This module defines the Register class, which represents a memory-mapped
+register within a bus slave module. Registers can have various types
+(default, vector, bit, fields), access modes (RW, RO, PULSE), and optional
+features like stall cycles.
+
+Each register has a fixed address, configurable width, reset value, and
+can optionally contain multiple named bitfields.
+"""
+
+import logging
+from typing import Dict, List, cast
+
 from bust.exceptions import (
     ModuleDataBitsExceeded,
     UndefinedRegisterType,
@@ -7,206 +21,319 @@ from bust.exceptions import (
     InvalidStallValue,
 )
 from bust.field import Field
-from bust.utils import add_line_breaks, indent_string
-from bust.vhdl import is_unique, is_valid_VHDL
+from bust.utils import indent_string
+from bust.vhdl_util import is_unique, is_valid_VHDL
+from bust.config_wrapper import ConfigWrapper
+from bust.enums import RegisterMode, RegisterType
 
 
 class Register:
-    """! @brief Managing register information"""
+    """Represents a memory-mapped register in a bus slave module.
 
-    supported_types = ["default", "vector", "bit"]
-    supported_modes = ["RW", "RO", "PULSE"]
+    A Register encapsulates all information needed to generate a memory-mapped
+    register, including its address, data type, access mode, reset value, and
+    optional bitfields. Registers support various modes (read-write, read-only,
+    pulse) and types (default width, custom vector, single-bit, or composite fields).
 
-    def __init__(self, reg, address, mod_data_width):
-        self.name = reg["name"]
-        self.mode = reg["mode"].lower()
-        self.description = reg["description"]
-        self.description_with_breaks = add_line_breaks(reg["description"], 25)
+    Attributes:
+        name: Register name (must be valid VHDL identifier).
+        address: Memory address of the register.
+        mode: Access mode (RW, RO, or PULSE).
+        type: Data type (DEFAULT, VECTOR, BIT, or FIELDS).
+        width: Data width in bits.
+        reset: Reset value as hex string.
+        description: Optional description of the register's purpose.
+        pulse_cycles: Duration of pulse signal for PULSE mode.
+        stall_cycles: Number of stall cycles (IPBus only, 2-255).
+        stall: True if stall_cycles > 0.
+        fields: List of Field objects for FIELDS type registers.
+        module_name: Name of parent module.
+        module_data_width: Data width of parent module.
+    """
+
+    def __init__(
+        self, reg: Dict, address: int, module_name: str, module_data_width: int
+    ) -> None:
+        """Initialize a Register instance.
+
+        Args:
+            reg: Dictionary containing register configuration with keys:
+                - name: Register identifier (required)
+                - mode: Access mode "rw", "ro", or "pulse" (default: "rw")
+                - type: Register type "default", "vector", "bit", or "fields" (default: "default")
+                - width: Bit width (default: module_data_width)
+                - reset: Reset value as hex string (default: "0x0")
+                - description: Register description (default: "")
+                - pulse_cycles: Pulse duration for PULSE mode (default: 1)
+                - stall_cycles: Stall cycles for IPBus (default: 0, range: 0 or 2-255)
+                - fields: List of field dictionaries for FIELDS type
+            address: Memory address for this register.
+            module_name: Name of the parent module.
+            module_data_width: Data width of the parent module.
+
+        Raises:
+            InvalidRegisterFormat: If reset value doesn't match width or is invalid.
+            InvalidStallValue: If stall_cycles is not 0 or between 2-255.
+            ModuleDataBitsExceeded: If register width exceeds module data width.
+            UndefinedRegisterType: If register type is not supported.
+            ValueError: If register name is not a valid VHDL identifier.
+        """
+        self.logger = logging.getLogger(__name__)
+
+        self.module_name = module_name
+        self.module_data_width = module_data_width
         self.address = address
+        self.fields: List["Field"] = []
 
-        if self.mode == "pulse":
-            # Check if pulse_cycles is set
-            if "pulse_cycles" in reg:
-                self.pulse_cycles = reg["pulse_cycles"]
-            else:
-                self.pulse_cycles = 1
+        self._config = ConfigWrapper(
+            reg,
+            required_keys=["name"],
+            defaults={
+                "description": "",
+                "mode": RegisterMode.RW.value,
+                "type": RegisterType.DEFAULT.value,
+                "width": module_data_width,
+                "reset": "0x0",
+                "pulse_cycles": 1,
+                "stall_cycles": 0,
+            },
+        )
 
-        self.stall = False
-        if "stall_cycles" in reg:
-            if reg["stall_cycles"] < 2 or reg["stall_cycles"] > 255:
-                raise InvalidStallValue(reg["stall_cycles"])
-            self.stall = True
-            self.stall_cycles = reg["stall_cycles"]
+        self.name = self._config.require("name")
+        is_valid_VHDL(self.name)
 
-        self.reset = "0x0"
-        self.width = 0
-        self.fields = []
+        self.description: str = self._config.get("description")
+        self.mode = RegisterMode.from_string(self._config.get("mode"))
+        self.type = RegisterType.from_string(self._config.get("type"))
+        self.width = self._config.get(
+            "width"
+        )  # Width can be overridden depending on register type
+        self.reset = self._config.get("reset")
+        self.pulse_cycles = self._config.get("pulse_cycles")
+        self.stall_cycles = self._config.get("stall_cycles")
+        self.stall = self.stall_cycles > 0
 
-        if "width" in reg:
-            tmp_width = reg["width"]
+        # If set, stall cycles must be between 2 and 255
+        if self.stall:
+            if self.stall_cycles < 2 or self.stall_cycles > 255:
+                raise InvalidStallValue(self.stall_cycles)
+
+        # Assign width
+        if self.type == RegisterType.DEFAULT:
+            # Check if the width was explicitly set in the config,
+            # and if it matches the module data width
+            if (
+                self._config.is_set("width")
+                and self._config.get("width") != module_data_width
+            ):
+                self.logger.warning(
+                    f"User-specified width of default register does not match the expected width ({module_data_width}). Ignoring configured width."
+                )
+            self.width = module_data_width
+        elif self.type == RegisterType.VECTOR:
+            pass
+        elif self.type == RegisterType.BIT:
+            # Check if the width was explicitly set in the config, and if it matches the module data width
+            if self._config.is_set("width") and self._config.get("width") != 1:
+                self.logger.warning(
+                    "User-specified width of BIT register does not match the expected width (1). Ignoring configured width."
+                )
+            self.width = 1
+
+        elif self.type == RegisterType.FIELDS or self._config.is_set("fields"):
+            self.width = 0
+            self._init_fields()
+
         else:
-            tmp_width = 1  # Setting to 1, in case std_logic
+            raise UndefinedRegisterType(self.type)
 
-        if "type" in reg:
-            self.sig_type = reg["type"]
-        else:
-            self.sig_type = "fields"
+        # Check that the user-specified reset value is valid
+        self.validate_reset_value()
 
-        # Assign the reg type and register data width
-        if self.sig_type == "default":
-            self.width = mod_data_width
+        # Perform check that data bits are not exceeded
+        self.check_register_data_width(module_data_width)
 
-        elif self.sig_type == "vector":
-            self.width = tmp_width
+    def _init_fields(self) -> None:
+        """Initialize fields from configuration for FIELDS type registers."""
+        fields = self._config.require("fields")
+        for field in fields:
+            self.add_field(field)
 
-        elif self.sig_type == "bit":
-            self.sig_type = "bit"
+    def validate_reset_value(self) -> None:
+        """Validate that the reset value fits within the register's bit width.
 
-            if tmp_width != 1:
-                raise UndefinedRegisterType("BIT cannot have width other than 1")
-            self.width = tmp_width
-
-        elif self.sig_type == "fields" or "fields" in reg:
-            if len(reg["fields"]) > 0:
-                for field in reg["fields"]:
-                    self.add_field(field)
-            else:
-                InvalidFieldFormat("Fields are missing in reg: " + self.name)
-
-        else:
-            raise UndefinedRegisterType(self.sig_type)
-
-        if "reset" in reg:
-            # Reset value is not allowed if sig_type is record
-            if self.sig_type == "record":
+        Raises:
+            InvalidRegisterFormat: If reset value exceeds maximum value for width
+                or if reset is specified for record type register.
+        """
+        if self._config.is_set("reset"):
+            # Reset value is not allowed if type is record
+            if self.type == "record":
                 raise InvalidRegisterFormat(
                     "Reset value is not allowed for record type register: " + self.name
                 )
-            else:
-                # Check whether reset value matches register width
-                # maxvalue is given by 2^width
-                maxvalue = (2**self.width) - 1
-                if maxvalue < int(reg["reset"], 16):
-                    raise InvalidRegisterFormat(
-                        "Reset value does not match register: " + self.name
-                    )
-                else:
-                    self.reset = reg["reset"]
 
-        # Perform check that data bits are not exceeded
-        self.check_register_data_width(mod_data_width)
+            # Check whether reset value matches register width
+            # maxvalue is given by 2^width
+            maxvalue = (2**self.width) - 1
+            if maxvalue < int(self.reset, 16):
+                raise InvalidRegisterFormat(
+                    "Reset value does not match register: " + self.name
+                )
 
-    def __str__(self):
+    def __str__(self) -> str:
         string = "Name: " + self.name + "\n"
         string += "Address: " + hex(self.address) + "\n"
-        string += "Mode: " + self.mode + "\n"
-        string += "Type: " + self.sig_type + "\n"
+        string += "Mode: " + str(self.mode.value) + "\n"
+        string += "Type: " + str(self.type.value) + "\n"
         string += "Width: " + str(self.width) + "\n"
         string += "Reset: " + self.reset
-        if self.sig_type == "record":
+        if self.type == "record":
 
-            for i in self.fields:
+            for field in self.fields:
                 string += "\n"
                 string += indent_string(
                     "Name: "
-                    + i["name"]
+                    + field.name
                     + " Type: "
-                    + i["type"]
+                    + str(field.type.value)
                     + " Width: "
-                    + str(i["width"])
+                    + str(field.width)
                     + " Reset: "
-                    + i["reset"]
+                    + field.reset
                 )
 
         string += "\nDescription: " + self.description + "\n\n"
-        return string
+        return cast(str, string)
 
-    def add_field(self, field):
-        # Check that all required keys exist
-        if not all(key in field for key in ("name", "type")):
-            raise InvalidFieldFormat(self.name)
+    @property
+    def range_vhdl(self) -> str:
+        """Return VHDL range string for VECTOR registers.
 
-        # Make sure field name is valid VHDL
-        is_valid_VHDL(field["name"])
+        Returns:
+            VHDL range in "N-1 downto 0" format for VECTOR registers.
 
-        # Make sure the field name is unique in this register
-        field_names = [field.name for field in self.fields]
-        is_unique(field["name"], field_names)
+        Raises:
+            ValueError: If called on non-VECTOR register type.
+        """
+        if self.type == RegisterType.VECTOR:
+            return f"{self.width - 1} downto 0"
+        raise ValueError("Only vector fields have a range")
 
-        if field["type"] == "vector":
-            if "width" not in field:
-                raise InvalidFieldFormat(self.name)
-            width = field["width"]
+    @property
+    def type_vhdl(self) -> str:
+        """Return VHDL type declaration for this register.
 
-        elif field["type"] == "bit":
-            width = 1
-
+        Returns:
+            Type name suitable for VHDL code generation:
+            - Module data type for DEFAULT registers
+            - std_logic_vector(...) for VECTOR registers
+            - std_logic for BIT registers
+            - Custom record type for FIELDS registers
+        """
+        if self.type == RegisterType.DEFAULT or (
+            self.type == RegisterType.VECTOR and self.width == self.module_data_width
+        ):
+            return f"t_{self.module_name}_data"
+        elif self.type == RegisterType.VECTOR:
+            return f"std_logic_vector({self.range_vhdl})"
+        elif self.type == RegisterType.BIT:
+            return "std_logic"
         else:
-            raise UndefinedFieldType(field["type"])
+            return f"t_{self.module_name}_{self.mode.value}_{self.name}"
+
+    @property
+    def reset_val_vhdl(self) -> str:
+        """Generate VHDL literal for the register's reset value.
+
+        Returns:
+            VHDL literal as string.
+
+        Raises:
+            ValueError: If called on FIELDS type (fields have individual reset values).
+        """
+        if self.type in [RegisterType.DEFAULT, RegisterType.VECTOR]:
+            if self.reset == "0x0":
+                return "(others => '0')"
+            else:
+                val = str(self.width) + 'X"'
+                val += format(int(self.reset, 16), "X") + '"'
+                return val
+        elif self.type == RegisterType.BIT:
+            return "'" + format(int(self.reset, 16), "X") + "'"
+
+        raise ValueError(
+            "Only default, vector and bit registers can extract reset value directly"
+        )
+
+    def add_field(self, field_cfg: Dict) -> None:
+        """Add a bitfield to this register.
+
+        Creates a Field object and adds it to the register, updating the
+        register's total width and reset value to incorporate the new field.
+
+        Args:
+            field_cfg: Dictionary containing field configuration (see Field.__init__).
+
+        Raises:
+            ValueError: If field name is not unique within this register.
+        """
+        field = Field(field_cfg, self.get_next_pos_low(), self.name)
+
+        # Validate uniqueness of field name
+        existing_names = [f.name for f in self.fields]
+        is_unique(field.name, existing_names)
 
         # Increment register width
-        self.width += width
-
-        if "reset" in field:
-            reset = field["reset"]
-            # Check whether reset value matches field width
-            # maxvalue is given by 2^width
-            maxvalue = (2**width) - 1
-            if maxvalue < int(field["reset"], 16):
-                raise InvalidFieldFormat(
-                    "Reset value does not match field: "
-                    + field["name"]
-                    + " in reg: "
-                    + self.name
-                )
-        else:
-            reset = "0x0"
-
-        if "description" in field:
-            description = field["description"]
-        else:
-            description = ""
-
-        next_low = self.get_next_pos_low()
-        self.fields.append(
-            Field(field["name"], field["type"], width, reset, description, next_low)
-        )
+        self.width += field.width
 
         # Maintain the register reset value
         reg_reset_int = int(self.reset, 16)
-        field_reset_int = int(reset, 16)
-        reg_reset_int += field_reset_int << next_low
+        field_reset_int = int(field.reset, 16)
+        reg_reset_int += field_reset_int << field.pos_low
         self.reset = hex(reg_reset_int)
 
-    def check_register_data_width(self, module):
-        """! @brief Controls that the combined data bits in fields does not
-        exceed data bits of module
+        self.fields.append(field)
 
+    def check_register_data_width(self, module_data_width: int) -> None:
+        """Verify that register width doesn't exceed module data width.
+
+        Args:
+            module_data_width: Maximum allowed data width in bits.
+
+        Raises:
+            ModuleDataBitsExceeded: If register width exceeds module width.
         """
-        if self.width > module:
-            raise ModuleDataBitsExceeded(self.name, self.width, module)
+        if self.width > module_data_width:
+            raise ModuleDataBitsExceeded(self.name, self.width, module_data_width)
 
-    def get_next_pos_low(self):
+    def get_next_pos_low(self) -> int:
+        """Calculate the next available bit position for adding a field.
+
+        Returns:
+            Next free bit position (0 if no fields exist yet).
+        """
         if len(self.fields) > 0:
-            last_pos_high = self.fields[-1].pos_high
+            last_pos_high: int = self.fields[-1].pos_high
             return last_pos_high + 1
         else:
             return 0
 
-    def get_mode(self):
-        """Get the register mode in r/w/rw format - pulse = w"""
-        if self.mode == "pulse":
-            return "w"
-        elif self.mode == "ro":
-            return "r"
-        else:
-            return self.mode
+    def return_stall_string(self) -> str:
+        """Return stall indicator string for documentation.
 
-    def return_stall_string(self):
+        Returns:
+            "/STALL" if stall is enabled, empty string otherwise.
+        """
         if self.stall:
             return "/STALL"
         else:
             return ""
 
-    def get_stall_cycles_str(self):
+    def get_stall_cycles_str(self) -> str:
+        """Return stall cycles count adjusted for VHDL representation.
+
+        Returns:
+            String representation of stall_cycles - 2 (VHDL encoding offset).
+        """
         return str(self.stall_cycles - 2)

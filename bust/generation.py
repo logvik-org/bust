@@ -1,3 +1,11 @@
+"""Output file generation module for bust.
+
+This module handles the creation of all output files including VHDL code,
+testbenches, documentation, headers, and simulation scripts. It manages
+directory structure and coordinates file generation from Module, Bus,
+Header, Documentation, and Testbench instances.
+"""
+
 import os
 import logging
 import subprocess
@@ -10,11 +18,37 @@ logger = logging.getLogger(__name__)
 def generate_output(
     settings, bus, module, header, documentation, testbench, gen_settings
 ):
-    """Starts the generation of all output files"""
+    """Generate all output files for a bus slave module.
+
+    Creates directory structure and writes VHDL files, testbenches,
+    documentation, headers, and scripts based on configuration.
+
+    Args:
+        settings: Settings instance with paths and configuration.
+        bus: Bus instance with interface configuration.
+        module: Module instance with register definitions.
+        header: Header instance for generating language headers.
+        documentation: Documentation instance for generating docs.
+        testbench: Testbench instance for generating test files.
+        gen_settings: Dictionary with generation options:
+            - dir: Output directory path
+            - force_ow: Force overwrite without prompting
+            - gen_bus: Generate bus VHDL package
+            - gen_mod: Generate module VHDL files
+            - update_top: Update existing top-level preserving user code
+            - force_ow_top: Force overwrite top-level
+            - gen_tb: Generate testbench
+            - gen_doc: Generate documentation
+            - gen_hdr: Generate language headers
+            - format_vhdl: Run VHDL formatter
+
+    Raises:
+        Exception: If file generation fails.
+    """
 
     # Control all output directories
     proj_dir = os.path.expanduser(gen_settings["dir"])  # Make sure that we understand ~
-    logger.info("Project path: {}".format(os.path.abspath(proj_dir)))
+    logger.info(f"Project path: {os.path.abspath(proj_dir)}")
     if settings.mod_subdir:
         mod_dir = os.path.join(proj_dir, module.name)
     else:
@@ -48,97 +82,104 @@ def generate_output(
         os.makedirs(bus_hdl, exist_ok=True)
         os.makedirs(bus_sim, exist_ok=True)
 
-    except Exception:
+    except Exception as e:
         logger.error("ERROR: Could not create output directories")
-        exit(1)
+        logger.error(e)
+
     else:
         logger.debug("Successfully created all output directories")
 
     if gen_settings["gen_bus"]:
         logger.info("Generating Bus VHDL Package File...")
         try:
-            filename = "{}_pkg.vhd".format(bus.bus_type)
+            filename = f"{bus.bus_type}_pkg.vhd"
             write_string_to_file(
-                bus.return_bus_pkg_VHDL(), filename, bus_hdl, gen_settings["force_ow"]
+                bus.generate_bus_package_vhdl(),
+                filename,
+                bus_hdl,
+                gen_settings["force_ow"],
             )
-        except Exception:
+        except Exception as e:
             logger.error("ERROR: Could not generate Bus VHDL Package File")
-            exit(1)
+            raise e
 
     if gen_settings["gen_mod"]:
         logger.info("Generating Module VHDL Files...")
         try:
             # PIF
-            filename = "{}_{}_pif.vhd".format(module.name, bus.short_name)
+            filename = f"{module.name}_{bus.short_name}_pif.vhd"
             write_string_to_file(
-                bus.return_bus_pif_VHDL(module),
+                bus.generate_bus_pif_vhdl(module),
                 filename,
                 mod_hdl,
                 gen_settings["force_ow"],
             )
             # PIF Package
-            filename = "{}_pif_pkg.vhd".format(module.name)
+            filename = f"{module.name}_pif_pkg.vhd"
             write_string_to_file(
-                module.return_module_pkg_VHDL(),
+                module.generate_module_package_vhdl(),
                 filename,
                 mod_hdl,
                 gen_settings["force_ow"],
             )
 
             # Top Module
-            filename = "{}.vhd".format(module.name)
+            filename = f"{module.name}.vhd"
             if gen_settings["update_top"]:
                 logger.info("Trying to update top level-file")
                 path = os.path.join(mod_hdl, filename)
-                new_top = update_module_top_level(path, module.return_module_VHDL())
+                new_top = update_module_top_level(path, module.generate_module_vhdl())
                 write_string_to_file(
                     new_top, filename, mod_hdl, gen_settings["force_ow_top"]
                 )
             else:
                 write_string_to_file(
-                    module.return_module_VHDL(),
+                    module.generate_module_vhdl(),
                     filename,
                     mod_hdl,
                     gen_settings["force_ow_top"],
                 )
 
-        except Exception:
+        except Exception as e:
             logger.error("ERROR: Could not generate Module VHDL Files")
-            exit(1)
+            raise e
 
     if gen_settings["gen_header"]:
         logger.info("Generating Module Include Files...")
         try:
-            filename = "{}.h".format(module.name)
+            filename = f"{module.name}.h"
             write_string_to_file(
-                header.return_c_header(), filename, mod_header, gen_settings["force_ow"]
-            )
-            filename = "{}.hpp".format(module.name)
-            write_string_to_file(
-                header.return_cpp_header(),
+                header.generate_c_header(),
                 filename,
                 mod_header,
                 gen_settings["force_ow"],
             )
-            filename = "{}.py".format(module.name)
+            filename = f"{module.name}.hpp"
             write_string_to_file(
-                header.return_python_header(),
+                header.generate_cpp_header(),
+                filename,
+                mod_header,
+                gen_settings["force_ow"],
+            )
+            filename = f"{module.name}.py"
+            write_string_to_file(
+                header.generate_python_header(),
                 filename,
                 mod_header,
                 gen_settings["force_ow"],
             )
             if bus.bus_type == "ipbus":
-                filename = "{}.xml".format(module.name)
+                filename = f"{module.name}.xml"
                 write_string_to_file(
-                    header.return_ipbus_addr_table(),
+                    header.generate_ipbus_addr_table(),
                     filename,
                     mod_header,
                     gen_settings["force_ow"],
                 )
 
-        except Exception:
+        except Exception as e:
             logger.error("ERROR: Could not generate Module Include Files")
-            exit(1)
+            raise e
 
     if gen_settings["gen_tb"]:
         if settings.uvvm_rel_path is None:
@@ -150,43 +191,43 @@ def generate_output(
             try:
                 filename = "component_list.txt"
                 write_string_to_file(
-                    testbench.return_uvvm_component_list(),
+                    testbench.generate_uvvm_component_list(),
                     filename,
                     mod_script,
                     gen_settings["force_ow"],
                 )
-                filename = "simulate_{}_pif.do".format(bus.bus_type)
+                filename = f"simulate_{bus.bus_type}_pif.do"
                 write_string_to_file(
-                    testbench.return_tcl_script(),
+                    testbench.generate_tcl_script(),
                     filename,
                     mod_script,
                     gen_settings["force_ow"],
                 )
-                filename = "{}_{}_pif_tb.vhd".format(module.name, bus.short_name)
+                filename = f"{module.name}_{bus.short_name}_pif_tb.vhd"
                 write_string_to_file(
-                    testbench.return_vhdl_tb(),
+                    testbench.generate_vhdl_testbench(),
                     filename,
                     mod_tb,
                     gen_settings["force_ow"],
                 )
 
-            except Exception:
+            except Exception as e:
                 logger.error("ERROR: Could not generate PIF Testbench Files")
-                exit(1)
+                raise e
 
     if gen_settings["gen_doc"]:
         logger.info("Generating Module Documentation...")
         try:
-            filename = "{}.tex".format(module.name)
+            filename = f"{module.name}.tex"
             write_string_to_file(
-                documentation.return_tex_documentation(),
+                documentation.generate_tex_documentation(),
                 filename,
                 mod_doc,
                 gen_settings["force_ow"],
             )
-        except Exception:
+        except Exception as e:
             logger.error("ERROR: Could not generate Module Documentation")
-            exit(1)
+            raise e
 
     if gen_settings["gen_pdf"]:
         logger.info("Generating Documentation PDF...")
@@ -202,4 +243,3 @@ def generate_output(
             )
         except Exception:
             logger.error("ERROR: PDF Generation Failed")
-            exit(1)

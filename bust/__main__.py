@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""bust register tool
+"""bust register tool.
 
 Usage:
   bust.py FILE [-o DIR] [[[-F | -f] [-u] [-d | -p] [-b] [-t] [-i] [-m]] | [-a] | [-c | -e]]
@@ -31,6 +31,7 @@ Arguments:
 from docopt import docopt
 import sys
 import logging
+from typing import Dict, Union
 
 from bust.utils import json_parser, write_string_to_file
 from bust.module import Module
@@ -75,13 +76,25 @@ def main():
             json_file = args["FILE"]
 
             if args["-c"] and json_file is not None:
-                e = Editor(False, json_file)
-                e.show_menu()
+                try:
+                    e = Editor(False, json_file)
+                    e.show_menu()
+                except Exception as e:
+                    logger.error("Failed to create new JSON file: " + json_file)
+                    logger.error(f"{type(e).__name__}: {e}")
+                    logger.debug("Detailed traceback:", exc_info=True)
+                    exit(1)
                 exit()
 
             if args["-e"] and json_file is not None:
-                e = Editor(True, json_file)
-                e.show_menu()
+                try:
+                    editor = Editor(True, json_file)
+                    editor.show_menu()
+                except Exception as e:
+                    logger.error("Failed to open editor for " + json_file)
+                    logger.error(f"{type(e).__name__}: {e}")
+                    logger.debug("Detailed traceback:", exc_info=True)
+                    exit(1)
                 exit()
 
             logger.info("Parsing file: " + json_file + "...")
@@ -93,7 +106,7 @@ def main():
                 module = Module(json_dict["module"], bus, settings)
                 header = Header(module)
                 documentation = Documentation(module)
-                testbench = Testbench(module, bus.get_VHDL_generator(), settings)
+                testbench = Testbench(module, bus.create_vhdl_generator(), settings)
 
             except (
                 FormatError,
@@ -104,15 +117,19 @@ def main():
                 NotImplementedError,
             ) as e:
                 logger.error(str(e))
+                if hasattr(e, "__cause__") and isinstance(e.__cause__, ValueError):
+                    logger.error(str(e.__cause__))
+                logger.debug("Detailed traceback:", exc_info=True)
                 exit(1)
 
             except Exception as e:
-                logger.error("\nERROR:\nAn unknown error has occurred...")
-                logger.debug(str(e))
+                logger.error("An unknown error has occurred...")
+                logger.error(f"{type(e).__name__}: {e}")
+                logger.debug("Detailed traceback:", exc_info=True)
                 exit(1)
 
             # File generation settings
-            gs = {}
+            gs: Dict[str, Union[bool, str]] = {}
 
             if args["-o"] is None:
                 gs["dir"] = settings.project_path
@@ -163,7 +180,7 @@ def main():
 
             if args["-a"]:
                 module.update_addresses()
-                json = module.return_JSON(True)
+                json = module.to_json(True)
                 try:
                     write_string_to_file(json, json_file, ".")
                 except Exception as e:
@@ -171,12 +188,19 @@ def main():
                     print(e)
                     return
             else:
-                generate_output(
-                    settings, bus, module, header, documentation, testbench, gs
-                )
+                try:
+                    generate_output(
+                        settings, bus, module, header, documentation, testbench, gs
+                    )
+                except Exception as e:
+                    logger.error("An error occurred during output generation...")
+                    logger.error(f"{type(e).__name__}: {e}")
+                    logger.debug("Detailed traceback:", exc_info=True)
+                    exit(1)
 
     except Exception:
         logger.exception("An unresolvable error has occurred...")
+        logger.debug("Detailed traceback:", exc_info=True)
         exit(1)
 
     sys.exit(0)

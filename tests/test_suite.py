@@ -26,7 +26,7 @@ class BusHolder:
         sett = Settings(json_file, json["settings"])
         bus = Bus(json["bus"])
         mod = Module(json["module"], bus, sett)
-        tb = Testbench(mod, bus.get_VHDL_generator(), sett)
+        tb = Testbench(mod, bus.create_vhdl_generator(), sett)
         doc = Documentation(mod)
         hdr = Header(mod)
         return sett, bus, mod, tb, doc, hdr
@@ -62,7 +62,7 @@ class Test_Suite(unittest.TestCase):
                 ) as f:
                     string = f.read()
                 self.assertEqual(
-                    holder.mod.return_module_pkg_VHDL(),
+                    holder.mod.generate_module_package_vhdl(),
                     string,
                     "pif pkg must match manual file",
                 )
@@ -74,7 +74,7 @@ class Test_Suite(unittest.TestCase):
                 ) as f:
                     string = f.read()
                 self.assertEqual(
-                    holder.bus.return_bus_pif_VHDL(holder.mod),
+                    holder.bus.generate_bus_pif_vhdl(holder.mod),
                     string,
                     "pif must match manual file",
                 )
@@ -90,7 +90,7 @@ class Test_Suite(unittest.TestCase):
                 ) as f:
                     string = f.read()
                 self.assertEqual(
-                    holder.mod.return_module_VHDL(),
+                    holder.mod.generate_module_vhdl(),
                     string,
                     "module must match manual file",
                 )
@@ -102,7 +102,9 @@ class Test_Suite(unittest.TestCase):
         with open("example/example_axi/hdl/axi_pkg.vhd") as f:
             string = f.read()
         self.assertEqual(
-            holder.bus.return_bus_pkg_VHDL(), string, "bus pkg must match manual file"
+            holder.bus.generate_bus_package_vhdl(),
+            string,
+            "bus pkg must match manual file",
         )
 
     ############## Testbench Testing ##################
@@ -119,7 +121,7 @@ class Test_Suite(unittest.TestCase):
                 ) as f:
                     string = f.read()
                 self.assertEqual(
-                    holder.tb.return_tcl_script(),
+                    holder.tb.generate_tcl_script(),
                     string,
                     ".tcl script must match manual file",
                 )
@@ -131,9 +133,9 @@ class Test_Suite(unittest.TestCase):
                 ) as f:
                     string = f.read()
                 self.assertEqual(
-                    holder.tb.return_uvvm_component_list(),
+                    holder.tb.generate_uvvm_component_list(),
                     string,
-                    ".txt file must match manual file",
+                    ".txt script must match manual file",
                 )
 
     def test_bench_hdl(self):
@@ -147,7 +149,9 @@ class Test_Suite(unittest.TestCase):
                 ) as f:
                     string = f.read()
                 self.assertEqual(
-                    holder.tb.return_vhdl_tb(), string, ".vhd TB must match manual file"
+                    holder.tb.generate_vhdl_testbench(),
+                    string,
+                    ".vhd TB must match manual file",
                 )
 
     ############## Header Testing ##################
@@ -163,7 +167,7 @@ class Test_Suite(unittest.TestCase):
                 ) as f:
                     string = f.read()
                 self.assertEqual(
-                    holder.hdr.return_c_header(),
+                    holder.hdr.generate_c_header(),
                     string,
                     "c header must match manual file",
                 )
@@ -175,9 +179,9 @@ class Test_Suite(unittest.TestCase):
                 ) as f:
                     string = f.read()
                 self.assertEqual(
-                    holder.hdr.return_cpp_header(),
+                    holder.hdr.generate_cpp_header(),
                     string,
-                    "c++ header must match manual file",
+                    "cpp header must match manual file",
                 )
 
                 with open(
@@ -187,7 +191,7 @@ class Test_Suite(unittest.TestCase):
                 ) as f:
                     string = f.read()
                 self.assertEqual(
-                    holder.hdr.return_python_header(),
+                    holder.hdr.generate_python_header(),
                     string,
                     "python header must match manual file",
                 )
@@ -200,9 +204,9 @@ class Test_Suite(unittest.TestCase):
                     ) as f:
                         string = f.read()
                     self.assertEqual(
-                        holder.hdr.return_ipbus_addr_table(),
+                        holder.hdr.generate_ipbus_addr_table(),
                         string,
-                        "python header must match manual file",
+                        "xml ipbus addr table must match manual file",
                     )
 
     ############## Header Testing ##################
@@ -218,7 +222,7 @@ class Test_Suite(unittest.TestCase):
                 ) as f:
                     string = f.read()
                 self.assertEqual(
-                    holder.doc.return_tex_documentation("0.14.0-dev"),
+                    holder.doc.generate_tex_documentation("0.14.0-dev"),
                     string,
                     "doc must match manual file",
                 )

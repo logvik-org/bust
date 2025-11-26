@@ -1,0 +1,14 @@
+i_{{ module.name }}_ipb_pif : entity work.{{ module.name }}_ipb_pif
+  generic map (
+    g_ipb_baseaddr      => g_ipb_baseaddr,
+    g_check_baseaddr    => g_check_baseaddr,
+    g_module_addr_width => g_module_addr_width)
+  port map (
+    ipb_rw_regs         => ipb_rw_regs,
+    ipb_ro_regs         => ipb_ro_regs,
+    ipb_pulse_regs      => ipb_pulse_regs,
+    clk                 => ipb_clk,
+    reset               => ipb_reset,
+    ipb_in              => ipb_in,
+    ipb_out             => ipb_out_i
+    );
