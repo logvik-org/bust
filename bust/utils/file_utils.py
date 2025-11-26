@@ -182,6 +182,7 @@ def cont() -> None:
     try:
         input("Press enter to continue...")
     except SyntaxError:
+        # Handle Python 2 compatibility where input() without parentheses raises SyntaxError
         pass
 
 
