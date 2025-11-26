@@ -106,7 +106,11 @@ def main():
                 module = Module(json_dict["module"], bus, settings)
                 header = Header(module)
                 documentation = Documentation(module)
-                testbench = Testbench(module, bus.create_vhdl_generator(), settings)
+                from bust.generator_factory import GeneratorFactory
+
+                testbench = Testbench(
+                    module, GeneratorFactory.create_bus_generator(bus), settings
+                )
 
             except (
                 FormatError,

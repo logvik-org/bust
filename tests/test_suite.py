@@ -7,6 +7,7 @@ from bust.settings import Settings
 from bust.testbench import Testbench
 from bust.documentation import Documentation
 from bust.header import Header
+from bust.generator_factory import GeneratorFactory
 
 
 class BusHolder:
@@ -26,7 +27,7 @@ class BusHolder:
         sett = Settings(json_file, json["settings"])
         bus = Bus(json["bus"])
         mod = Module(json["module"], bus, sett)
-        tb = Testbench(mod, bus.create_vhdl_generator(), sett)
+        tb = Testbench(mod, GeneratorFactory.create_bus_generator(bus), sett)
         doc = Documentation(mod)
         hdr = Header(mod)
         return sett, bus, mod, tb, doc, hdr
@@ -62,7 +63,7 @@ class Test_Suite(unittest.TestCase):
                 ) as f:
                     string = f.read()
                 self.assertEqual(
-                    holder.mod.generate_module_package_vhdl(),
+                    GeneratorFactory.generate_module_package_vhdl(holder.mod),
                     string,
                     "pif pkg must match manual file",
                 )
@@ -74,7 +75,7 @@ class Test_Suite(unittest.TestCase):
                 ) as f:
                     string = f.read()
                 self.assertEqual(
-                    holder.bus.generate_bus_pif_vhdl(holder.mod),
+                    GeneratorFactory.generate_bus_pif_vhdl(holder.bus, holder.mod),
                     string,
                     "pif must match manual file",
                 )
@@ -90,7 +91,7 @@ class Test_Suite(unittest.TestCase):
                 ) as f:
                     string = f.read()
                 self.assertEqual(
-                    holder.mod.generate_module_vhdl(),
+                    GeneratorFactory.generate_module_vhdl(holder.mod),
                     string,
                     "module must match manual file",
                 )
@@ -102,7 +103,7 @@ class Test_Suite(unittest.TestCase):
         with open("example/example_axi/hdl/axi_pkg.vhd") as f:
             string = f.read()
         self.assertEqual(
-            holder.bus.generate_bus_package_vhdl(),
+            GeneratorFactory.generate_bus_package_vhdl(holder.bus),
             string,
             "bus pkg must match manual file",
         )
