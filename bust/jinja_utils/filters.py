@@ -45,12 +45,12 @@ def get_vhdl_type(reg, module_name):
     from bust.enums import RegisterType, FieldType
 
     if reg.type == RegisterType.DEFAULT or (
-        reg.type in [RegisterType.SLV, FieldType.SLV] and reg.width == 32
+        reg.type in [RegisterType.VECTOR, FieldType.VECTOR] and reg.width == 32
     ):
         return f"t_{module_name}_data"
-    elif reg.type in [RegisterType.SLV, FieldType.SLV]:
+    elif reg.type in [RegisterType.VECTOR, FieldType.VECTOR]:
         return f"std_logic_vector({reg.width - 1} downto 0)"
-    elif reg.type in [RegisterType.SL, FieldType.SL]:
+    elif reg.type in [RegisterType.BIT, FieldType.BIT]:
         return "std_logic"
     elif reg.type == RegisterType.FIELDS:
         return f"t_{module_name}_{reg.mode.value}_{reg.name}"
@@ -62,7 +62,7 @@ def get_reset_value(reg):
     """Returns the formatted VHDL reset value."""
     from bust.enums import RegisterType
 
-    if reg.type in [RegisterType.DEFAULT, RegisterType.SLV]:
+    if reg.type in [RegisterType.DEFAULT, RegisterType.VECTOR]:
         return (
             "(others => '0')"
             if reg.reset == "0x0"
@@ -70,7 +70,7 @@ def get_reset_value(reg):
         )
     elif reg.type == RegisterType.FIELDS:
         return f"({', '.join([f'{field.name} => {field.get_reset_vhdl()}' for field in reg.fields])})"
-    elif reg.type == RegisterType.SL:
+    elif reg.type == RegisterType.BIT:
         return f"'{int(reg.reset, 16):X}'"
     else:
         raise RuntimeError(f"Unknown reset type: {reg.type}")

@@ -175,7 +175,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg0 - RW - SL");
+    log_hdr_large("Checking Register reg0 - RW - BIT");
 
     log_hdr("Check Default Value");
 
@@ -202,7 +202,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg1 - RW - SL");
+    log_hdr_large("Checking Register reg1 - RW - BIT");
 
     log_hdr("Check Default Value");
 
@@ -229,7 +229,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg2 - RO - SL");
+    log_hdr_large("Checking Register reg2 - RO - BIT");
 
     log_hdr("Check Default Value");
 
@@ -256,7 +256,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg3 - RW - SLV");
+    log_hdr_large("Checking Register reg3 - RW - VECTOR");
 
     log_hdr("Check Default Value");
 
@@ -284,7 +284,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg4 - RO - SLV");
+    log_hdr_large("Checking Register reg4 - RO - VECTOR");
 
     log_hdr("Check Default Value");
 
@@ -497,7 +497,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg9 - PULSE - SL");
+    log_hdr_large("Checking Register reg9 - PULSE - BIT");
 
     log_hdr("Check Default Value");
 
@@ -524,7 +524,7 @@ begin  -- architecture tb
 
     --
 
-    log_hdr_large("Checking Register reg10 - PULSE - SLV");
+    log_hdr_large("Checking Register reg10 - PULSE - VECTOR");
 
     log_hdr("Check Default Value");
 

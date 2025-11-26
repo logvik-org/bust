@@ -314,7 +314,7 @@ class Module:
             if (
                 reg.type != RegisterType.DEFAULT
                 and reg.type != RegisterType.FIELDS
-                and reg.type != RegisterType.SL
+                and reg.type != RegisterType.BIT
             ):
                 reg_dic["width"] = reg.width
 
