@@ -23,10 +23,6 @@ class ModuleVhdlGenerator:
             },
         )
 
-    def return_module_pkg_VHDL(self, module) -> str:
-        """Deprecated: Use generate_module_package_vhdl() instead."""
-        return self.generate_module_package_vhdl(module)
-
     def generate_module_vhdl(self, module) -> str:
         """Generate VHDL module code."""
         return render_template(
@@ -36,10 +32,6 @@ class ModuleVhdlGenerator:
                 "bus": self.bus,
             },
         )
-
-    def return_module_VHDL(self, module) -> str:
-        """Deprecated: Use generate_module_vhdl() instead."""
-        return self.generate_module_vhdl(module)
 
 
 # Backward compatibility alias

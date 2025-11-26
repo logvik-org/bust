@@ -26,7 +26,3 @@ class Documentation:
     def generate_tex_documentation(self, test_version=None):
         """Generate LaTeX documentation for the module using Jinja2 templates."""
         return self._render_template("latex/documentation.j2", test_version)
-
-    def return_tex_documentation(self, test_version=None):
-        """Deprecated: Use generate_tex_documentation() instead."""
-        return self.generate_tex_documentation(test_version)

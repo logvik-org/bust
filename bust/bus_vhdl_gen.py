@@ -62,10 +62,6 @@ class BusVhdlGenerator:
             f"Only 'axi' bus type is currently supported."
         )
 
-    def return_bus_pkg_VHDL(self) -> str:
-        """Deprecated: Use generate_bus_package_vhdl() instead."""
-        return self.generate_bus_package_vhdl()
-
     def generate_bus_pif_vhdl(self, mod) -> str:
         """Generate VHDL PIF (Physical Interface) for the bus."""
         return render_template(
@@ -75,10 +71,6 @@ class BusVhdlGenerator:
                 "bus": self,
             },
         )
-
-    def return_bus_pif_VHDL(self, mod) -> str:
-        """Deprecated: Use generate_bus_pif_vhdl() instead."""
-        return self.generate_bus_pif_vhdl(mod)
 
 
 # Backward compatibility alias
