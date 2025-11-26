@@ -22,12 +22,12 @@ class Field:
     """Represents a bitfield within a register.
 
     A Field is a named range of bits within a register that can be
-    individually accessed. Fields support single-bit (sl) or multi-bit (slv)
+    individually accessed. Fields support single-bit (bit) or multi-bit (vector)
     types with configurable width, position, and reset values.
 
     Attributes:
         name: Field name (must be valid VHDL identifier).
-        type: Field type (SL or SLV) from FieldType enum.
+        type: Field type (BIT or VECTOR) from FieldType enum.
         width: Bit width of the field.
         reset: Reset value as hex string (e.g., "0x0").
         description: Optional description of the field's purpose.
@@ -43,7 +43,7 @@ class Field:
         Args:
             field: Dictionary containing field configuration with keys:
                 - name: Field identifier (required)
-                - type: Field type "sl" or "slv" (required)
+                - type: Field type "bit" or "vector" (required)
                 - width: Bit width (default: 1)
                 - reset: Reset value as hex string (default: "0x0")
                 - description: Field description (default: "")
@@ -79,12 +79,12 @@ class Field:
         self.description = self._config.get("description")
 
         # Assign width
-        if self.type == FieldType.SL:
+        if self.type == FieldType.BIT:
             # Check if the width was explicitly set in the config, and if it matches the module data width
             if self._config.is_set("width") and self._config.get("width") != 1:
                 self.logger.warning(
                     f"Field '{self.name}' in register '{self.parent_register_name}' "
-                    "has width != 1 for sl type. Forcing width to 1."
+                    "has width != 1 for bit type. Forcing width to 1."
                 )
             self.width = 1
 
@@ -116,14 +116,14 @@ class Field:
         """Return bit position as a string for documentation.
 
         Returns:
-            Single bit number for SL, or "high:low" range for SLV.
+            Single bit number for BIT, or "high:low" range for VECTOR.
 
         Raises:
             ValueError: If field type is not supported.
         """
-        if self.type == FieldType.SL:
+        if self.type == FieldType.BIT:
             return str(self.pos_low)
-        elif self.type == FieldType.SLV:
+        elif self.type == FieldType.VECTOR:
             return str(self.pos_high) + ":" + str(self.pos_low)
         raise ValueError(f"Unsupported field type: {self.type}")
 
@@ -131,14 +131,14 @@ class Field:
         """Return bit position as VHDL slice notation.
 
         Returns:
-            Single bit number for SL, or "high downto low" for SLV.
+            Single bit number for BIT, or "high downto low" for VECTOR.
 
         Raises:
             ValueError: If field type is not supported.
         """
-        if self.type == FieldType.SL:
+        if self.type == FieldType.BIT:
             return str(self.pos_low)
-        elif self.type == FieldType.SLV:
+        elif self.type == FieldType.VECTOR:
             return str(self.pos_high) + " downto " + str(self.pos_low)
         raise ValueError(f"Unsupported field type: {self.type}")
 
@@ -164,7 +164,7 @@ class Field:
         dic = OrderedDict()
         dic["name"] = self.name
         dic["type"] = self.type.value
-        if self.type == FieldType.SLV:
+        if self.type == FieldType.VECTOR:
             dic["width"] = self.width
         if self.reset != "0x0":
             dic["reset"] = self.reset
@@ -177,28 +177,28 @@ class Field:
         """Return VHDL range string for the field's internal representation.
 
         Returns:
-            VHDL range in "N-1 downto 0" format for SLV fields.
+            VHDL range in "N-1 downto 0" format for VECTOR fields.
 
         Raises:
-            ValueError: If called on non-SLV field type.
+            ValueError: If called on non-VECTOR field type.
         """
-        if self.type == FieldType.SLV:
+        if self.type == FieldType.VECTOR:
             return f"{self.width - 1} downto 0"
-        raise ValueError("Only slv fields have a range")
+        raise ValueError("Only vector fields have a range")
 
     @property
     def type_vhdl(self) -> str:
         """Return VHDL type declaration for this field.
 
         Returns:
-            "std_logic" for SL fields, "std_logic_vector(...)" for SLV fields.
+            "std_logic" for BIT fields, "std_logic_vector(...)" for VECTOR fields.
 
         Raises:
             ValueError: If field type is not supported.
         """
-        if self.type == FieldType.SLV:
+        if self.type == FieldType.VECTOR:
             return f"std_logic_vector({self.range_vhdl})"
-        elif self.type == FieldType.SL:
+        elif self.type == FieldType.BIT:
             return "std_logic"
         raise ValueError(f"Unsupported field type: {self.type}")
 
@@ -207,16 +207,16 @@ class Field:
         r"""Generate VHDL literal for the field's reset value.
 
         Returns:
-            VHDL literal as string, e.g., "'0'" for SL, "4X\"F\"" for SLV.
+            VHDL literal as string, e.g., "'0'" for BIT, "4X\"F\"" for VECTOR.
         """
-        if self.type == FieldType.SLV:
+        if self.type == FieldType.VECTOR:
             if self.reset == "0x0":
                 val = "(others => '0')"
             else:
                 val = str(self.width) + 'X"'
                 val += format(int(self.reset, 16), "X") + '"'
 
-        elif self.type == FieldType.SL:
+        elif self.type == FieldType.BIT:
             val = "'" + format(int(self.reset, 16), "X") + "'"
 
         return val

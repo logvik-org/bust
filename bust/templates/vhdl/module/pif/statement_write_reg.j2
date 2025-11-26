@@ -21,9 +21,9 @@ elsif unsigned({{ register_sel }}) = resize(unsigned(C_ADDR_{{ reg.name.upper() 
       {% endfor %}
     {% elif reg.type.value == "default" %}
   {{ internal_signal_name }}{{ reg.name }} <= {{ out_signal_name }};
-    {% elif reg.type.value == "slv" %}
+    {% elif reg.type.value == "vector" %}
   {{ internal_signal_name }}{{ reg.name }} <= {{ out_signal_name }}({{ reg.width - 1 }} downto 0);
-    {% elif reg.type.value == "sl" %}
+    {% elif reg.type.value == "bit" %}
   {{ internal_signal_name }}{{ reg.name }} <= {{ out_signal_name }}(0);
     {% endif %}
     {% if use_ack %}

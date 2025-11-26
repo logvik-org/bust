@@ -2,7 +2,7 @@
 
 This module defines the Register class, which represents a memory-mapped
 register within a bus slave module. Registers can have various types
-(default, slv, sl, fields), access modes (RW, RO, PULSE), and optional
+(default, vector, bit, fields), access modes (RW, RO, PULSE), and optional
 features like stall cycles.
 
 Each register has a fixed address, configurable width, reset value, and
@@ -33,13 +33,13 @@ class Register:
     A Register encapsulates all information needed to generate a memory-mapped
     register, including its address, data type, access mode, reset value, and
     optional bitfields. Registers support various modes (read-write, read-only,
-    pulse) and types (default width, custom slv, single-bit, or composite fields).
+    pulse) and types (default width, custom vector, single-bit, or composite fields).
 
     Attributes:
         name: Register name (must be valid VHDL identifier).
         address: Memory address of the register.
         mode: Access mode (RW, RO, or PULSE).
-        type: Data type (DEFAULT, SLV, SL, or FIELDS).
+        type: Data type (DEFAULT, VECTOR, BIT, or FIELDS).
         width: Data width in bits.
         reset: Reset value as hex string.
         description: Optional description of the register's purpose.
@@ -60,7 +60,7 @@ class Register:
             reg: Dictionary containing register configuration with keys:
                 - name: Register identifier (required)
                 - mode: Access mode "rw", "ro", or "pulse" (default: "rw")
-                - type: Register type "default", "slv", "sl", or "fields" (default: "default")
+                - type: Register type "default", "vector", "bit", or "fields" (default: "default")
                 - width: Bit width (default: module_data_width)
                 - reset: Reset value as hex string (default: "0x0")
                 - description: Register description (default: "")
@@ -130,13 +130,13 @@ class Register:
                     f"User-specified width of default register does not match the expected width ({module_data_width}). Ignoring configured width."
                 )
             self.width = module_data_width
-        elif self.type == RegisterType.SLV:
+        elif self.type == RegisterType.VECTOR:
             pass
-        elif self.type == RegisterType.SL:
+        elif self.type == RegisterType.BIT:
             # Check if the width was explicitly set in the config, and if it matches the module data width
             if self._config.is_set("width") and self._config.get("width") != 1:
                 self.logger.warning(
-                    "User-specified width of SL register does not match the expected width (1). Ignoring configured width."
+                    "User-specified width of BIT register does not match the expected width (1). Ignoring configured width."
                 )
             self.width = 1
 
@@ -208,17 +208,17 @@ class Register:
 
     @property
     def range_vhdl(self) -> str:
-        """Return VHDL range string for SLV registers.
+        """Return VHDL range string for VECTOR registers.
 
         Returns:
-            VHDL range in "N-1 downto 0" format for SLV registers.
+            VHDL range in "N-1 downto 0" format for VECTOR registers.
 
         Raises:
-            ValueError: If called on non-SLV register type.
+            ValueError: If called on non-VECTOR register type.
         """
-        if self.type == RegisterType.SLV:
+        if self.type == RegisterType.VECTOR:
             return f"{self.width - 1} downto 0"
-        raise ValueError("Only slv fields have a range")
+        raise ValueError("Only vector fields have a range")
 
     @property
     def type_vhdl(self) -> str:
@@ -227,17 +227,17 @@ class Register:
         Returns:
             Type name suitable for VHDL code generation:
             - Module data type for DEFAULT registers
-            - std_logic_vector(...) for SLV registers
-            - std_logic for SL registers
+            - std_logic_vector(...) for VECTOR registers
+            - std_logic for BIT registers
             - Custom record type for FIELDS registers
         """
         if self.type == RegisterType.DEFAULT or (
-            self.type == RegisterType.SLV and self.width == self.module_data_width
+            self.type == RegisterType.VECTOR and self.width == self.module_data_width
         ):
             return f"t_{self.module_name}_data"
-        elif self.type == RegisterType.SLV:
+        elif self.type == RegisterType.VECTOR:
             return f"std_logic_vector({self.range_vhdl})"
-        elif self.type == RegisterType.SL:
+        elif self.type == RegisterType.BIT:
             return "std_logic"
         else:
             return f"t_{self.module_name}_{self.mode.value}_{self.name}"
@@ -252,18 +252,18 @@ class Register:
         Raises:
             ValueError: If called on FIELDS type (fields have individual reset values).
         """
-        if self.type in [RegisterType.DEFAULT, RegisterType.SLV]:
+        if self.type in [RegisterType.DEFAULT, RegisterType.VECTOR]:
             if self.reset == "0x0":
                 return "(others => '0')"
             else:
                 val = str(self.width) + 'X"'
                 val += format(int(self.reset, 16), "X") + '"'
                 return val
-        elif self.type == RegisterType.SL:
+        elif self.type == RegisterType.BIT:
             return "'" + format(int(self.reset, 16), "X") + "'"
 
         raise ValueError(
-            "Only default, slv and sl registers can extract reset value directly"
+            "Only default, vector and bit registers can extract reset value directly"
         )
 
     def add_field(self, field_cfg: Dict) -> None:

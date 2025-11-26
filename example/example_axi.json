@@ -19,7 +19,7 @@
             {
                 "name": "reg0",
                 "mode": "rw",
-                "type": "sl",
+                "type": "bit",
                 "address": "0x0",
                 "reset": "0x0",
                 "description": "RW std_logic register that resets to 0x0"
@@ -27,7 +27,7 @@
             {
                 "name": "reg1",
                 "mode": "rw",
-                "type": "sl",
+                "type": "bit",
                 "address": "0x4",
                 "reset": "0x1",
                 "description": "RW std_logic register that resets to 0x1"
@@ -35,7 +35,7 @@
             {
                 "name": "reg2",
                 "mode": "ro",
-                "type": "sl",
+                "type": "bit",
                 "address": "0x8",
                 "reset": "0x0",
                 "description": "RO std_logic register"
@@ -43,7 +43,7 @@
             {
                 "name": "reg3",
                 "mode": "rw",
-                "type": "slv",
+                "type": "vector",
                 "address": "0xc",
                 "width": 8,
                 "reset": "0x3",
@@ -52,7 +52,7 @@
             {
                 "name": "reg4",
                 "mode": "ro",
-                "type": "slv",
+                "type": "vector",
                 "address": "0x10",
                 "width": 14,
                 "reset": "0x0",
@@ -82,25 +82,25 @@
                 "fields": [
                     {
                         "name": "field0",
-                        "type": "sl",
+                        "type": "bit",
                         "reset": "0x1",
                         "description": "std_logic that resets to 0x1"
                     },
                     {
                         "name": "field1",
-                        "type": "slv",
+                        "type": "vector",
                         "width": 4,
                         "reset": "0xb",
                         "description": "std_logic_vector[3:0] that resets to 0xb is not a valid reset value"
                     },
                     {
                         "name": "field2",
-                        "type": "sl",
+                        "type": "bit",
                         "description": "std_logic that resets to 0x1"
                     },
                     {
                         "name": "field3",
-                        "type": "slv",
+                        "type": "vector",
                         "width": 15,
                         "reset": "0x2b",
                         "description": "std_logic_vector[14:0] that resets to 0x2b"
@@ -116,23 +116,23 @@
                 "fields": [
                     {
                         "name": "field0",
-                        "type": "sl",
+                        "type": "bit",
                         "description": "std_logic field"
                     },
                     {
                         "name": "field1",
-                        "type": "slv",
+                        "type": "vector",
                         "width": 19,
                         "description": "std_logic_vector[18:0] field"
                     },
                     {
                         "name": "field2",
-                        "type": "sl",
+                        "type": "bit",
                         "description": "std_logic field"
                     },
                     {
                         "name": "field3",
-                        "type": "slv",
+                        "type": "vector",
                         "width": 3,
                         "description": "std_logic_vector[2:0] field"
                     }
@@ -143,7 +143,7 @@
                 "name": "reg9",
                 "mode": "pulse",
                 "pulse_cycles": 4,
-                "type": "sl",
+                "type": "bit",
                 "address": "0x24",
                 "reset": "0x1",
                 "description": "PULSE std_logic register that resets to 0x1"
@@ -152,7 +152,7 @@
                 "name": "reg10",
                 "mode": "pulse",
                 "pulse_cycles": 1,
-                "type": "slv",
+                "type": "vector",
                 "address": "0x28",
                 "width": 4,
                 "reset": "0xa",
@@ -167,14 +167,14 @@
                 "fields": [
                     {
                         "name": "field0",
-                        "type": "slv",
+                        "type": "vector",
                         "width": 15,
                         "reset": "0x3",
                         "description": "std_logic_vector[14:0] field that resets to 0x3"
                     },
                     {
                         "name": "field1",
-                        "type": "sl",
+                        "type": "bit",
                         "description": "std_logic field that resets to 0x0"
                     }
                 ],

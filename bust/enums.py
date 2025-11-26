@@ -45,14 +45,14 @@ class FieldType(ConfigEnum):
     """Enumeration of supported field types within a register.
 
     Values:
-    - SLV: Multi-bit signal (std_logic_vector)
-    - SL:  Single-bit signal (std_logic)
+    - VECTOR: Multi-bit signal (std_logic_vector)
+    - BIT:    Single-bit signal (std_logic)
 
     Use `FieldType.from_string(value)` to safely create from user input.
     """
 
-    SLV = "slv"
-    SL = "sl"
+    VECTOR = "vector"
+    BIT = "bit"
 
 
 class RegisterType(ConfigEnum):
@@ -60,16 +60,16 @@ class RegisterType(ConfigEnum):
 
     Values:
     - DEFAULT: Matches module data width
-    - SLV:     std_logic_vector with specified width
-    - SL:      std_logic (single-bit)
+    - VECTOR:  std_logic_vector with specified width
+    - BIT:     std_logic (single-bit)
     - FIELDS:  Composed of named bitfields
 
     Use `RegisterType.from_string(value)` to safely create from user input.
     """
 
     DEFAULT = "default"
-    SLV = "slv"
-    SL = "sl"
+    VECTOR = "vector"
+    BIT = "bit"
     FIELDS = "fields"
 
 
