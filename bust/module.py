@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Dict, List, cast
 
 from bust.enums import RegisterMode, RegisterType
 from bust.exceptions import InvalidAddress, InvalidRegister
-from bust.module_vhdl_gen import ModuleVHDLGen
 from bust.register import Register
 from bust.utils import indent_string
 from bust.vhdl_util import is_valid_VHDL
@@ -339,36 +338,3 @@ class Module:
         s += "\n"
 
         return s
-
-    def generate_module_package_vhdl(self) -> str:
-        """Generate VHDL package code for this module.
-
-        Returns:
-            VHDL package source code with register type definitions.
-        """
-        gen_obj = self._create_vhdl_generator()
-        return gen_obj.generate_module_package_vhdl(self)
-
-    def generate_module_vhdl(self) -> str:
-        """Generate main VHDL module entity and architecture.
-
-        Returns:
-            VHDL source code for the complete bus slave module.
-        """
-        gen_obj = self._create_vhdl_generator()
-        return gen_obj.generate_module_vhdl(self)
-
-    def _create_vhdl_generator(self) -> ModuleVHDLGen:
-        """Create VHDL generator instance for this module.
-
-        Returns:
-            ModuleVHDLGen configured with module and bus settings.
-        """
-        o = ModuleVHDLGen(
-            name=self.name,
-            bus_gen=self.bus.create_vhdl_generator(),
-            regs=self.registers,
-            data_width=self.data_width,
-            addr_width=self.addr_width,
-        )
-        return o

@@ -10,6 +10,7 @@ import os
 import logging
 import subprocess
 
+from bust.generator_factory import GeneratorFactory
 from bust.utils import write_string_to_file, update_module_top_level
 
 logger = logging.getLogger(__name__)
@@ -94,7 +95,7 @@ def generate_output(
         try:
             filename = f"{bus.bus_type}_pkg.vhd"
             write_string_to_file(
-                bus.generate_bus_package_vhdl(),
+                GeneratorFactory.generate_bus_package_vhdl(bus),
                 filename,
                 bus_hdl,
                 gen_settings["force_ow"],
@@ -109,7 +110,7 @@ def generate_output(
             # PIF
             filename = f"{module.name}_{bus.short_name}_pif.vhd"
             write_string_to_file(
-                bus.generate_bus_pif_vhdl(module),
+                GeneratorFactory.generate_bus_pif_vhdl(bus, module),
                 filename,
                 mod_hdl,
                 gen_settings["force_ow"],
@@ -117,7 +118,7 @@ def generate_output(
             # PIF Package
             filename = f"{module.name}_pif_pkg.vhd"
             write_string_to_file(
-                module.generate_module_package_vhdl(),
+                GeneratorFactory.generate_module_package_vhdl(module),
                 filename,
                 mod_hdl,
                 gen_settings["force_ow"],
@@ -128,13 +129,15 @@ def generate_output(
             if gen_settings["update_top"]:
                 logger.info("Trying to update top level-file")
                 path = os.path.join(mod_hdl, filename)
-                new_top = update_module_top_level(path, module.generate_module_vhdl())
+                new_top = update_module_top_level(
+                    path, GeneratorFactory.generate_module_vhdl(module)
+                )
                 write_string_to_file(
                     new_top, filename, mod_hdl, gen_settings["force_ow_top"]
                 )
             else:
                 write_string_to_file(
-                    module.generate_module_vhdl(),
+                    GeneratorFactory.generate_module_vhdl(module),
                     filename,
                     mod_hdl,
                     gen_settings["force_ow_top"],
