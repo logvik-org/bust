@@ -9,12 +9,9 @@ reset type, and component library references.
 """
 
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Dict
+from typing import Dict
 
 from bust.exceptions import InvalidBusType
-
-if TYPE_CHECKING:
-    from bust.core.module import Module
 
 
 class Bus:
