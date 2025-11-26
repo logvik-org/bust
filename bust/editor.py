@@ -480,7 +480,7 @@ class Editor:
         self.logger.info(f"Saving {self.jsonfile} ...")
 
         # Get JSON with addresses
-        json = self.mod.return_JSON(True)
+        json = self.mod.to_json(True)
         self.logger.debug("JSON contents created, saving to file...")
         try:
             result = write_string_to_file(json, self.jsonfile, ".")
