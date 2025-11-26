@@ -27,7 +27,7 @@ from bust.settings import Settings
 from bust.enums import FieldType, RegisterMode, RegisterType
 
 
-class Editor(object):
+class Editor:
     """A console-based menu system for creating and editing module descripting JSON files"""
 
     def __init__(self, edit, jsonfile, output_dir="output/"):
