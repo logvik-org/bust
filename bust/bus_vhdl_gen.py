@@ -1,4 +1,4 @@
-from bust.jinja_utils.environment import get_environment
+from bust.jinja_utils.environment import render_template
 
 
 class BusVHDLGen:
@@ -45,23 +45,14 @@ class BusVHDLGen:
 
     def return_bus_pkg_VHDL(self) -> str:
         if self.bus_type == "axi":
-            # Get standardized Jinja2 environment with all filters
-            env = get_environment()
-
-            # Load the AXI bus package template
-            template = env.get_template("vhdl/bus/axi_pkg.j2")
-
-            # Define context for template rendering
-            context = {
-                "bus_type": self.bus_type,
-                "data_width": self.data_width,
-                "addr_width": self.addr_width,
-            }
-            result: str = template.render(context)
-            # Ensure final newline is preserved
-            if not result.endswith("\n"):
-                result += "\n"
-            return result
+            return render_template(
+                "vhdl/bus/axi_pkg.j2",
+                {
+                    "bus_type": self.bus_type,
+                    "data_width": self.data_width,
+                    "addr_width": self.addr_width,
+                },
+            )
 
         raise NotImplementedError(
             f"Bus package generation not implemented for bus type '{self.bus_type}'. "
@@ -69,16 +60,10 @@ class BusVHDLGen:
         )
 
     def return_bus_pif_VHDL(self, mod) -> str:
-        # Get standardized Jinja2 environment with all filters
-        env = get_environment()
-
-        # Load the IPBus-specific module template
-        template = env.get_template("vhdl/module/pif/pif.j2")
-
-        # Define context for template rendering
-        context = {
-            "module": mod,
-            "bus": self,
-            "NL": "\n",  # Ensures newline formatting if needed
-        }
-        return str(template.render(context))
+        return render_template(
+            "vhdl/module/pif/pif.j2",
+            {
+                "module": mod,
+                "bus": self,
+            },
+        )
