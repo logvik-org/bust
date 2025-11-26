@@ -87,6 +87,7 @@ package example_ipbus_pif_pkg is
       field1 => (others => '0'),
       field2 => '0',
       field3 => (others => '0')));
+
   -- PULSE Register Record Definitions
 
   type t_example_ipbus_pulse_reg11 is record
@@ -108,7 +109,6 @@ package example_ipbus_pif_pkg is
     reg11 => (
       field0 => 15X"3",
       field1 => '0'));
-
 
 end package example_ipbus_pif_pkg;
 

@@ -1,0 +1,178 @@
+  signal ipb_out_i      : ipb_rbus;
+  signal reg_rden       : std_logic := '0';
+  signal reg_wren       : std_logic := '0';
+  signal wr_ack, rd_ack : std_logic := '0';
+  signal wr_err, rd_err : std_logic := '0';
+  signal ack_d          : std_logic := '0';
+  signal wr_stall_ack   : std_logic := '0';
+  signal rd_stall_ack   : std_logic := '0';
+  signal stall          : std_logic := '0';
+  signal reg_data_out   : t_{{ module.name }}_data;
+
+  constant C_MODULE_ADDR_WIDTH : integer := set_module_addr_width(g_module_addr_width);
+
+  signal register_sel   : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0) := (others => '0');
+  signal valid_baseaddr : std_logic := '0';
+
+begin
+
+  ipb_out <= ipb_out_i;
+  ipb_rw_regs <= ipb_rw_regs_i;
+  ipb_pulse_regs <= ipb_pulse_regs_i;
+
+  reg_wren <= (ipb_in.ipb_strobe and ipb_in.ipb_write) and not (wr_ack or wr_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err or wr_stall_ack or stall);
+
+  register_sel <= ipb_in.ipb_addr(C_MODULE_ADDR_WIDTH-1 downto 0);
+
+  gen_check_baseaddr : if g_check_baseaddr generate
+    valid_baseaddr <= '1' when ipb_in.ipb_addr(31 downto C_MODULE_ADDR_WIDTH) = C_BASEADDR(31 downto C_MODULE_ADDR_WIDTH) else '0';
+  else generate
+    valid_baseaddr <= '1';
+  end generate gen_check_baseaddr;
+
+  p_write : process(clk)
+  begin
+    if rising_edge(clk) then
+      if reset = '1' then
+
+        ipb_rw_regs_i <= c_{{ module.name }}_rw_regs;
+        ipb_pulse_regs_cycle <= c_{{ module.name }}_pulse_regs;
+        wr_ack <= '0';
+        wr_err <= '0';
+
+      else
+
+        -- Return PULSE registers to reset value every clock cycle
+        ipb_pulse_regs_cycle <= c_{{ module.name }}_pulse_regs;
+
+        wr_ack <= '0';
+        wr_err <= '0';
+        wr_stall_ack <= '0';
+
+        if (reg_wren) then
+
+          if (valid_baseaddr = '0') then
+
+            wr_err <= '1';
+
+      {% import "vhdl/module/pif/statement_write_reg.j2" as pif_macros %}
+      {% for reg in module.registers if reg.mode.value in ["rw", "pulse"] %}
+        {% if reg.mode.value == "rw" %}
+          {% set internal_signal_name = module.bus.short_name + "_rw_regs_i." %}
+        {% elif reg.mode.value == "pulse" %}
+          {% set internal_signal_name = module.bus.short_name + "_pulse_regs_cycle." %}
+        {% endif %}
+{{ pif_macros.statement_write_reg(
+  reg,
+  internal_signal_name = internal_signal_name,
+  out_signal_name = "ipb_in.ipb_wdata",
+  register_sel = "register_sel",
+  use_ack = True
+  ) | indent_all(10) }}
+      {% endfor %}
+          else
+
+            wr_err <= '1';
+
+          end if;
+        end if;
+      end if;
+    end if;
+  end process p_write;
+
+  {% import 'vhdl/module/pif/process_pulse.j2' as pif_macros %}
+  {% for reg in module.registers if reg.mode.value in ["pulse"] %}
+{{ pif_macros.process_pulse(
+    clk_name='clk',
+    reset_name='reset',
+    proc_name='p_pulse_' + reg.name,
+    const_name="c_" + module.name + "_pulse_regs." + reg.name,
+    reg_name=module.bus.short_name + "_pulse_regs_i." + reg.name,
+    reg_tmp_name=module.bus.short_name + "_pulse_regs_cycle." + reg.name,
+    pulse_cycles=reg.pulse_cycles,
+    reset_active_high=True)|indent_all(2)}}
+
+  {% endfor %}
+
+  reg_rden <= (ipb_in.ipb_strobe and (not ipb_in.ipb_write)) and not (rd_ack or rd_err or ipb_out_i.ipb_ack or ipb_out_i.ipb_err or rd_stall_ack or stall);
+
+  p_read : process(clk)
+  begin
+    if rising_edge(clk) then
+      if reset = '1' then
+        reg_data_out <= (others => '0');
+        rd_ack <= '0';
+        rd_err <= '0';
+      else
+
+        -- default values
+        rd_ack <= '0';
+        rd_err <= '0';
+        {% if module.has_stall_regs() %}
+        rd_stall_ack <= '0';
+        {% endif %}
+
+        if (reg_rden) then
+          reg_data_out <= (others => '0');
+
+          if (valid_baseaddr = '0') then
+
+            rd_err <= '1';
+
+      {% for reg in module.registers if reg.mode.value in ["ro", "rw"] %}
+      {% import "vhdl/module/pif/statement_read_reg.j2" as pif_macros %}
+{{ pif_macros.statement_read_reg(
+  reg,
+  internal_signal_name = "ipb_rw_regs_i" if reg.mode.value == "rw" else "ipb_ro_regs",
+  use_ack = True,
+  register_sel = "register_sel"
+  ) | indent_all(10) }}
+      {% endfor %}
+          else
+
+            reg_data_out <= 32X"DEADBEEF";
+            rd_err <= '1';
+
+          end if;
+        end if;
+      end if;
+    end if;
+  end process p_read;
+
+  {% import 'vhdl/module/pif/process_stall.j2' as pif_macros %}
+  {% if module.has_stall_regs() %}
+{{ pif_macros.process_stall(
+  module,
+  clk_name='clk',
+  reset_name='reset',
+  reset_active_high=True,
+  addr_width=module.data_width,
+  short_name=module.bus.short_name
+  ) | indent_all(2) }}
+  {% endif %}
+
+  p_output : process(all)
+  begin
+    if reset = '1' then
+      ipb_out_i.ipb_rdata <= (others => '0');
+      ipb_out_i.ipb_ack <= '0';
+      ipb_out_i.ipb_err <= '0';
+    else
+      ipb_out_i.ipb_rdata <= reg_data_out;
+      ipb_out_i.ipb_ack <= '0';
+      ipb_out_i.ipb_err <= '0';
+
+      if (rd_ack or rd_err) and (not stall) then
+        ipb_out_i.ipb_ack <= rd_ack;
+        ipb_out_i.ipb_err <= rd_err;
+      elsif (wr_ack or wr_err) and (not stall) then
+        ipb_out_i.ipb_ack <= wr_ack;
+        ipb_out_i.ipb_err <= wr_err;
+      elsif ack_d then
+        ipb_out_i.ipb_ack <= ack_d;
+      end if;
+
+    end if;
+  end process p_output;
+
+end behavior;
