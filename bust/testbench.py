@@ -16,10 +16,6 @@ class Testbench:
         self.logger.debug("Generating UVVM Component List")
         return render_template("uvvm/component_list.j2", {"bus": self.bus})
 
-    def return_uvvm_component_list(self):
-        """Deprecated: Use generate_uvvm_component_list() instead."""
-        return self.generate_uvvm_component_list()
-
     def generate_tcl_script(self):
         """Generate TCL simulation script."""
         self.logger.debug("Generating TCL Script")
@@ -32,10 +28,6 @@ class Testbench:
             },
         )
 
-    def return_tcl_script(self):
-        """Deprecated: Use generate_tcl_script() instead."""
-        return self.generate_tcl_script()
-
     def generate_vhdl_testbench(self):
         """Generate VHDL testbench."""
         return render_template(
@@ -45,7 +37,3 @@ class Testbench:
                 "bus": self.bus,
             },
         )
-
-    def return_vhdl_tb(self):
-        """Deprecated: Use generate_vhdl_testbench() instead."""
-        return self.generate_vhdl_testbench()

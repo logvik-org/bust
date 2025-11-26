@@ -213,20 +213,6 @@ class Register:
         else:
             return 0
 
-    @property
-    def mode_string(self) -> str:
-        """Get the register mode in r/w/rw format - pulse = w."""
-        if self.mode == RegisterMode.PULSE:
-            return "w"
-        elif self.mode == RegisterMode.RO:
-            return "r"
-        else:
-            return str(self.mode.value)
-
-    def get_mode(self) -> str:
-        """Deprecated: Use mode_string property instead."""
-        return self.mode_string
-
     def return_stall_string(self) -> str:
         if self.stall:
             return "/STALL"
