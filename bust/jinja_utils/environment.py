@@ -3,6 +3,7 @@ Centralized Jinja2 environment setup to eliminate code duplication across module
 """
 
 import os
+from typing import Any, Dict, Optional
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -52,7 +53,9 @@ def get_environment(additional_filters=None):
     return env
 
 
-def render_template(template_name, context, ensure_newline=True):
+def render_template(
+    template_name: str, context: Dict[str, Any], ensure_newline: bool = True
+) -> str:
     """
     Render a Jinja2 template with common settings and optional newline handling.
 
@@ -73,7 +76,7 @@ def render_template(template_name, context, ensure_newline=True):
     """
     env = get_environment()
     template = env.get_template(template_name)
-    result = template.render(context)
+    result: str = template.render(context)
 
     if ensure_newline and not result.endswith("\n"):
         result += "\n"
