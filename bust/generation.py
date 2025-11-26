@@ -14,7 +14,7 @@ def generate_output(
 
     # Control all output directories
     proj_dir = os.path.expanduser(gen_settings["dir"])  # Make sure that we understand ~
-    logger.info("Project path: {}".format(os.path.abspath(proj_dir)))
+    logger.info(f"Project path: {os.path.abspath(proj_dir)}")
     if settings.mod_subdir:
         mod_dir = os.path.join(proj_dir, module.name)
     else:
@@ -48,28 +48,29 @@ def generate_output(
         os.makedirs(bus_hdl, exist_ok=True)
         os.makedirs(bus_sim, exist_ok=True)
 
-    except Exception:
+    except Exception as e:
         logger.error("ERROR: Could not create output directories")
-        exit(1)
+        logger.error(e)
+
     else:
         logger.debug("Successfully created all output directories")
 
     if gen_settings["gen_bus"]:
         logger.info("Generating Bus VHDL Package File...")
         try:
-            filename = "{}_pkg.vhd".format(bus.bus_type)
+            filename = f"{bus.bus_type}_pkg.vhd"
             write_string_to_file(
                 bus.return_bus_pkg_VHDL(), filename, bus_hdl, gen_settings["force_ow"]
             )
-        except Exception:
+        except Exception as e:
             logger.error("ERROR: Could not generate Bus VHDL Package File")
-            exit(1)
+            raise e
 
     if gen_settings["gen_mod"]:
         logger.info("Generating Module VHDL Files...")
         try:
             # PIF
-            filename = "{}_{}_pif.vhd".format(module.name, bus.short_name)
+            filename = f"{module.name}_{bus.short_name}_pif.vhd"
             write_string_to_file(
                 bus.return_bus_pif_VHDL(module),
                 filename,
@@ -77,7 +78,7 @@ def generate_output(
                 gen_settings["force_ow"],
             )
             # PIF Package
-            filename = "{}_pif_pkg.vhd".format(module.name)
+            filename = f"{module.name}_pif_pkg.vhd"
             write_string_to_file(
                 module.return_module_pkg_VHDL(),
                 filename,
@@ -86,7 +87,7 @@ def generate_output(
             )
 
             # Top Module
-            filename = "{}.vhd".format(module.name)
+            filename = f"{module.name}.vhd"
             if gen_settings["update_top"]:
                 logger.info("Trying to update top level-file")
                 path = os.path.join(mod_hdl, filename)
@@ -102,25 +103,25 @@ def generate_output(
                     gen_settings["force_ow_top"],
                 )
 
-        except Exception:
+        except Exception as e:
             logger.error("ERROR: Could not generate Module VHDL Files")
-            exit(1)
+            raise e
 
     if gen_settings["gen_header"]:
         logger.info("Generating Module Include Files...")
         try:
-            filename = "{}.h".format(module.name)
+            filename = f"{module.name}.h"
             write_string_to_file(
                 header.return_c_header(), filename, mod_header, gen_settings["force_ow"]
             )
-            filename = "{}.hpp".format(module.name)
+            filename = f"{module.name}.hpp"
             write_string_to_file(
                 header.return_cpp_header(),
                 filename,
                 mod_header,
                 gen_settings["force_ow"],
             )
-            filename = "{}.py".format(module.name)
+            filename = f"{module.name}.py"
             write_string_to_file(
                 header.return_python_header(),
                 filename,
@@ -128,7 +129,7 @@ def generate_output(
                 gen_settings["force_ow"],
             )
             if bus.bus_type == "ipbus":
-                filename = "{}.xml".format(module.name)
+                filename = f"{module.name}.xml"
                 write_string_to_file(
                     header.return_ipbus_addr_table(),
                     filename,
@@ -136,9 +137,9 @@ def generate_output(
                     gen_settings["force_ow"],
                 )
 
-        except Exception:
+        except Exception as e:
             logger.error("ERROR: Could not generate Module Include Files")
-            exit(1)
+            raise e
 
     if gen_settings["gen_tb"]:
         if settings.uvvm_rel_path is None:
@@ -155,14 +156,14 @@ def generate_output(
                     mod_script,
                     gen_settings["force_ow"],
                 )
-                filename = "simulate_{}_pif.do".format(bus.bus_type)
+                filename = f"simulate_{bus.bus_type}_pif.do"
                 write_string_to_file(
                     testbench.return_tcl_script(),
                     filename,
                     mod_script,
                     gen_settings["force_ow"],
                 )
-                filename = "{}_{}_pif_tb.vhd".format(module.name, bus.short_name)
+                filename = f"{module.name}_{bus.short_name}_pif_tb.vhd"
                 write_string_to_file(
                     testbench.return_vhdl_tb(),
                     filename,
@@ -170,23 +171,23 @@ def generate_output(
                     gen_settings["force_ow"],
                 )
 
-            except Exception:
+            except Exception as e:
                 logger.error("ERROR: Could not generate PIF Testbench Files")
-                exit(1)
+                raise e
 
     if gen_settings["gen_doc"]:
         logger.info("Generating Module Documentation...")
         try:
-            filename = "{}.tex".format(module.name)
+            filename = f"{module.name}.tex"
             write_string_to_file(
                 documentation.return_tex_documentation(),
                 filename,
                 mod_doc,
                 gen_settings["force_ow"],
             )
-        except Exception:
+        except Exception as e:
             logger.error("ERROR: Could not generate Module Documentation")
-            exit(1)
+            raise e
 
     if gen_settings["gen_pdf"]:
         logger.info("Generating Documentation PDF...")
@@ -202,4 +203,3 @@ def generate_output(
             )
         except Exception:
             logger.error("ERROR: PDF Generation Failed")
-            exit(1)

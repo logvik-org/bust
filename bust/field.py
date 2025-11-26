@@ -1,69 +1,125 @@
+import logging
 from collections import OrderedDict
+from typing import Dict
 
-from bust.utils import add_line_breaks
+from bust.enums import FieldType
+from bust.exceptions import InvalidFieldFormat, UndefinedFieldType
+from bust.vhdl_util import is_valid_VHDL
+from bust.config_wrapper import ConfigWrapper
 
 
-class Field(object):
-    """Documentation for Field"""
+class Field:
+    """Class for a field in a register"""
 
-    supported_types = ["slv", "sl"]
+    def __init__(self, field: Dict, pos_low: int, parent_register_name: str) -> None:
 
-    def __init__(self, name, sig_type, width, reset, description, pos_low):
-        self.name = name
-        self.sig_type = sig_type
-        self.width = width
-        self.reset = reset
-        self.description = description
-        self.description_with_breaks = add_line_breaks(description, 25)
+        self.logger = logging.getLogger(__name__)
+
+        self.parent_register_name = parent_register_name
+
+        self._config = ConfigWrapper(
+            field,
+            required_keys=["name", "type"],
+            defaults={
+                "width": 1,
+                "reset": "0x0",
+                "description": "",
+            },
+        )
+
+        self.name = self._config.require("name")
+        is_valid_VHDL(self.name)
+
+        self.type = FieldType.from_string(self._config.require("type"))
+        self.width = self._config.get(
+            "width"
+        )  # Width can be overridden depending on register type
+        self.reset = self._config.get("reset")
+        self.description = self._config.get("description")
+
+        # Assign width
+        if self.type == FieldType.SL:
+            # Check if the width was explicitly set in the config, and if it matches the module data width
+            if self._config.is_set("width") and self._config.get("width") != 1:
+                self.logger.warning(
+                    f"Field '{self.name}' in register '{self.parent_register_name}' "
+                    "has width != 1 for sl type. Forcing width to 1."
+                )
+            self.width = 1
+
         self.pos_low = pos_low
-        self.pos_high = pos_low + width - 1
+        self.pos_high = pos_low + self.width - 1
 
-    def get_pos_str(self):
-        if self.sig_type == "sl":
+        # Check that the user-specified reset value is valid
+        self.validate_reset_value()
+
+    def validate_reset_value(self) -> None:
+        if self._config.is_set("reset"):
+            # Check whether reset value matches register width
+            # maxvalue is given by 2^width
+            maxvalue = (2**self.width) - 1
+            if maxvalue < int(self.reset, 16):
+                raise InvalidFieldFormat(
+                    "Reset value does not match field: "
+                    + self.name
+                    + " in reg: "
+                    + self.parent_register_name
+                )
+
+    def get_pos_str(self) -> str:
+        if self.type == FieldType.SL:
             return str(self.pos_low)
-        elif self.sig_type == "slv":
+        elif self.type == FieldType.SLV:
             return str(self.pos_high) + ":" + str(self.pos_low)
+        raise ValueError(f"Unsupported field type: {self.type}")
 
-    def get_pos_vhdl(self):
-        if self.sig_type == "sl":
+    def get_pos_vhdl(self) -> str:
+        if self.type == FieldType.SL:
             return str(self.pos_low)
-        elif self.sig_type == "slv":
+        elif self.type == FieldType.SLV:
             return str(self.pos_high) + " downto " + str(self.pos_low)
+        raise ValueError(f"Unsupported field type: {self.type}")
 
-    def get_mask(self):
-        return pow(2, self.width) - 1 << self.pos_low
+    @property
+    def mask(self) -> int:
+        return int((pow(2, self.width) - 1) << self.pos_low)
 
-    def get_dictionary(self, reset, description):
-        dict = OrderedDict()
-        dict["name"] = self.name
-        dict["type"] = self.sig_type
-        dict["width"] = self.width
-        if reset:
-            dict["reset"] = self.reset
-        if description:
-            dict["description"] = self.description
-        return dict
-
-    def get_table_row(self, num):
-        row = [
-            num,
-            self.name,
-            self.sig_type,
-            self.get_pos_str,
-            self.width,
-            self.reset,
-            self.description,
-        ]
-        return row
-
-    def return_dic(self):
+    def return_dic(self) -> OrderedDict:
         dic = OrderedDict()
         dic["name"] = self.name
-        dic["type"] = self.sig_type
-        if self.sig_type == "slv":
+        dic["type"] = self.type.value
+        if self.type == FieldType.SLV:
             dic["width"] = self.width
         if self.reset != "0x0":
             dic["reset"] = self.reset
         if self.description != "":
             dic["description"] = self.description
         return dic
+
+    @property
+    def range_vhdl(self) -> str:
+        if self.type == FieldType.SLV:
+            return f"{self.width - 1} downto 0"
+        raise ValueError("Only slv fields have a range")
+
+    @property
+    def type_vhdl(self) -> str:
+        if self.type == FieldType.SLV:
+            return f"std_logic_vector({self.range_vhdl})"
+        elif self.type == FieldType.SL:
+            return "std_logic"
+        raise ValueError(f"Unsupported field type: {self.type}")
+
+    @property
+    def reset_val_vhdl(self) -> str:
+        if self.type == FieldType.SLV:
+            if self.reset == "0x0":
+                val = "(others => '0')"
+            else:
+                val = str(self.width) + 'X"'
+                val += format(int(self.reset, 16), "X") + '"'
+
+        elif self.type == FieldType.SL:
+            val = "'" + format(int(self.reset, 16), "X") + "'"
+
+        return val
