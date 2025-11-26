@@ -95,8 +95,8 @@ celerybeat-schedule
 # dotenv
 .env*
 .venv*
-.env_win
-.win_env
+.env_win*
+.win_env*
 venv/
 ENV/
 

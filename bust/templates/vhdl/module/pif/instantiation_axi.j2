@@ -1,0 +1,28 @@
+i_{{ module.name }}_axi_pif : entity work.{{ module.name }}_axi_pif
+  generic map (
+    g_axi_baseaddr      => g_axi_baseaddr,
+    g_check_baseaddr    => g_check_baseaddr,
+    g_module_addr_width => g_module_addr_width)
+  port map (
+    axi_rw_regs         => axi_rw_regs,
+    axi_ro_regs         => axi_ro_regs,
+    axi_pulse_regs      => axi_pulse_regs,
+    clk                 => axi_clk,
+    areset_n            => axi_areset_n,
+    awaddr              => axi_in.awaddr(C_{{ module.name | upper}}_ADDR_WIDTH-1 downto 0),
+    awvalid             => axi_in.awvalid,
+    awready             => axi_out_i.awready,
+    wdata               => axi_in.wdata(C_{{ module.name | upper}}_DATA_WIDTH-1 downto 0),
+    wvalid              => axi_in.wvalid,
+    wready              => axi_out_i.wready,
+    bresp               => axi_out_i.bresp,
+    bvalid              => axi_out_i.bvalid,
+    bready              => axi_in.bready,
+    araddr              => axi_in.araddr(C_{{ module.name | upper}}_ADDR_WIDTH-1 downto 0),
+    arvalid             => axi_in.arvalid,
+    arready             => axi_out_i.arready,
+    rdata               => axi_out_i.rdata(C_{{ module.name | upper}}_DATA_WIDTH-1 downto 0),
+    rresp               => axi_out_i.rresp,
+    rvalid              => axi_out_i.rvalid,
+    rready              => axi_in.rready
+    );
