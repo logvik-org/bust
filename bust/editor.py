@@ -66,7 +66,6 @@ class Editor:
             mod = OrderedDict()
             mod["name"] = get_identifier("Enter a module name: ")
 
-            """! @todo Add int check"""
             mod["addr_width"] = 32
             mod["data_width"] = 32
             mod["description"] = input("Enter a description for the module: ")
