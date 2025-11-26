@@ -1,3 +1,11 @@
+"""Output file generation module for bust.
+
+This module handles the creation of all output files including VHDL code,
+testbenches, documentation, headers, and simulation scripts. It manages
+directory structure and coordinates file generation from Module, Bus,
+Header, Documentation, and Testbench instances.
+"""
+
 import os
 import logging
 import subprocess
@@ -10,7 +18,33 @@ logger = logging.getLogger(__name__)
 def generate_output(
     settings, bus, module, header, documentation, testbench, gen_settings
 ):
-    """Starts the generation of all output files"""
+    """Generate all output files for a bus slave module.
+
+    Creates directory structure and writes VHDL files, testbenches,
+    documentation, headers, and scripts based on configuration.
+
+    Args:
+        settings: Settings instance with paths and configuration.
+        bus: Bus instance with interface configuration.
+        module: Module instance with register definitions.
+        header: Header instance for generating language headers.
+        documentation: Documentation instance for generating docs.
+        testbench: Testbench instance for generating test files.
+        gen_settings: Dictionary with generation options:
+            - dir: Output directory path
+            - force_ow: Force overwrite without prompting
+            - gen_bus: Generate bus VHDL package
+            - gen_mod: Generate module VHDL files
+            - update_top: Update existing top-level preserving user code
+            - force_ow_top: Force overwrite top-level
+            - gen_tb: Generate testbench
+            - gen_doc: Generate documentation
+            - gen_hdr: Generate language headers
+            - format_vhdl: Run VHDL formatter
+
+    Raises:
+        Exception: If file generation fails.
+    """
 
     # Control all output directories
     proj_dir = os.path.expanduser(gen_settings["dir"])  # Make sure that we understand ~
