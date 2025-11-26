@@ -239,7 +239,7 @@ class Editor:
                         "Field type: ", FieldType.valid_values()
                     )
 
-                    if field_dic["type"] == "slv":
+                    if field_dic["type"] == "vector":
                         max_width = self.mod.data_width - width_consumed
 
                         field_dic["width"] = get_int(
@@ -305,9 +305,9 @@ class Editor:
             # Registers of field type will get an auto reset based on the field resets
             if reg["type"] == "default":
                 reg["width"] = self.mod.data_width
-            elif reg["type"] == "sl":
+            elif reg["type"] == "bit":
                 reg["width"] = 1
-            elif reg["type"] == "slv":
+            elif reg["type"] == "vector":
                 while True:
                     try:
                         reg["width"] = int(input("Width: "))
