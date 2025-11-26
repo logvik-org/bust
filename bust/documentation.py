@@ -4,6 +4,9 @@ This module is a backward compatibility shim. Import from bust.generators.docume
 """
 
 # Re-export from new location for backward compatibility
-from bust.generators.documentation_generator import DocumentationGenerator, Documentation
+from bust.generators.documentation_generator import (
+    DocumentationGenerator,
+    Documentation,
+)
 
 __all__ = ["DocumentationGenerator", "Documentation"]
