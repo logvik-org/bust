@@ -30,7 +30,7 @@ from bust.settings import Settings
 from bust.enums import FieldType, RegisterMode, RegisterType
 
 
-class Editor(object):
+class Editor:
     """Interactive console-based editor for module configurations.
 
     The Editor provides a curses-based menu interface for creating and
@@ -90,7 +90,6 @@ class Editor(object):
             mod = OrderedDict()
             mod["name"] = get_identifier("Enter a module name: ")
 
-            """! @todo Add int check"""
             mod["addr_width"] = 32
             mod["data_width"] = 32
             mod["description"] = input("Enter a description for the module: ")
@@ -505,7 +504,7 @@ class Editor(object):
         self.logger.info(f"Saving {self.jsonfile} ...")
 
         # Get JSON with addresses
-        json = self.mod.return_JSON(True)
+        json = self.mod.to_json(True)
         self.logger.debug("JSON contents created, saving to file...")
         try:
             result = write_string_to_file(json, self.jsonfile, ".")

@@ -7,10 +7,10 @@ constants and proper address mappings.
 """
 
 from bust.enums import RegisterType
-from bust.jinja_utils.environment import get_environment
+from bust.jinja_utils.environment import render_template
 
 
-class Header(object):
+class Header:
     """Generates header files for register map access in various languages.
 
     The Header class creates language-specific header files that define
@@ -38,24 +38,15 @@ class Header(object):
         Returns:
             Rendered template content as string with trailing newline.
         """
-        # Get standardized Jinja2 environment with all filters
-        env = get_environment()
+        return render_template(
+            template_name,
+            {
+                "module": self.module,
+                "reg_type_fields": RegisterType.FIELDS,
+            },
+        )
 
-        # Load the template
-        template = env.get_template(template_name)
-
-        # Define common context for template rendering
-        context = {
-            "module": self.module,
-            "reg_type_fields": RegisterType.FIELDS,
-        }
-        result = template.render(context)
-        # Ensure final newline is preserved
-        if not result.endswith("\n"):
-            result += "\n"
-        return result
-
-    def return_c_header(self):
+    def generate_c_header(self):
         """Generate C header file with register definitions.
 
         Returns:
@@ -64,7 +55,7 @@ class Header(object):
         """
         return self._render_template("header/c_header.j2")
 
-    def return_cpp_header(self):
+    def generate_cpp_header(self):
         """Generate C++ header file with register definitions.
 
         Returns:
@@ -73,7 +64,7 @@ class Header(object):
         """
         return self._render_template("header/cpp_header.j2")
 
-    def return_python_header(self):
+    def generate_python_header(self):
         """Generate Python module with register definitions.
 
         Returns:
@@ -82,7 +73,7 @@ class Header(object):
         """
         return self._render_template("header/python_header.j2")
 
-    def return_ipbus_addr_table(self):
+    def generate_ipbus_addr_table(self):
         """Generate IPBus XML address table.
 
         Returns:

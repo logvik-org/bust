@@ -22,13 +22,13 @@ entity {{ module.name }}_{{ bus.short_name }}_pif is
   port (
     -- {{bus.bus_type.upper()}} Bus Interface Ports
     {% if module.num_rw_regs + module.num_ro_regs + module.num_pulse_regs > 0 %}
-    {{bus.short_name}}_rw_regs    : out t_example_{{bus.bus_type}}_rw_regs    := c_example_{{bus.bus_type}}_rw_regs;
+    {{bus.short_name}}_rw_regs    : out t_{{ module.name }}_rw_regs    := c_{{ module.name }}_rw_regs;
     {% endif %}
     {% if module.num_ro_regs > 0 %}
-    {{bus.short_name}}_ro_regs    : in  t_example_{{bus.bus_type}}_ro_regs    := c_example_{{bus.bus_type}}_ro_regs;
+    {{bus.short_name}}_ro_regs    : in  t_{{ module.name }}_ro_regs    := c_{{ module.name }}_ro_regs;
     {% endif %}
     {% if module.num_pulse_regs > 0 %}
-    {{bus.short_name}}_pulse_regs : out t_example_{{bus.bus_type}}_pulse_regs := c_example_{{bus.bus_type}}_pulse_regs;
+    {{bus.short_name}}_pulse_regs : out t_{{ module.name }}_pulse_regs := c_{{ module.name }}_pulse_regs;
     {% endif %}
 
     -- bus signals
@@ -43,16 +43,16 @@ entity {{ module.name }}_{{ bus.short_name }}_pif is
     awaddr         : in  t_example_axi_addr;
     awvalid        : in  std_logic;
     awready        : out std_logic;
-    wdata          : in  t_example_axi_data;
+    wdata          : in  t_{{ module.name }}_data;
     wvalid         : in  std_logic;
     wready         : out std_logic;
     bresp          : out std_logic_vector(1 downto 0);
     bvalid         : out std_logic;
     bready         : in  std_logic;
-    araddr         : in  t_example_axi_addr;
+    araddr         : in  t_{{ module.name }}_addr;
     arvalid        : in  std_logic;
     arready        : out std_logic;
-    rdata          : out t_example_axi_data;
+    rdata          : out t_{{ module.name }}_data;
     rresp          : out std_logic_vector(1 downto 0);
     rvalid         : out std_logic;
     rready         : in  std_logic

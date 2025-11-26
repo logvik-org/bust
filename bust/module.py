@@ -136,7 +136,6 @@ class Module:
 
         else:
             addr = self.get_next_address()
-            self.addresses.append(addr)
             self.registers.append(Register(reg, addr, self.name, self.data_width))
 
     def get_next_address(self) -> int:
@@ -169,9 +168,7 @@ class Module:
                     )  # force integer division to prevent float
                 else:
                     addr += 1
-        raise RuntimeError(
-            "Failed to find available address - this should never happen"
-        )
+        return addr
 
     def is_address_out_of_range(self, addr: int) -> bool:
         """Check if address exceeds address space.
@@ -227,7 +224,6 @@ class Module:
         self.addresses = []
         for reg in self.registers:
             addr = self.get_next_address()
-            self.addresses.append(addr)
             reg.address = addr
 
     @property
@@ -278,7 +274,7 @@ class Module:
             string += indent_string(str(reg), 1)
         return cast(str, string)
 
-    def return_JSON(self, include_address: bool = False) -> str:
+    def to_json(self, include_address: bool = False) -> str:
         """Export complete module configuration as JSON string.
 
         Args:
@@ -290,8 +286,8 @@ class Module:
         """
         dic = OrderedDict()
         mod = OrderedDict()
-        dic["settings"] = self.settings.return_JSON()
-        dic["bus"] = self.bus.return_JSON()
+        dic["settings"] = self.settings.to_json()
+        dic["bus"] = self.bus.to_json()
         dic["module"] = OrderedDict()
 
         mod["name"] = self.name
@@ -344,25 +340,25 @@ class Module:
 
         return s
 
-    def return_module_pkg_VHDL(self) -> str:
+    def generate_module_package_vhdl(self) -> str:
         """Generate VHDL package code for this module.
 
         Returns:
             VHDL package source code with register type definitions.
         """
-        gen_obj = self._get_vhdl_gen_obj()
-        return gen_obj.return_module_pkg_VHDL(self)
+        gen_obj = self._create_vhdl_generator()
+        return gen_obj.generate_module_package_vhdl(self)
 
-    def return_module_VHDL(self) -> str:
+    def generate_module_vhdl(self) -> str:
         """Generate main VHDL module entity and architecture.
 
         Returns:
             VHDL source code for the complete bus slave module.
         """
-        gen_obj = self._get_vhdl_gen_obj()
-        return gen_obj.return_module_VHDL(self)
+        gen_obj = self._create_vhdl_generator()
+        return gen_obj.generate_module_vhdl(self)
 
-    def _get_vhdl_gen_obj(self) -> ModuleVHDLGen:
+    def _create_vhdl_generator(self) -> ModuleVHDLGen:
         """Create VHDL generator instance for this module.
 
         Returns:
@@ -370,7 +366,7 @@ class Module:
         """
         o = ModuleVHDLGen(
             name=self.name,
-            bus_gen=self.bus.get_VHDL_generator(),
+            bus_gen=self.bus.create_vhdl_generator(),
             regs=self.registers,
             data_width=self.data_width,
             addr_width=self.addr_width,

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from bust.module import Module
 
 
-class Bus(object):
+class Bus:
     """Represents a bus interface configuration.
 
     The Bus class encapsulates all configuration for a specific bus standard,
@@ -83,7 +83,7 @@ class Bus(object):
             self.short_name = "ipb"
             self.bus_reset = "sync"
 
-    def return_JSON(self) -> OrderedDict:
+    def to_json(self) -> OrderedDict:
         """Export bus configuration as an ordered dictionary.
 
         Returns:
@@ -99,7 +99,7 @@ class Bus(object):
             json["comp_library"] = self.comp_library
         return json
 
-    def get_VHDL_generator(self) -> BusVHDLGen:
+    def create_vhdl_generator(self) -> BusVHDLGen:
         """Create a VHDL generator instance for this bus configuration.
 
         Returns:
@@ -112,16 +112,16 @@ class Bus(object):
             addr_width=self.addr_width,
         )
 
-    def return_bus_pkg_VHDL(self) -> str:
+    def generate_bus_package_vhdl(self) -> str:
         """Generate VHDL package code for this bus interface.
 
         Returns:
             VHDL package source code as a string.
         """
-        v_gen = self.get_VHDL_generator()
-        return v_gen.return_bus_pkg_VHDL()
+        v_gen = self.create_vhdl_generator()
+        return v_gen.generate_bus_package_vhdl()
 
-    def return_bus_pif_VHDL(self, mod: "Module") -> str:
+    def generate_bus_pif_vhdl(self, mod: "Module") -> str:
         """Generate bus protocol interface VHDL code for a module.
 
         Args:
@@ -130,5 +130,5 @@ class Bus(object):
         Returns:
             VHDL source code for the bus protocol interface.
         """
-        v_gen = self.get_VHDL_generator()
-        return v_gen.return_bus_pif_VHDL(mod=mod)
+        v_gen = self.create_vhdl_generator()
+        return v_gen.generate_bus_pif_vhdl(mod=mod)
