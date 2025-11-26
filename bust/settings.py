@@ -1,3 +1,10 @@
+"""Settings module for bust.
+
+This module defines the Settings class which manages project-wide configuration
+including file paths, directory structure, and external dependencies like UVVM
+and IPBus. Settings are typically loaded from the JSON configuration file.
+"""
+
 import os
 import logging
 from collections import OrderedDict
@@ -5,7 +12,32 @@ from typing import Optional, cast
 
 
 class Settings:
-    """Class for containing paths and other settings"""
+    """Manages project settings and path configurations.
+
+    The Settings class encapsulates all project-level configuration including
+    output directory structure, paths to external dependencies (UVVM, IPBus),
+    and project organization preferences.
+
+    Attributes:
+        json_path: Path to the JSON configuration file.
+        json_name: Filename of the JSON configuration.
+        project_path: Root directory for project output.
+        mod_subdir: Whether to create module subdirectories.
+        bus_subdir: Whether to create bus subdirectories.
+        uvvm_rel_path: Relative path to UVVM library (for testbenches).
+        ipbus_rel_path: Relative path to IPBus library.
+        vip_ipbus_rel_path: Relative path to IPBus VIP library.
+        coverage: Whether to enable coverage in testbenches.
+        hdl_dir: Directory name for HDL files ("hdl").
+        script_dir: Directory name for scripts ("scripts").
+        tb_dir: Directory name for testbenches ("tb").
+        doc_dir: Directory name for documentation ("doc").
+        header_dir: Directory name for headers ("header").
+        sim_dir: Directory name for simulation ("sim").
+
+    Class Attributes:
+        default_val: Dictionary of default values for optional settings.
+    """
 
     default_val = {
         "mod_subdir": True,
@@ -17,6 +49,12 @@ class Settings:
     }
 
     def __init__(self, json_path, settings):
+        """Initialize Settings from JSON file and settings dictionary.
+
+        Args:
+            json_path: Path to JSON configuration file (or None for defaults).
+            settings: Dictionary containing settings, or None for defaults.
+        """
         self.logger = logging.getLogger(__name__)
 
         if json_path is None and settings is None:
@@ -98,7 +136,11 @@ class Settings:
         self.sim_dir = "sim"
 
     def to_json(self):
-        """Convert settings to JSON-serializable OrderedDict."""
+        """Export settings as an ordered dictionary.
+
+        Returns:
+            OrderedDict with settings, omitting None values for optional paths.
+        """
         json = OrderedDict()
         json["mod_subdir"] = self.mod_subdir
         json["bus_subdir"] = self.bus_subdir
@@ -112,8 +154,14 @@ class Settings:
         return json
 
     def return_sim_bus_path(self, bus_type):
-        """Return bus path used for simulation compilation scripts"""
+        """Return relative path to bus files for simulation scripts.
 
+        Args:
+            bus_type: Bus type identifier ("axi", "ipbus", etc.).
+
+        Returns:
+            Relative path string suitable for simulation compilation scripts.
+        """
         if bus_type == "ipbus":
             if self.ipbus_rel_path is not None:
                 path = os.path.join("../", self.ipbus_rel_path)
@@ -126,8 +174,11 @@ class Settings:
         return path
 
     def return_vip_ipbus_path(self):
-        """Return bus path used for simulation compilation scripts"""
+        """Return relative path to IPBus VIP for simulation scripts.
 
+        Returns:
+            Relative path string to IPBus VIP directory.
+        """
         if self.vip_ipbus_rel_path is not None:
             path = os.path.join("../", self.vip_ipbus_rel_path)
         else:
@@ -135,7 +186,12 @@ class Settings:
         return path
 
     def return_sim_uvvm_path(self):
-        """Return UVVM path used for simulation compilation script"""
+        """Return relative path to UVVM library for simulation scripts.
+
+        Returns:
+            Relative path string to UVVM directory, accounting for scripts/
+            subdirectory depth.
+        """
         # Must add one extra subdir because of scripts/
         path = "../"
         if self.uvvm_rel_path is not None:

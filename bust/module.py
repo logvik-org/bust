@@ -1,6 +1,9 @@
-"""@package module
-Contains the Module class and relevant exceptions
+"""Module management for bus slave generation.
 
+This module defines the Module class which represents a complete bus slave
+module with all its registers, configuration settings, and the capability
+to generate VHDL code. It handles register address assignment, validation,
+and coordination with bus interface code generation.
 """
 
 import logging
@@ -22,14 +25,46 @@ if TYPE_CHECKING:
 
 
 class Module:
-    """! @brief Managing module information
+    """Represents a complete bus slave module with registers.
 
-    Contain the name of the module, the bus type and addr and data width specification +
-    description of the module.
+    The Module class is the top-level container for a bus slave module
+    definition. It manages registers, address assignment, and coordinates
+    with the Bus and Settings to generate complete VHDL code including
+    package files, module entities, and protocol interfaces.
+
+    Attributes:
+        name: Module name (must be valid VHDL identifier).
+        description: Optional module description.
+        version: Module version string.
+        git_hash: Git commit hash (currently unused).
+        byte_addressable: Whether addresses are byte-based (True for AXI).
+        addr_width: Address bus width in bits.
+        data_width: Data bus width in bits.
+        bus: Bus configuration instance.
+        settings: Project settings instance.
+        registers: List of Register objects in this module.
+        addresses: List of assigned register addresses.
     """
 
     def __init__(self, mod: Dict, bus: "Bus", settings: "Settings") -> None:
-        """! @brief"""
+        """Initialize a Module instance.
+
+        Args:
+            mod: Dictionary containing module configuration with keys:
+                - name: Module identifier (required)
+                - description: Module description (default: "")
+                - version: Version string (default: "")
+                - git_hash: Git hash for tracking (optional)
+                - byte_addressable: Use byte addressing (default: True for AXI)
+                - register: List of register configurations (required)
+            bus: Bus interface configuration.
+            settings: Project-wide settings.
+
+        Raises:
+            InvalidAddress: If register addresses conflict.
+            InvalidRegister: If register configuration is invalid.
+            ValueError: If module name is not a valid VHDL identifier.
+        """
 
         self.logger = logging.getLogger(__name__)
 
@@ -71,6 +106,19 @@ class Module:
             self.add_register(reg)
 
     def add_register(self, reg: Dict) -> None:
+        """Add a register to the module.
+
+        If no address is specified, automatically assigns the next available
+        address based on byte_addressable setting. Validates address conflicts.
+
+        Args:
+            reg: Dictionary containing register configuration (see Register.__init__).
+
+        Raises:
+            InvalidAddress: If specified address is already in use.
+            InvalidRegister: If register configuration is invalid.
+            RuntimeError: If address space is exhausted.
+        """
         if "address" in reg:
             addr = int(reg["address"], 16)
             if not self.is_address_free(addr):
@@ -91,7 +139,18 @@ class Module:
             self.registers.append(Register(reg, addr, self.name, self.data_width))
 
     def get_next_address(self) -> int:
-        """! @brief Will get the next address based on the byte-addressed scheme"""
+        """Find next available register address.
+
+        Scans for the next free address considering byte_addressable setting.
+        For byte-addressable modules (e.g., AXI), increments by data_width/8.
+        For word-addressable modules (e.g., IPBus), increments by 1.
+
+        Returns:
+            Next available address.
+
+        Raises:
+            RuntimeError: If no free address is found within address space.
+        """
         addr = 0
         found_addr = False
         while not found_addr:
@@ -112,7 +171,14 @@ class Module:
         return addr
 
     def is_address_out_of_range(self, addr: int) -> bool:
-        """Returns True if address is out of range, False if not"""
+        """Check if address exceeds address space.
+
+        Args:
+            addr: Address to check.
+
+        Returns:
+            True if address exceeds 2^addr_width - 1, False otherwise.
+        """
 
         if addr > pow(2, self.addr_width) - 1:
             return True
@@ -120,7 +186,14 @@ class Module:
         return False
 
     def is_address_free(self, addr: int) -> bool:
-        """Returns True if address is not been used in the module, False if it already taken"""
+        """Check if address is available for assignment.
+
+        Args:
+            addr: Address to check.
+
+        Returns:
+            True if address is not used by any register, False if occupied.
+        """
         for address in self.addresses:
             if address == addr:
                 return False
@@ -128,7 +201,14 @@ class Module:
         return True
 
     def is_address_byte_based(self, addr: int) -> bool:
-        """Returns True if address is divisible by number of bytes in module data width"""
+        """Check if address aligns to byte boundaries.
+
+        Args:
+            addr: Address to check.
+
+        Returns:
+            True if address is divisible by data_width/8 bytes.
+        """
 
         if addr % (self.data_width // 8) == 0:
             return True
@@ -136,6 +216,11 @@ class Module:
             return False
 
     def update_addresses(self) -> None:
+        """Reassign addresses to all registers sequentially.
+
+        Clears current addresses and assigns new sequential addresses
+        using get_next_address() logic.
+        """
         self.addresses = []
         for reg in self.registers:
             addr = self.get_next_address()
@@ -143,17 +228,37 @@ class Module:
 
     @property
     def num_ro_regs(self) -> int:
+        """Count of read-only registers.
+
+        Returns:
+            Number of registers with RO mode.
+        """
         return sum(1 for reg in self.registers if reg.mode == RegisterMode.RO)
 
     @property
     def num_rw_regs(self) -> int:
+        """Count of read-write registers.
+
+        Returns:
+            Number of registers with RW mode.
+        """
         return sum(1 for reg in self.registers if reg.mode == RegisterMode.RW)
 
     @property
     def num_pulse_regs(self) -> int:
+        """Count of pulse registers.
+
+        Returns:
+            Number of registers with PULSE mode.
+        """
         return sum(1 for reg in self.registers if reg.mode == RegisterMode.PULSE)
 
     def has_stall_regs(self) -> bool:
+        """Check if any register uses stall cycles.
+
+        Returns:
+            True if at least one register has stall enabled.
+        """
         if len([reg for reg in self.registers if reg.stall]) > 0:
             return True
         else:
@@ -170,7 +275,15 @@ class Module:
         return cast(str, string)
 
     def to_json(self, include_address: bool = False) -> str:
-        """Convert module configuration to JSON string."""
+        """Export complete module configuration as JSON string.
+
+        Args:
+            include_address: Whether to include explicit address values in output
+                (default: False).
+
+        Returns:
+            JSON string with settings, bus, and module configuration.
+        """
         dic = OrderedDict()
         mod = OrderedDict()
         dic["settings"] = self.settings.to_json()
@@ -228,17 +341,29 @@ class Module:
         return s
 
     def generate_module_package_vhdl(self) -> str:
-        """Generate VHDL package for the module."""
+        """Generate VHDL package code for this module.
+
+        Returns:
+            VHDL package source code with register type definitions.
+        """
         gen_obj = self._create_vhdl_generator()
         return gen_obj.generate_module_package_vhdl(self)
 
     def generate_module_vhdl(self) -> str:
-        """Generate VHDL module code."""
+        """Generate main VHDL module entity and architecture.
+
+        Returns:
+            VHDL source code for the complete bus slave module.
+        """
         gen_obj = self._create_vhdl_generator()
         return gen_obj.generate_module_vhdl(self)
 
     def _create_vhdl_generator(self) -> ModuleVHDLGen:
-        """Create and return a VHDL generator for this module."""
+        """Create VHDL generator instance for this module.
+
+        Returns:
+            ModuleVHDLGen configured with module and bus settings.
+        """
         o = ModuleVHDLGen(
             name=self.name,
             bus_gen=self.bus.create_vhdl_generator(),

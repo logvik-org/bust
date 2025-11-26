@@ -1,6 +1,9 @@
-"""@package editor
-Contains the Editor class
+"""Interactive editor module for bust.
 
+This module provides the Editor class, which implements a console-based
+menu system for creating and editing bus slave module configurations
+interactively. It allows users to add/remove registers, edit properties,
+and save configurations to JSON files.
 """
 
 import logging
@@ -28,12 +31,33 @@ from bust.enums import FieldType, RegisterMode, RegisterType
 
 
 class Editor:
-    """A console-based menu system for creating and editing module descripting JSON files"""
+    """Interactive console-based editor for module configurations.
+
+    The Editor provides a curses-based menu interface for creating and
+    modifying bus slave module definitions. It supports register management,
+    field editing, and JSON export.
+
+    Attributes:
+        jsonfile: Path to JSON configuration file.
+        output_dir: Directory for saving files.
+        recently_saved: Flag indicating if changes have been saved.
+        bus: Bus configuration instance.
+        mod: Module instance being edited.
+        settings: Settings instance.
+        menu: CursesMenu instance for the UI.
+    """
 
     def __init__(self, edit, jsonfile, output_dir="output/"):
-        """Constructor
+        """Initialize Editor instance.
 
-        Either reconstructs a module object from JSON, or create a new based on user input
+        Args:
+            edit: If True, loads existing JSON file; if False, creates new module
+                interactively by prompting user for configuration.
+            jsonfile: Path to JSON configuration file to load or save to.
+            output_dir: Directory path for output files (default: "output/").
+
+        Raises:
+            Exception: If loading JSON file fails when edit=True.
         """
         self.logger = logging.getLogger(__name__)
 
