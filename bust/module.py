@@ -109,9 +109,7 @@ class Module:
                     )  # force integer division to prevent float
                 else:
                     addr += 1
-        raise RuntimeError(
-            "Failed to find available address - this should never happen"
-        )
+        return addr
 
     def is_address_out_of_range(self, addr: int) -> bool:
         """Returns True if address is out of range, False if not"""
