@@ -2,8 +2,8 @@ from bust.enums import RegisterType
 from bust.jinja_utils.environment import get_environment
 
 
-class Header(object):
-    """Documentation for Header"""
+class Header:
+    """Generates header files (C, C++, Python) for register definitions."""
 
     def __init__(self, module):
         self.module = module

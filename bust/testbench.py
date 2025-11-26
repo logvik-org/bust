@@ -2,7 +2,7 @@ import logging
 from bust.jinja_utils.environment import get_environment
 
 
-class Testbench(object):
+class Testbench:
     """Class for generating testbenches and tcl scripts for Model/Questa Sim"""
 
     def __init__(self, module, bus, settings):

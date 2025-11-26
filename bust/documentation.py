@@ -3,7 +3,7 @@ from bust.enums import RegisterType
 from bust.jinja_utils.environment import get_environment
 
 
-class Documentation(object):
+class Documentation:
     """Class for auto-generation of module documentation"""
 
     def __init__(self, module):
