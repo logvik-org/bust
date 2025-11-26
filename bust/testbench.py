@@ -11,11 +11,13 @@ class Testbench:
         self.bus = bus
         self.settings = settings
 
-    def return_uvvm_component_list(self):
+    def generate_uvvm_component_list(self):
+        """Generate UVVM component list."""
         self.logger.debug("Generating UVVM Component List")
         return render_template("uvvm/component_list.j2", {"bus": self.bus})
 
-    def return_tcl_script(self):
+    def generate_tcl_script(self):
+        """Generate TCL simulation script."""
         self.logger.debug("Generating TCL Script")
         return render_template(
             "tcl/simulate_script.j2",
@@ -26,8 +28,8 @@ class Testbench:
             },
         )
 
-    def return_vhdl_tb(self):
-        # Get standardized Jinja2 environment with all filters
+    def generate_vhdl_testbench(self):
+        """Generate VHDL testbench."""
         return render_template(
             "vhdl/testbench/testbench.j2",
             {

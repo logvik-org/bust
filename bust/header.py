@@ -18,14 +18,18 @@ class Header:
             },
         )
 
-    def return_c_header(self):
+    def generate_c_header(self):
+        """Generate C header file."""
         return self._render_template("header/c_header.j2")
 
-    def return_cpp_header(self):
+    def generate_cpp_header(self):
+        """Generate C++ header file."""
         return self._render_template("header/cpp_header.j2")
 
-    def return_python_header(self):
+    def generate_python_header(self):
+        """Generate Python header file."""
         return self._render_template("header/python_header.j2")
 
-    def return_ipbus_addr_table(self):
+    def generate_ipbus_addr_table(self):
+        """Generate IPBus address table."""
         return self._render_template("ipbus/addr_table.j2")

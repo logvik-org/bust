@@ -39,7 +39,8 @@ class Bus:
             self.short_name = "ipb"
             self.bus_reset = "sync"
 
-    def return_JSON(self) -> OrderedDict:
+    def to_json(self) -> OrderedDict:
+        """Convert bus configuration to JSON-serializable OrderedDict."""
         json = OrderedDict()
         json["type"] = self.bus_type
         json["addr_width"] = self.addr_width
@@ -49,7 +50,8 @@ class Bus:
             json["comp_library"] = self.comp_library
         return json
 
-    def get_VHDL_generator(self) -> BusVHDLGen:
+    def create_vhdl_generator(self) -> BusVHDLGen:
+        """Create and return a VHDL generator for this bus."""
         return BusVHDLGen(
             bus_type=self.bus_type,
             comp_library=self.comp_library,
@@ -57,10 +59,12 @@ class Bus:
             addr_width=self.addr_width,
         )
 
-    def return_bus_pkg_VHDL(self) -> str:
-        v_gen = self.get_VHDL_generator()
-        return v_gen.return_bus_pkg_VHDL()
+    def generate_bus_package_vhdl(self) -> str:
+        """Generate VHDL package for the bus."""
+        v_gen = self.create_vhdl_generator()
+        return v_gen.generate_bus_package_vhdl()
 
-    def return_bus_pif_VHDL(self, mod: "Module") -> str:
-        v_gen = self.get_VHDL_generator()
-        return v_gen.return_bus_pif_VHDL(mod=mod)
+    def generate_bus_pif_vhdl(self, mod: "Module") -> str:
+        """Generate VHDL PIF (Physical Interface) for the bus."""
+        v_gen = self.create_vhdl_generator()
+        return v_gen.generate_bus_pif_vhdl(mod=mod)

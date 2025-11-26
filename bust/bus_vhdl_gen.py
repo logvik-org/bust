@@ -1,7 +1,9 @@
 from bust.jinja_utils.environment import render_template
 
 
-class BusVHDLGen:
+class BusVhdlGenerator:
+    """VHDL code generator for Bus."""
+
     def __init__(
         self,
         bus_type,
@@ -43,7 +45,8 @@ class BusVHDLGen:
             else:
                 self.reset_name = "reset_n"
 
-    def return_bus_pkg_VHDL(self) -> str:
+    def generate_bus_package_vhdl(self) -> str:
+        """Generate VHDL package for the bus."""
         if self.bus_type == "axi":
             return render_template(
                 "vhdl/bus/axi_pkg.j2",
@@ -59,7 +62,8 @@ class BusVHDLGen:
             f"Only 'axi' bus type is currently supported."
         )
 
-    def return_bus_pif_VHDL(self, mod) -> str:
+    def generate_bus_pif_vhdl(self, mod) -> str:
+        """Generate VHDL PIF (Physical Interface) for the bus."""
         return render_template(
             "vhdl/module/pif/pif.j2",
             {
@@ -67,3 +71,7 @@ class BusVHDLGen:
                 "bus": self,
             },
         )
+
+
+# Backward compatibility alias
+BusVHDLGen = BusVhdlGenerator

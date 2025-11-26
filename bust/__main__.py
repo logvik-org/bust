@@ -106,7 +106,7 @@ def main():
                 module = Module(json_dict["module"], bus, settings)
                 header = Header(module)
                 documentation = Documentation(module)
-                testbench = Testbench(module, bus.get_VHDL_generator(), settings)
+                testbench = Testbench(module, bus.create_vhdl_generator(), settings)
 
             except (
                 FormatError,
@@ -180,7 +180,7 @@ def main():
 
             if args["-a"]:
                 module.update_addresses()
-                json = module.return_JSON(True)
+                json = module.to_json(True)
                 try:
                     write_string_to_file(json, json_file, ".")
                 except Exception as e:

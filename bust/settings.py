@@ -97,7 +97,8 @@ class Settings:
         self.header_dir = "header"
         self.sim_dir = "sim"
 
-    def return_JSON(self):
+    def to_json(self):
+        """Convert settings to JSON-serializable OrderedDict."""
         json = OrderedDict()
         json["mod_subdir"] = self.mod_subdir
         json["bus_subdir"] = self.bus_subdir
