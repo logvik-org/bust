@@ -23,6 +23,6 @@ class Documentation:
             },
         )
 
-    def return_tex_documentation(self, test_version=None):
+    def generate_tex_documentation(self, test_version=None):
         """Generate LaTeX documentation for the module using Jinja2 templates."""
         return self._render_template("latex/documentation.j2", test_version)

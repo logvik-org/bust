@@ -213,15 +213,6 @@ class Register:
         else:
             return 0
 
-    def get_mode(self) -> str:
-        """Get the register mode in r/w/rw format - pulse = w"""
-        if self.mode == RegisterMode.PULSE:
-            return "w"
-        elif self.mode == RegisterMode.RO:
-            return "r"
-        else:
-            return str(self.mode.value)
-
     def return_stall_string(self) -> str:
         if self.stall:
             return "/STALL"
