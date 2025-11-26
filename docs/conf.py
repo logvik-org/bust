@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+from datetime import datetime
 
 # 1. Path setup for Autodoc: Ensures Sphinx can find your Python code
 sys.path.insert(0, os.path.abspath(".."))
@@ -8,7 +9,7 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project Information -----------------------------------------------------
 
 project = "bust"
-copyright = "2025, Grottviq"  # Use current year
+copyright = f"{datetime.now().year}, Grottviq"
 author = "Ola Groettvik"
 
 # The short X.Y version.
