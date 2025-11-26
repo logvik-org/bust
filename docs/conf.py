@@ -8,9 +8,9 @@ sys.path.insert(0, os.path.abspath(".."))
 
 # -- Project Information -----------------------------------------------------
 
-project = 'bust'
-copyright = f'{datetime.now().year}, Grottviq'
-author = 'Ola Groettvik'
+project = "bust"
+copyright = f"{datetime.now().year}, Grottviq"
+author = "Ola Groettvik"
 
 # The short X.Y version.
 version = "0.1.0"
