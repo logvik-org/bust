@@ -1,13 +1,13 @@
 import unittest
 import logging.config
-from bust.utils import json_parser
-from bust.module import Module
-from bust.bus import Bus
+from bust.utils.json_utils import json_parser
+from bust.core.module import Module
+from bust.core.bus import Bus
 from bust.settings import Settings
-from bust.testbench import Testbench
-from bust.documentation import Documentation
-from bust.header import Header
-from bust.generator_factory import GeneratorFactory
+from bust.generators.testbench_generator import Testbench
+from bust.generators.documentation_generator import Documentation
+from bust.generators.header_generator import Header
+from bust.generators.factory import GeneratorFactory
 
 
 class BusHolder:
