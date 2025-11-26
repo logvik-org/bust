@@ -50,3 +50,32 @@ def get_environment(additional_filters=None):
         env.filters.update(additional_filters)
 
     return env
+
+
+def render_template(template_name, context, ensure_newline=True):
+    """
+    Render a Jinja2 template with common settings and optional newline handling.
+
+    This helper function centralizes the template rendering logic to eliminate
+    code duplication across generator classes.
+
+    Args:
+        template_name (str): Path to the template relative to templates/ directory
+        context (dict): Context variables to pass to the template
+        ensure_newline (bool, optional): If True, ensures result ends with newline.
+            Defaults to True.
+
+    Returns:
+        str: Rendered template content
+
+    Example:
+        >>> result = render_template("header/c_header.j2", {"module": my_module})
+    """
+    env = get_environment()
+    template = env.get_template(template_name)
+    result = template.render(context)
+    
+    if ensure_newline and not result.endswith("\n"):
+        result += "\n"
+    
+    return result
