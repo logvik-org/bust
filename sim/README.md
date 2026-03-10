@@ -129,7 +129,77 @@ docker run --rm \
 
 Exit code: `0` = PASS, `1` = FAIL or compile error.
 
-### 3. Clean up
+### 3. Waveform debugging with GTKWave
+
+When a simulation is failing and you need to see signal states over time,
+generate a waveform file and open it in [GTKWave](https://gtkwave.sourceforge.net/).
+
+GTKWave runs inside the [`hdlc/gtkwave`](https://hub.docker.com/r/hdlc/gtkwave)
+Docker image with X11 forwarding — no local installation required.
+
+#### One-time X11 setup (Linux)
+
+Docker containers cannot connect to the host X11 server by default.  Run this
+once per desktop session:
+
+```bash
+xhost +local:docker
+```
+
+#### Combined run-and-view (recommended)
+
+```bash
+make wave-ipbus    # simulate example_ipbus, save FST, open GTKWave
+make wave-axi      # simulate example_axi,   save FST, open GTKWave
+```
+
+FST files are written to `sim/waves/` and ignored by git.
+
+#### Generate FST only (no GUI)
+
+Useful for CI post-mortem or when running headless.  Pass `--wave` to
+`run_sim.sh`:
+
+```bash
+# Default output path: sim/waves/<target>.fst
+docker run --rm \
+  -v "$(pwd):/work" \
+  -e WORK_ROOT=/work \
+  bust-sim:latest \
+  /work/sim/scripts/run_sim.sh example_axi --wave
+
+# Custom output path
+docker run --rm \
+  -v "$(pwd):/work" \
+  -e WORK_ROOT=/work \
+  bust-sim:latest \
+  /work/sim/scripts/run_sim.sh example_axi --wave=/work/sim/waves/my_debug.fst
+```
+
+#### Open an existing FST/VCD file
+
+```bash
+make gtkwave FILE=sim/waves/example_axi.fst
+```
+
+Or with the raw `docker run`:
+
+```bash
+docker run --rm \
+  -e DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  -v "$(pwd)/sim/waves:/waves:ro" \
+  hdlc/gtkwave \
+  gtkwave /waves/example_axi.fst
+```
+
+#### FST vs VCD
+
+nvc generates FST by default when `--wave=FILE.fst` is used.  FST is a
+compressed binary format that is significantly smaller and faster to load than
+VCD.  GTKWave reads both.  Stick with FST unless you need VCD for another tool.
+
+### 4. Clean up
 
 ```bash
 make clean    # removes the local bust-sim:latest image
