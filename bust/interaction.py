@@ -87,8 +87,7 @@ class ConsoleInteractionHandler(InteractionHandler):
             True if the user does NOT answer 'n' or 'N', False if they do.
         """
         return (
-            input(f"Are you sure you want to update {filepath}? (Y/n): ").upper()
-            != "N"
+            input(f"Are you sure you want to update {filepath}? (Y/n): ").upper() != "N"
         )
 
 
