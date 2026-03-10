@@ -11,6 +11,7 @@
 # Quick start:
 #   make build          # Build the simulation Docker image
 #   make sim-ipbus      # Run the example_ipbus testbench
+#   make sim-axi        # Run the example_axi testbench
 # =============================================================================
 
 REPO_ROOT   := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
@@ -25,7 +26,7 @@ DOCKER_RUN := docker run --rm \
     -e WORK_ROOT=/work \
     "$(FULL_IMAGE)"
 
-.PHONY: help build rebuild sim-ipbus clean
+.PHONY: help build rebuild sim-ipbus sim-axi clean
 
 # Default target
 help:
@@ -35,6 +36,7 @@ help:
 	@echo "  make build       Build the nvc+UVVM simulation Docker image"
 	@echo "  make rebuild     Force-rebuild the image (no cache)"
 	@echo "  make sim-ipbus   Run the example_ipbus testbench"
+	@echo "  make sim-axi     Run the example_axi testbench"
 	@echo "  make clean       Remove the local Docker image"
 	@echo ""
 
@@ -60,6 +62,9 @@ rebuild:
 # ---------------------------------------------------------------------------
 sim-ipbus: _require-image
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh example_ipbus
+
+sim-axi: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh example_axi
 
 # ---------------------------------------------------------------------------
 # Internal helpers
