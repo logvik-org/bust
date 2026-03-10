@@ -30,29 +30,18 @@ class TestInteractionHandlerInterface(unittest.TestCase):
 class TestAutomatedInteractionHandler(unittest.TestCase):
     """Tests for AutomatedInteractionHandler behaviour."""
 
-    def test_default_overwrite_is_false(self):
+    def test_returns_configured_default(self):
+        handler = AutomatedInteractionHandler("y")
+        self.assertEqual(handler("Any prompt?"), "y")
+
+    def test_empty_string_default(self):
         handler = AutomatedInteractionHandler()
-        self.assertFalse(handler.confirm_overwrite("/some/file.txt"))
+        self.assertEqual(handler("Any prompt?"), "")
 
-    def test_default_preview_is_false(self):
-        handler = AutomatedInteractionHandler()
-        self.assertFalse(handler.confirm_preview())
-
-    def test_default_update_is_true(self):
-        handler = AutomatedInteractionHandler()
-        self.assertTrue(handler.confirm_update("/some/file.txt"))
-
-    def test_custom_overwrite_true(self):
-        handler = AutomatedInteractionHandler(overwrite=True)
-        self.assertTrue(handler.confirm_overwrite("/some/file.txt"))
-
-    def test_custom_preview_true(self):
-        handler = AutomatedInteractionHandler(preview=True)
-        self.assertTrue(handler.confirm_preview())
-
-    def test_custom_update_false(self):
-        handler = AutomatedInteractionHandler(update=False)
-        self.assertFalse(handler.confirm_update("/some/file.txt"))
+    def test_response_is_independent_of_prompt(self):
+        handler = AutomatedInteractionHandler("yes")
+        self.assertEqual(handler("Prompt A"), "yes")
+        self.assertEqual(handler("Prompt B"), "yes")
 
 
 class TestWriteStringToFile(unittest.TestCase):
@@ -60,10 +49,6 @@ class TestWriteStringToFile(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
-
-    # ------------------------------------------------------------------
-    # Basic write behaviour
-    # ------------------------------------------------------------------
 
     def test_writes_new_file(self):
         result = write_string_to_file("hello", "out.txt", self.tmpdir)
@@ -74,10 +59,6 @@ class TestWriteStringToFile(unittest.TestCase):
     def test_raises_when_dir_does_not_exist(self):
         with self.assertRaises(RuntimeError):
             write_string_to_file("hello", "out.txt", "/nonexistent/dir/xyz")
-
-    # ------------------------------------------------------------------
-    # force_overwrite=True bypasses handler entirely
-    # ------------------------------------------------------------------
 
     def test_force_overwrite_writes_existing_file(self):
         path = os.path.join(self.tmpdir, "out.txt")
@@ -90,47 +71,45 @@ class TestWriteStringToFile(unittest.TestCase):
         with open(path) as f:
             self.assertEqual(f.read(), "updated")
 
-    # ------------------------------------------------------------------
-    # interaction_handler controls overwrite decision
-    # ------------------------------------------------------------------
-
-    def test_automated_handler_denies_overwrite_by_default(self):
+    def test_handler_denies_overwrite(self):
         path = os.path.join(self.tmpdir, "out.txt")
         with open(path, "w") as f:
             f.write("original")
-        handler = AutomatedInteractionHandler(overwrite=False)
         result = write_string_to_file(
-            "updated", "out.txt", self.tmpdir, interaction_handler=handler
+            "updated",
+            "out.txt",
+            self.tmpdir,
+            interaction_handler=AutomatedInteractionHandler("n"),
         )
         self.assertFalse(result)
         with open(path) as f:
             self.assertEqual(f.read(), "original")
 
-    def test_automated_handler_allows_overwrite_when_configured(self):
+    def test_handler_allows_overwrite(self):
         path = os.path.join(self.tmpdir, "out.txt")
         with open(path, "w") as f:
             f.write("original")
-        handler = AutomatedInteractionHandler(overwrite=True)
         result = write_string_to_file(
-            "updated", "out.txt", self.tmpdir, interaction_handler=handler
+            "updated",
+            "out.txt",
+            self.tmpdir,
+            interaction_handler=AutomatedInteractionHandler("y"),
         )
         self.assertTrue(result)
         with open(path) as f:
             self.assertEqual(f.read(), "updated")
 
-    def test_force_overwrite_takes_precedence_over_handler(self):
-        """force_overwrite=True should not even consult the handler."""
+    def test_force_overwrite_bypasses_handler(self):
+        """force_overwrite=True should not consult the handler at all."""
         path = os.path.join(self.tmpdir, "out.txt")
         with open(path, "w") as f:
             f.write("original")
-        # Handler would decline, but force_overwrite overrides it
-        handler = AutomatedInteractionHandler(overwrite=False)
         result = write_string_to_file(
             "updated",
             "out.txt",
             self.tmpdir,
             force_overwrite=True,
-            interaction_handler=handler,
+            interaction_handler=AutomatedInteractionHandler("n"),
         )
         self.assertTrue(result)
         with open(path) as f:
@@ -138,19 +117,20 @@ class TestWriteStringToFile(unittest.TestCase):
 
     def test_handler_not_called_when_file_does_not_exist(self):
         """Handler should not be consulted when the target file is new."""
+        called = []
 
         class _TrackingHandler(AutomatedInteractionHandler):
-            called = False
+            def __call__(self, prompt):
+                called.append(prompt)
+                return super().__call__(prompt)
 
-            def confirm_overwrite(self, filepath):
-                _TrackingHandler.called = True
-                return super().confirm_overwrite(filepath)
-
-        handler = _TrackingHandler(overwrite=False)
         write_string_to_file(
-            "hello", "brand_new.txt", self.tmpdir, interaction_handler=handler
+            "hello",
+            "brand_new.txt",
+            self.tmpdir,
+            interaction_handler=_TrackingHandler("n"),
         )
-        self.assertFalse(_TrackingHandler.called)
+        self.assertEqual(called, [])
 
 
 class TestUpdateModuleTopLevel(unittest.TestCase):
@@ -194,47 +174,47 @@ library ieee_extras;
         return path
 
     def test_returns_new_top_level_when_file_missing(self):
-        """If the existing file does not exist, the new top-level is returned unchanged."""
-        handler = AutomatedInteractionHandler()
         result = update_module_top_level(
             "/nonexistent/path/module.vhd",
             self._VHDL_TEMPLATE,
-            interaction_handler=handler,
+            interaction_handler=AutomatedInteractionHandler("y"),
         )
         self.assertEqual(result, self._VHDL_TEMPLATE)
 
     def test_merges_user_sections_and_proceeds(self):
-        """With update=True, user sections from the existing file are preserved."""
         existing = self._write("module.vhd", self._VHDL_WITH_USER_CONTENT)
-        handler = AutomatedInteractionHandler(update=True)
         result = update_module_top_level(
-            existing, self._VHDL_TEMPLATE, interaction_handler=handler
+            existing,
+            self._VHDL_TEMPLATE,
+            interaction_handler=AutomatedInteractionHandler("y"),
         )
         self.assertIn("library ieee_extras;", result)
         self.assertIn("my_signal <= '1';", result)
 
     def test_raises_when_user_cancels_update(self):
-        """With update=False, an exception is raised to abort the operation."""
         existing = self._write("module.vhd", self._VHDL_WITH_USER_CONTENT)
-        handler = AutomatedInteractionHandler(update=False)
         with self.assertRaises(Exception) as ctx:
             update_module_top_level(
-                existing, self._VHDL_TEMPLATE, interaction_handler=handler
+                existing,
+                self._VHDL_TEMPLATE,
+                interaction_handler=AutomatedInteractionHandler("n"),
             )
         self.assertIn("Cancelled", str(ctx.exception))
 
     def test_preview_does_not_affect_return_value(self):
-        """Enabling preview should not change the returned content."""
         existing = self._write("module.vhd", self._VHDL_WITH_USER_CONTENT)
-        handler_no_preview = AutomatedInteractionHandler(preview=False, update=True)
-        handler_preview = AutomatedInteractionHandler(preview=True, update=True)
-        result_no_preview = update_module_top_level(
-            existing, self._VHDL_TEMPLATE, interaction_handler=handler_no_preview
+        # "y" → preview printed AND proceed; "" → no preview AND proceed
+        result_with_preview = update_module_top_level(
+            existing,
+            self._VHDL_TEMPLATE,
+            interaction_handler=AutomatedInteractionHandler("y"),
         )
-        result_preview = update_module_top_level(
-            existing, self._VHDL_TEMPLATE, interaction_handler=handler_preview
+        result_without_preview = update_module_top_level(
+            existing,
+            self._VHDL_TEMPLATE,
+            interaction_handler=AutomatedInteractionHandler(""),
         )
-        self.assertEqual(result_no_preview, result_preview)
+        self.assertEqual(result_with_preview, result_without_preview)
 
 
 if __name__ == "__main__":
