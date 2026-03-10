@@ -83,7 +83,9 @@ class TestWriteStringToFile(unittest.TestCase):
         path = os.path.join(self.tmpdir, "out.txt")
         with open(path, "w") as f:
             f.write("original")
-        result = write_string_to_file("updated", "out.txt", self.tmpdir, force_overwrite=True)
+        result = write_string_to_file(
+            "updated", "out.txt", self.tmpdir, force_overwrite=True
+        )
         self.assertTrue(result)
         with open(path) as f:
             self.assertEqual(f.read(), "updated")
@@ -145,7 +147,9 @@ class TestWriteStringToFile(unittest.TestCase):
                 return super().confirm_overwrite(filepath)
 
         handler = _TrackingHandler(overwrite=False)
-        write_string_to_file("hello", "brand_new.txt", self.tmpdir, interaction_handler=handler)
+        write_string_to_file(
+            "hello", "brand_new.txt", self.tmpdir, interaction_handler=handler
+        )
         self.assertFalse(_TrackingHandler.called)
 
 
