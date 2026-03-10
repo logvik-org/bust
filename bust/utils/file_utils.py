@@ -9,12 +9,17 @@ import logging
 from typing import Any, List, Optional
 
 from bust.utils.formatting import splitkeepsep
+from bust.interaction import InteractionHandler, ConsoleInteractionHandler
 
 logger = logging.getLogger(__name__)
 
 
 def write_string_to_file(
-    string: str, output_file: str, output_dir: str, force_overwrite: bool = False
+    string: str,
+    output_file: str,
+    output_dir: str,
+    force_overwrite: bool = False,
+    interaction_handler: Optional[InteractionHandler] = None,
 ) -> bool:
     """Write string content to a file with optional overwrite confirmation.
 
@@ -23,6 +28,11 @@ def write_string_to_file(
         output_file: Filename to write.
         output_dir: Directory path where file will be written.
         force_overwrite: Skip confirmation if file exists (default: False).
+        interaction_handler: Handler used to ask the user whether to overwrite
+            an existing file when *force_overwrite* is False.  Defaults to a
+            :class:`~bust.interaction.ConsoleInteractionHandler` so that the
+            function behaves identically to its original form when called
+            without this argument.
 
     Returns:
         True if file was written, False if user declined overwrite.
@@ -39,21 +49,28 @@ def write_string_to_file(
 
     # Check if file exist
     if os.path.isfile(joined):
-        if (
-            not force_overwrite
-            and input("Do you want to overwrite " + joined + "? (y/N):").upper() != "Y"
-        ):
-            logger.warning("Did not write " + joined)
-            return False
+        if not force_overwrite:
+            handler: InteractionHandler = (
+                interaction_handler
+                if interaction_handler is not None
+                else ConsoleInteractionHandler()
+            )
+            if handler(f"Do you want to overwrite {joined}? (y/N):").upper() != "Y":
+                logger.warning(f"Did not write {joined}")
+                return False
 
-    logger.debug("Writing string to " + joined)
+    logger.debug(f"Writing string to {joined}")
 
     with open(joined, "w") as strfile:
         strfile.write(string)
     return True
 
 
-def update_module_top_level(existing_file: str, new_top_level: str) -> str:
+def update_module_top_level(
+    existing_file: str,
+    new_top_level: str,
+    interaction_handler: Optional[InteractionHandler] = None,
+) -> str:
     """Update top-level VHDL module preserving user-edited sections.
 
     This function reads an existing top-level VHDL file, extracts user-edited
@@ -63,6 +80,11 @@ def update_module_top_level(existing_file: str, new_top_level: str) -> str:
     Args:
         existing_file: Path to existing top-level VHDL file.
         new_top_level: Newly generated top-level VHDL content.
+        interaction_handler: Handler used to ask the user whether to preview
+            the result and whether to proceed with the update.  Defaults to a
+            :class:`~bust.interaction.ConsoleInteractionHandler` so that the
+            function behaves identically to its original form when called
+            without this argument.
 
     Returns:
         Updated VHDL content with user sections preserved.
@@ -72,17 +94,22 @@ def update_module_top_level(existing_file: str, new_top_level: str) -> str:
     """
     # Check if file exists at all...
     if os.path.isfile(existing_file):
+        handler: InteractionHandler = (
+            interaction_handler
+            if interaction_handler is not None
+            else ConsoleInteractionHandler()
+        )
         # Read the file and get the user edited parts...
         string_list = analyze_top_level_file(existing_file)
         string = restore_user_in_top_level(string_list, new_top_level)
         if (
-            input("Preview updated top-level before writing to file? (y/N): ").upper()
+            handler("Preview updated top-level before writing to file? (y/N): ").upper()
             == "Y"
         ):
             print(string)
 
         if (
-            input("Are you sure want to update " + existing_file + "? (Y/n): ").upper()
+            handler(f"Are you sure you want to update {existing_file}? (Y/n): ").upper()
             == "N"
         ):
             raise Exception("Cancelled update. Will keep existing top-level module.")
