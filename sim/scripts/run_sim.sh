@@ -3,11 +3,16 @@
 # run_sim.sh  –  Compile and run a bust VHDL testbench with nvc
 #
 # Usage (inside Docker container, project mounted at /work):
-#   /work/sim/scripts/run_sim.sh <testbench_target>
+#   /work/sim/scripts/run_sim.sh <testbench_target> [--wave[=FILE]]
 #
 # Supported targets:
 #   example_ipbus   Run example/example_ipbus/tb/example_ipbus_ipb_pif_tb.vhd
 #   example_axi     Run example/example_axi/tb/example_axi_axi_pif_tb.vhd
+#
+# Optional flags:
+#   --wave          Generate a waveform file (FST) for GTKWave debugging.
+#                   Output: ${WORK_ROOT}/sim/waves/<target>.fst
+#   --wave=FILE     As above, but write to a specific path.
 #
 # Exit code:
 #   0  – simulation completed; UVVM reported SUCCESS
@@ -23,6 +28,18 @@ TARGET="${1:-example_ipbus}"
 WORK_ROOT="${WORK_ROOT:-/work}"
 NVC_LIBPATH="${NVC_LIBPATH:-/opt/nvc-libs}"
 export NVC_LIBPATH
+
+# ---------------------------------------------------------------------------
+# Parse optional flags (everything after the positional TARGET argument)
+# ---------------------------------------------------------------------------
+WAVE_FILE=""
+for arg in "${@:2}"; do
+    case "${arg}" in
+        --wave=*)  WAVE_FILE="${arg#--wave=}" ;;
+        --wave)    WAVE_FILE="${WORK_ROOT}/sim/waves/${TARGET}.fst" ;;
+        *)         echo "WARNING: unknown argument '${arg}' – ignored" >&2 ;;
+    esac
+done
 
 # Scratch directory for this run's work library – cleaned up on exit
 SIM_WORK_DIR="$(mktemp -d)"
@@ -43,6 +60,9 @@ echo "  bust VHDL simulation"
 echo "  Target      : ${TARGET}"
 echo "  NVC_LIBPATH : ${NVC_LIBPATH}"
 echo "  Work dir    : ${SIM_WORK_DIR}"
+if [[ -n "${WAVE_FILE}" ]]; then
+    echo "  Waveform    : ${WAVE_FILE}"
+fi
 echo "============================================================"
 echo ""
 
@@ -121,12 +141,25 @@ echo ""
 
 SIM_LOG="${SIM_WORK_DIR}/sim.log"
 
+# Build optional wave argument.
+# nvc --wave=FILE.fst writes an FST file (compact binary, readable by GTKWave).
+WAVE_OPT=""
+if [[ -n "${WAVE_FILE}" ]]; then
+    mkdir -p "$(dirname "${WAVE_FILE}")"
+    WAVE_OPT="--wave=${WAVE_FILE}"
+fi
+
 # nvc exits with non-zero if std.env.failure is called (UVVM error path).
 # Capture the log so we can always print it and inspect it.
 set +e
-nvc ${NVC_OPTS} -r "${TOP_ENTITY}" 2>&1 | tee "${SIM_LOG}"
+nvc ${NVC_OPTS} -r ${WAVE_OPT} "${TOP_ENTITY}" 2>&1 | tee "${SIM_LOG}"
 SIM_EXIT=${PIPESTATUS[0]}
 set -e
+
+if [[ -n "${WAVE_FILE}" ]] && [[ -f "${WAVE_FILE}" ]]; then
+    echo ""
+    echo "  Waveform written: ${WAVE_FILE}"
+fi
 
 echo ""
 echo "============================================================"
