@@ -55,7 +55,7 @@ def write_string_to_file(
                 if interaction_handler is not None
                 else ConsoleInteractionHandler()
             )
-            if not handler.confirm_overwrite(joined):
+            if handler(f"Do you want to overwrite {joined}? (y/N):").upper() != "Y":
                 logger.warning(f"Did not write {joined}")
                 return False
 
@@ -102,10 +102,16 @@ def update_module_top_level(
         # Read the file and get the user edited parts...
         string_list = analyze_top_level_file(existing_file)
         string = restore_user_in_top_level(string_list, new_top_level)
-        if handler.confirm_preview():
+        if (
+            handler("Preview updated top-level before writing to file? (y/N): ").upper()
+            == "Y"
+        ):
             print(string)
 
-        if not handler.confirm_update(existing_file):
+        if (
+            handler(f"Are you sure you want to update {existing_file}? (Y/n): ").upper()
+            == "N"
+        ):
             raise Exception("Cancelled update. Will keep existing top-level module.")
         else:
             return string
