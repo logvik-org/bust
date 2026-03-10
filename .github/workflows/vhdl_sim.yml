@@ -17,7 +17,7 @@ on:
 
 jobs:
   simulate:
-    name: nvc - example_ipbus testbench
+    name: nvc - VHDL testbenches
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -73,3 +73,14 @@ jobs:
             -e WORK_ROOT=/work \
             bust-sim:ci \
             /work/sim/scripts/run_sim.sh example_ipbus
+
+      # -----------------------------------------------------------------------
+      # 6. Run the AXI testbench
+      # -----------------------------------------------------------------------
+      - name: Run example_axi simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh example_axi
