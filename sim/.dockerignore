@@ -1,0 +1,5 @@
+# Only `scripts/compile_libs.sh` needs to be in the build context.
+# Exclude everything else to keep the build context small and avoid
+# accidentally invalidating the Docker layer cache.
+Makefile
+README.md
