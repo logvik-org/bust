@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `bust` is an open-source bus tool: a command-line utility that generates VHDL, C/C++/Python headers, LaTeX/PDF documentation, and UVVM-based testbenches from a simple JSON register-map description. It currently supports **AXI4-Lite** (`axi`) and **IPBus** (`ipbus`). The generated VHDL hides all register handling behind VHDL records so the rest of a design references registers by name and access mode.
 
-Maintained by Ola Grøttvik. MIT licensed, hosted at https://github.com/olagrottvik/bust. Target runtimes: Python 3.9, 3.10, 3.11 (3.9 is the mypy baseline). Python 2.7 is not supported.
+Maintained by Ola Grøttvik. MIT licensed, hosted at https://github.com/grottviq/bust. Target runtimes: Python 3.9, 3.10, 3.11 (3.9 is the mypy baseline). Python 2.7 is not supported.
 
 ## Status: major refactor in progress
 
