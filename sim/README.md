@@ -29,9 +29,9 @@ environment.
 ### The nvc simulator
 
 [nvc](https://github.com/nickg/nvc) is a fast, open-source VHDL-2008 simulator.
-The image is based on the official nvc Docker image (`ghcr.io/nickg/nvc:latest`).
-
-The current image was built with **nvc v1.19.3**.
+The image is pinned to the official nvc Docker image **nvc v1.19.3**
+(`ghcr.io/nickg/nvc:1.19.3`, by immutable digest in the Dockerfile).  Upgrade
+deliberately by bumping the tag and digest in `sim/Dockerfile`.
 
 ### Library layers
 
@@ -139,11 +139,18 @@ Docker image with X11 forwarding — no local installation required.
 
 #### One-time X11 setup (Linux)
 
-Docker containers cannot connect to the host X11 server by default.  Run this
-once per desktop session:
+Docker containers cannot connect to the host X11 server by default.  Run one
+of the following once per desktop session:
 
 ```bash
-xhost +local:docker
+# Recommended: allow only your local user (and optionally root) to access X11
+xhost +si:localuser:"$USER"
+# If the container runs as root, you may also need:
+# xhost +si:localuser:root
+
+# Less secure (NOT recommended on multi-user systems):
+# grants access to any local Docker container
+# xhost +local:docker
 ```
 
 #### Combined run-and-view (recommended)
@@ -292,19 +299,6 @@ the GHCR namespace.
 ---
 
 ## Known issues
-
-### IPBus: "Checking that invalid register returns ERR" fails
-
-The last test in `example_ipbus_ipb_pif_tb.vhd` reads an address that maps to
-no register and expects the bus to return an error acknowledgement (`ack=0`,
-`err=1`).  The vip_ipbus BFM's `ipbus_read` procedure internally waits for
-`ack=1`, so it times out when the DUT correctly returns `err=1`.
-
-This is a BFM/DUT alignment issue — the DUT behaviour is correct.  The test
-is deferred; it will be resolved when vip_ipbus is updated to handle error
-acknowledgements, or the testbench is adjusted to use a lower-level read.
-
-All other IPBus tests (12 registers, read/write/reset checks) pass.
 
 ### nvc `--relaxed` position
 
