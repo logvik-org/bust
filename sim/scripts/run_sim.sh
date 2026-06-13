@@ -8,6 +8,7 @@
 # Supported targets:
 #   example_ipbus   Run example/example_ipbus/tb/example_ipbus_ipb_pif_tb.vhd
 #   example_axi     Run example/example_axi/tb/example_axi_axi_pif_tb.vhd
+#   regs_demo       Run hdl/local_bus/tb/regs_demo_regfile_tb.vhd (no UVVM)
 #
 # Optional flags:
 #   --wave          Generate a waveform file (FST) for GTKWave debugging.
@@ -103,9 +104,20 @@ case "${TARGET}" in
         )
         TOP_ENTITY="example_axi_axi_pif_tb"
         ;;
+    regs_demo)
+        # Local-bus register-file prototype. Self-checking plain VHDL-2008,
+        # no UVVM or other shared libraries required.
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/hdl/local_bus/localbus_pkg.vhd"
+            "${WORK_ROOT}/hdl/local_bus/regs_demo_regfile_pkg.vhd"
+            "${WORK_ROOT}/hdl/local_bus/regs_demo_regfile.vhd"
+            "${WORK_ROOT}/hdl/local_bus/tb/regs_demo_regfile_tb.vhd"
+        )
+        TOP_ENTITY="regs_demo_regfile_tb"
+        ;;
     *)
         echo "ERROR: Unknown target '${TARGET}'." >&2
-        echo "Supported targets: example_ipbus, example_axi" >&2
+        echo "Supported targets: example_ipbus, example_axi, regs_demo" >&2
         exit 1
         ;;
 esac
