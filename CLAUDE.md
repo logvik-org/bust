@@ -131,7 +131,7 @@ pip install -r requirements.txt        # install deps (includes dev tools: pytes
 pip install -e ".[dev]"                # editable install with dev extras
 
 python -m bust example/example_axi.json -o /tmp/out   # run the generator
-bust example/example_axi.json --version               # console-script entry point
+bust --version                               # console-script entry point
 
 pytest                                 # run the full test suite
 pytest tests/test_suite.py::Test_Suite::test_pif       # run a single test
