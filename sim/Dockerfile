@@ -11,7 +11,9 @@
 #   docker run --rm -v $(pwd):/work bust-sim sim/scripts/run_sim.sh example_ipbus
 # =============================================================================
 
-FROM ghcr.io/nickg/nvc:latest
+# Pin to an immutable digest (tag 1.19.3) for reproducible, supply-chain-safe
+# builds. Update deliberately by bumping both the tag and the digest.
+FROM ghcr.io/nickg/nvc:1.19.3@sha256:863591811e713ebfac4828092eca8ea9d91851d89288f4ed4665954741c8ee1e
 
 USER root
 
@@ -39,8 +41,11 @@ RUN git clone --depth 1 --branch "${IPBUS_TAG}" \
     https://github.com/ipbus/ipbus-firmware.git /opt/ipbus-firmware
 
 # vip_ipbus – UVVM BFM for the IPBus protocol  https://github.com/olagrottvik/vip_ipbus
-RUN git clone --depth 1 \
-    https://github.com/olagrottvik/vip_ipbus.git /opt/vip_ipbus
+# Pinned to a specific commit so upstream changes cannot silently alter the
+# VHDL executed during simulation. Bump VIP_IPBUS_REF to upgrade deliberately.
+ARG VIP_IPBUS_REF=97fdf12ab7b895ee2b1d6926be120d6805ab9461
+RUN git clone https://github.com/olagrottvik/vip_ipbus.git /opt/vip_ipbus \
+    && git -C /opt/vip_ipbus checkout --detach "${VIP_IPBUS_REF}"
 
 # ---------------------------------------------------------------------------
 # Compile IPBus and vip_ipbus into /opt/nvc-libs/.
