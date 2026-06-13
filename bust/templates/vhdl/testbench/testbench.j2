@@ -106,6 +106,10 @@ begin  -- architecture tb
     log_hdr_large("Checking that invalid register returns ERR");
 
     ipbus_bfm_config.expected_response <= ERR;
+    -- The config is a signal; let the new value propagate before read/write
+    -- copy it into the BFM's constant config parameter (same-delta use would
+    -- pass the stale ACK default and make the ERR check fail).
+    wait for 0 ns;
 
     log_hdr("Check erroneous read");
 
