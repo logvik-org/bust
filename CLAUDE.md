@@ -27,6 +27,8 @@ Maintained by Ola Grøttvik. MIT licensed, hosted at https://github.com/olagrott
 
 The testbench is generated alongside the HDL and must be updated in lockstep with any HDL change. Do not modify HDL without a corresponding testbench update.
 
+The step-1 design and its hand-written prototype live outside the generator: the design rationale is in `docs/refactor/local-bus-hdl.md`, and the verified prototype HDL (local bus package, `regs_demo` register file, and self-checking testbench) is in `hdl/local_bus/`. Run it with `cd sim && make sim-localbus`, or directly with ghdl/nvc (it is plain VHDL-2008, no UVVM). These files are hand-written reference HDL, not generator output, so they are not part of the golden-file test suite.
+
 ## Target architecture decisions
 
 ### Local bus abstraction
