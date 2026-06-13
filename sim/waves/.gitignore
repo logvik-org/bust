@@ -1,0 +1,4 @@
+# Ignore generated FST and VCD waveform files – they are large binary artefacts
+# produced by run_sim.sh --wave and are not tracked in git.
+*.fst
+*.vcd
