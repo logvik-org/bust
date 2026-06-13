@@ -17,6 +17,9 @@ set -euo pipefail
 IPBUS_FW_DIR="${IPBUS_FW_DIR:-/opt/ipbus-firmware}"
 VIP_IPBUS_DIR="${VIP_IPBUS_DIR:-/opt/vip_ipbus}"
 LIB_DIR="${NVC_LIBPATH:-/opt/nvc-libs}"
+# Export so every nvc invocation below can resolve inter-library dependencies
+# (e.g. vip_ipbus -> ipbus) even when this script is run outside the Docker build.
+export NVC_LIBPATH="${LIB_DIR}"
 
 mkdir -p "${LIB_DIR}"
 
