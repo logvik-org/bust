@@ -190,7 +190,7 @@ make wave-axi                 # simulate + capture FST + open GTKWave
 
 ## Conventions
 
-- **Versioning**: managed by `bumpversion` (config in `.bumpversion.cfg`). The version lives in both `pyproject.toml` and `bust/_version.py` (`__VERSION__`) and is bumped together. Do not edit version strings by hand.
+- **Versioning**: managed by `bumpversion` (config in `.bumpversion.cfg`). The version should be kept in sync between `pyproject.toml` and `bust/_version.py` (`__VERSION__`); use bumpversion to update both. Do not edit version strings by hand.
 - **mypy**: configured in `pyproject.toml` with most warnings on but untyped-def enforcement off. Keep `mypy bust` clean.
 - **Docstrings**: Google convention (pydocstyle), ignoring D100/D104/D107; test files are exempt.
 - **black** formats everything except `example/` (generator output, not hand-written).
