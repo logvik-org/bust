@@ -1,5 +1,7 @@
-# Only `scripts/compile_libs.sh` needs to be in the build context.
-# Exclude everything else to keep the build context small and avoid
-# accidentally invalidating the Docker layer cache.
-Makefile
-README.md
+# Keep the build context minimal: only the files the Dockerfile actually needs.
+# Everything is excluded by default so unrelated edits (e.g. scripts/run_sim.sh,
+# Makefile, README.md, waves/) cannot invalidate the Docker layer cache.
+**
+!Dockerfile
+!.dockerignore
+!scripts/compile_libs.sh
