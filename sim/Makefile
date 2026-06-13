@@ -55,8 +55,9 @@ help:
 	@echo "  make gtkwave FILE=<path>  Open any FST/VCD file in GTKWave"
 	@echo "  make clean          Remove the local Docker image"
 	@echo ""
-	@echo "  GTKWave note: on most Linux desktops run 'xhost +local:docker' once"
-	@echo "  before using wave-* or gtkwave targets."
+	@echo "  GTKWave note: before using wave-* or gtkwave targets, grant X11 access"
+	@echo "  to your local user once: 'xhost +si:localuser:\$$USER'"
+	@echo "  (avoid 'xhost +local:docker' on multi-user machines - see sim/README.md)."
 	@echo ""
 
 # ---------------------------------------------------------------------------
