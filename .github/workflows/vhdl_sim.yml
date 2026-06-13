@@ -1,0 +1,77 @@
+name: VHDL Simulation
+
+on:
+  push:
+    branches: ["master", "dev"]
+    paths:
+      # Run whenever simulation infrastructure or VHDL source changes
+      - "sim/**"
+      - "example/**/*.vhd"
+  pull_request:
+    branches: ["**"]
+    paths:
+      - "sim/**"
+      - "example/**/*.vhd"
+  # Allow manual triggering from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  simulate:
+    name: nvc - VHDL testbenches
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Check out the repository
+      # -----------------------------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # 2. Set up Docker Buildx for layer-caching support
+      # -----------------------------------------------------------------------
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # -----------------------------------------------------------------------
+      # 3. Build (or restore from cache) the simulation Docker image.
+      #
+      # The image compiles UVVM, IPBus firmware, and vip_ipbus from source.
+      # Layers are cached in the GitHub Actions cache (type=gha) so the
+      # expensive compilation step only re-runs when the Dockerfile or compile
+      # script changes. Unlike a GHCR registry cache this needs no extra
+      # permissions and works on pull requests from forks.
+      # -----------------------------------------------------------------------
+      - name: Build simulation image
+        uses: docker/build-push-action@v5
+        with:
+          context: sim/
+          load: true         # make the image available to `docker run` below
+          push: false
+          tags: bust-sim:ci
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+
+      # -----------------------------------------------------------------------
+      # 4. Run the IPBus testbench
+      # -----------------------------------------------------------------------
+      - name: Run example_ipbus simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh example_ipbus
+
+      # -----------------------------------------------------------------------
+      # 5. Run the AXI testbench
+      # -----------------------------------------------------------------------
+      - name: Run example_axi simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh example_axi
