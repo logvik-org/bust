@@ -126,14 +126,14 @@ for vhd in "${COMPILE_ORDER[@]}"; do
 done
 
 # ---------------------------------------------------------------------------
-# 2. Elaborate
+# 3. Elaborate
 # ---------------------------------------------------------------------------
 echo ""
 echo "--- Elaborating ${TOP_ENTITY} ---"
 nvc ${NVC_OPTS} -e "${TOP_ENTITY}"
 
 # ---------------------------------------------------------------------------
-# 3. Run simulation and capture output
+# 4. Run simulation and capture output
 # ---------------------------------------------------------------------------
 echo ""
 echo "--- Running simulation ---"
@@ -165,7 +165,7 @@ echo ""
 echo "============================================================"
 
 # ---------------------------------------------------------------------------
-# 4. Result evaluation
+# 5. Result evaluation
 #
 # nvc returns 0 for std.env.stop (normal UVVM exit) and non-zero for
 # std.env.failure (UVVM detected errors).  We additionally grep for UVVM's
