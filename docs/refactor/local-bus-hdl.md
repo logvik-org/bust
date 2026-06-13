@@ -41,7 +41,10 @@ type t_lb_s2m is record
 end record;
 ```
 
-`wait` is a VHDL reserved word, hence `waitreq`.
+`wait` is a VHDL reserved word, hence `waitreq`. `C_ADDR_WIDTH`/`C_DATA_WIDTH`
+above are the parameterizable target form; the prototype in
+`hdl/local_bus/localbus_pkg.vhd` fixes both at 32. Making them configurable is a
+generator-time concern, deferred with the rest of the generator work.
 
 Timing: the wrapper asserts `wen` or `ren` for one cycle with `address` (and
 `wdata` for writes). When `waitreq = '0'` the regfile answers with exactly one

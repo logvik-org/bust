@@ -88,6 +88,8 @@ begin
       check(lb_s2m.ack = expect_ack,
             "read ack=" & std_logic'image(lb_s2m.ack) &
             " at addr 0x" & to_hstring(addr));
+      check(lb_s2m.err = not expect_ack,
+            "read err mismatch at addr 0x" & to_hstring(addr));
       if expect_ack = '1' then
         check(lb_s2m.rdata = expected,
               "read 0x" & to_hstring(lb_s2m.rdata) & " expected 0x" &

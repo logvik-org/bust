@@ -53,6 +53,13 @@ architecture rtl of regs_demo_regfile is
 
 begin
 
+  -- base_ok only compares bits above the module window, so the base must be
+  -- aligned to that window or it would match a whole 2**C_MODULE_ADDR_WIDTH span.
+  assert (not G_CHECK_BASE_ADDRESS)
+      or (G_BASE_ADDRESS(C_MODULE_ADDR_WIDTH-1 downto 0) = 0)
+    report "G_BASE_ADDRESS must be aligned to 2**C_MODULE_ADDR_WIDTH bytes"
+    severity failure;
+
   to_hw.ctrl.enable  <= ctrl_enable;
   to_hw.ctrl.mode    <= ctrl_mode;
   to_hw.cmd.trigger  <= cmd_trigger;
