@@ -206,6 +206,45 @@ nvc generates FST by default when `--wave=FILE.fst` is used.  FST is a
 compressed binary format that is significantly smaller and faster to load than
 VCD.  GTKWave reads both.  Stick with FST unless you need VCD for another tool.
 
+### 3b. Waveform debugging with Surfer (experimental)
+
+[Surfer](https://surfer-project.org) is a modern open-source waveform viewer
+being evaluated as an alternative to GTKWave.  It reads the same FST/VCD files
+nvc already produces, so it slots into the existing flow without changing how
+simulations run.
+
+Unlike GTKWave, Surfer is not distributed as a maintained Docker image, so the
+targets below run a **locally-installed `surfer` binary** directly on the host.
+Install it from [surfer-project.org](https://surfer-project.org) (prebuilt
+binaries or `cargo install surfer`).  If the binary is not on your `PATH`,
+point the targets at it with `SURFER=<path>`.
+
+#### Combined run-and-view
+
+```bash
+make wave-surfer-ipbus    # simulate example_ipbus, save FST, open Surfer
+make wave-surfer-axi      # simulate example_axi,   save FST, open Surfer
+```
+
+#### Open an existing FST/VCD file
+
+```bash
+make surfer FILE=sim/waves/example_axi.fst
+```
+
+Or invoke the binary directly:
+
+```bash
+surfer sim/waves/example_axi.fst
+```
+
+Surfer also ships a browser build at
+[app.surfer-project.org](https://app.surfer-project.org) where an FST/VCD file
+can be loaded without any local install, useful for a quick look.
+
+> This is an exploration target.  GTKWave remains the default; once we decide
+> whether Surfer is a keeper we will consolidate.
+
 ### 4. Clean up
 
 ```bash

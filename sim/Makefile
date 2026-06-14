@@ -24,6 +24,12 @@ FULL_IMAGE     := $(IMAGE_NAME):$(IMAGE_TAG)
 GTKWAVE_IMAGE  := hdlc/gtkwave
 WAVES_DIR      := $(REPO_ROOT)/sim/waves
 
+# Surfer (https://surfer-project.org) is an open-source waveform viewer being
+# evaluated as an alternative to GTKWave. Unlike GTKWave there is no canonical
+# Docker image, so the wave-surfer-* targets invoke a locally-installed binary.
+# Override on the command line if surfer is not on PATH: make SURFER=/path/to/surfer ...
+SURFER         := surfer
+
 # Docker run flags shared by all simulation targets
 DOCKER_RUN := docker run --rm \
     -v "$(REPO_ROOT):/work" \
@@ -39,7 +45,8 @@ GTKWAVE_RUN := docker run --rm \
     -v "$(WAVES_DIR):/waves:ro" \
     $(GTKWAVE_IMAGE)
 
-.PHONY: help build rebuild sim-ipbus sim-axi wave-ipbus wave-axi gtkwave clean
+.PHONY: help build rebuild sim-ipbus sim-axi wave-ipbus wave-axi gtkwave \
+        wave-surfer-ipbus wave-surfer-axi surfer clean
 
 # Default target
 help:
@@ -53,11 +60,20 @@ help:
 	@echo "  make wave-ipbus     Run example_ipbus + capture FST + open GTKWave"
 	@echo "  make wave-axi       Run example_axi  + capture FST + open GTKWave"
 	@echo "  make gtkwave FILE=<path>  Open any FST/VCD file in GTKWave"
+	@echo ""
+	@echo "  Surfer (experimental, https://surfer-project.org):"
+	@echo "  make wave-surfer-ipbus  Run example_ipbus + capture FST + open Surfer"
+	@echo "  make wave-surfer-axi    Run example_axi  + capture FST + open Surfer"
+	@echo "  make surfer FILE=<path>   Open any FST/VCD file in Surfer"
+	@echo ""
 	@echo "  make clean          Remove the local Docker image"
 	@echo ""
 	@echo "  GTKWave note: before using wave-* or gtkwave targets, grant X11 access"
 	@echo "  to your local user once: 'xhost +si:localuser:\$$USER'"
 	@echo "  (avoid 'xhost +local:docker' on multi-user machines - see sim/README.md)."
+	@echo ""
+	@echo "  Surfer note: surfer-* targets run a locally-installed 'surfer' binary."
+	@echo "  Install from https://surfer-project.org or override with SURFER=<path>."
 	@echo ""
 
 # ---------------------------------------------------------------------------
@@ -117,8 +133,38 @@ gtkwave:
 	    gtkwave "/waves/$(notdir $(FILE))"
 
 # ---------------------------------------------------------------------------
+# Surfer waveform targets (experimental alternative to GTKWave)
+#
+# Surfer is a native GUI binary, so unlike the GTKWave targets these run it
+# directly on the host rather than inside Docker. The simulation itself still
+# runs in Docker and writes the same FST files.
+# ---------------------------------------------------------------------------
+wave-surfer-ipbus: _require-image _require-surfer
+	@mkdir -p "$(WAVES_DIR)"
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh example_ipbus --wave=/work/sim/waves/example_ipbus.fst
+	$(SURFER) "$(WAVES_DIR)/example_ipbus.fst"
+
+wave-surfer-axi: _require-image _require-surfer
+	@mkdir -p "$(WAVES_DIR)"
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh example_axi --wave=/work/sim/waves/example_axi.fst
+	$(SURFER) "$(WAVES_DIR)/example_axi.fst"
+
+# Open any FST or VCD file with Surfer.
+# Usage: make surfer FILE=sim/waves/example_axi.fst
+surfer: _require-surfer
+	@[ -n "$(FILE)" ] || { echo "Usage: make surfer FILE=<path/to/waveform.fst>"; exit 1; }
+	$(SURFER) "$(FILE)"
+
+# ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+_require-surfer:
+	@command -v "$(SURFER)" >/dev/null 2>&1 || { \
+	    echo "Surfer binary '$(SURFER)' not found on PATH."; \
+	    echo "Install from https://surfer-project.org or override with SURFER=<path>."; \
+	    exit 1; \
+	}
+
 _require-image:
 	@if ! docker image inspect "$(FULL_IMAGE)" >/dev/null 2>&1; then \
 	    echo "Image $(FULL_IMAGE) not found. Run 'make build' first."; \
