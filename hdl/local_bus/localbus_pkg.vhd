@@ -1,7 +1,25 @@
 -- Protocol-agnostic local bus interface for register-map access.
+--
 -- A minimal single-beat transaction: address, write data, read data, write
--- enable, read enable, acknowledge, error, and wait/stall. All supported bus
+-- enable, read enable, plus an acknowledge / error response. All supported bus
 -- protocols (AXI4-Lite, IPBus, ...) become thin wrappers around this.
+--
+-- Contract (single outstanding transaction, "hold until acknowledged"):
+--   * The master asserts exactly one of wen / ren together with a valid
+--     address (and wdata for writes) and holds the request stable until it
+--     observes a response.
+--   * The regfile completes the beat by pulsing exactly one of ack or err for
+--     one clock cycle. ack and err are mutually exclusive.
+--   * Variable-latency targets (e.g. a register backed by RAM) simply assert
+--     the response later. There is no separate stall/wait signal: withholding
+--     ack/err is the stall mechanism. This covers IPBus stall (delayed ack)
+--     and AXI back-pressure (the wrapper delays its response channel) without
+--     leaking protocol detail into the regfile. A dedicated stall wire would
+--     only be needed for a pipelined / multi-outstanding bus, which is out of
+--     scope for this single-beat abstraction.
+--
+-- address/data are fixed at 32 bits in this prototype. Parameterizing them is
+-- a generator-time concern, deferred with the rest of the generator work.
 library ieee;
 use ieee.std_logic_1164.all;
 
@@ -15,10 +33,9 @@ package localbus_pkg is
   end record;
 
   type t_lb_s2m is record
-    rdata   : std_logic_vector(31 downto 0);
-    ack     : std_logic;
-    err     : std_logic;
-    waitreq : std_logic;
+    rdata : std_logic_vector(31 downto 0);
+    ack   : std_logic;
+    err   : std_logic;
   end record;
 
   constant C_LB_M2S_IDLE : t_lb_m2s := (
@@ -28,9 +45,8 @@ package localbus_pkg is
     ren     => '0');
 
   constant C_LB_S2M_IDLE : t_lb_s2m := (
-    rdata   => (others => '0'),
-    ack     => '0',
-    err     => '0',
-    waitreq => '0');
+    rdata => (others => '0'),
+    ack   => '0',
+    err   => '0');
 
 end package localbus_pkg;
