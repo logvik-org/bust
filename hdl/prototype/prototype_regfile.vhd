@@ -1,8 +1,8 @@
--- Protocol-agnostic register file for the regs_demo prototype module.
+-- Protocol-agnostic register file for the prototype module.
 -- Speaks only the local bus; protocol wrappers (AXI, IPBus) instantiate it.
 -- Exercises the core access-mode matrix: sw {rw,ro,wo,na} x hw {r,w,rw,na}
 -- plus the we/wel/hwset/hwclr modifiers. Registers/fields use generic names
--- (reg0..reg4, field0..); see regs_demo_regfile_pkg.vhd for the access map.
+-- (reg0..reg4, field0..); see prototype_regfile_pkg.vhd for the access map.
 --
 -- Two clocked processes split the bus side: p_write owns register storage
 -- (software writes and all hardware-driven updates, since both modify state)
@@ -13,9 +13,9 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.localbus_pkg.all;
-use work.regs_demo_regfile_pkg.all;
+use work.prototype_regfile_pkg.all;
 
-entity regs_demo_regfile is
+entity prototype_regfile is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := x"00000000";
     G_CHECK_BASE_ADDRESS : boolean               := true;
@@ -28,14 +28,14 @@ entity regs_demo_regfile is
     reset   : in  std_logic;
     lb_m2s  : in  t_lb_m2s;
     lb_s2m  : out t_lb_s2m;
-    to_hw   : out t_regs_demo_to_hw;
-    from_hw : in  t_regs_demo_from_hw
+    to_hw   : out t_prototype_to_hw;
+    from_hw : in  t_prototype_from_hw
   );
-end entity regs_demo_regfile;
+end entity prototype_regfile;
 
-architecture rtl of regs_demo_regfile is
+architecture rtl of prototype_regfile is
 
-  signal regs : t_regs_demo_regs := C_REGS_DEMO_REGS_RESET;
+  signal regs : t_prototype_regs := C_PROTOTYPE_REGS_RESET;
 
   signal rst    : std_logic;            -- reset normalized to active high
   signal rdata  : std_logic_vector(31 downto 0);
@@ -146,7 +146,7 @@ begin
       end if;
 
       if rst = '1' then
-        regs   <= C_REGS_DEMO_REGS_RESET;
+        regs   <= C_PROTOTYPE_REGS_RESET;
         wr_ack <= '0';
         wr_err <= '0';
       end if;

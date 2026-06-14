@@ -1,9 +1,9 @@
--- UVVM testbench for regs_demo_regfile.
+-- UVVM testbench for prototype_regfile.
 -- Drives the local bus through the localbus UVVM BFM and exercises the core
 -- access-mode matrix, the we/wel/hwset/hwclr modifiers, the documented
 -- hardware/software write precedence, and the err response for both unmapped
 -- offsets and wrong-base-address transactions. Registers/fields use generic
--- names (reg0..reg4, field0..); see regs_demo_regfile_pkg.vhd for the map.
+-- names (reg0..reg4, field0..); see prototype_regfile_pkg.vhd for the map.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -12,13 +12,13 @@ library uvvm_util;
 context uvvm_util.uvvm_util_context;
 
 use work.localbus_pkg.all;
-use work.regs_demo_regfile_pkg.all;
+use work.prototype_regfile_pkg.all;
 use work.localbus_bfm_pkg.all;
 
-entity regs_demo_regfile_tb is
-end entity regs_demo_regfile_tb;
+entity prototype_regfile_tb is
+end entity prototype_regfile_tb;
 
-architecture tb of regs_demo_regfile_tb is
+architecture tb of prototype_regfile_tb is
 
   constant C_SCOPE  : string := C_TB_SCOPE_DEFAULT;
   constant C_PERIOD : time   := 10 ns;
@@ -29,8 +29,8 @@ architecture tb of regs_demo_regfile_tb is
 
   signal lb_m2s  : t_lb_m2s := C_LB_M2S_IDLE;
   signal lb_s2m  : t_lb_s2m;
-  signal to_hw   : t_regs_demo_to_hw;
-  signal from_hw : t_regs_demo_from_hw := (
+  signal to_hw   : t_prototype_to_hw;
+  signal from_hw : t_prototype_from_hw := (
     reg1 => (field0 => (value => (others => '0'), we => '0'),
              field1 => '0',
              field2 => (value => '0', wel => '1')),
@@ -41,7 +41,7 @@ begin
 
   clk <= not clk after C_PERIOD/2 when running else '0';
 
-  dut : entity work.regs_demo_regfile
+  dut : entity work.prototype_regfile
     generic map (
       G_BASE_ADDRESS       => x"00000000",
       G_CHECK_BASE_ADDRESS => true,
@@ -56,8 +56,8 @@ begin
 
   p_main : process is
   begin
-    set_log_file_name("regs_demo_regfile_log.txt");
-    set_alert_file_name("regs_demo_regfile_alert.txt");
+    set_log_file_name("prototype_regfile_log.txt");
+    set_alert_file_name("prototype_regfile_alert.txt");
 
     wait for 3*C_PERIOD;
     wait until falling_edge(clk);
