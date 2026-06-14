@@ -1,23 +1,26 @@
--- Self-checking testbench for regs_demo_regfile.
--- Drives the local bus through a tiny inline BFM and exercises the core
--- access-mode matrix. Plain VHDL-2008 so it runs on bare nvc (no UVVM).
+-- UVVM testbench for regs_demo_regfile.
+-- Drives the local bus through the localbus UVVM BFM and exercises the core
+-- access-mode matrix, the we/wel/hwset/hwclr modifiers, the documented
+-- hardware/software write precedence, and the err response for both unmapped
+-- offsets and wrong-base-address transactions.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library std;
-use std.env.all;
+library uvvm_util;
+context uvvm_util.uvvm_util_context;
 
-library work;
 use work.localbus_pkg.all;
 use work.regs_demo_regfile_pkg.all;
+use work.localbus_bfm_pkg.all;
 
 entity regs_demo_regfile_tb is
 end entity regs_demo_regfile_tb;
 
 architecture tb of regs_demo_regfile_tb is
 
-  constant C_PERIOD : time := 10 ns;
+  constant C_SCOPE  : string := C_TB_SCOPE_DEFAULT;
+  constant C_PERIOD : time   := 10 ns;
 
   signal clk     : std_logic := '0';
   signal reset   : std_logic := '1';
@@ -27,10 +30,11 @@ architecture tb of regs_demo_regfile_tb is
   signal lb_s2m  : t_lb_s2m;
   signal to_hw   : t_regs_demo_to_hw;
   signal from_hw : t_regs_demo_from_hw := (
-    status => (state => (others => '0'), state_we => '0', flag => '0',
-               alarm => '0', alarm_wel => '1'),
-    hwctrl => (level => (others => '0'), level_we => '0',
-               gate_set => '0', gate_clr => '0'));
+    status => (state => (value => (others => '0'), we => '0'),
+               flag  => '0',
+               alarm => (value => '0', wel => '1')),
+    hwctrl => (level => (value => (others => '0'), we => '0'),
+               gate  => (set => '0', clr => '0')));
 
 begin
 
@@ -39,7 +43,8 @@ begin
   dut : entity work.regs_demo_regfile
     generic map (
       G_BASE_ADDRESS       => x"00000000",
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true,
+      G_RESET_ACTIVE_LOW   => false)
     port map (
       clk     => clk,
       reset   => reset,
@@ -48,136 +53,94 @@ begin
       to_hw   => to_hw,
       from_hw => from_hw);
 
-  stim : process is
-    variable errors : natural := 0;
-
-    procedure check(cond : boolean; msg : string) is
-    begin
-      if not cond then
-        errors := errors + 1;
-        report "CHECK FAILED: " & msg severity error;
-      end if;
-    end procedure;
-
-    procedure lb_write(addr : std_logic_vector(31 downto 0);
-                       data : std_logic_vector(31 downto 0);
-                       expect_ack : std_logic := '1') is
-    begin
-      wait until falling_edge(clk);
-      lb_m2s.address <= addr;
-      lb_m2s.wdata   <= data;
-      lb_m2s.wen     <= '1';
-      wait until falling_edge(clk);
-      lb_m2s.wen <= '0';
-      check(lb_s2m.ack = expect_ack,
-            "write ack=" & std_logic'image(lb_s2m.ack) &
-            " at addr 0x" & to_hstring(addr));
-      check(lb_s2m.err = not expect_ack,
-            "write err mismatch at addr 0x" & to_hstring(addr));
-    end procedure;
-
-    procedure lb_read(addr     : std_logic_vector(31 downto 0);
-                      expected : std_logic_vector(31 downto 0);
-                      expect_ack : std_logic := '1') is
-    begin
-      wait until falling_edge(clk);
-      lb_m2s.address <= addr;
-      lb_m2s.ren     <= '1';
-      wait until falling_edge(clk);
-      lb_m2s.ren <= '0';
-      check(lb_s2m.ack = expect_ack,
-            "read ack=" & std_logic'image(lb_s2m.ack) &
-            " at addr 0x" & to_hstring(addr));
-      check(lb_s2m.err = not expect_ack,
-            "read err mismatch at addr 0x" & to_hstring(addr));
-      if expect_ack = '1' then
-        check(lb_s2m.rdata = expected,
-              "read 0x" & to_hstring(lb_s2m.rdata) & " expected 0x" &
-              to_hstring(expected) & " at addr 0x" & to_hstring(addr));
-      end if;
-    end procedure;
+  p_main : process is
   begin
+    set_log_file_name("regs_demo_regfile_log.txt");
+    set_alert_file_name("regs_demo_regfile_alert.txt");
+
     wait for 3*C_PERIOD;
     wait until falling_edge(clk);
     reset <= '0';
 
-    -- sw rw: write and read back CTRL (enable=1, mode="10" -> 0x5)
-    lb_write(C_ADDR_CTRL, x"00000005");
-    lb_read(C_ADDR_CTRL, x"00000005");
-    check(to_hw.ctrl.enable = '1', "ctrl.enable not exposed to hw");
-    check(to_hw.ctrl.mode = "10", "ctrl.mode not exposed to hw");
+    log(ID_LOG_HDR, "CTRL: sw rw + hw r", C_SCOPE);
+    localbus_write(C_ADDR_CTRL, x"00000005", "enable=1, mode=10", clk, lb_m2s, lb_s2m);
+    localbus_check(C_ADDR_CTRL, x"00000005", "CTRL reads back", clk, lb_m2s, lb_s2m);
+    check_value(to_hw.ctrl.enable, '1', error, "ctrl.enable exposed to hw", C_SCOPE);
+    check_value(to_hw.ctrl.mode, "10", error, "ctrl.mode exposed to hw", C_SCOPE);
 
-    -- sw rw, hw na: SCRATCH round-trips
-    lb_write(C_ADDR_SCRATCH, x"000000A5");
-    lb_read(C_ADDR_SCRATCH, x"000000A5");
+    log(ID_LOG_HDR, "SCRATCH: sw rw + hw na round-trip", C_SCOPE);
+    localbus_write(C_ADDR_SCRATCH, x"000000A5", "scratch=0xA5", clk, lb_m2s, lb_s2m);
+    localbus_check(C_ADDR_SCRATCH, x"000000A5", "scratch reads back", clk, lb_m2s, lb_s2m);
 
-    -- sw wo: TRIGGER drives hw but reads back 0
-    lb_write(C_ADDR_CMD, x"00000001");
-    check(to_hw.cmd.trigger = '1', "cmd.trigger not exposed to hw");
-    lb_read(C_ADDR_CMD, x"00000000");
+    log(ID_LOG_HDR, "CMD: sw wo drives hw but reads 0", C_SCOPE);
+    localbus_write(C_ADDR_CMD, x"00000001", "trigger=1", clk, lb_m2s, lb_s2m);
+    check_value(to_hw.cmd.trigger, '1', error, "cmd.trigger exposed to hw", C_SCOPE);
+    localbus_check(C_ADDR_CMD, x"00000000", "wo reads back 0", clk, lb_m2s, lb_s2m);
 
-    -- sw ro fields are write-acked but unchanged; hardware drives them.
+    log(ID_LOG_HDR, "STATUS: sw ro, hardware-driven (we / continuous / wel)", C_SCOPE);
     wait until falling_edge(clk);
-    from_hw.status.state     <= "1011";
-    from_hw.status.state_we  <= '1';      -- hw w + we: capture this cycle
-    from_hw.status.flag      <= '1';      -- hw w continuous
-    from_hw.status.alarm     <= '1';
-    from_hw.status.alarm_wel <= '0';      -- active-low enable asserted
+    from_hw.status.state.value <= "1011";
+    from_hw.status.state.we    <= '1';      -- capture this cycle
+    from_hw.status.flag        <= '1';      -- continuous
+    from_hw.status.alarm.value <= '1';
+    from_hw.status.alarm.wel   <= '0';      -- active-low enable asserted
     wait until falling_edge(clk);
-    from_hw.status.state_we  <= '0';
-    from_hw.status.alarm_wel <= '1';      -- disable further alarm writes
+    from_hw.status.state.we    <= '0';
+    from_hw.status.alarm.wel   <= '1';      -- stop further alarm writes
     -- STATUS = alarm(5)|flag(4)|state(3:0) = 1|1|1011 = 0x3B
-    lb_read(C_ADDR_STATUS, x"0000003B");
+    localbus_check(C_ADDR_STATUS, x"0000003B", "status reflects hw", clk, lb_m2s, lb_s2m);
 
-    -- we gating: with state_we=0 a new hw value must NOT land
+    log(ID_LOG_HDR, "we / wel gating: held values do not land", C_SCOPE);
     wait until falling_edge(clk);
-    from_hw.status.state <= "0000";
-    lb_read(C_ADDR_STATUS, x"0000003B");
-    -- wel gating: alarm_wel=1 holds alarm despite alarm=0
+    from_hw.status.state.value <= "0000";   -- we=0, must not land
+    localbus_check(C_ADDR_STATUS, x"0000003B", "state held (we=0)", clk, lb_m2s, lb_s2m);
     wait until falling_edge(clk);
-    from_hw.status.alarm <= '0';
-    lb_read(C_ADDR_STATUS, x"0000003B");
+    from_hw.status.alarm.value <= '0';      -- wel=1, must not land
+    localbus_check(C_ADDR_STATUS, x"0000003B", "alarm held (wel=1)", clk, lb_m2s, lb_s2m);
 
-    -- sw write to a read-only register acks but has no effect
-    lb_write(C_ADDR_STATUS, x"FFFFFFFF");
-    lb_read(C_ADDR_STATUS, x"0000003B");
+    log(ID_LOG_HDR, "sw write to read-only STATUS acks, no effect", C_SCOPE);
+    localbus_write(C_ADDR_STATUS, x"FFFFFFFF", "write ro acks", clk, lb_m2s, lb_s2m);
+    localbus_check(C_ADDR_STATUS, x"0000003B", "status unchanged", clk, lb_m2s, lb_s2m);
 
-    -- HWCTRL: sw write first
-    lb_write(C_ADDR_HWCTRL, x"00000105");      -- level=5, gate=1
-    lb_read(C_ADDR_HWCTRL, x"00000105");
-    -- hw we overrides level
+    log(ID_LOG_HDR, "HWCTRL: sw write, then hw we override on LEVEL", C_SCOPE);
+    localbus_write(C_ADDR_HWCTRL, x"00000105", "level=5, gate=1", clk, lb_m2s, lb_s2m);
+    localbus_check(C_ADDR_HWCTRL, x"00000105", "hwctrl reads back", clk, lb_m2s, lb_s2m);
+    check_value(to_hw.hwctrl.level, "0101", error, "level exposed to hw", C_SCOPE);
+    check_value(to_hw.hwctrl.gate, '1', error, "gate exposed to hw", C_SCOPE);
     wait until falling_edge(clk);
-    from_hw.hwctrl.level    <= "1010";
-    from_hw.hwctrl.level_we <= '1';
+    from_hw.hwctrl.level.value <= "1010";
+    from_hw.hwctrl.level.we    <= '1';
     wait until falling_edge(clk);
-    from_hw.hwctrl.level_we <= '0';
-    lb_read(C_ADDR_HWCTRL, x"0000010A");       -- level=0xA, gate still 1
-    -- hwclr beats hwset in the same cycle -> gate clears
-    wait until falling_edge(clk);
-    from_hw.hwctrl.gate_set <= '1';
-    from_hw.hwctrl.gate_clr <= '1';
-    wait until falling_edge(clk);
-    from_hw.hwctrl.gate_set <= '0';
-    from_hw.hwctrl.gate_clr <= '0';
-    lb_read(C_ADDR_HWCTRL, x"0000000A");       -- gate=0, level=0xA
+    from_hw.hwctrl.level.we    <= '0';
+    localbus_check(C_ADDR_HWCTRL, x"0000010A", "hw we overrode level", clk, lb_m2s, lb_s2m);
 
-    -- unmapped offset within base -> err
-    lb_read(x"00000014", x"00000000", expect_ack => '0');
-    lb_write(x"00000014", x"00000000", expect_ack => '0');
-    -- wrong base address -> err
-    lb_read(x"10000000", x"00000000", expect_ack => '0');
-
+    log(ID_LOG_HDR, "HWCTRL.GATE: hwset, then hwclr beats hwset", C_SCOPE);
     wait until falling_edge(clk);
-    if errors = 0 then
-      report "REGS_DEMO REGFILE TB PASSED" severity note;
-    else
-      report "REGS_DEMO REGFILE TB FAILED with " & integer'image(errors) &
-             " error(s)" severity failure;
-    end if;
+    from_hw.hwctrl.gate.set <= '1';
+    wait until falling_edge(clk);
+    from_hw.hwctrl.gate.set <= '0';
+    localbus_check(C_ADDR_HWCTRL, x"0000010A", "hwset set gate", clk, lb_m2s, lb_s2m);
+    wait until falling_edge(clk);
+    from_hw.hwctrl.gate.set <= '1';
+    from_hw.hwctrl.gate.clr <= '1';         -- same cycle: clr wins
+    wait until falling_edge(clk);
+    from_hw.hwctrl.gate.set <= '0';
+    from_hw.hwctrl.gate.clr <= '0';
+    localbus_check(C_ADDR_HWCTRL, x"0000000A", "hwclr beat hwset", clk, lb_m2s, lb_s2m);
+
+    log(ID_LOG_HDR, "err: unmapped offset and wrong base address", C_SCOPE);
+    localbus_check_err(x"00000014", false, "read unmapped offset", clk, lb_m2s, lb_s2m);
+    localbus_check_err(x"00000014", true,  "write unmapped offset", clk, lb_m2s, lb_s2m);
+    localbus_check_err(x"10000000", false, "read wrong base", clk, lb_m2s, lb_s2m);
+    localbus_check_err(x"10000000", true,  "write wrong base", clk, lb_m2s, lb_s2m);
+
+    wait for 10*C_PERIOD;
+    report_alert_counters(FINAL);
+    log(ID_LOG_HDR, "SIMULATION COMPLETED", C_SCOPE);
     running <= false;
     wait for C_PERIOD;
-    stop;
+    std.env.stop;
     wait;
-  end process stim;
+  end process p_main;
 
 end architecture tb;

@@ -198,3 +198,12 @@ flycheck_*.el
 
 # VS Code
 .vscode
+
+# VHDL simulation artifacts (UVVM logs/alerts, captured waveforms)
+UVVM_*.txt
+*_Log.txt
+*_Alert.txt
+*_log.txt
+*_alert.txt
+sim/waves/*.fst
+sim/waves/*.vcd
