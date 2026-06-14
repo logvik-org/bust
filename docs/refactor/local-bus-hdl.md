@@ -27,18 +27,24 @@ core promoted to a real entity.
 ## Local bus contract
 
 ```vhdl
+constant C_LB_ADDR_WIDTH : natural := 32;
+constant C_LB_DATA_WIDTH : natural := 32;
+
 type t_lb_m2s is record
-  address : std_logic_vector(31 downto 0);
-  wdata   : std_logic_vector(31 downto 0);
+  address : std_logic_vector(C_LB_ADDR_WIDTH - 1 downto 0);
+  wdata   : std_logic_vector(C_LB_DATA_WIDTH - 1 downto 0);
   wen     : std_logic;     -- write request
   ren     : std_logic;     -- read request
 end record;
 type t_lb_s2m is record
-  rdata   : std_logic_vector(31 downto 0);
+  rdata   : std_logic_vector(C_LB_DATA_WIDTH - 1 downto 0);
   ack     : std_logic;     -- transaction complete (1 cycle)
   err     : std_logic;     -- invalid address / error, mutually exclusive with ack
 end record;
 ```
+
+`C_LB_ADDR_WIDTH`/`C_LB_DATA_WIDTH` are fixed at 32 in the prototype; promoting
+them to generics is part of the deferred generator work.
 
 Single outstanding transaction, "hold until acknowledged":
 
@@ -72,11 +78,24 @@ generator work.
 
 ### Addressing
 
-The local bus carries a **byte address**, the common denominator of the
-protocols in scope: AXI4-Lite is byte-addressed natively, and the IPBus wrapper
-converts its word address to a byte address before driving the bus. The regfile
-then decodes word-aligned register offsets (`0x00`, `0x04`, ...) from a single
-addressing scheme rather than carrying a per-protocol convention.
+The local bus carries a **byte address** so the regfile decode stays
+protocol-agnostic: AXI4-Lite is byte-addressed natively, and the IPBus wrapper
+converts its native word address to a byte address before driving the bus. This
+is an internal-bus convention only, not a restriction on the register map.
+
+bust must support whatever addressing scheme the register map declares, with
+**byte-addressing and word-addressing** being the two common cases, and the
+map need not be contiguous: a user can leave unused address ranges between
+registers (sparse maps, reserved windows, register blocks aligned to a stride).
+The generator translates the declared scheme and offsets into the byte offsets
+the regfile decodes, so a word-addressed map and a byte-addressed map both
+reduce to byte-offset compares internally. Because decode compares the full
+register offset (not a packed index), gaps between registers cost nothing and
+an access to an unused offset inside the module window returns `err`.
+
+The `regs_demo` prototype uses byte-addressing with contiguous word-aligned
+offsets (`0x00`, `0x04`, ...) as one concrete instance of that scheme; it is the
+demo's choice, not a constraint of the local bus.
 
 ## Base address
 

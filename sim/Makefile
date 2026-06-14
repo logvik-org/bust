@@ -39,7 +39,7 @@ GTKWAVE_RUN := docker run --rm \
     -v "$(WAVES_DIR):/waves:ro" \
     $(GTKWAVE_IMAGE)
 
-.PHONY: help build rebuild sim-ipbus sim-axi sim-localbus wave-ipbus wave-axi gtkwave clean
+.PHONY: help build rebuild sim-ipbus sim-axi sim-localbus wave-ipbus wave-axi wave-localbus gtkwave clean
 
 # Default target
 help:
@@ -53,6 +53,7 @@ help:
 	@echo "  make sim-localbus   Run the regs_demo local-bus regfile testbench"
 	@echo "  make wave-ipbus     Run example_ipbus + capture FST + open GTKWave"
 	@echo "  make wave-axi       Run example_axi  + capture FST + open GTKWave"
+	@echo "  make wave-localbus  Run regs_demo     + capture FST + open GTKWave"
 	@echo "  make gtkwave FILE=<path>  Open any FST/VCD file in GTKWave"
 	@echo "  make clean          Remove the local Docker image"
 	@echo ""
@@ -108,6 +109,11 @@ wave-axi: _require-image
 	@mkdir -p "$(WAVES_DIR)"
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh example_axi --wave=/work/sim/waves/example_axi.fst
 	$(GTKWAVE_RUN) gtkwave /waves/example_axi.fst
+
+wave-localbus: _require-image
+	@mkdir -p "$(WAVES_DIR)"
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh regs_demo --wave=/work/sim/waves/regs_demo.fst
+	$(GTKWAVE_RUN) gtkwave /waves/regs_demo.fst
 
 # Open any FST or VCD file with GTKWave.
 # Usage: make gtkwave FILE=sim/waves/example_axi.fst
