@@ -18,22 +18,27 @@
 --     only be needed for a pipelined / multi-outstanding bus, which is out of
 --     scope for this single-beat abstraction.
 --
--- address/data are fixed at 32 bits in this prototype. Parameterizing them is
--- a generator-time concern, deferred with the rest of the generator work.
+-- Address/data widths are named constants rather than literals so the record
+-- definitions read by intent. They are fixed at 32 bits in this prototype;
+-- turning them into generics is a generator-time concern, deferred with the
+-- rest of the generator work.
 library ieee;
 use ieee.std_logic_1164.all;
 
 package localbus_pkg is
 
+  constant C_LB_ADDR_WIDTH : natural := 32;
+  constant C_LB_DATA_WIDTH : natural := 32;
+
   type t_lb_m2s is record
-    address : std_logic_vector(31 downto 0);
-    wdata   : std_logic_vector(31 downto 0);
+    address : std_logic_vector(C_LB_ADDR_WIDTH - 1 downto 0);
+    wdata   : std_logic_vector(C_LB_DATA_WIDTH - 1 downto 0);
     wen     : std_logic;
     ren     : std_logic;
   end record;
 
   type t_lb_s2m is record
-    rdata : std_logic_vector(31 downto 0);
+    rdata : std_logic_vector(C_LB_DATA_WIDTH - 1 downto 0);
     ack   : std_logic;
     err   : std_logic;
   end record;
