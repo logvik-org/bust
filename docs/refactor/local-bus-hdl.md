@@ -124,7 +124,7 @@ attached. Three record families, all nested register -> field:
 - `t_<module>_<reg>_to_hw` (regfile -> hardware): `hw: r`/`rw` field values.
 - `t_<module>_<reg>_from_hw` (hardware -> regfile): per-field input records that
   pair each value with its modifier strobes, so a field's enable or set/clear
-  lives next to its value: `from_hw.hwctrl.level.we`, `from_hw.hwctrl.gate.set`.
+  lives next to its value: `from_hw.reg4.field0.we`, `from_hw.reg4.field1.set`.
 
 The register-definition package also carries the field documentation (name,
 bit range, access modes, meaning) as comments next to each record member, so a
@@ -214,19 +214,21 @@ stock UVVM AXI/IPBus VIP.
 
 ## Prototype demo module
 
-`regs_demo` exercises the full core-access matrix:
+`regs_demo` exercises the full core-access matrix. It uses deliberately generic
+register/field names (`reg0..reg4`, `field0..`) so the structure and naming
+scheme can be reviewed without semantic distraction:
 
-| Register | Offset | Field    | Bits  | `sw` | `hw` | modifiers      |
-| -------- | ------ | -------- | ----- | ---- | ---- | -------------- |
-| CTRL     | 0x00   | ENABLE   | 0     | rw   | r    |                |
-| CTRL     | 0x00   | MODE     | 2..1  | rw   | r    |                |
-| STATUS   | 0x04   | STATE    | 3..0  | ro   | w    | we             |
-| STATUS   | 0x04   | FLAG     | 4     | ro   | w    | (continuous)   |
-| STATUS   | 0x04   | ALARM    | 5     | ro   | w    | wel            |
-| CMD      | 0x08   | TRIGGER  | 0     | wo   | r    |                |
-| SCRATCH  | 0x0C   | VAL      | 7..0  | rw   | na   |                |
-| HWCTRL   | 0x10   | LEVEL    | 3..0  | rw   | rw   | we             |
-| HWCTRL   | 0x10   | GATE     | 8     | rw   | r    | hwset, hwclr   |
+| Register | Offset | Field  | Bits  | `sw` | `hw` | modifiers      |
+| -------- | ------ | ------ | ----- | ---- | ---- | -------------- |
+| reg0     | 0x00   | field0 | 0     | rw   | r    |                |
+| reg0     | 0x00   | field1 | 2..1  | rw   | r    |                |
+| reg1     | 0x04   | field0 | 3..0  | ro   | w    | we             |
+| reg1     | 0x04   | field1 | 4     | ro   | w    | (continuous)   |
+| reg1     | 0x04   | field2 | 5     | ro   | w    | wel            |
+| reg2     | 0x08   | field0 | 0     | wo   | r    |                |
+| reg3     | 0x0C   | field0 | 7..0  | rw   | na   |                |
+| reg4     | 0x10   | field0 | 3..0  | rw   | rw   | we             |
+| reg4     | 0x10   | field1 | 8     | rw   | r    | hwset, hwclr   |
 
 This is intentionally scoped to **core access**. The software side effects
 (`onread`/`onwrite`), the `swmod`/`swacc` pulse outputs, enumerated-value types
