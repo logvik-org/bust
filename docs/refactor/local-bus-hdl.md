@@ -1,8 +1,8 @@
 # Local bus HDL design (step 1)
 
-Status: approved design foundation for the HDL refactor. This is hand-written
-prototype HDL and its verification. The Python/Jinja2 generator is **not**
-touched at this stage (that is step 3, after this HDL is verified).
+Status: design foundation for the HDL refactor. This is hand-written prototype
+HDL and its verification. The Python/Jinja2 generator is **not** touched at this
+stage (that is step 3, after this HDL is verified).
 
 ## Architecture
 
@@ -28,30 +28,55 @@ core promoted to a real entity.
 
 ```vhdl
 type t_lb_m2s is record
-  address : std_logic_vector(C_ADDR_WIDTH-1 downto 0);
-  wdata   : std_logic_vector(C_DATA_WIDTH-1 downto 0);
-  wen     : std_logic;     -- single-cycle write request
-  ren     : std_logic;     -- single-cycle read request
+  address : std_logic_vector(31 downto 0);
+  wdata   : std_logic_vector(31 downto 0);
+  wen     : std_logic;     -- write request
+  ren     : std_logic;     -- read request
 end record;
 type t_lb_s2m is record
-  rdata   : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+  rdata   : std_logic_vector(31 downto 0);
   ack     : std_logic;     -- transaction complete (1 cycle)
   err     : std_logic;     -- invalid address / error, mutually exclusive with ack
-  waitreq : std_logic;     -- regfile not ready (stall); wrapper holds the beat
 end record;
 ```
 
-`wait` is a VHDL reserved word, hence `waitreq`. `C_ADDR_WIDTH`/`C_DATA_WIDTH`
-above are the parameterizable target form; the prototype in
-`hdl/local_bus/localbus_pkg.vhd` fixes both at 32. Making them configurable is a
-generator-time concern, deferred with the rest of the generator work.
+Single outstanding transaction, "hold until acknowledged":
 
-Timing: the wrapper asserts `wen` or `ren` for one cycle with `address` (and
-`wdata` for writes). When `waitreq = '0'` the regfile answers with exactly one
-of `ack` or `err` on the following cycle. AXI maps `err` to `rresp`/`bresp` and
-absorbs `waitreq` into its response channels; IPBus maps `err` to `ipb_err` and
-`waitreq` to its stall extension. `waitreq` is what keeps the IPBus stall
-feature expressible without leaking it into the AXI wrapper.
+- The master asserts exactly one of `wen` / `ren` with a valid `address` (and
+  `wdata` for writes) and **holds the request stable until it observes a
+  response**.
+- The regfile completes the beat by pulsing exactly one of `ack` or `err` for
+  one cycle. `ack` and `err` are mutually exclusive.
+
+There is deliberately **no separate stall/wait signal**. A slow or
+variable-latency target (for example a register backed by RAM) stalls the
+master simply by asserting its response later; withholding `ack`/`err` *is* the
+stall mechanism. This covers every protocol in scope:
+
+- **AXI4-Lite** has no stall wire; the slave back-pressures by delaying
+  `RVALID`/`BVALID`, i.e. the wrapper delays its response channel until the
+  regfile answers.
+- **IPBus** "stall" in v1 is implemented purely by delaying `ipb_ack`
+  (`process_stall` counts wait cycles, then asserts ack). The local bus
+  expresses the same thing directly.
+- **Wishbone (classic)** inserts wait states by delaying `ACK`.
+
+A dedicated stall signal only earns its place on a *pipelined / multi-outstanding*
+bus that decouples request acceptance from response. That is out of scope for
+this single-beat abstraction (burst-capable protocols use native
+implementations), and can be added later without disturbing single-beat users.
+
+`address`/`data` are fixed at 32 bits in the prototype. Making them
+configurable is a generator-time concern, deferred with the rest of the
+generator work.
+
+### Addressing
+
+The local bus carries a **byte address**, the common denominator of the
+protocols in scope: AXI4-Lite is byte-addressed natively, and the IPBus wrapper
+converts its word address to a byte address before driving the bus. The regfile
+then decodes word-aligned register offsets (`0x00`, `0x04`, ...) from a single
+addressing scheme rather than carrying a per-protocol convention.
 
 ## Base address
 
@@ -67,77 +92,127 @@ generic (
 With `G_CHECK_BASE_ADDRESS = false` the upper-bit compare is dropped and the
 instantiator handles decode externally. Wrappers pass both generics through.
 
+## Records and types
+
+Registers and fields are expressed as **nested records** (`regs.<reg>.<field>`),
+both for the hardware-side ports and for the regfile's internal storage. A
+module with many registers stays one record signal instead of a flat list of
+signals, and the hardware references each field by name with its modifiers
+attached. Three record families, all nested register -> field:
+
+- `t_<module>_regs` (internal) holds one member per field that stores state.
+  The regfile keeps a single signal of this type.
+- `t_<module>_<reg>_to_hw` (regfile -> hardware): `hw: r`/`rw` field values.
+- `t_<module>_<reg>_from_hw` (hardware -> regfile): per-field input records that
+  pair each value with its modifier strobes, so a field's enable or set/clear
+  lives next to its value: `from_hw.hwctrl.level.we`, `from_hw.hwctrl.gate.set`.
+
+The register-definition package also carries the field documentation (name,
+bit range, access modes, meaning) as comments next to each record member, so a
+designer can understand a field from the package alone. Fields with enumerated
+values will generate VHDL `type` definitions (deferred to a later pass).
+
 ## Access modes covered in this pass (core access)
 
 `sw` and `hw` are independent per field. Storage exists for any field that is
 software-writable or hardware-writable.
 
-| `sw` | software write | software read (drives `rdata`) |
-|------|----------------|--------------------------------|
-| `rw` | on `wen` + address hit | yes |
-| `ro` | none | yes |
-| `wo` | on `wen` + address hit | drives 0 |
-| `na` | none | drives 0 |
+| `sw` | software write         | software read           |
+| ---- | ---------------------- | ----------------------- |
+| `rw` | on `wen` + address hit | drives stored value     |
+| `ro` | none                   | drives stored value     |
+| `wo` | on `wen` + address hit | reads 0                 |
+| `na` | none                   | reads 0                 |
 
-| `hw` | hardware port | regfile behavior |
-|------|---------------|------------------|
-| `r`  | value out | exposes stored value |
-| `w`  | value in | stores hardware value (see `we`/`wel`) |
-| `rw` | both | stores hardware value and exposes it |
-| `na` | none | software-only register |
+| `hw` | hardware port | regfile behavior                       |
+| ---- | ------------- | -------------------------------------- |
+| `r`  | value out     | exposes stored value                   |
+| `w`  | value in      | stores hardware value (see `we`/`wel`) |
+| `rw` | in + out      | stores hardware value and exposes it   |
+| `na` | none          | software-only register                 |
 
-| Modifier | Signal | Effect |
-|----------|--------|--------|
-| `we`    | `<field>_we`  | hardware write taken only when `we = '1'` |
-| `wel`   | `<field>_wel` | same, active low |
-| `hwset` | `<field>_set` | force field to all 1s |
-| `hwclr` | `<field>_clr` | force field to 0 |
+| modifier | field record member         | effect                                          |
+| -------- | --------------------------- | ----------------------------------------------- |
+| `we`     | `from_hw.<reg>.<field>.we`  | hardware value is captured only while `we = 1`  |
+| `wel`    | `from_hw.<reg>.<field>.wel` | same, active low: captured only while `wel = 0` |
+| `hwset`  | `from_hw.<reg>.<field>.set` | a pulse forces the field to all 1s              |
+| `hwclr`  | `from_hw.<reg>.<field>.clr` | a pulse forces the field to 0                   |
+
+`we`, `wel`, `hwset` and `hwclr` are all standard SystemRDL field properties;
+`wel` is named after the SystemRDL property (active-low write enable) rather
+than a `_n` suffix for that reason.
 
 ### Hardware/software write precedence (provisional)
 
-`precedence` is on the deferred list, so this pass fixes a single documented
-order and applies it uniformly: `hwclr` > `hwset` > hardware `we`/`wel` write >
-software write. In the clocked process this is achieved by ordering the
-assignments so the highest-priority one is written last.
+When several sources can drive the same field in one cycle, the regfile applies
+a single documented order (provisional, since `precedence` is on the deferred
+list). The clocked storage process expresses it as an `if`/`elsif` chain per
+field, so it reads top to bottom:
 
-## Hardware-side records
-
-Grouped per register and split by direction so wrappers stay trivial:
-
-- `t_<module>_<reg>_to_hw` (regfile -> hardware): `hw: r`/`rw` field values.
-- `t_<module>_<reg>_from_hw` (hardware -> regfile): `hw: w`/`rw` values plus the
-  `_we`/`_wel`/`_set`/`_clr` strobes.
+| priority     | source             | applies when                       |
+| ------------ | ------------------ | ---------------------------------- |
+| 1 (highest)  | `hwclr`            | `from_hw.<reg>.<field>.clr = '1'`  |
+| 2            | `hwset`            | `from_hw.<reg>.<field>.set = '1'`  |
+| 3            | hardware `we`/`wel`| the field's write enable asserted  |
+| 4 (lowest)   | software write     | a bus write hits the field         |
 
 ## Reset
 
-The regfile takes one native synchronous reset with documented polarity
-(active-high in the prototype). Each protocol wrapper adapts its own reset (AXI
-async active-low, IPBus sync active-high) to it, removing the reset-convention
-divergence that exists between the two current PIFs.
+The regfile takes one native synchronous reset whose polarity is selected by a
+generic, since some FPGA families prefer active-low resets:
+
+```vhdl
+G_RESET_ACTIVE_LOW : boolean := false
+```
+
+The reset is normalized to active-high internally so the rest of the logic is
+polarity-agnostic. Each protocol wrapper adapts its own reset (AXI async
+active-low, IPBus sync active-high) to it, removing the reset-convention
+divergence between the two current PIFs.
+
+## Read of non-readable fields
+
+Reading a mapped register whose addressed fields are all software-unreadable
+(`sw: wo`/`na`) returns 0 with a normal `ack`. `err` is reserved for
+address-decode failures (unmapped offset, wrong base). This matches SystemRDL
+(a read of a `wo` field yields 0), the common AXI-Lite / IPBus behavior, and the
+v1 bus PIFs, and keeps generic driver patterns (read-back, read-modify-write)
+working. A stricter "error on read of non-readable" mode is not part of v1.
 
 ## Verification (step 2)
 
-The regfile is verified directly over the local bus with a small local-bus BFM,
-independent of UVVM AXI/IPBus VIP. The prototype testbench
-(`hdl/local_bus/tb/regs_demo_regfile_tb.vhd`) is self-checking plain VHDL-2008
-so it runs on bare `nvc` without the UVVM image. Protocol wrappers, once added,
-get a thin handshake-conformance test on top.
+The regfile is verified directly over the local bus with a UVVM bus functional
+model (`hdl/local_bus/localbus_bfm_pkg.vhd`): a config record, scope and
+`msg_id_panel` per call, `check_value`-based response checking, and a bounded
+wait for `ack`/`err`. The testbench
+(`hdl/local_bus/tb/regs_demo_regfile_tb.vhd`) drives the BFM and covers software
+read/write per access mode, `we`/`wel` capture and gating, the `hwclr > hwset`
+precedence, hardware `we` overriding a software write, `wo` reading back 0, and
+`err` on both unmapped-offset and wrong-base-address transactions for reads and
+writes. It runs on `nvc` against the project's pre-compiled UVVM. Protocol
+wrappers, once added, get a thin handshake-conformance test on top using the
+stock UVVM AXI/IPBus VIP.
 
 ## Prototype demo module
 
 `regs_demo` exercises the full core-access matrix:
 
-| Register | Offset | Field | Bits | sw | hw | modifiers |
-|----------|--------|-------|------|----|----|-----------|
-| CTRL    | 0x00 | ENABLE | 0     | rw | r  | |
-| CTRL    | 0x00 | MODE   | 2..1  | rw | r  | |
-| STATUS  | 0x04 | STATE  | 3..0  | ro | w  | we |
-| STATUS  | 0x04 | FLAG   | 4     | ro | w  | (continuous) |
-| STATUS  | 0x04 | ALARM  | 5     | ro | w  | wel |
-| CMD     | 0x08 | TRIGGER| 0     | wo | r  | |
-| SCRATCH | 0x0C | VAL    | 7..0  | rw | na | |
-| HWCTRL  | 0x10 | LEVEL  | 3..0  | rw | rw | we |
-| HWCTRL  | 0x10 | GATE   | 8     | rw | r  | hwset, hwclr |
+| Register | Offset | Field    | Bits  | `sw` | `hw` | modifiers      |
+| -------- | ------ | -------- | ----- | ---- | ---- | -------------- |
+| CTRL     | 0x00   | ENABLE   | 0     | rw   | r    |                |
+| CTRL     | 0x00   | MODE     | 2..1  | rw   | r    |                |
+| STATUS   | 0x04   | STATE    | 3..0  | ro   | w    | we             |
+| STATUS   | 0x04   | FLAG     | 4     | ro   | w    | (continuous)   |
+| STATUS   | 0x04   | ALARM    | 5     | ro   | w    | wel            |
+| CMD      | 0x08   | TRIGGER  | 0     | wo   | r    |                |
+| SCRATCH  | 0x0C   | VAL      | 7..0  | rw   | na   |                |
+| HWCTRL   | 0x10   | LEVEL    | 3..0  | rw   | rw   | we             |
+| HWCTRL   | 0x10   | GATE     | 8     | rw   | r    | hwset, hwclr   |
+
+This is intentionally scoped to **core access**. The software side effects
+(`onread`/`onwrite`), the `swmod`/`swacc` pulse outputs, enumerated-value types
+and per-field `singlepulse` are the next pass; the record and local-bus shapes
+above are designed to absorb them without re-cutting the seam.
 
 ## Deferred (unchanged)
 

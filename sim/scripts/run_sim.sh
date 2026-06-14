@@ -8,7 +8,7 @@
 # Supported targets:
 #   example_ipbus   Run example/example_ipbus/tb/example_ipbus_ipb_pif_tb.vhd
 #   example_axi     Run example/example_axi/tb/example_axi_axi_pif_tb.vhd
-#   regs_demo       Run hdl/local_bus/tb/regs_demo_regfile_tb.vhd (no UVVM)
+#   regs_demo       Run hdl/local_bus/tb/regs_demo_regfile_tb.vhd (UVVM BFM)
 #
 # Optional flags:
 #   --wave          Generate a waveform file (FST) for GTKWave debugging.
@@ -105,10 +105,18 @@ case "${TARGET}" in
         TOP_ENTITY="example_axi_axi_pif_tb"
         ;;
     regs_demo)
-        # Local-bus register-file prototype. Self-checking plain VHDL-2008,
-        # no UVVM or other shared libraries required.
+        # Local-bus register-file prototype with a UVVM testbench.
+        # localbus_bfm_pkg uses uvvm_util's shared_msg_id_panel as a default
+        # parameter value, which is not strictly static per VHDL-2008, so it is
+        # analysed with --relaxed (as vip_ipbus is at image-build time).
+        # uvvm_util itself resolves from nvc's system library path.
+        pre_compile() {
+            echo "  [nvc -a] localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/local_bus/localbus_pkg.vhd"
+            echo "  [nvc -a --relaxed] localbus_bfm_pkg.vhd"
+            nvc ${NVC_OPTS} -a --relaxed "${WORK_ROOT}/hdl/local_bus/localbus_bfm_pkg.vhd"
+        }
         COMPILE_ORDER=(
-            "${WORK_ROOT}/hdl/local_bus/localbus_pkg.vhd"
             "${WORK_ROOT}/hdl/local_bus/regs_demo_regfile_pkg.vhd"
             "${WORK_ROOT}/hdl/local_bus/regs_demo_regfile.vhd"
             "${WORK_ROOT}/hdl/local_bus/tb/regs_demo_regfile_tb.vhd"
