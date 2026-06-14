@@ -81,10 +81,10 @@ jobs:
       # -----------------------------------------------------------------------
       # 6. Run the local-bus regfile prototype testbench
       # -----------------------------------------------------------------------
-      - name: Run regs_demo local-bus simulation
+      - name: Run prototype local-bus simulation
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/work" \
             -e WORK_ROOT=/work \
             bust-sim:ci \
-            /work/sim/scripts/run_sim.sh regs_demo
+            /work/sim/scripts/run_sim.sh prototype
