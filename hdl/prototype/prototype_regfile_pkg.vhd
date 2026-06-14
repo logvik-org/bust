@@ -1,4 +1,4 @@
--- Register definitions for the regs_demo prototype module.
+-- Register definitions for the prototype module.
 --
 -- The demo uses deliberately generic names (reg0..reg4, field0..) so the record
 -- structure and naming scheme can be reviewed without semantic distraction.
@@ -8,15 +8,15 @@
 -- and so the hardware sees each field by name with its modifiers attached.
 --
 -- Three record families, all nested register -> field:
---   t_regs_demo_regs      internal storage (one per field that holds state)
---   t_regs_demo_to_hw     regfile -> hardware (hw r / rw field values)
---   t_regs_demo_from_hw   hardware -> regfile (hw w / rw values + modifiers)
+--   t_prototype_regs      internal storage (one per field that holds state)
+--   t_prototype_to_hw     regfile -> hardware (hw r / rw field values)
+--   t_prototype_from_hw   hardware -> regfile (hw w / rw values + modifiers)
 --
 -- Field-level input records carry the value together with their modifier
 -- strobes, so a field's write-enable or set/clear lives next to its value
 -- (from_hw.reg4.field0.we, from_hw.reg4.field1.set, ...).
 --
--- regs_demo register map (byte offsets; see local-bus-hdl.md for why the local
+-- prototype register map (byte offsets; see local-bus-hdl.md for why the local
 -- bus carries byte addresses):
 --   reg0  0x00  field0 [0]    sw rw  hw r
 --               field1 [2:1]  sw rw  hw r
@@ -33,7 +33,7 @@ use ieee.numeric_std.all;
 
 use work.localbus_pkg.all;
 
-package regs_demo_regfile_pkg is
+package prototype_regfile_pkg is
 
   constant C_ADDR_REG0 : std_logic_vector(31 downto 0) := 32x"00";
   constant C_ADDR_REG1 : std_logic_vector(31 downto 0) := 32x"04";
@@ -78,7 +78,7 @@ package regs_demo_regfile_pkg is
   end record;
 
   -- Whole-module storage: the regfile keeps this as a single signal.
-  type t_regs_demo_regs is record
+  type t_prototype_regs is record
     reg0 : t_reg0_regs;
     reg1 : t_reg1_regs;
     reg2 : t_reg2_regs;
@@ -86,7 +86,7 @@ package regs_demo_regfile_pkg is
     reg4 : t_reg4_regs;
   end record;
 
-  constant C_REGS_DEMO_REGS_RESET : t_regs_demo_regs := (
+  constant C_PROTOTYPE_REGS_RESET : t_prototype_regs := (
     reg0 => (field0 => '0', field1 => (others => '0')),
     reg1 => (field0 => (others => '0'), field1 => '0', field2 => '0'),
     reg2 => (field0 => '0'),
@@ -114,7 +114,7 @@ package regs_demo_regfile_pkg is
   end record;
 
   -- Whole-module regfile -> hardware bundle: one member per register above.
-  type t_regs_demo_to_hw is record
+  type t_prototype_to_hw is record
     reg0 : t_reg0_to_hw;
     reg2 : t_reg2_to_hw;
     reg4 : t_reg4_to_hw;
@@ -164,7 +164,7 @@ package regs_demo_regfile_pkg is
 
   -- Whole-module hardware -> regfile bundle: one member per register that has
   -- at least one hardware-writable field.
-  type t_regs_demo_from_hw is record
+  type t_prototype_from_hw is record
     reg1 : t_reg1_from_hw;
     reg4 : t_reg4_from_hw;
   end record;
@@ -177,9 +177,9 @@ package regs_demo_regfile_pkg is
                       base  : unsigned(31 downto 0);
                       check : boolean) return boolean;
 
-end package regs_demo_regfile_pkg;
+end package prototype_regfile_pkg;
 
-package body regs_demo_regfile_pkg is
+package body prototype_regfile_pkg is
 
   function base_match(addr  : std_logic_vector(31 downto 0);
                       base  : unsigned(31 downto 0);
@@ -193,4 +193,4 @@ package body regs_demo_regfile_pkg is
          = base_slv(31 downto C_MODULE_ADDR_WIDTH);
   end function;
 
-end package body regs_demo_regfile_pkg;
+end package body prototype_regfile_pkg;

@@ -93,7 +93,7 @@ reduce to byte-offset compares internally. Because decode compares the full
 register offset (not a packed index), gaps between registers cost nothing and
 an access to an unused offset inside the module window returns `err`.
 
-The `regs_demo` prototype uses byte-addressing with contiguous word-aligned
+The `prototype` demo uses byte-addressing with contiguous word-aligned
 offsets (`0x00`, `0x04`, ...) as one concrete instance of that scheme; it is the
 demo's choice, not a constraint of the local bus.
 
@@ -201,10 +201,10 @@ working. A stricter "error on read of non-readable" mode is not part of v1.
 ## Verification (step 2)
 
 The regfile is verified directly over the local bus with a UVVM bus functional
-model (`hdl/local_bus/localbus_bfm_pkg.vhd`): a config record, scope and
+model (`hdl/prototype/localbus_bfm_pkg.vhd`): a config record, scope and
 `msg_id_panel` per call, `check_value`-based response checking, and a bounded
 wait for `ack`/`err`. The testbench
-(`hdl/local_bus/tb/regs_demo_regfile_tb.vhd`) drives the BFM and covers software
+(`hdl/prototype/tb/prototype_regfile_tb.vhd`) drives the BFM and covers software
 read/write per access mode, `we`/`wel` capture and gating, the `hwclr > hwset`
 precedence, hardware `we` overriding a software write, `wo` reading back 0, and
 `err` on both unmapped-offset and wrong-base-address transactions for reads and
@@ -214,7 +214,7 @@ stock UVVM AXI/IPBus VIP.
 
 ## Prototype demo module
 
-`regs_demo` exercises the full core-access matrix. It uses deliberately generic
+`prototype` exercises the full core-access matrix. It uses deliberately generic
 register/field names (`reg0..reg4`, `field0..`) so the structure and naming
 scheme can be reviewed without semantic distraction:
 
