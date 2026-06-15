@@ -1,6 +1,6 @@
 -- Register definitions for the prototype module.
 --
--- The demo uses deliberately generic names (reg0..reg4, field0..) so the record
+-- The demo uses deliberately generic names (reg0..reg8, field0..) so the record
 -- structure and naming scheme can be reviewed without semantic distraction.
 -- The types here model what the generator will emit per module. Registers and
 -- fields are expressed as nested records (regs.<reg>.<field>) so a module with
@@ -18,15 +18,25 @@
 --
 -- prototype register map (byte offsets; see local-bus-hdl.md for why the local
 -- bus carries byte addresses):
---   reg0  0x00  field0 [0]    sw rw  hw r
---               field1 [2:1]  sw rw  hw r
---   reg1  0x04  field0 [3:0]  sw ro  hw w   we
---               field1 [4]    sw ro  hw w   (continuous)
---               field2 [5]    sw ro  hw w   wel
---   reg2  0x08  field0 [0]    sw wo  hw r
---   reg3  0x0C  field0 [7:0]  sw rw  hw na
---   reg4  0x10  field0 [3:0]  sw rw  hw rw  we
---               field1 [8]    sw rw  hw r   hwset, hwclr
+--   reg0  0x00  field0 [0]     sw rw  hw r
+--               field1 [2:1]   sw rw  hw r
+--   reg1  0x04  field0 [3:0]   sw ro  hw w   we
+--               field1 [4]     sw ro  hw w   (continuous)
+--               field2 [5]     sw ro  hw w   wel
+--   reg2  0x08  field0 [0]     sw wo  hw r
+--   reg3  0x0C  field0 [7:0]   sw rw  hw na
+--   reg4  0x10  field0 [3:0]   sw rw  hw rw  we
+--               field1 [8]     sw rw  hw r   hwset, hwclr
+--   reg5  0x14  field0 [3:0]   sw rw  hw r   onread rclr
+--               field1 [7:4]   sw rw  hw r   onread rset
+--   reg6  0x18  field0 [3:0]   sw rw  hw r   onwrite woset
+--               field1 [7:4]   sw rw  hw r   onwrite woclr
+--               field2 [11:8]  sw rw  hw r   onwrite wot
+--   reg7  0x1C  field0 [3:0]   sw rw  hw r   onwrite wzs
+--               field1 [7:4]   sw rw  hw r   onwrite wzc
+--               field2 [11:8]  sw rw  hw r   onwrite wzt
+--   reg8  0x20  field0 [3:0]   sw rw  hw r   onwrite wclr
+--               field1 [7:4]   sw rw  hw r   onwrite wset
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -40,9 +50,15 @@ package prototype_regfile_pkg is
   constant C_ADDR_REG2 : std_logic_vector(31 downto 0) := 32x"08";
   constant C_ADDR_REG3 : std_logic_vector(31 downto 0) := 32x"0C";
   constant C_ADDR_REG4 : std_logic_vector(31 downto 0) := 32x"10";
+  constant C_ADDR_REG5 : std_logic_vector(31 downto 0) := 32x"14";
+  constant C_ADDR_REG6 : std_logic_vector(31 downto 0) := 32x"18";
+  constant C_ADDR_REG7 : std_logic_vector(31 downto 0) := 32x"1C";
+  constant C_ADDR_REG8 : std_logic_vector(31 downto 0) := 32x"20";
 
-  -- Width of the local register-select field (covers offsets 0x00..0x10).
-  constant C_MODULE_ADDR_WIDTH : natural := 5;
+  -- Register-select width. 6 bits decode a 64-byte window (0x00..0x3F); the
+  -- registers occupy 0x00..0x20. base_match compares the bits above this width,
+  -- so the base address must be aligned to this 64-byte window.
+  constant C_MODULE_ADDR_WIDTH : natural := 6;
 
   -- Internal storage, grouped per register. One member per field that holds
   -- state (every software- or hardware-writable field). One record per
@@ -77,6 +93,32 @@ package prototype_regfile_pkg is
     field1 : std_logic;                      -- reg4.field1
   end record;
 
+  -- Stored fields of reg5 (onread effects on software read).
+  type t_reg5_regs is record
+    field0 : std_logic_vector(3 downto 0);   -- reg5.field0
+    field1 : std_logic_vector(3 downto 0);   -- reg5.field1
+  end record;
+
+  -- Stored fields of reg6 (write-1 onwrite effects).
+  type t_reg6_regs is record
+    field0 : std_logic_vector(3 downto 0);   -- reg6.field0
+    field1 : std_logic_vector(3 downto 0);   -- reg6.field1
+    field2 : std_logic_vector(3 downto 0);   -- reg6.field2
+  end record;
+
+  -- Stored fields of reg7 (write-0 onwrite effects).
+  type t_reg7_regs is record
+    field0 : std_logic_vector(3 downto 0);   -- reg7.field0
+    field1 : std_logic_vector(3 downto 0);   -- reg7.field1
+    field2 : std_logic_vector(3 downto 0);   -- reg7.field2
+  end record;
+
+  -- Stored fields of reg8 (whole-field onwrite effects).
+  type t_reg8_regs is record
+    field0 : std_logic_vector(3 downto 0);   -- reg8.field0
+    field1 : std_logic_vector(3 downto 0);   -- reg8.field1
+  end record;
+
   -- Whole-module storage: the regfile keeps this as a single signal.
   type t_prototype_regs is record
     reg0 : t_reg0_regs;
@@ -84,14 +126,25 @@ package prototype_regfile_pkg is
     reg2 : t_reg2_regs;
     reg3 : t_reg3_regs;
     reg4 : t_reg4_regs;
+    reg5 : t_reg5_regs;
+    reg6 : t_reg6_regs;
+    reg7 : t_reg7_regs;
+    reg8 : t_reg8_regs;
   end record;
 
+  -- Clear-type onwrite fields (reg6.field1 woclr, reg7.field1 wzc, reg8.field0
+  -- wclr) reset to all 1s: software cannot set them, so a nonzero reset is what
+  -- makes their clearing observable in the demo.
   constant C_PROTOTYPE_REGS_RESET : t_prototype_regs := (
     reg0 => (field0 => '0', field1 => (others => '0')),
     reg1 => (field0 => (others => '0'), field1 => '0', field2 => '0'),
     reg2 => (field0 => '0'),
     reg3 => (field0 => (others => '0')),
-    reg4 => (field0 => (others => '0'), field1 => '0'));
+    reg4 => (field0 => (others => '0'), field1 => '0'),
+    reg5 => (field0 => (others => '0'), field1 => (others => '0')),
+    reg6 => (field0 => (others => '0'), field1 => (others => '1'), field2 => (others => '0')),
+    reg7 => (field0 => (others => '0'), field1 => (others => '1'), field2 => (others => '0')),
+    reg8 => (field0 => (others => '1'), field1 => (others => '0')));
 
   -- regfile -> hardware: only fields the hardware can read (hw r / rw). One
   -- record per register that has at least one hardware-readable field.
@@ -113,11 +166,41 @@ package prototype_regfile_pkg is
     field1 : std_logic;
   end record;
 
+  -- reg5 fields visible to hardware.
+  type t_reg5_to_hw is record
+    field0 : std_logic_vector(3 downto 0);
+    field1 : std_logic_vector(3 downto 0);
+  end record;
+
+  -- reg6 fields visible to hardware.
+  type t_reg6_to_hw is record
+    field0 : std_logic_vector(3 downto 0);
+    field1 : std_logic_vector(3 downto 0);
+    field2 : std_logic_vector(3 downto 0);
+  end record;
+
+  -- reg7 fields visible to hardware.
+  type t_reg7_to_hw is record
+    field0 : std_logic_vector(3 downto 0);
+    field1 : std_logic_vector(3 downto 0);
+    field2 : std_logic_vector(3 downto 0);
+  end record;
+
+  -- reg8 fields visible to hardware.
+  type t_reg8_to_hw is record
+    field0 : std_logic_vector(3 downto 0);
+    field1 : std_logic_vector(3 downto 0);
+  end record;
+
   -- Whole-module regfile -> hardware bundle: one member per register above.
   type t_prototype_to_hw is record
     reg0 : t_reg0_to_hw;
     reg2 : t_reg2_to_hw;
     reg4 : t_reg4_to_hw;
+    reg5 : t_reg5_to_hw;
+    reg6 : t_reg6_to_hw;
+    reg7 : t_reg7_to_hw;
+    reg8 : t_reg8_to_hw;
   end record;
 
   -- hardware -> regfile: per-field input records pairing each value with the
@@ -177,6 +260,14 @@ package prototype_regfile_pkg is
                       base  : unsigned(31 downto 0);
                       check : boolean) return boolean;
 
+  -- True when the register-select bits match a register's byte offset.
+  function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+                  reg_addr : std_logic_vector(31 downto 0)) return boolean;
+
+  -- True when the select bits address any mapped register. Enumerates the
+  -- register offsets in one place so the decode logic need not repeat them.
+  function is_mapped(sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+
 end package prototype_regfile_pkg;
 
 package body prototype_regfile_pkg is
@@ -191,6 +282,21 @@ package body prototype_regfile_pkg is
     end if;
     return addr(31 downto C_MODULE_ADDR_WIDTH)
          = base_slv(31 downto C_MODULE_ADDR_WIDTH);
+  end function;
+
+  function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+                  reg_addr : std_logic_vector(31 downto 0)) return boolean is
+  begin
+    return sel = reg_addr(C_MODULE_ADDR_WIDTH-1 downto 0);
+  end function;
+
+  function is_mapped(sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  begin
+    return sel_is(sel, C_ADDR_REG0) or sel_is(sel, C_ADDR_REG1)
+        or sel_is(sel, C_ADDR_REG2) or sel_is(sel, C_ADDR_REG3)
+        or sel_is(sel, C_ADDR_REG4) or sel_is(sel, C_ADDR_REG5)
+        or sel_is(sel, C_ADDR_REG6) or sel_is(sel, C_ADDR_REG7)
+        or sel_is(sel, C_ADDR_REG8);
   end function;
 
 end package body prototype_regfile_pkg;
