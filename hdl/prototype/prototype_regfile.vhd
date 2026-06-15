@@ -2,8 +2,9 @@
 -- Speaks only the local bus; protocol wrappers (AXI, IPBus) instantiate it.
 -- Exercises the core access-mode matrix: sw {rw,ro,wo,na} x hw {r,w,rw,na}
 -- plus the we/wel/hwset/hwclr modifiers, the onread/onwrite software side
--- effects, and the swmod/swacc/singlepulse pulse behaviours. Registers/fields
--- use generic names (reg0..reg10, field0..); see prototype_regfile_pkg.vhd.
+-- effects, the swmod/swacc/singlepulse pulse behaviours, and enumerated-value
+-- field types. Registers/fields use generic names (reg0..reg11, field0..); see
+-- prototype_regfile_pkg.vhd.
 --
 -- Two clocked processes split the bus side: p_write owns register storage
 -- (software writes, hardware-driven updates, and onread side effects, since all
@@ -166,6 +167,12 @@ begin
         regs.reg10.field0 <= lb_m2s.wdata(3 downto 0);
       end if;
 
+      -- reg11.field0: sw rw, hw r. Stored as the enum type; the bus value is
+      -- converted to the enum on write and back to bits on read.
+      if sw_write and sel_is(sel, C_ADDR_REG11) then
+        regs.reg11.field0 <= to_reg11_field0(lb_m2s.wdata(1 downto 0));
+      end if;
+
       -- reg5 onread effects: applied on the cycle the software read is serviced.
       -- The read returns the pre-effect value; storage updates here on the same
       -- edge.
@@ -265,6 +272,9 @@ begin
         elsif sel_is(sel, C_ADDR_REG10) then
           rdata(3 downto 0) <= regs.reg10.field0;  -- usually 0 (pulse self-cleared)
           rd_ack <= '1';
+        elsif sel_is(sel, C_ADDR_REG11) then
+          rdata(1 downto 0) <= to_slv(regs.reg11.field0);
+          rd_ack <= '1';
         else
           rd_err <= '1';
         end if;
@@ -289,6 +299,7 @@ begin
   to_hw.reg9 <= (field0 => (value => regs.reg9.field0, swmod => swmod_r9f0),
                  field1 => (value => regs.reg9.field1, swacc => swacc_r9f1));
   to_hw.reg10 <= (field0 => regs.reg10.field0);
+  to_hw.reg11 <= (field0 => regs.reg11.field0);
 
   lb_s2m.rdata <= rdata;
   lb_s2m.ack   <= wr_ack or rd_ack;
