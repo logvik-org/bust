@@ -2,9 +2,9 @@
 -- Drives the local bus through the localbus UVVM BFM and exercises the core
 -- access-mode matrix, the we/wel/hwset/hwclr modifiers, the documented
 -- hardware/software write precedence, the onread/onwrite software side effects,
--- and the err response for both unmapped offsets and wrong-base-address
--- transactions. Registers/fields use generic names (reg0..reg8, field0..); see
--- prototype_regfile_pkg.vhd for the map.
+-- the swmod/swacc/singlepulse pulse behaviours, and the err response for both
+-- unmapped offsets and wrong-base-address transactions. Registers/fields use
+-- generic names (reg0..reg10, field0..); see prototype_regfile_pkg.vhd.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -38,6 +38,13 @@ architecture tb of prototype_regfile_tb is
     reg4 => (field0 => (value => (others => '0'), we => '0'),
              field1 => (set => '0', clr => '0')));
 
+  -- Pulse monitors: count the cycles each strobe / singlepulse value is high so
+  -- a single-cycle pulse is verifiable without cycle-accurate sampling.
+  signal swmod_count   : natural := 0;
+  signal swacc_count   : natural := 0;
+  signal sp_high_count : natural := 0;
+  signal sp_last_value : std_logic_vector(3 downto 0) := (others => '0');
+
 begin
 
   clk <= not clk after C_PERIOD/2 when running else '0';
@@ -54,6 +61,22 @@ begin
       lb_s2m  => lb_s2m,
       to_hw   => to_hw,
       from_hw => from_hw);
+
+  p_monitor : process (clk) is
+  begin
+    if rising_edge(clk) then
+      if to_hw.reg9.field0.swmod = '1' then
+        swmod_count <= swmod_count + 1;
+      end if;
+      if to_hw.reg9.field1.swacc = '1' then
+        swacc_count <= swacc_count + 1;
+      end if;
+      if to_hw.reg10.field0 /= "0000" then
+        sp_high_count <= sp_high_count + 1;
+        sp_last_value <= to_hw.reg10.field0;
+      end if;
+    end if;
+  end process p_monitor;
 
   p_main : process is
   begin
@@ -150,13 +173,30 @@ begin
     localbus_write(C_ADDR_REG8, x"00000000", "any write triggers wclr/wset", clk, lb_m2s, lb_s2m);
     localbus_check(C_ADDR_REG8, x"000000F0", "field0 cleared, field1 set", clk, lb_m2s, lb_s2m);
 
+    log(ID_LOG_HDR, "reg9: swmod (field0) / swacc (field1) pulse outputs", C_SCOPE);
+    localbus_write(C_ADDR_REG9, x"00000034", "field0=4, field1=3", clk, lb_m2s, lb_s2m);
+    localbus_check(C_ADDR_REG9, x"00000034", "reg9 reads back", clk, lb_m2s, lb_s2m);
+    check_value(to_hw.reg9.field0.value, "0100", error, "reg9.field0 value to hw", C_SCOPE);
+    check_value(to_hw.reg9.field1.value, "0011", error, "reg9.field1 value to hw", C_SCOPE);
+
+    log(ID_LOG_HDR, "reg10: singlepulse self-clears one cycle after write", C_SCOPE);
+    localbus_write(C_ADDR_REG10, x"00000007", "pulse value 7", clk, lb_m2s, lb_s2m);
+    localbus_check(C_ADDR_REG10, x"00000000", "field self-cleared after the pulse", clk, lb_m2s, lb_s2m);
+
     log(ID_LOG_HDR, "err: unmapped offset and wrong base address", C_SCOPE);
-    localbus_check_err(x"00000024", false, "read unmapped offset", clk, lb_m2s, lb_s2m);
-    localbus_check_err(x"00000024", true,  "write unmapped offset", clk, lb_m2s, lb_s2m);
+    localbus_check_err(x"0000003C", false, "read unmapped offset", clk, lb_m2s, lb_s2m);
+    localbus_check_err(x"0000003C", true,  "write unmapped offset", clk, lb_m2s, lb_s2m);
     localbus_check_err(x"10000000", false, "read wrong base", clk, lb_m2s, lb_s2m);
     localbus_check_err(x"10000000", true,  "write wrong base", clk, lb_m2s, lb_s2m);
 
     wait for 10*C_PERIOD;
+
+    log(ID_LOG_HDR, "pulse monitors: single-cycle width and counts", C_SCOPE);
+    check_value(swmod_count, 1, error, "swmod pulsed once (1 write)", C_SCOPE);
+    check_value(swacc_count, 2, error, "swacc pulsed per access (1 write + 1 read)", C_SCOPE);
+    check_value(sp_high_count, 1, error, "singlepulse high exactly one cycle", C_SCOPE);
+    check_value(sp_last_value, "0111", error, "hw saw the pulse value", C_SCOPE);
+
     report_alert_counters(FINAL);
     log(ID_LOG_HDR, "SIMULATION COMPLETED", C_SCOPE);
     running <= false;
