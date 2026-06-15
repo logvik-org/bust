@@ -1,13 +1,14 @@
 -- Protocol-agnostic register file for the prototype module.
 -- Speaks only the local bus; protocol wrappers (AXI, IPBus) instantiate it.
 -- Exercises the core access-mode matrix: sw {rw,ro,wo,na} x hw {r,w,rw,na}
--- plus the we/wel/hwset/hwclr modifiers. Registers/fields use generic names
--- (reg0..reg4, field0..); see prototype_regfile_pkg.vhd for the access map.
+-- plus the we/wel/hwset/hwclr modifiers and the onread/onwrite software side
+-- effects. Registers/fields use generic names (reg0..reg8, field0..); see
+-- prototype_regfile_pkg.vhd for the access map.
 --
 -- Two clocked processes split the bus side: p_write owns register storage
--- (software writes and all hardware-driven updates, since both modify state)
--- and the write response; p_read owns the read mux and the read response.
--- Concurrent output assignments are grouped at the bottom of the file.
+-- (software writes, hardware-driven updates, and onread side effects, since all
+-- modify state) and the write response; p_read owns the read mux and the read
+-- response. Concurrent output assignments are grouped at the bottom of the file.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -56,18 +57,23 @@ begin
     severity failure;
 
   -- Register storage and write response. Single driver of `regs`: software
-  -- writes and hardware updates both live here. Each multi-source field uses
-  -- an if/elsif chain so the documented precedence (provisional, since
-  -- `precedence` is deferred) reads top-to-bottom:
+  -- writes, hardware updates, and onread side effects all live here. Each
+  -- multi-source field uses an if/elsif chain so the documented precedence
+  -- (provisional, since `precedence` is deferred) reads top-to-bottom:
   --   hwclr > hwset > hardware we/wel write > software write.
   p_write : process (clk) is
-    variable sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-    variable hit      : boolean;     -- write addresses a known register
-    variable wr_reg0  : boolean;
-    variable wr_reg2  : boolean;
-    variable wr_reg3  : boolean;
-    variable wr_reg4  : boolean;
-    variable sw_write : boolean;     -- a fresh, in-window software write
+    variable sel        : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+    variable hit        : boolean;     -- write addresses a known register
+    variable wr_reg0    : boolean;
+    variable wr_reg2    : boolean;
+    variable wr_reg3    : boolean;
+    variable wr_reg4    : boolean;
+    variable wr_reg5    : boolean;
+    variable wr_reg6    : boolean;
+    variable wr_reg7    : boolean;
+    variable wr_reg8    : boolean;
+    variable sw_write   : boolean;     -- a fresh, in-window software write
+    variable rd_service : boolean;     -- a fresh, in-window software read
   begin
     if rising_edge(clk) then
       wr_ack <= '0';
@@ -84,6 +90,10 @@ begin
       wr_reg2  := sw_write and sel = C_ADDR_REG2(C_MODULE_ADDR_WIDTH-1 downto 0);
       wr_reg3  := sw_write and sel = C_ADDR_REG3(C_MODULE_ADDR_WIDTH-1 downto 0);
       wr_reg4  := sw_write and sel = C_ADDR_REG4(C_MODULE_ADDR_WIDTH-1 downto 0);
+      wr_reg5  := sw_write and sel = C_ADDR_REG5(C_MODULE_ADDR_WIDTH-1 downto 0);
+      wr_reg6  := sw_write and sel = C_ADDR_REG6(C_MODULE_ADDR_WIDTH-1 downto 0);
+      wr_reg7  := sw_write and sel = C_ADDR_REG7(C_MODULE_ADDR_WIDTH-1 downto 0);
+      wr_reg8  := sw_write and sel = C_ADDR_REG8(C_MODULE_ADDR_WIDTH-1 downto 0);
 
       -- reg0: sw rw, hw r
       if wr_reg0 then
@@ -126,6 +136,43 @@ begin
         regs.reg4.field1 <= lb_m2s.wdata(8);
       end if;
 
+      -- reg5: sw rw, hw r. Plain on write; the onread effect (below) acts on a
+      -- software read, not a write.
+      if wr_reg5 then
+        regs.reg5.field0 <= lb_m2s.wdata(3 downto 0);
+        regs.reg5.field1 <= lb_m2s.wdata(7 downto 4);
+      end if;
+
+      -- reg6: onwrite write-1 effects, with stored value f and write data w.
+      if wr_reg6 then
+        regs.reg6.field0 <= regs.reg6.field0 or lb_m2s.wdata(3 downto 0);        -- woset
+        regs.reg6.field1 <= regs.reg6.field1 and not lb_m2s.wdata(7 downto 4);   -- woclr
+        regs.reg6.field2 <= regs.reg6.field2 xor lb_m2s.wdata(11 downto 8);      -- wot
+      end if;
+
+      -- reg7: onwrite write-0 effects (the write-1 family with w inverted).
+      if wr_reg7 then
+        regs.reg7.field0 <= regs.reg7.field0 or not lb_m2s.wdata(3 downto 0);    -- wzs
+        regs.reg7.field1 <= regs.reg7.field1 and lb_m2s.wdata(7 downto 4);       -- wzc
+        regs.reg7.field2 <= regs.reg7.field2 xor not lb_m2s.wdata(11 downto 8);  -- wzt
+      end if;
+
+      -- reg8: onwrite whole-field effects (data-independent).
+      if wr_reg8 then
+        regs.reg8.field0 <= (others => '0');   -- wclr
+        regs.reg8.field1 <= (others => '1');   -- wset
+      end if;
+
+      -- onread side effects: applied on the cycle a software read is serviced
+      -- (rd_ack/rd_err still low, same guard p_read uses). The read returns the
+      -- pre-effect value; storage updates here on the same edge.
+      rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0'
+                    and base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS);
+      if rd_service and sel = C_ADDR_REG5(C_MODULE_ADDR_WIDTH-1 downto 0) then
+        regs.reg5.field0 <= (others => '0');   -- onread rclr
+        regs.reg5.field1 <= (others => '1');   -- onread rset
+      end if;
+
       -- Write response: ack a mapped register (reg1 acks with no effect, all
       -- its fields being sw ro), err an out-of-range or unmapped address.
       if lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' then
@@ -136,7 +183,11 @@ begin
               or sel = C_ADDR_REG1(C_MODULE_ADDR_WIDTH-1 downto 0)
               or sel = C_ADDR_REG2(C_MODULE_ADDR_WIDTH-1 downto 0)
               or sel = C_ADDR_REG3(C_MODULE_ADDR_WIDTH-1 downto 0)
-              or sel = C_ADDR_REG4(C_MODULE_ADDR_WIDTH-1 downto 0);
+              or sel = C_ADDR_REG4(C_MODULE_ADDR_WIDTH-1 downto 0)
+              or sel = C_ADDR_REG5(C_MODULE_ADDR_WIDTH-1 downto 0)
+              or sel = C_ADDR_REG6(C_MODULE_ADDR_WIDTH-1 downto 0)
+              or sel = C_ADDR_REG7(C_MODULE_ADDR_WIDTH-1 downto 0)
+              or sel = C_ADDR_REG8(C_MODULE_ADDR_WIDTH-1 downto 0);
         end if;
         if hit then
           wr_ack <= '1';
@@ -153,10 +204,10 @@ begin
     end if;
   end process p_write;
 
-  -- Read mux and read response. Never writes storage (onread effects are
-  -- deferred). Reads of non-readable fields (sw wo / na) return 0 and ack; err
-  -- is reserved for address-decode failures, matching SystemRDL and the v1
-  -- bus PIFs.
+  -- Read mux and read response. The onread side effects live in p_write (sole
+  -- driver of `regs`); this process only selects read data and the response.
+  -- Reads of non-readable fields (sw wo / na) return 0 and ack; err is reserved
+  -- for address-decode failures, matching SystemRDL and the v1 bus PIFs.
   p_read : process (clk) is
     variable sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
   begin
@@ -187,6 +238,24 @@ begin
           rdata(3 downto 0) <= regs.reg4.field0;
           rdata(8)          <= regs.reg4.field1;
           rd_ack <= '1';
+        elsif sel = C_ADDR_REG5(C_MODULE_ADDR_WIDTH-1 downto 0) then
+          rdata(3 downto 0) <= regs.reg5.field0;
+          rdata(7 downto 4) <= regs.reg5.field1;
+          rd_ack <= '1';
+        elsif sel = C_ADDR_REG6(C_MODULE_ADDR_WIDTH-1 downto 0) then
+          rdata(3 downto 0)  <= regs.reg6.field0;
+          rdata(7 downto 4)  <= regs.reg6.field1;
+          rdata(11 downto 8) <= regs.reg6.field2;
+          rd_ack <= '1';
+        elsif sel = C_ADDR_REG7(C_MODULE_ADDR_WIDTH-1 downto 0) then
+          rdata(3 downto 0)  <= regs.reg7.field0;
+          rdata(7 downto 4)  <= regs.reg7.field1;
+          rdata(11 downto 8) <= regs.reg7.field2;
+          rd_ack <= '1';
+        elsif sel = C_ADDR_REG8(C_MODULE_ADDR_WIDTH-1 downto 0) then
+          rdata(3 downto 0) <= regs.reg8.field0;
+          rdata(7 downto 4) <= regs.reg8.field1;
+          rd_ack <= '1';
         else
           rd_err <= '1';
         end if;
@@ -205,6 +274,16 @@ begin
   to_hw.reg2.field0 <= regs.reg2.field0;
   to_hw.reg4.field0 <= regs.reg4.field0;
   to_hw.reg4.field1 <= regs.reg4.field1;
+  to_hw.reg5.field0 <= regs.reg5.field0;
+  to_hw.reg5.field1 <= regs.reg5.field1;
+  to_hw.reg6.field0 <= regs.reg6.field0;
+  to_hw.reg6.field1 <= regs.reg6.field1;
+  to_hw.reg6.field2 <= regs.reg6.field2;
+  to_hw.reg7.field0 <= regs.reg7.field0;
+  to_hw.reg7.field1 <= regs.reg7.field1;
+  to_hw.reg7.field2 <= regs.reg7.field2;
+  to_hw.reg8.field0 <= regs.reg8.field0;
+  to_hw.reg8.field1 <= regs.reg8.field1;
 
   lb_s2m.rdata <= rdata;
   lb_s2m.ack   <= wr_ack or rd_ack;
