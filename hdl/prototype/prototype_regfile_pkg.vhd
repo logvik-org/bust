@@ -373,9 +373,17 @@ package body prototype_regfile_pkg is
     return std_logic_vector(to_unsigned(t_reg11_field0'pos(v), 2));
   end function;
 
+  -- case decode rather than to_integer(unsigned(s)) so meta-values (X/U/Z/-)
+  -- give a defined result instead of a numeric_std assertion.
   function to_reg11_field0(s : std_logic_vector(1 downto 0)) return t_reg11_field0 is
   begin
-    return t_reg11_field0'val(to_integer(unsigned(s)));
+    case s is
+      when "00"   => return STATE0;
+      when "01"   => return STATE1;
+      when "10"   => return STATE2;
+      when "11"   => return STATE3;
+      when others => return STATE0;
+    end case;
   end function;
 
 end package body prototype_regfile_pkg;
