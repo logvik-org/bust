@@ -8,6 +8,7 @@
 # Supported targets:
 #   example_ipbus   Run example/example_ipbus/tb/example_ipbus_ipb_pif_tb.vhd
 #   example_axi     Run example/example_axi/tb/example_axi_axi_pif_tb.vhd
+#   prototype       Run hdl/prototype/tb/prototype_regfile_tb.vhd (UVVM BFM)
 #
 # Optional flags:
 #   --wave          Generate a waveform file (FST) for GTKWave debugging.
@@ -103,9 +104,28 @@ case "${TARGET}" in
         )
         TOP_ENTITY="example_axi_axi_pif_tb"
         ;;
+    prototype)
+        # Local-bus register-file prototype with a UVVM testbench.
+        # localbus_bfm_pkg uses uvvm_util's shared_msg_id_panel as a default
+        # parameter value, which is not strictly static per VHDL-2008, so it is
+        # analysed with --relaxed (as vip_ipbus is at image-build time).
+        # uvvm_util itself resolves from nvc's system library path.
+        pre_compile() {
+            echo "  [nvc -a] localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/localbus_pkg.vhd"
+            echo "  [nvc -a --relaxed] localbus_bfm_pkg.vhd"
+            nvc ${NVC_OPTS} -a --relaxed "${WORK_ROOT}/hdl/prototype/localbus_bfm_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_regfile_tb.vhd"
+        )
+        TOP_ENTITY="prototype_regfile_tb"
+        ;;
     *)
         echo "ERROR: Unknown target '${TARGET}'." >&2
-        echo "Supported targets: example_ipbus, example_axi" >&2
+        echo "Supported targets: example_ipbus, example_axi, prototype" >&2
         exit 1
         ;;
 esac
