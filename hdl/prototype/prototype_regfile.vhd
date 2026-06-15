@@ -1,9 +1,9 @@
 -- Protocol-agnostic register file for the prototype module.
 -- Speaks only the local bus; protocol wrappers (AXI, IPBus) instantiate it.
 -- Exercises the core access-mode matrix: sw {rw,ro,wo,na} x hw {r,w,rw,na}
--- plus the we/wel/hwset/hwclr modifiers and the onread/onwrite software side
--- effects. Registers/fields use generic names (reg0..reg8, field0..); see
--- prototype_regfile_pkg.vhd for the access map.
+-- plus the we/wel/hwset/hwclr modifiers, the onread/onwrite software side
+-- effects, and the swmod/swacc/singlepulse pulse behaviours. Registers/fields
+-- use generic names (reg0..reg10, field0..); see prototype_regfile_pkg.vhd.
 --
 -- Two clocked processes split the bus side: p_write owns register storage
 -- (software writes, hardware-driven updates, and onread side effects, since all
@@ -44,6 +44,9 @@ architecture rtl of prototype_regfile is
   signal wr_err : std_logic;
   signal rd_ack : std_logic;
   signal rd_err : std_logic;
+
+  signal swmod_r9f0 : std_logic;        -- reg9.field0 swmod pulse (1 cycle)
+  signal swacc_r9f1 : std_logic;        -- reg9.field1 swacc pulse (1 cycle)
 
 begin
 
@@ -150,12 +153,36 @@ begin
         regs.reg8.field1 <= (others => '1');   -- wset
       end if;
 
+      -- reg9: sw rw, hw r. Plain storage; swmod/swacc strobes generated below.
+      if sw_write and sel_is(sel, C_ADDR_REG9) then
+        regs.reg9.field0 <= lb_m2s.wdata(3 downto 0);
+        regs.reg9.field1 <= lb_m2s.wdata(7 downto 4);
+      end if;
+
+      -- reg10.field0: singlepulse. Default-clear every cycle, so a software
+      -- write surfaces to hardware as a single-cycle pulse and then self-clears.
+      regs.reg10.field0 <= (others => '0');
+      if sw_write and sel_is(sel, C_ADDR_REG10) then
+        regs.reg10.field0 <= lb_m2s.wdata(3 downto 0);
+      end if;
+
       -- reg5 onread effects: applied on the cycle the software read is serviced.
       -- The read returns the pre-effect value; storage updates here on the same
       -- edge.
       if rd_service and sel_is(sel, C_ADDR_REG5) then
         regs.reg5.field0 <= (others => '0');   -- onread rclr
         regs.reg5.field1 <= (others => '1');   -- onread rset
+      end if;
+
+      -- reg9 software-access strobes: swmod pulses when software modifies
+      -- field0 (a write), swacc pulses on any software access (read or write).
+      swmod_r9f0 <= '0';
+      swacc_r9f1 <= '0';
+      if sw_write and sel_is(sel, C_ADDR_REG9) then
+        swmod_r9f0 <= '1';
+        swacc_r9f1 <= '1';
+      elsif rd_service and sel_is(sel, C_ADDR_REG9) then
+        swacc_r9f1 <= '1';
       end if;
 
       -- Write response: ack any mapped register (reg1 acks with no effect, all
@@ -170,9 +197,11 @@ begin
       end if;
 
       if rst = '1' then
-        regs   <= C_PROTOTYPE_REGS_RESET;
-        wr_ack <= '0';
-        wr_err <= '0';
+        regs       <= C_PROTOTYPE_REGS_RESET;
+        wr_ack     <= '0';
+        wr_err     <= '0';
+        swmod_r9f0 <= '0';
+        swacc_r9f1 <= '0';
       end if;
     end if;
   end process p_write;
@@ -229,6 +258,13 @@ begin
           rdata(3 downto 0) <= regs.reg8.field0;
           rdata(7 downto 4) <= regs.reg8.field1;
           rd_ack <= '1';
+        elsif sel_is(sel, C_ADDR_REG9) then
+          rdata(3 downto 0) <= regs.reg9.field0;
+          rdata(7 downto 4) <= regs.reg9.field1;
+          rd_ack <= '1';
+        elsif sel_is(sel, C_ADDR_REG10) then
+          rdata(3 downto 0) <= regs.reg10.field0;  -- usually 0 (pulse self-cleared)
+          rd_ack <= '1';
         else
           rd_err <= '1';
         end if;
@@ -250,6 +286,9 @@ begin
   to_hw.reg6 <= (field0 => regs.reg6.field0, field1 => regs.reg6.field1, field2 => regs.reg6.field2);
   to_hw.reg7 <= (field0 => regs.reg7.field0, field1 => regs.reg7.field1, field2 => regs.reg7.field2);
   to_hw.reg8 <= (field0 => regs.reg8.field0, field1 => regs.reg8.field1);
+  to_hw.reg9 <= (field0 => (value => regs.reg9.field0, swmod => swmod_r9f0),
+                 field1 => (value => regs.reg9.field1, swacc => swacc_r9f1));
+  to_hw.reg10 <= (field0 => regs.reg10.field0);
 
   lb_s2m.rdata <= rdata;
   lb_s2m.ack   <= wr_ack or rd_ack;
