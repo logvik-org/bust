@@ -55,7 +55,9 @@ package prototype_regfile_pkg is
   constant C_ADDR_REG7 : std_logic_vector(31 downto 0) := 32x"1C";
   constant C_ADDR_REG8 : std_logic_vector(31 downto 0) := 32x"20";
 
-  -- Width of the local register-select field (covers offsets 0x00..0x20).
+  -- Register-select width. 6 bits decode a 64-byte window (0x00..0x3F); the
+  -- registers occupy 0x00..0x20. base_match compares the bits above this width,
+  -- so the base address must be aligned to this 64-byte window.
   constant C_MODULE_ADDR_WIDTH : natural := 6;
 
   -- Internal storage, grouped per register. One member per field that holds
