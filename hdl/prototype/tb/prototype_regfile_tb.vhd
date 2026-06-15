@@ -1,9 +1,10 @@
 -- UVVM testbench for prototype_regfile.
 -- Drives the local bus through the localbus UVVM BFM and exercises the core
 -- access-mode matrix, the we/wel/hwset/hwclr modifiers, the documented
--- hardware/software write precedence, and the err response for both unmapped
--- offsets and wrong-base-address transactions. Registers/fields use generic
--- names (reg0..reg4, field0..); see prototype_regfile_pkg.vhd for the map.
+-- hardware/software write precedence, the onread/onwrite software side effects,
+-- and the err response for both unmapped offsets and wrong-base-address
+-- transactions. Registers/fields use generic names (reg0..reg8, field0..); see
+-- prototype_regfile_pkg.vhd for the map.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -129,9 +130,29 @@ begin
     from_hw.reg4.field1.clr <= '0';
     localbus_check(C_ADDR_REG4, x"0000000A", "hwclr beat hwset", clk, lb_m2s, lb_s2m);
 
+    log(ID_LOG_HDR, "reg5: onread rclr (field0) / rset (field1)", C_SCOPE);
+    localbus_write(C_ADDR_REG5, x"0000005A", "field0=A, field1=5", clk, lb_m2s, lb_s2m);
+    localbus_check(C_ADDR_REG5, x"0000005A", "read returns pre-effect value", clk, lb_m2s, lb_s2m);
+    localbus_check(C_ADDR_REG5, x"000000F0", "onread: field0 cleared, field1 set", clk, lb_m2s, lb_s2m);
+
+    log(ID_LOG_HDR, "reg6: onwrite woset / woclr / wot", C_SCOPE);
+    localbus_write(C_ADDR_REG6, x"0000065C", "woset 0xC, woclr 0x5, wot 0x6", clk, lb_m2s, lb_s2m);
+    localbus_check(C_ADDR_REG6, x"000006AC", "field0 set, field1 bits cleared, field2 toggled", clk, lb_m2s, lb_s2m);
+    check_value(to_hw.reg6.field0, "1100", error, "reg6.field0 exposed to hw", C_SCOPE);
+    localbus_write(C_ADDR_REG6, x"0000065C", "same write again", clk, lb_m2s, lb_s2m);
+    localbus_check(C_ADDR_REG6, x"000000AC", "woset/woclr idempotent, wot toggled back", clk, lb_m2s, lb_s2m);
+
+    log(ID_LOG_HDR, "reg7: onwrite wzs / wzc / wzt", C_SCOPE);
+    localbus_write(C_ADDR_REG7, x"00000555", "write 0x5 to each field", clk, lb_m2s, lb_s2m);
+    localbus_check(C_ADDR_REG7, x"00000A5A", "wzs/wzc/wzt act on the zero bits", clk, lb_m2s, lb_s2m);
+
+    log(ID_LOG_HDR, "reg8: onwrite wclr / wset (data-independent)", C_SCOPE);
+    localbus_write(C_ADDR_REG8, x"00000000", "any write triggers wclr/wset", clk, lb_m2s, lb_s2m);
+    localbus_check(C_ADDR_REG8, x"000000F0", "field0 cleared, field1 set", clk, lb_m2s, lb_s2m);
+
     log(ID_LOG_HDR, "err: unmapped offset and wrong base address", C_SCOPE);
-    localbus_check_err(x"00000014", false, "read unmapped offset", clk, lb_m2s, lb_s2m);
-    localbus_check_err(x"00000014", true,  "write unmapped offset", clk, lb_m2s, lb_s2m);
+    localbus_check_err(x"00000024", false, "read unmapped offset", clk, lb_m2s, lb_s2m);
+    localbus_check_err(x"00000024", true,  "write unmapped offset", clk, lb_m2s, lb_s2m);
     localbus_check_err(x"10000000", false, "read wrong base", clk, lb_m2s, lb_s2m);
     localbus_check_err(x"10000000", true,  "write wrong base", clk, lb_m2s, lb_s2m);
 
