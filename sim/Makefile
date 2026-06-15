@@ -39,7 +39,7 @@ GTKWAVE_RUN := docker run --rm \
     -v "$(WAVES_DIR):/waves:ro" \
     $(GTKWAVE_IMAGE)
 
-.PHONY: help build rebuild sim-ipbus sim-axi wave-ipbus wave-axi gtkwave clean
+.PHONY: help build rebuild sim-ipbus sim-axi sim-prototype wave-ipbus wave-axi wave-prototype gtkwave clean
 
 # Default target
 help:
@@ -50,8 +50,10 @@ help:
 	@echo "  make rebuild        Force-rebuild the image (no cache)"
 	@echo "  make sim-ipbus      Run the example_ipbus testbench"
 	@echo "  make sim-axi        Run the example_axi testbench"
+	@echo "  make sim-prototype  Run the prototype local-bus regfile testbench"
 	@echo "  make wave-ipbus     Run example_ipbus + capture FST + open GTKWave"
 	@echo "  make wave-axi       Run example_axi  + capture FST + open GTKWave"
+	@echo "  make wave-prototype Run prototype    + capture FST + open GTKWave"
 	@echo "  make gtkwave FILE=<path>  Open any FST/VCD file in GTKWave"
 	@echo "  make clean          Remove the local Docker image"
 	@echo ""
@@ -86,6 +88,9 @@ sim-ipbus: _require-image
 sim-axi: _require-image
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh example_axi
 
+sim-prototype: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype
+
 # ---------------------------------------------------------------------------
 # Waveform targets
 #
@@ -104,6 +109,11 @@ wave-axi: _require-image
 	@mkdir -p "$(WAVES_DIR)"
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh example_axi --wave=/work/sim/waves/example_axi.fst
 	$(GTKWAVE_RUN) gtkwave /waves/example_axi.fst
+
+wave-prototype: _require-image
+	@mkdir -p "$(WAVES_DIR)"
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype --wave=/work/sim/waves/prototype.fst
+	$(GTKWAVE_RUN) gtkwave /waves/prototype.fst
 
 # Open any FST or VCD file with GTKWave.
 # Usage: make gtkwave FILE=sim/waves/example_axi.fst
