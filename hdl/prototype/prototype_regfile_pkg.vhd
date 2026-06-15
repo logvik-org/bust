@@ -1,6 +1,6 @@
 -- Register definitions for the prototype module.
 --
--- The demo uses deliberately generic names (reg0..reg8, field0..) so the record
+-- The demo uses deliberately generic names (reg0..reg11, field0..) so the record
 -- structure and naming scheme can be reviewed without semantic distraction.
 -- The types here model what the generator will emit per module. Registers and
 -- fields are expressed as nested records (regs.<reg>.<field>) so a module with
@@ -40,6 +40,7 @@
 --   reg9  0x24  field0 [3:0]   sw rw  hw r   swmod
 --               field1 [7:4]   sw rw  hw r   swacc
 --   reg10 0x28  field0 [3:0]   sw rw  hw r   singlepulse
+--   reg11 0x2C  field0 [1:0]   sw rw  hw r   enum {STATE0..STATE3}
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -59,11 +60,19 @@ package prototype_regfile_pkg is
   constant C_ADDR_REG8 : std_logic_vector(31 downto 0) := 32x"20";
   constant C_ADDR_REG9 : std_logic_vector(31 downto 0) := 32x"24";
   constant C_ADDR_REG10 : std_logic_vector(31 downto 0) := 32x"28";
+  constant C_ADDR_REG11 : std_logic_vector(31 downto 0) := 32x"2C";
 
   -- Register-select width. 6 bits decode a 64-byte window (0x00..0x3F); the
-  -- registers occupy 0x00..0x28. base_match compares the bits above this width,
+  -- registers occupy 0x00..0x2C. base_match compares the bits above this width,
   -- so the base address must be aligned to this 64-byte window.
   constant C_MODULE_ADDR_WIDTH : natural := 6;
+
+  -- Enumerated field type for reg11.field0: hardware and software see named
+  -- states instead of raw bits, so assignments are compile-time type-checked.
+  -- The literal positions are the field's encoded values (0..3).
+  type t_reg11_field0 is (STATE0, STATE1, STATE2, STATE3);
+  function to_slv(v : t_reg11_field0) return std_logic_vector;
+  function to_reg11_field0(s : std_logic_vector(1 downto 0)) return t_reg11_field0;
 
   -- Internal storage, grouped per register. One member per field that holds
   -- state (every software- or hardware-writable field). One record per
@@ -135,6 +144,11 @@ package prototype_regfile_pkg is
     field0 : std_logic_vector(3 downto 0);   -- reg10.field0
   end record;
 
+  -- Stored fields of reg11 (enumerated field0, stored as the named type).
+  type t_reg11_regs is record
+    field0 : t_reg11_field0;                 -- reg11.field0
+  end record;
+
   -- Whole-module storage: the regfile keeps this as a single signal.
   type t_prototype_regs is record
     reg0 : t_reg0_regs;
@@ -148,6 +162,7 @@ package prototype_regfile_pkg is
     reg8 : t_reg8_regs;
     reg9 : t_reg9_regs;
     reg10 : t_reg10_regs;
+    reg11 : t_reg11_regs;
   end record;
 
   -- Clear-type onwrite fields (reg6.field1 woclr, reg7.field1 wzc, reg8.field0
@@ -164,7 +179,8 @@ package prototype_regfile_pkg is
     reg7 => (field0 => (others => '0'), field1 => (others => '1'), field2 => (others => '0')),
     reg8 => (field0 => (others => '1'), field1 => (others => '0')),
     reg9 => (field0 => (others => '0'), field1 => (others => '0')),
-    reg10 => (field0 => (others => '0')));
+    reg10 => (field0 => (others => '0')),
+    reg11 => (field0 => STATE0));
 
   -- regfile -> hardware: only fields the hardware can read (hw r / rw). One
   -- record per register that has at least one hardware-readable field.
@@ -236,6 +252,11 @@ package prototype_regfile_pkg is
     field0 : std_logic_vector(3 downto 0);
   end record;
 
+  -- reg11.field0: enumerated value exposed to hardware as the named type.
+  type t_reg11_to_hw is record
+    field0 : t_reg11_field0;
+  end record;
+
   -- Whole-module regfile -> hardware bundle: one member per register above.
   type t_prototype_to_hw is record
     reg0 : t_reg0_to_hw;
@@ -247,6 +268,7 @@ package prototype_regfile_pkg is
     reg8 : t_reg8_to_hw;
     reg9 : t_reg9_to_hw;
     reg10 : t_reg10_to_hw;
+    reg11 : t_reg11_to_hw;
   end record;
 
   -- hardware -> regfile: per-field input records pairing each value with the
@@ -343,7 +365,17 @@ package body prototype_regfile_pkg is
         or sel_is(sel, C_ADDR_REG4) or sel_is(sel, C_ADDR_REG5)
         or sel_is(sel, C_ADDR_REG6) or sel_is(sel, C_ADDR_REG7)
         or sel_is(sel, C_ADDR_REG8) or sel_is(sel, C_ADDR_REG9)
-        or sel_is(sel, C_ADDR_REG10);
+        or sel_is(sel, C_ADDR_REG10) or sel_is(sel, C_ADDR_REG11);
+  end function;
+
+  function to_slv(v : t_reg11_field0) return std_logic_vector is
+  begin
+    return std_logic_vector(to_unsigned(t_reg11_field0'pos(v), 2));
+  end function;
+
+  function to_reg11_field0(s : std_logic_vector(1 downto 0)) return t_reg11_field0 is
+  begin
+    return t_reg11_field0'val(to_integer(unsigned(s)));
   end function;
 
 end package body prototype_regfile_pkg;

@@ -224,6 +224,21 @@ hardware-input field pairs its value with `we`/`wel`. A `singlepulse` field
 needs no extra strobe: its storage default-clears every cycle, so a software
 write surfaces as a one-cycle pulse on the value and then self-clears.
 
+## Enumerated values
+
+A field with enumerated values generates a VHDL enumeration type rather than raw
+`std_logic_vector` constants, so hardware- and software-side assignments are
+checked against the named states at compile time. The regfile stores the field
+as the enum type and converts to/from bits only at the bus boundary (the read
+mux and the software-write path).
+
+| keyword | generated type             | encoding                              |
+| ------- | -------------------------- | ------------------------------------- |
+| `enums` | `t_<module>_<reg>_<field>` | literal position is the encoded value |
+
+The prototype's `reg11.field0` is a 2-bit enum `(STATE0, STATE1, STATE2,
+STATE3)` whose positions are the encoded values 0..3.
+
 ## Reset
 
 The regfile takes one native synchronous reset whose polarity is selected by a
@@ -258,17 +273,18 @@ read/write per access mode, `we`/`wel` capture and gating, the `hwclr > hwset`
 precedence, hardware `we` overriding a software write, `wo` reading back 0, the
 onread (rclr/rset) and onwrite (woset/woclr/wot/wzs/wzc/wzt/wclr/wset) side
 effects, the `swmod`/`swacc`/`singlepulse` single-cycle pulses (counted by a
-monitor so their width is checked), and `err` on both unmapped-offset and
-wrong-base-address transactions for reads and writes. It runs on `nvc` against the project's pre-compiled UVVM. Protocol
+monitor so their width is checked), the enumerated `reg11.field0` round-tripping
+through its named type, and `err` on both unmapped-offset and wrong-base-address
+transactions for reads and writes. It runs on `nvc` against the project's pre-compiled UVVM. Protocol
 wrappers, once added, get a thin handshake-conformance test on top using the
 stock UVVM AXI/IPBus VIP.
 
 ## Prototype demo module
 
 `prototype` exercises the core-access matrix, the onread/onwrite software side
-effects, and the swmod/swacc/singlepulse pulses. It uses deliberately generic
-register/field names (`reg0..reg10`, `field0..`) so the structure and naming
-scheme can be reviewed without semantic distraction:
+effects, the swmod/swacc/singlepulse pulses, and an enumerated-value field. It
+uses deliberately generic register/field names (`reg0..reg11`, `field0..`) so
+the structure and naming scheme can be reviewed without semantic distraction:
 
 | Register | Offset | Field  | Bits  | `sw` | `hw` | modifiers       |
 | -------- | ------ | ------ | ----- | ---- | ---- | --------------- |
@@ -294,12 +310,17 @@ scheme can be reviewed without semantic distraction:
 | reg9     | 0x24   | field0 | 3..0  | rw   | r    | swmod           |
 | reg9     | 0x24   | field1 | 7..4  | rw   | r    | swacc           |
 | reg10    | 0x28   | field0 | 3..0  | rw   | r    | singlepulse     |
+| reg11    | 0x2C   | field0 | 1..0  | rw   | r    | enum STATE0..3  |
 
-Enumerated-value types are the next pass; the record and local-bus shapes above
-are designed to absorb them without re-cutting the seam.
+With this the prototype covers the full v1 access-mode spec: software access and
+side effects, hardware access and modifiers, the software-access pulses, and
+enum types. The next step is the generator work (step 3), emitting this HDL from
+the register-map JSON.
 
 ## Deferred (unchanged)
 
-Enumerated-value types, and everything already on the project do-not-implement
-list. The local bus and record shapes above are intended to absorb these later
-without re-cutting the seam.
+Everything on the project do-not-implement list (precedence arbitration,
+counters, interrupts, nonsticky interrupt behaviour, queue/FIFO/LIFO interfaces,
+array registers, RAM interface generation, addrmap hierarchy). The local bus and
+record shapes above are intended to absorb these later without re-cutting the
+seam.
