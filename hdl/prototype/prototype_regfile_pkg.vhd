@@ -37,6 +37,9 @@
 --               field2 [11:8]  sw rw  hw r   onwrite wzt
 --   reg8  0x20  field0 [3:0]   sw rw  hw r   onwrite wclr
 --               field1 [7:4]   sw rw  hw r   onwrite wset
+--   reg9  0x24  field0 [3:0]   sw rw  hw r   swmod
+--               field1 [7:4]   sw rw  hw r   swacc
+--   reg10 0x28  field0 [3:0]   sw rw  hw r   singlepulse
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -54,9 +57,11 @@ package prototype_regfile_pkg is
   constant C_ADDR_REG6 : std_logic_vector(31 downto 0) := 32x"18";
   constant C_ADDR_REG7 : std_logic_vector(31 downto 0) := 32x"1C";
   constant C_ADDR_REG8 : std_logic_vector(31 downto 0) := 32x"20";
+  constant C_ADDR_REG9 : std_logic_vector(31 downto 0) := 32x"24";
+  constant C_ADDR_REG10 : std_logic_vector(31 downto 0) := 32x"28";
 
   -- Register-select width. 6 bits decode a 64-byte window (0x00..0x3F); the
-  -- registers occupy 0x00..0x20. base_match compares the bits above this width,
+  -- registers occupy 0x00..0x28. base_match compares the bits above this width,
   -- so the base address must be aligned to this 64-byte window.
   constant C_MODULE_ADDR_WIDTH : natural := 6;
 
@@ -119,6 +124,17 @@ package prototype_regfile_pkg is
     field1 : std_logic_vector(3 downto 0);   -- reg8.field1
   end record;
 
+  -- Stored fields of reg9 (swmod/swacc pulse demo).
+  type t_reg9_regs is record
+    field0 : std_logic_vector(3 downto 0);   -- reg9.field0
+    field1 : std_logic_vector(3 downto 0);   -- reg9.field1
+  end record;
+
+  -- Stored fields of reg10 (singlepulse: self-clears one cycle after a write).
+  type t_reg10_regs is record
+    field0 : std_logic_vector(3 downto 0);   -- reg10.field0
+  end record;
+
   -- Whole-module storage: the regfile keeps this as a single signal.
   type t_prototype_regs is record
     reg0 : t_reg0_regs;
@@ -130,6 +146,8 @@ package prototype_regfile_pkg is
     reg6 : t_reg6_regs;
     reg7 : t_reg7_regs;
     reg8 : t_reg8_regs;
+    reg9 : t_reg9_regs;
+    reg10 : t_reg10_regs;
   end record;
 
   -- Clear-type onwrite fields (reg6.field1 woclr, reg7.field1 wzc, reg8.field0
@@ -144,7 +162,9 @@ package prototype_regfile_pkg is
     reg5 => (field0 => (others => '0'), field1 => (others => '0')),
     reg6 => (field0 => (others => '0'), field1 => (others => '1'), field2 => (others => '0')),
     reg7 => (field0 => (others => '0'), field1 => (others => '1'), field2 => (others => '0')),
-    reg8 => (field0 => (others => '1'), field1 => (others => '0')));
+    reg8 => (field0 => (others => '1'), field1 => (others => '0')),
+    reg9 => (field0 => (others => '0'), field1 => (others => '0')),
+    reg10 => (field0 => (others => '0')));
 
   -- regfile -> hardware: only fields the hardware can read (hw r / rw). One
   -- record per register that has at least one hardware-readable field.
@@ -192,6 +212,30 @@ package prototype_regfile_pkg is
     field1 : std_logic_vector(3 downto 0);
   end record;
 
+  -- reg9 fields visible to hardware, each paired with its software-access pulse:
+  -- swmod pulses one cycle when software modifies the field; swacc pulses one
+  -- cycle when software reads or writes it.
+  type t_reg9_field0_out is record
+    value : std_logic_vector(3 downto 0);
+    swmod : std_logic;
+  end record;
+
+  type t_reg9_field1_out is record
+    value : std_logic_vector(3 downto 0);
+    swacc : std_logic;
+  end record;
+
+  type t_reg9_to_hw is record
+    field0 : t_reg9_field0_out;
+    field1 : t_reg9_field1_out;
+  end record;
+
+  -- reg10.field0: singlepulse. The value is itself the pulse (high one cycle
+  -- after a software write, then self-cleared), so there is no separate strobe.
+  type t_reg10_to_hw is record
+    field0 : std_logic_vector(3 downto 0);
+  end record;
+
   -- Whole-module regfile -> hardware bundle: one member per register above.
   type t_prototype_to_hw is record
     reg0 : t_reg0_to_hw;
@@ -201,6 +245,8 @@ package prototype_regfile_pkg is
     reg6 : t_reg6_to_hw;
     reg7 : t_reg7_to_hw;
     reg8 : t_reg8_to_hw;
+    reg9 : t_reg9_to_hw;
+    reg10 : t_reg10_to_hw;
   end record;
 
   -- hardware -> regfile: per-field input records pairing each value with the
@@ -296,7 +342,8 @@ package body prototype_regfile_pkg is
         or sel_is(sel, C_ADDR_REG2) or sel_is(sel, C_ADDR_REG3)
         or sel_is(sel, C_ADDR_REG4) or sel_is(sel, C_ADDR_REG5)
         or sel_is(sel, C_ADDR_REG6) or sel_is(sel, C_ADDR_REG7)
-        or sel_is(sel, C_ADDR_REG8);
+        or sel_is(sel, C_ADDR_REG8) or sel_is(sel, C_ADDR_REG9)
+        or sel_is(sel, C_ADDR_REG10);
   end function;
 
 end package body prototype_regfile_pkg;

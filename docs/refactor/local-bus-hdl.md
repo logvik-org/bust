@@ -208,6 +208,22 @@ stored value `f` with the write data `w`:
 A clear-type field (`woclr`/`wzc`/`wclr`) cannot be set by software, so in the
 demo those fields reset to all 1s to make the clearing observable.
 
+## Software-access pulses and singlepulse
+
+These surface software activity to hardware as single-cycle strobes:
+
+| keyword       | to-hw signal                | pulses when                           |
+| ------------- | --------------------------- | ------------------------------------- |
+| `swmod`       | `to_hw.<reg>.<field>.swmod` | software modifies the field (a write) |
+| `swacc`       | `to_hw.<reg>.<field>.swacc` | software reads or writes the field    |
+| `singlepulse` | `to_hw.<reg>.<field>` value | the value itself, one cycle after a write, then self-cleared |
+
+`swmod`/`swacc` ride alongside the field value in the hardware-side record, so a
+field with a pulse becomes a small record (`value` + strobe), just as a
+hardware-input field pairs its value with `we`/`wel`. A `singlepulse` field
+needs no extra strobe: its storage default-clears every cycle, so a software
+write surfaces as a one-cycle pulse on the value and then self-clears.
+
 ## Reset
 
 The regfile takes one native synchronous reset whose polarity is selected by a
@@ -241,17 +257,18 @@ wait for `ack`/`err`. The testbench
 read/write per access mode, `we`/`wel` capture and gating, the `hwclr > hwset`
 precedence, hardware `we` overriding a software write, `wo` reading back 0, the
 onread (rclr/rset) and onwrite (woset/woclr/wot/wzs/wzc/wzt/wclr/wset) side
-effects, and `err` on both unmapped-offset and wrong-base-address transactions
-for reads and writes. It runs on `nvc` against the project's pre-compiled UVVM. Protocol
+effects, the `swmod`/`swacc`/`singlepulse` single-cycle pulses (counted by a
+monitor so their width is checked), and `err` on both unmapped-offset and
+wrong-base-address transactions for reads and writes. It runs on `nvc` against the project's pre-compiled UVVM. Protocol
 wrappers, once added, get a thin handshake-conformance test on top using the
 stock UVVM AXI/IPBus VIP.
 
 ## Prototype demo module
 
-`prototype` exercises the core-access matrix plus the onread/onwrite software
-side effects. It uses deliberately generic register/field names (`reg0..reg8`,
-`field0..`) so the structure and naming scheme can be reviewed without semantic
-distraction:
+`prototype` exercises the core-access matrix, the onread/onwrite software side
+effects, and the swmod/swacc/singlepulse pulses. It uses deliberately generic
+register/field names (`reg0..reg10`, `field0..`) so the structure and naming
+scheme can be reviewed without semantic distraction:
 
 | Register | Offset | Field  | Bits  | `sw` | `hw` | modifiers       |
 | -------- | ------ | ------ | ----- | ---- | ---- | --------------- |
@@ -274,13 +291,15 @@ distraction:
 | reg7     | 0x1C   | field2 | 11..8 | rw   | r    | onwrite wzt     |
 | reg8     | 0x20   | field0 | 3..0  | rw   | r    | onwrite wclr    |
 | reg8     | 0x20   | field1 | 7..4  | rw   | r    | onwrite wset    |
+| reg9     | 0x24   | field0 | 3..0  | rw   | r    | swmod           |
+| reg9     | 0x24   | field1 | 7..4  | rw   | r    | swacc           |
+| reg10    | 0x28   | field0 | 3..0  | rw   | r    | singlepulse     |
 
-The `swmod`/`swacc` pulse outputs, per-field `singlepulse`, and enumerated-value
-types are the next passes; the record and local-bus shapes above are designed to
-absorb them without re-cutting the seam.
+Enumerated-value types are the next pass; the record and local-bus shapes above
+are designed to absorb them without re-cutting the seam.
 
 ## Deferred (unchanged)
 
-`swmod`/`swacc`, enum types, per-field `singlepulse`, and everything already on
-the project do-not-implement list. The local bus and record shapes above are
-intended to absorb these later without re-cutting the seam.
+Enumerated-value types, and everything already on the project do-not-implement
+list. The local bus and record shapes above are intended to absorb these later
+without re-cutting the seam.
