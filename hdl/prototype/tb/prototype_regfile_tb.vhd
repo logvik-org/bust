@@ -2,9 +2,10 @@
 -- Drives the local bus through the localbus UVVM BFM and exercises the core
 -- access-mode matrix, the we/wel/hwset/hwclr modifiers, the documented
 -- hardware/software write precedence, the onread/onwrite software side effects,
--- the swmod/swacc/singlepulse pulse behaviours, and the err response for both
--- unmapped offsets and wrong-base-address transactions. Registers/fields use
--- generic names (reg0..reg10, field0..); see prototype_regfile_pkg.vhd.
+-- the swmod/swacc/singlepulse pulse behaviours, enumerated-value field types,
+-- and the err response for both unmapped offsets and wrong-base-address
+-- transactions. Registers/fields use generic names (reg0..reg11, field0..); see
+-- prototype_regfile_pkg.vhd.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -182,6 +183,11 @@ begin
     log(ID_LOG_HDR, "reg10: singlepulse self-clears one cycle after write", C_SCOPE);
     localbus_write(C_ADDR_REG10, x"00000007", "pulse value 7", clk, lb_m2s, lb_s2m);
     localbus_check(C_ADDR_REG10, x"00000000", "field self-cleared after the pulse", clk, lb_m2s, lb_s2m);
+
+    log(ID_LOG_HDR, "reg11: enumerated field0 (STATE0..STATE3)", C_SCOPE);
+    localbus_write(C_ADDR_REG11, x"00000002", "field0 = STATE2", clk, lb_m2s, lb_s2m);
+    localbus_check(C_ADDR_REG11, x"00000002", "reg11 reads back the encoded value", clk, lb_m2s, lb_s2m);
+    check_value(to_hw.reg11.field0 = STATE2, error, "reg11.field0 is STATE2 to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "err: unmapped offset and wrong base address", C_SCOPE);
     localbus_check_err(x"0000003C", false, "read unmapped offset", clk, lb_m2s, lb_s2m);
