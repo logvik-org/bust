@@ -175,6 +175,39 @@ field, so it reads top to bottom:
 | 3            | hardware `we`/`wel`| the field's write enable asserted  |
 | 4 (lowest)   | software write     | a bus write hits the field         |
 
+## Software side effects (onread / onwrite)
+
+A field may transform itself on a software access instead of just storing the
+bus data. These live in the same single storage process that owns the field, so
+there is still one driver of `regs`.
+
+`onread` effects act when a software read is serviced. The read returns the
+value *before* the effect; storage updates on the same clock edge. The read-side
+effect reuses the read mux's "first cycle of the transaction" guard (response
+not yet asserted), so it fires exactly once per read.
+
+| `onread` | effect after the read |
+| -------- | --------------------- |
+| `rclr`   | field clears to 0     |
+| `rset`   | field sets to all 1s  |
+
+`onwrite` effects replace the plain store on a software write, combining the
+stored value `f` with the write data `w`:
+
+| `onwrite` | new value     | meaning                    |
+| --------- | ------------- | -------------------------- |
+| `woset`   | `f or w`      | write 1 sets bits          |
+| `woclr`   | `f and not w` | write 1 clears bits        |
+| `wot`     | `f xor w`     | write 1 toggles bits       |
+| `wzs`     | `f or not w`  | write 0 sets bits          |
+| `wzc`     | `f and w`     | write 0 clears bits        |
+| `wzt`     | `f xor not w` | write 0 toggles bits       |
+| `wclr`    | all 0s        | any write clears the field |
+| `wset`    | all 1s        | any write sets the field   |
+
+A clear-type field (`woclr`/`wzc`/`wclr`) cannot be set by software, so in the
+demo those fields reset to all 1s to make the clearing observable.
+
 ## Reset
 
 The regfile takes one native synchronous reset whose polarity is selected by a
@@ -206,38 +239,48 @@ model (`hdl/prototype/localbus_bfm_pkg.vhd`): a config record, scope and
 wait for `ack`/`err`. The testbench
 (`hdl/prototype/tb/prototype_regfile_tb.vhd`) drives the BFM and covers software
 read/write per access mode, `we`/`wel` capture and gating, the `hwclr > hwset`
-precedence, hardware `we` overriding a software write, `wo` reading back 0, and
-`err` on both unmapped-offset and wrong-base-address transactions for reads and
-writes. It runs on `nvc` against the project's pre-compiled UVVM. Protocol
+precedence, hardware `we` overriding a software write, `wo` reading back 0, the
+onread (rclr/rset) and onwrite (woset/woclr/wot/wzs/wzc/wzt/wclr/wset) side
+effects, and `err` on both unmapped-offset and wrong-base-address transactions
+for reads and writes. It runs on `nvc` against the project's pre-compiled UVVM. Protocol
 wrappers, once added, get a thin handshake-conformance test on top using the
 stock UVVM AXI/IPBus VIP.
 
 ## Prototype demo module
 
-`prototype` exercises the full core-access matrix. It uses deliberately generic
-register/field names (`reg0..reg4`, `field0..`) so the structure and naming
-scheme can be reviewed without semantic distraction:
+`prototype` exercises the core-access matrix plus the onread/onwrite software
+side effects. It uses deliberately generic register/field names (`reg0..reg8`,
+`field0..`) so the structure and naming scheme can be reviewed without semantic
+distraction:
 
-| Register | Offset | Field  | Bits  | `sw` | `hw` | modifiers      |
-| -------- | ------ | ------ | ----- | ---- | ---- | -------------- |
-| reg0     | 0x00   | field0 | 0     | rw   | r    |                |
-| reg0     | 0x00   | field1 | 2..1  | rw   | r    |                |
-| reg1     | 0x04   | field0 | 3..0  | ro   | w    | we             |
-| reg1     | 0x04   | field1 | 4     | ro   | w    | (continuous)   |
-| reg1     | 0x04   | field2 | 5     | ro   | w    | wel            |
-| reg2     | 0x08   | field0 | 0     | wo   | r    |                |
-| reg3     | 0x0C   | field0 | 7..0  | rw   | na   |                |
-| reg4     | 0x10   | field0 | 3..0  | rw   | rw   | we             |
-| reg4     | 0x10   | field1 | 8     | rw   | r    | hwset, hwclr   |
+| Register | Offset | Field  | Bits  | `sw` | `hw` | modifiers       |
+| -------- | ------ | ------ | ----- | ---- | ---- | --------------- |
+| reg0     | 0x00   | field0 | 0     | rw   | r    |                 |
+| reg0     | 0x00   | field1 | 2..1  | rw   | r    |                 |
+| reg1     | 0x04   | field0 | 3..0  | ro   | w    | we              |
+| reg1     | 0x04   | field1 | 4     | ro   | w    | (continuous)    |
+| reg1     | 0x04   | field2 | 5     | ro   | w    | wel             |
+| reg2     | 0x08   | field0 | 0     | wo   | r    |                 |
+| reg3     | 0x0C   | field0 | 7..0  | rw   | na   |                 |
+| reg4     | 0x10   | field0 | 3..0  | rw   | rw   | we              |
+| reg4     | 0x10   | field1 | 8     | rw   | r    | hwset, hwclr    |
+| reg5     | 0x14   | field0 | 3..0  | rw   | r    | onread rclr     |
+| reg5     | 0x14   | field1 | 7..4  | rw   | r    | onread rset     |
+| reg6     | 0x18   | field0 | 3..0  | rw   | r    | onwrite woset   |
+| reg6     | 0x18   | field1 | 7..4  | rw   | r    | onwrite woclr   |
+| reg6     | 0x18   | field2 | 11..8 | rw   | r    | onwrite wot     |
+| reg7     | 0x1C   | field0 | 3..0  | rw   | r    | onwrite wzs     |
+| reg7     | 0x1C   | field1 | 7..4  | rw   | r    | onwrite wzc     |
+| reg7     | 0x1C   | field2 | 11..8 | rw   | r    | onwrite wzt     |
+| reg8     | 0x20   | field0 | 3..0  | rw   | r    | onwrite wclr    |
+| reg8     | 0x20   | field1 | 7..4  | rw   | r    | onwrite wset    |
 
-This is intentionally scoped to **core access**. The software side effects
-(`onread`/`onwrite`), the `swmod`/`swacc` pulse outputs, enumerated-value types
-and per-field `singlepulse` are the next pass; the record and local-bus shapes
-above are designed to absorb them without re-cutting the seam.
+The `swmod`/`swacc` pulse outputs, per-field `singlepulse`, and enumerated-value
+types are the next passes; the record and local-bus shapes above are designed to
+absorb them without re-cutting the seam.
 
 ## Deferred (unchanged)
 
-`onread`/`onwrite` effects, `swmod`/`swacc`, enum types, per-field
-`singlepulse`, and everything already on the project do-not-implement list. The
-local bus and record shapes above are intended to absorb these later without
-re-cutting the seam.
+`swmod`/`swacc`, enum types, per-field `singlepulse`, and everything already on
+the project do-not-implement list. The local bus and record shapes above are
+intended to absorb these later without re-cutting the seam.
