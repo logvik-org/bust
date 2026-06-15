@@ -310,7 +310,7 @@ the structure and naming scheme can be reviewed without semantic distraction:
 | reg9     | 0x24   | field0 | 3..0  | rw   | r    | swmod           |
 | reg9     | 0x24   | field1 | 7..4  | rw   | r    | swacc           |
 | reg10    | 0x28   | field0 | 3..0  | rw   | r    | singlepulse     |
-| reg11    | 0x2C   | field0 | 1..0  | rw   | r    | enum STATE0..3  |
+| reg11    | 0x2C   | field0 | 1..0  | rw   | r    | enum STATE0..STATE3 |
 
 With this the prototype covers the full v1 access-mode spec: software access and
 side effects, hardware access and modifiers, the software-access pulses, and
