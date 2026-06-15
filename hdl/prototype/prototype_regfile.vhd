@@ -62,52 +62,39 @@ begin
   -- (provisional, since `precedence` is deferred) reads top-to-bottom:
   --   hwclr > hwset > hardware we/wel write > software write.
   p_write : process (clk) is
-    variable sel        : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-    variable hit        : boolean;     -- write addresses a known register
-    variable wr_reg0    : boolean;
-    variable wr_reg2    : boolean;
-    variable wr_reg3    : boolean;
-    variable wr_reg4    : boolean;
-    variable wr_reg5    : boolean;
-    variable wr_reg6    : boolean;
-    variable wr_reg7    : boolean;
-    variable wr_reg8    : boolean;
-    variable sw_write   : boolean;     -- a fresh, in-window software write
-    variable rd_service : boolean;     -- a fresh, in-window software read
+    variable sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+    variable sw_write : boolean;       -- a fresh, in-window software write
+    -- p_write is the single driver of `regs`, so the onread side effects (which
+    -- modify storage on a software read) are applied here too; this flags a
+    -- freshly serviced, in-window software read.
+    variable rd_service : boolean;
   begin
     if rising_edge(clk) then
       wr_ack <= '0';
       wr_err <= '0';
 
-      -- A software write only takes effect on the cycle the request is first
-      -- seen (wr_ack/wr_err still low). The master holds the request until it
-      -- observes the response, so this guard keeps writes and the ack pulse
-      -- single-shot.
+      -- A software access only takes effect on the cycle it is first seen
+      -- (wr_ack/rd_err/... still low). The master holds the request until it
+      -- observes the response, so these guards keep the effect single-shot.
       sel      := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
       sw_write := lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0'
                   and base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS);
-      wr_reg0  := sw_write and sel = C_ADDR_REG0(C_MODULE_ADDR_WIDTH-1 downto 0);
-      wr_reg2  := sw_write and sel = C_ADDR_REG2(C_MODULE_ADDR_WIDTH-1 downto 0);
-      wr_reg3  := sw_write and sel = C_ADDR_REG3(C_MODULE_ADDR_WIDTH-1 downto 0);
-      wr_reg4  := sw_write and sel = C_ADDR_REG4(C_MODULE_ADDR_WIDTH-1 downto 0);
-      wr_reg5  := sw_write and sel = C_ADDR_REG5(C_MODULE_ADDR_WIDTH-1 downto 0);
-      wr_reg6  := sw_write and sel = C_ADDR_REG6(C_MODULE_ADDR_WIDTH-1 downto 0);
-      wr_reg7  := sw_write and sel = C_ADDR_REG7(C_MODULE_ADDR_WIDTH-1 downto 0);
-      wr_reg8  := sw_write and sel = C_ADDR_REG8(C_MODULE_ADDR_WIDTH-1 downto 0);
+      rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0'
+                    and base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS);
 
       -- reg0: sw rw, hw r
-      if wr_reg0 then
+      if sw_write and sel_is(sel, C_ADDR_REG0) then
         regs.reg0.field0 <= lb_m2s.wdata(0);
         regs.reg0.field1 <= lb_m2s.wdata(2 downto 1);
       end if;
 
       -- reg2.field0: sw wo, hw r (drives hardware, reads back 0)
-      if wr_reg2 then
+      if sw_write and sel_is(sel, C_ADDR_REG2) then
         regs.reg2.field0 <= lb_m2s.wdata(0);
       end if;
 
       -- reg3.field0: sw rw, hw na
-      if wr_reg3 then
+      if sw_write and sel_is(sel, C_ADDR_REG3) then
         regs.reg3.field0 <= lb_m2s.wdata(7 downto 0);
       end if;
 
@@ -123,7 +110,7 @@ begin
       -- reg4.field0: hardware we write wins over software write.
       if from_hw.reg4.field0.we = '1' then
         regs.reg4.field0 <= from_hw.reg4.field0.value;
-      elsif wr_reg4 then
+      elsif sw_write and sel_is(sel, C_ADDR_REG4) then
         regs.reg4.field0 <= lb_m2s.wdata(3 downto 0);
       end if;
 
@@ -132,64 +119,50 @@ begin
         regs.reg4.field1 <= '0';
       elsif from_hw.reg4.field1.set = '1' then
         regs.reg4.field1 <= '1';
-      elsif wr_reg4 then
+      elsif sw_write and sel_is(sel, C_ADDR_REG4) then
         regs.reg4.field1 <= lb_m2s.wdata(8);
       end if;
 
       -- reg5: sw rw, hw r. Plain on write; the onread effect (below) acts on a
       -- software read, not a write.
-      if wr_reg5 then
+      if sw_write and sel_is(sel, C_ADDR_REG5) then
         regs.reg5.field0 <= lb_m2s.wdata(3 downto 0);
         regs.reg5.field1 <= lb_m2s.wdata(7 downto 4);
       end if;
 
       -- reg6: onwrite write-1 effects, with stored value f and write data w.
-      if wr_reg6 then
+      if sw_write and sel_is(sel, C_ADDR_REG6) then
         regs.reg6.field0 <= regs.reg6.field0 or lb_m2s.wdata(3 downto 0);        -- woset
         regs.reg6.field1 <= regs.reg6.field1 and not lb_m2s.wdata(7 downto 4);   -- woclr
         regs.reg6.field2 <= regs.reg6.field2 xor lb_m2s.wdata(11 downto 8);      -- wot
       end if;
 
       -- reg7: onwrite write-0 effects (the write-1 family with w inverted).
-      if wr_reg7 then
+      if sw_write and sel_is(sel, C_ADDR_REG7) then
         regs.reg7.field0 <= regs.reg7.field0 or not lb_m2s.wdata(3 downto 0);    -- wzs
         regs.reg7.field1 <= regs.reg7.field1 and lb_m2s.wdata(7 downto 4);       -- wzc
         regs.reg7.field2 <= regs.reg7.field2 xor not lb_m2s.wdata(11 downto 8);  -- wzt
       end if;
 
       -- reg8: onwrite whole-field effects (data-independent).
-      if wr_reg8 then
+      if sw_write and sel_is(sel, C_ADDR_REG8) then
         regs.reg8.field0 <= (others => '0');   -- wclr
         regs.reg8.field1 <= (others => '1');   -- wset
       end if;
 
-      -- onread side effects: applied on the cycle a software read is serviced
-      -- (rd_ack/rd_err still low, same guard p_read uses). The read returns the
-      -- pre-effect value; storage updates here on the same edge.
-      rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0'
-                    and base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS);
-      if rd_service and sel = C_ADDR_REG5(C_MODULE_ADDR_WIDTH-1 downto 0) then
+      -- reg5 onread effects: applied on the cycle the software read is serviced.
+      -- The read returns the pre-effect value; storage updates here on the same
+      -- edge.
+      if rd_service and sel_is(sel, C_ADDR_REG5) then
         regs.reg5.field0 <= (others => '0');   -- onread rclr
         regs.reg5.field1 <= (others => '1');   -- onread rset
       end if;
 
-      -- Write response: ack a mapped register (reg1 acks with no effect, all
+      -- Write response: ack any mapped register (reg1 acks with no effect, all
       -- its fields being sw ro), err an out-of-range or unmapped address.
       if lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' then
-        if not base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS) then
-          hit := false;
-        else
-          hit := sel = C_ADDR_REG0(C_MODULE_ADDR_WIDTH-1 downto 0)
-              or sel = C_ADDR_REG1(C_MODULE_ADDR_WIDTH-1 downto 0)
-              or sel = C_ADDR_REG2(C_MODULE_ADDR_WIDTH-1 downto 0)
-              or sel = C_ADDR_REG3(C_MODULE_ADDR_WIDTH-1 downto 0)
-              or sel = C_ADDR_REG4(C_MODULE_ADDR_WIDTH-1 downto 0)
-              or sel = C_ADDR_REG5(C_MODULE_ADDR_WIDTH-1 downto 0)
-              or sel = C_ADDR_REG6(C_MODULE_ADDR_WIDTH-1 downto 0)
-              or sel = C_ADDR_REG7(C_MODULE_ADDR_WIDTH-1 downto 0)
-              or sel = C_ADDR_REG8(C_MODULE_ADDR_WIDTH-1 downto 0);
-        end if;
-        if hit then
+        if base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS)
+           and is_mapped(sel) then
           wr_ack <= '1';
         else
           wr_err <= '1';
@@ -220,39 +193,39 @@ begin
         sel   := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
         if not base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS) then
           rd_err <= '1';
-        elsif sel = C_ADDR_REG0(C_MODULE_ADDR_WIDTH-1 downto 0) then
+        elsif sel_is(sel, C_ADDR_REG0) then
           rdata(0)          <= regs.reg0.field0;
           rdata(2 downto 1) <= regs.reg0.field1;
           rd_ack <= '1';
-        elsif sel = C_ADDR_REG1(C_MODULE_ADDR_WIDTH-1 downto 0) then
+        elsif sel_is(sel, C_ADDR_REG1) then
           rdata(3 downto 0) <= regs.reg1.field0;
           rdata(4)          <= regs.reg1.field1;
           rdata(5)          <= regs.reg1.field2;
           rd_ack <= '1';
-        elsif sel = C_ADDR_REG2(C_MODULE_ADDR_WIDTH-1 downto 0) then
+        elsif sel_is(sel, C_ADDR_REG2) then
           rd_ack <= '1';                            -- reg2.field0 sw wo: reads 0
-        elsif sel = C_ADDR_REG3(C_MODULE_ADDR_WIDTH-1 downto 0) then
+        elsif sel_is(sel, C_ADDR_REG3) then
           rdata(7 downto 0) <= regs.reg3.field0;
           rd_ack <= '1';
-        elsif sel = C_ADDR_REG4(C_MODULE_ADDR_WIDTH-1 downto 0) then
+        elsif sel_is(sel, C_ADDR_REG4) then
           rdata(3 downto 0) <= regs.reg4.field0;
           rdata(8)          <= regs.reg4.field1;
           rd_ack <= '1';
-        elsif sel = C_ADDR_REG5(C_MODULE_ADDR_WIDTH-1 downto 0) then
+        elsif sel_is(sel, C_ADDR_REG5) then
           rdata(3 downto 0) <= regs.reg5.field0;
           rdata(7 downto 4) <= regs.reg5.field1;
           rd_ack <= '1';
-        elsif sel = C_ADDR_REG6(C_MODULE_ADDR_WIDTH-1 downto 0) then
+        elsif sel_is(sel, C_ADDR_REG6) then
           rdata(3 downto 0)  <= regs.reg6.field0;
           rdata(7 downto 4)  <= regs.reg6.field1;
           rdata(11 downto 8) <= regs.reg6.field2;
           rd_ack <= '1';
-        elsif sel = C_ADDR_REG7(C_MODULE_ADDR_WIDTH-1 downto 0) then
+        elsif sel_is(sel, C_ADDR_REG7) then
           rdata(3 downto 0)  <= regs.reg7.field0;
           rdata(7 downto 4)  <= regs.reg7.field1;
           rdata(11 downto 8) <= regs.reg7.field2;
           rd_ack <= '1';
-        elsif sel = C_ADDR_REG8(C_MODULE_ADDR_WIDTH-1 downto 0) then
+        elsif sel_is(sel, C_ADDR_REG8) then
           rdata(3 downto 0) <= regs.reg8.field0;
           rdata(7 downto 4) <= regs.reg8.field1;
           rd_ack <= '1';
@@ -269,21 +242,14 @@ begin
     end if;
   end process p_read;
 
-  to_hw.reg0.field0 <= regs.reg0.field0;
-  to_hw.reg0.field1 <= regs.reg0.field1;
-  to_hw.reg2.field0 <= regs.reg2.field0;
-  to_hw.reg4.field0 <= regs.reg4.field0;
-  to_hw.reg4.field1 <= regs.reg4.field1;
-  to_hw.reg5.field0 <= regs.reg5.field0;
-  to_hw.reg5.field1 <= regs.reg5.field1;
-  to_hw.reg6.field0 <= regs.reg6.field0;
-  to_hw.reg6.field1 <= regs.reg6.field1;
-  to_hw.reg6.field2 <= regs.reg6.field2;
-  to_hw.reg7.field0 <= regs.reg7.field0;
-  to_hw.reg7.field1 <= regs.reg7.field1;
-  to_hw.reg7.field2 <= regs.reg7.field2;
-  to_hw.reg8.field0 <= regs.reg8.field0;
-  to_hw.reg8.field1 <= regs.reg8.field1;
+  -- Hardware-side outputs, one aggregate per register.
+  to_hw.reg0 <= (field0 => regs.reg0.field0, field1 => regs.reg0.field1);
+  to_hw.reg2 <= (field0 => regs.reg2.field0);
+  to_hw.reg4 <= (field0 => regs.reg4.field0, field1 => regs.reg4.field1);
+  to_hw.reg5 <= (field0 => regs.reg5.field0, field1 => regs.reg5.field1);
+  to_hw.reg6 <= (field0 => regs.reg6.field0, field1 => regs.reg6.field1, field2 => regs.reg6.field2);
+  to_hw.reg7 <= (field0 => regs.reg7.field0, field1 => regs.reg7.field1, field2 => regs.reg7.field2);
+  to_hw.reg8 <= (field0 => regs.reg8.field0, field1 => regs.reg8.field1);
 
   lb_s2m.rdata <= rdata;
   lb_s2m.ack   <= wr_ack or rd_ack;
