@@ -29,7 +29,7 @@ architecture tb of prototype_ipb_endpoint_tb is
   constant C_CLK_PERIOD : time   := 10 ns;
 
   signal clk   : std_logic := '0';
-  signal reset : std_logic := '1';
+  signal reset : std_logic := '0';   -- active-high; gen_pulse asserts it
 
   signal ipb_in  : ipb_wbus;
   signal ipb_out : ipb_rbus;
