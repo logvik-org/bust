@@ -38,7 +38,7 @@ end entity prototype_ipb_endpoint;
 
 architecture rtl of prototype_ipb_endpoint is
 
-  type t_state is (ST_IDLE, ST_BUSY, ST_DONE);
+  type t_state is (ST_IDLE, ST_BUSY);
   signal state : t_state := ST_IDLE;
 
   signal m2s : t_lb_m2s := C_LB_M2S_IDLE;
@@ -77,7 +77,12 @@ begin
 
         case state is
           when ST_IDLE =>
-            if ipb_in.ipb_strobe = '1' then
+            -- Start on a strobe, but not while still presenting a response
+            -- (ack/err high). This gates re-triggering the just-acked access
+            -- and handles back-to-back strobes without the master having to
+            -- drop strobe between transactions.
+            if ipb_in.ipb_strobe = '1'
+               and ipb_out_i.ipb_ack = '0' and ipb_out_i.ipb_err = '0' then
               -- IPBus word address -> regfile byte address.
               m2s.address <= ipb_in.ipb_addr(29 downto 0) & "00";
               m2s.wdata   <= ipb_in.ipb_wdata;
@@ -93,13 +98,7 @@ begin
               ipb_out_i.ipb_rdata <= s2m.rdata;
               ipb_out_i.ipb_ack   <= s2m.ack;
               ipb_out_i.ipb_err   <= s2m.err;
-              state               <= ST_DONE;
-            end if;
-
-          when ST_DONE =>
-            -- ack/err pulsed for one cycle; wait for the master to drop strobe.
-            if ipb_in.ipb_strobe = '0' then
-              state <= ST_IDLE;
+              state               <= ST_IDLE;
             end if;
         end case;
       end if;
