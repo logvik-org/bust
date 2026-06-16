@@ -10,6 +10,7 @@
 #   example_axi     Run example/example_axi/tb/example_axi_axi_pif_tb.vhd
 #   prototype       Run hdl/prototype/tb/prototype_regfile_tb.vhd (UVVM BFM)
 #   prototype_axi   Run hdl/prototype/tb/prototype_axi_endpoint_tb.vhd (AXI-Lite VIP)
+#   prototype_ipbus Run hdl/prototype/tb/prototype_ipb_endpoint_tb.vhd (vip_ipbus)
 #
 # Optional flags:
 #   --wave          Generate a waveform file (FST) for GTKWave debugging.
