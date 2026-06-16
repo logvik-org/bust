@@ -88,3 +88,14 @@ jobs:
             -e WORK_ROOT=/work \
             bust-sim:ci \
             /work/sim/scripts/run_sim.sh prototype
+
+      # -----------------------------------------------------------------------
+      # 7. Run the AXI4-Lite wrapper prototype testbench
+      # -----------------------------------------------------------------------
+      - name: Run prototype AXI-Lite wrapper simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_axi

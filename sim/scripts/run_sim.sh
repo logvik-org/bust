@@ -9,6 +9,7 @@
 #   example_ipbus   Run example/example_ipbus/tb/example_ipbus_ipb_pif_tb.vhd
 #   example_axi     Run example/example_axi/tb/example_axi_axi_pif_tb.vhd
 #   prototype       Run hdl/prototype/tb/prototype_regfile_tb.vhd (UVVM BFM)
+#   prototype_axi   Run hdl/prototype/tb/prototype_axi_pif_tb.vhd (AXI-Lite VIP)
 #
 # Optional flags:
 #   --wave          Generate a waveform file (FST) for GTKWave debugging.
@@ -123,9 +124,24 @@ case "${TARGET}" in
         )
         TOP_ENTITY="prototype_regfile_tb"
         ;;
+    prototype_axi)
+        # AXI4-Lite wrapper over the local-bus regfile, checked with the stock
+        # Bitvis AXI-Lite VIP (resolved from nvc's system library path).
+        pre_compile() {
+            echo "  [nvc -a] localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_axi_pif.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_axi_pif_tb.vhd"
+        )
+        TOP_ENTITY="prototype_axi_pif_tb"
+        ;;
     *)
         echo "ERROR: Unknown target '${TARGET}'." >&2
-        echo "Supported targets: example_ipbus, example_axi, prototype" >&2
+        echo "Supported targets: example_ipbus, example_axi, prototype, prototype_axi" >&2
         exit 1
         ;;
 esac

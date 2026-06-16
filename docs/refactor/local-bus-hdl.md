@@ -275,9 +275,22 @@ onread (rclr/rset) and onwrite (woset/woclr/wot/wzs/wzc/wzt/wclr/wset) side
 effects, the `swmod`/`swacc`/`singlepulse` single-cycle pulses (counted by a
 monitor so their width is checked), the enumerated `reg11.field0` round-tripping
 through its named type, and `err` on both unmapped-offset and wrong-base-address
-transactions for reads and writes. It runs on `nvc` against the project's pre-compiled UVVM. Protocol
-wrappers, once added, get a thin handshake-conformance test on top using the
-stock UVVM AXI/IPBus VIP.
+transactions for reads and writes. It runs on `nvc` against the project's pre-compiled UVVM.
+
+## Protocol wrappers
+
+Each `<bus>` wrapper owns only the handshake and instantiates the regfile,
+serializing one transaction at a time onto the single-outstanding local bus and
+adapting its own reset to the regfile's polarity generic.
+
+The AXI4-Lite wrapper prototype (`hdl/prototype/prototype_axi_pif.vhd`) is a
+small AXI subordinate FSM: it accepts AW+W (or AR), drives `wen`/`ren` with the
+full byte address, holds until the regfile answers, and returns the response
+(`err` -> `SLVERR`, `ack` -> `OKAY`). AXI's async active-low reset is passed to
+the regfile via `G_RESET_ACTIVE_LOW`. It is verified with the stock Bitvis
+AXI-Lite VIP (`hdl/prototype/tb/prototype_axi_pif_tb.vhd`, `make sim-prototype-axi`),
+a thin conformance test over the AXI -> local-bus -> regfile path. The IPBus
+wrapper follows the same shape (next).
 
 ## Prototype demo module
 
