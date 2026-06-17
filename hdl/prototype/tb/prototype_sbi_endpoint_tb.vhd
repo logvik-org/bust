@@ -129,6 +129,11 @@ begin
     sbi_ck(f_addr(C_BASE, C_ADDR_REG11), 32x"2", "reg11 reads back encoded value");
     check_value(to_hw.reg11.field0 = STATE2, error, "reg11.field0 is STATE2 to hw", C_SCOPE);
 
+    -- A decode error has no SBI error line: the wrapper still completes the
+    -- ready handshake and returns a deterministic 0 (regfile err -> rdata 0).
+    log(ID_LOG_HDR, "decode error: out-of-base read completes with rdata 0", C_SCOPE);
+    sbi_ck(x"00000000", 32x"0", "invalid-address read completes and reads 0");
+
     wait for 10*C_CLK_PERIOD;
     report_alert_counters(FINAL);
     log(ID_LOG_HDR, "SIMULATION COMPLETED", C_SCOPE);
