@@ -143,3 +143,14 @@ jobs:
             -e WORK_ROOT=/work \
             bust-sim:ci \
             /work/sim/scripts/run_sim.sh prototype_wishbone
+
+      # -----------------------------------------------------------------------
+      # 12. Run the APB wrapper prototype testbench
+      # -----------------------------------------------------------------------
+      - name: Run prototype APB wrapper simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_apb
