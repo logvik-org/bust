@@ -39,7 +39,7 @@ GTKWAVE_RUN := docker run --rm \
     -v "$(WAVES_DIR):/waves:ro" \
     $(GTKWAVE_IMAGE)
 
-.PHONY: help build rebuild sim-ipbus sim-axi sim-prototype sim-prototype-axi sim-prototype-ipbus sim-prototype-sbi sim-prototype-avalon sim-prototype-wishbone wave-ipbus wave-axi wave-prototype wave-prototype-axi wave-prototype-ipbus wave-prototype-sbi wave-prototype-avalon wave-prototype-wishbone gtkwave clean
+.PHONY: help build rebuild sim-ipbus sim-axi sim-prototype sim-prototype-axi sim-prototype-ipbus sim-prototype-sbi sim-prototype-avalon sim-prototype-wishbone sim-prototype-apb wave-ipbus wave-axi wave-prototype wave-prototype-axi wave-prototype-ipbus wave-prototype-sbi wave-prototype-avalon wave-prototype-wishbone wave-prototype-apb gtkwave clean
 
 # Default target
 help:
@@ -56,6 +56,7 @@ help:
 	@echo "  make sim-prototype-sbi  Run the SBI wrapper testbench"
 	@echo "  make sim-prototype-avalon  Run the Avalon-MM wrapper testbench"
 	@echo "  make sim-prototype-wishbone  Run the Wishbone wrapper testbench"
+	@echo "  make sim-prototype-apb  Run the APB wrapper testbench"
 	@echo "  make wave-ipbus     Run example_ipbus + capture FST + open GTKWave"
 	@echo "  make wave-axi       Run example_axi  + capture FST + open GTKWave"
 	@echo "  make wave-prototype Run prototype    + capture FST + open GTKWave"
@@ -111,6 +112,9 @@ sim-prototype-avalon: _require-image
 sim-prototype-wishbone: _require-image
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_wishbone
 
+sim-prototype-apb: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_apb
+
 # ---------------------------------------------------------------------------
 # Waveform targets
 #
@@ -159,6 +163,11 @@ wave-prototype-wishbone: _require-image
 	@mkdir -p "$(WAVES_DIR)"
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_wishbone --wave=/work/sim/waves/prototype_wishbone.fst
 	$(GTKWAVE_RUN) gtkwave /waves/prototype_wishbone.fst
+
+wave-prototype-apb: _require-image
+	@mkdir -p "$(WAVES_DIR)"
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_apb --wave=/work/sim/waves/prototype_apb.fst
+	$(GTKWAVE_RUN) gtkwave /waves/prototype_apb.fst
 
 # Open any FST or VCD file with GTKWave.
 # Usage: make gtkwave FILE=sim/waves/example_axi.fst
