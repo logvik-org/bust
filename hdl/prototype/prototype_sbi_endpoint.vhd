@@ -8,13 +8,16 @@
 -- SBI is a single-beat protocol with an explicit ready handshake: the master
 -- raises cs together with wena or rena and holds the request until the slave
 -- asserts ready. The bridge starts one local-bus transaction on that strobe,
--- holds until the regfile answers with ack/err, then pulses ready (with rdata
--- valid) and holds it until the master ends the access by dropping cs. err and
--- ack both surface as a single ready beat: SBI has no error line, matching the
--- regfile's policy of reserving err for address-decode failures. SBI carries no
--- reset of its own, so a sync active-high reset is passed straight to the
--- regfile. The master drives a byte address (as the AXI endpoint does), so it
--- maps directly onto the local-bus address with no shift.
+-- holds until the regfile answers with ack/err, then drives ready for a single
+-- clock (with rdata valid) before waiting for the master to end the access by
+-- dropping cs. The single-cycle ready beat matters: the SBI master samples rdata
+-- on the same edge it first sees ready high, so leaving ready asserted into the
+-- next access would let the master sample stale data. ack and err alike complete
+-- as one ready beat (SBI has no error line); on a decode error rdata is forced to
+-- 0 so reads of invalid addresses are deterministic, matching the AXI endpoint.
+-- SBI carries no reset of its own, so a sync active-high reset is passed straight
+-- to the regfile. The master drives a byte address (as the AXI endpoint does), so
+-- it maps directly onto the local-bus address with no shift.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -84,8 +87,10 @@ begin
         case state is
           when ST_IDLE =>
             ready_i <= '0';
-            -- SBI asserts exactly one of wena/rena with cs; forward as-is.
-            if cs = '1' and (wena = '1' or rena = '1') then
+            -- Start only on an exclusive request (wena xor rena). SBI asserts
+            -- exactly one, but enforcing it here keeps the local-bus invariant
+            -- (exactly one of wen/ren) from leaking out to a mis-driven master.
+            if cs = '1' and (wena xor rena) = '1' then
               m2s.address <= addr;
               m2s.wdata   <= wdata;
               m2s.wen     <= wena;
@@ -97,16 +102,25 @@ begin
             if s2m.ack = '1' or s2m.err = '1' then
               m2s.wen <= '0';
               m2s.ren <= '0';
-              rdata_i <= s2m.rdata;
+              -- err -> deterministic 0 (the regfile leaves rdata unchanged on a
+              -- decode error, and SBI has no error line to flag it).
+              if s2m.err = '1' then
+                rdata_i <= (others => '0');
+              else
+                rdata_i <= s2m.rdata;
+              end if;
               ready_i <= '1';
               state   <= ST_RESP;
             end if;
 
           when ST_RESP =>
-            -- Hold ready and rdata until the master ends the access (cs low).
+            -- ready is a single-cycle beat (set in ST_BUSY); drop it after the
+            -- master has had one clock to sample it, then wait for the access to
+            -- end (cs low) so the next access starts clean and never samples a
+            -- stale ready/rdata.
+            ready_i <= '0';
             if cs = '0' then
-              ready_i <= '0';
-              state   <= ST_IDLE;
+              state <= ST_IDLE;
             end if;
         end case;
       end if;
