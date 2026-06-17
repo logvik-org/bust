@@ -79,9 +79,11 @@ generator work.
 ### Addressing
 
 The local bus carries a **byte address** so the regfile decode stays
-protocol-agnostic: AXI4-Lite is byte-addressed natively, and the IPBus wrapper
-converts its native word address to a byte address before driving the bus. This
-is an internal-bus convention only, not a restriction on the register map.
+protocol-agnostic: each wrapper forwards the incoming address unchanged and the
+regfile slices the module window from it (low bits select the register, upper
+bits check the base), exactly as the v1 AXI and IPBus PIFs did. No wrapper shifts
+or rewrites the address. This is an internal-bus convention only, not a
+restriction on the register map.
 
 bust must support whatever addressing scheme the register map declares, with
 **byte-addressing and word-addressing** being the two common cases, and the
@@ -293,8 +295,9 @@ AXI-Lite VIP (`hdl/prototype/tb/prototype_axi_endpoint_tb.vhd`, `make sim-protot
 The IPBus endpoint prototype (`hdl/prototype/prototype_ipb_endpoint.vhd`) is
 thinner, since IPBus is itself a single-beat hold-until-ack protocol: a strobe
 starts one local-bus transaction (`wen`/`ren`), held until the regfile answers,
-forwarded back as `ipb_ack`/`ipb_err`. IPBus word addresses are converted to the
-regfile's byte address (shift left by 2), and its sync active-high reset passes
+forwarded back as `ipb_ack`/`ipb_err`. The address is forwarded unchanged and the
+regfile slices the module window from it (as the AXI endpoint and v1 PIFs do), and
+its sync active-high reset passes
 straight through. It is verified with the stock `vip_ipbus` VIP
 (`hdl/prototype/tb/prototype_ipb_endpoint_tb.vhd`, `make sim-prototype-ipbus`).
 
