@@ -1,9 +1,9 @@
 -- UVVM handshake-conformance testbench for prototype_ipb_endpoint.
 -- Drives the IPBus interface with the stock vip_ipbus VIP and checks that the
--- wrapper bridges correctly to the local-bus regfile. IPBus word addresses are
--- converted to the regfile's byte offsets by the wrapper, so the VIP drives
--- word addresses (byte offset >> 2) with a zero base. Full access-mode coverage
--- lives in prototype_regfile_tb; this only proves the protocol translation.
+-- wrapper bridges correctly to the local-bus regfile. The wrapper forwards the
+-- address unchanged and the regfile slices the module window from it, so the VIP
+-- drives the register byte offsets directly (zero base). Full access-mode
+-- coverage lives in prototype_regfile_tb; this only proves the protocol translation.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -45,10 +45,10 @@ architecture tb of prototype_ipb_endpoint_tb is
   signal ipbus_if         : t_ipbus_if := init_ipbus_if_signals;
   signal ipbus_bfm_config : t_ipbus_bfm_config := C_IPBUS_BFM_CONFIG_DEFAULT;
 
-  -- IPBus word address for a register's byte offset (zero base).
-  function f_waddr(reg : std_logic_vector(31 downto 0)) return unsigned is
+  -- Register byte offset as the IPBus address (zero base); forwarded as-is.
+  function f_addr(reg : std_logic_vector(31 downto 0)) return unsigned is
   begin
-    return shift_right(unsigned(reg), 2);
+    return unsigned(reg);
   end function;
 
 begin
@@ -105,14 +105,14 @@ begin
     gen_pulse(reset, '1', 500 ns, BLOCKING, "Reset for 500 ns");
 
     log(ID_LOG_HDR, "reg0: sw rw write/read over IPBus", C_SCOPE);
-    ipb_wr(f_waddr(C_ADDR_REG0), 32x"5", "reg0 = field1=10, field0=1");
-    ipb_rd_check(f_waddr(C_ADDR_REG0), 32x"5", "reg0 reads back");
+    ipb_wr(f_addr(C_ADDR_REG0), 32x"5", "reg0 = field1=10, field0=1");
+    ipb_rd_check(f_addr(C_ADDR_REG0), 32x"5", "reg0 reads back");
     check_value(to_hw.reg0.field0, '1', error, "reg0.field0 to hw", C_SCOPE);
     check_value(to_hw.reg0.field1, "10", error, "reg0.field1 to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg3: sw rw + hw na round-trip", C_SCOPE);
-    ipb_wr(f_waddr(C_ADDR_REG3), 32x"A5", "reg3 = 0xA5");
-    ipb_rd_check(f_waddr(C_ADDR_REG3), 32x"A5", "reg3 reads back");
+    ipb_wr(f_addr(C_ADDR_REG3), 32x"A5", "reg3 = 0xA5");
+    ipb_rd_check(f_addr(C_ADDR_REG3), 32x"A5", "reg3 reads back");
 
     log(ID_LOG_HDR, "reg1: sw ro, hardware-driven, read over IPBus", C_SCOPE);
     wait until falling_edge(clk);
@@ -125,11 +125,11 @@ begin
     from_hw.reg1.field0.we    <= '0';
     from_hw.reg1.field2.wel   <= '1';
     -- reg1 = field2(5)|field1(4)|field0(3:0) = 1|1|1011 = 0x3B
-    ipb_rd_check(f_waddr(C_ADDR_REG1), 32x"3B", "reg1 reflects hw over IPBus");
+    ipb_rd_check(f_addr(C_ADDR_REG1), 32x"3B", "reg1 reflects hw over IPBus");
 
     log(ID_LOG_HDR, "reg11: enumerated field0 over IPBus", C_SCOPE);
-    ipb_wr(f_waddr(C_ADDR_REG11), 32x"2", "reg11.field0 = STATE2");
-    ipb_rd_check(f_waddr(C_ADDR_REG11), 32x"2", "reg11 reads back encoded value");
+    ipb_wr(f_addr(C_ADDR_REG11), 32x"2", "reg11.field0 = STATE2");
+    ipb_rd_check(f_addr(C_ADDR_REG11), 32x"2", "reg11 reads back encoded value");
     check_value(to_hw.reg11.field0 = STATE2, error, "reg11.field0 is STATE2 to hw", C_SCOPE);
 
     wait for 10*C_CLK_PERIOD;
