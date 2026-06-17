@@ -309,6 +309,17 @@ reset, so a sync active-high reset passes straight through, and the master drive
 a byte address directly onto the local bus. It is verified with the stock Bitvis
 SBI VIP (`hdl/prototype/tb/prototype_sbi_endpoint_tb.vhd`, `make sim-prototype-sbi`).
 
+The Avalon-MM endpoint prototype (`hdl/prototype/prototype_avalon_endpoint.vhd`)
+is the dual of the SBI one: Avalon-MM stalls with `waitrequest`, so `waitrequest`
+high is "not ready" (SBI `ready` low) and the accept beat is a single-cycle
+`waitrequest` low (SBI `ready` high) with `readdata` valid, for a
+waitrequest-controlled read without `readdatavalid`. The same one-cycle re-trigger
+guard applies. The endpoint does not implement the optional Avalon-MM `response`
+signal, so decode errors complete as a normal beat with `readdata` 0 (as on SBI).
+Its sync active-high reset passes straight through and the master drives a byte
+address. It is verified with the stock Bitvis Avalon-MM VIP
+(`hdl/prototype/tb/prototype_avalon_endpoint_tb.vhd`, `make sim-prototype-avalon`).
+
 ## Prototype demo module
 
 `prototype` exercises the core-access matrix, the onread/onwrite software side
