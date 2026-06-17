@@ -9,15 +9,20 @@
 -- raises cs together with wena or rena and holds the request until the slave
 -- asserts ready. The bridge starts one local-bus transaction on that strobe,
 -- holds until the regfile answers with ack/err, then drives ready for a single
--- clock (with rdata valid) before waiting for the master to end the access by
--- dropping cs. The single-cycle ready beat matters: the SBI master samples rdata
--- on the same edge it first sees ready high, so leaving ready asserted into the
--- next access would let the master sample stale data. ack and err alike complete
--- as one ready beat (SBI has no error line); on a decode error rdata is forced to
--- 0 so reads of invalid addresses are deterministic, matching the AXI endpoint.
--- SBI carries no reset of its own, so a sync active-high reset is passed straight
--- to the regfile. The master drives a byte address (as the AXI endpoint does), so
--- it maps directly onto the local-bus address with no shift.
+-- clock with rdata valid. Two details matter:
+--   * ready is a one-cycle beat, not held until cs drops. The SBI master samples
+--     rdata on the same edge it first sees ready, then ends the access; leaving
+--     ready high would let the next access sample a stale ready/rdata, and the
+--     inter-access cs gap is sub-cycle so it cannot be sampled reliably anyway.
+--   * a one-cycle guard (ready still registered high the cycle after BUSY) blocks
+--     re-triggering the just-completed access, the same scheme as the IPBus
+--     endpoint. IDLE re-evaluates cs/wena/rena every cycle, so a back-to-back
+--     access starts immediately with no cs-low handshake.
+-- ack and err alike complete as one ready beat (SBI has no error line); on a
+-- decode error rdata is forced to 0 so reads of invalid addresses are
+-- deterministic, matching the AXI endpoint. SBI carries no reset of its own, so a
+-- sync active-high reset is passed straight to the regfile. The master drives a
+-- byte address (as the AXI endpoint does), mapped directly onto the local bus.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -51,7 +56,7 @@ end entity prototype_sbi_endpoint;
 
 architecture rtl of prototype_sbi_endpoint is
 
-  type t_state is (ST_IDLE, ST_BUSY, ST_RESP);
+  type t_state is (ST_IDLE, ST_BUSY);
   signal state : t_state := ST_IDLE;
 
   signal m2s : t_lb_m2s := C_LB_M2S_IDLE;
@@ -84,13 +89,15 @@ begin
         ready_i <= '0';
         rdata_i <= (others => '0');
       else
+        ready_i <= '0';                   -- ready is a single-cycle beat
+
         case state is
           when ST_IDLE =>
-            ready_i <= '0';
-            -- Start only on an exclusive request (wena xor rena). SBI asserts
-            -- exactly one, but enforcing it here keeps the local-bus invariant
-            -- (exactly one of wen/ren) from leaking out to a mis-driven master.
-            if cs = '1' and (wena xor rena) = '1' then
+            -- Start on an exclusive request (wena xor rena enforces the
+            -- local-bus one-of-wen/ren invariant), but not while ready is still
+            -- registered high: that gates re-triggering the just-completed
+            -- access without needing to see cs go low.
+            if cs = '1' and (wena xor rena) = '1' and ready_i = '0' then
               m2s.address <= addr;
               m2s.wdata   <= wdata;
               m2s.wen     <= wena;
@@ -110,17 +117,7 @@ begin
                 rdata_i <= s2m.rdata;
               end if;
               ready_i <= '1';
-              state   <= ST_RESP;
-            end if;
-
-          when ST_RESP =>
-            -- ready is a single-cycle beat (set in ST_BUSY); drop it after the
-            -- master has had one clock to sample it, then wait for the access to
-            -- end (cs low) so the next access starts clean and never samples a
-            -- stale ready/rdata.
-            ready_i <= '0';
-            if cs = '0' then
-              state <= ST_IDLE;
+              state   <= ST_IDLE;
             end if;
         end case;
       end if;
