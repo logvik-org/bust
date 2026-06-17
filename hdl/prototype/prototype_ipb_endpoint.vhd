@@ -8,8 +8,9 @@
 -- IPBus is itself a single-beat, hold-until-ack protocol, so the bridge is thin:
 -- a strobe starts one local-bus transaction (wen for write, ren for read),
 -- held until the regfile answers with ack/err, which is forwarded back as
--- ipb_ack/ipb_err. IPBus addresses are word addresses, so they are converted to
--- the byte address the regfile decodes (shift left by 2). IPBus's sync
+-- ipb_ack/ipb_err. The address is forwarded unchanged; the regfile slices the
+-- module window from it (low bits select the register, upper bits check the
+-- base), exactly as the AXI endpoint and the v1 PIFs do. IPBus's sync
 -- active-high reset is passed straight to the regfile.
 library ieee;
 use ieee.std_logic_1164.all;
@@ -83,8 +84,7 @@ begin
             -- drop strobe between transactions.
             if ipb_in.ipb_strobe = '1'
                and ipb_out_i.ipb_ack = '0' and ipb_out_i.ipb_err = '0' then
-              -- IPBus word address -> regfile byte address.
-              m2s.address <= ipb_in.ipb_addr(29 downto 0) & "00";
+              m2s.address <= ipb_in.ipb_addr;
               m2s.wdata   <= ipb_in.ipb_wdata;
               m2s.wen     <= ipb_in.ipb_write;
               m2s.ren     <= not ipb_in.ipb_write;
