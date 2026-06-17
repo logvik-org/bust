@@ -334,9 +334,10 @@ classic-cycle master BFM in the testbench
 The APB endpoint prototype (`hdl/prototype/prototype_apb_endpoint.vhd`) bridges
 the AMBA APB two-phase protocol: a SETUP cycle (`psel` high, `penable` low) is
 followed by ACCESS cycles (`psel` and `penable` high) until the slave raises
-`pready`. The endpoint starts the local-bus transaction on the SETUP cycle so the
-regfile's latency overlaps the first ACCESS cycle, then raises `pready` for one
-clock with `prdata` valid. The SETUP phase delimits every transfer, so no extra
+`pready`. On detecting SETUP the endpoint latches the request and drives the
+local-bus transaction from the first ACCESS cycle; the regfile's one-cycle latency
+then appears as APB wait states (`pready` low) until it answers, after which
+`pready` is pulsed for one clock with `prdata` valid. The SETUP phase delimits every transfer, so no extra
 re-trigger guard is needed. APB has a native `pslverr`, so a decode error maps to
 `pslverr` (with `prdata` forced to 0). APB's reset (`presetn`) is active-low,
 handed to the regfile via `G_RESET_ACTIVE_LOW`. UVVM ships no APB VIP, so it is
