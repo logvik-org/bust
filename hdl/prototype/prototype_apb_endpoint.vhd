@@ -7,14 +7,20 @@
 --
 -- APB is a two-phase protocol: a SETUP cycle (psel asserted, penable low) is
 -- followed by one or more ACCESS cycles (psel and penable both high) until the
--- slave raises pready. The bridge starts the local-bus transaction on the SETUP
--- cycle so the regfile's one-cycle latency overlaps the first ACCESS cycle, holds
--- until the regfile answers, then raises pready for one clock with prdata valid.
--- The SETUP phase (penable low) delimits every transfer, so no extra re-trigger
--- guard is needed. APB has a native pslverr, so a regfile decode error maps to
--- pslverr (prdata still forced to 0). APB's reset (presetn) is active-low and
--- async, handed to the regfile via G_RESET_ACTIVE_LOW; the master drives a byte
--- address mapped directly onto the local bus.
+-- slave raises pready. On detecting SETUP the bridge latches the request and
+-- drives the local-bus transaction from the next cycle (the first ACCESS cycle);
+-- the regfile's one-cycle latency then surfaces as APB wait states (pready held
+-- low) until it answers, after which pready is pulsed for one clock with prdata
+-- valid. The whole response (prdata/pready/pslverr) is registered, like the other
+-- endpoints; starting on SETUP detection rather than waiting for penable keeps
+-- that latency to a single wait state. (A lower-latency variant could drive the
+-- local bus combinationally during SETUP, at the cost of consistency with the
+-- other endpoints and the regfile's simple hold-until-ack contract.) The SETUP
+-- phase (penable low) delimits every transfer, so no extra re-trigger guard is
+-- needed. APB has a native pslverr, so a regfile decode error maps to pslverr
+-- (prdata still forced to 0). APB's reset (presetn) is active-low and async,
+-- handed to the regfile via G_RESET_ACTIVE_LOW; the master drives a byte address
+-- mapped directly onto the local bus.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -88,8 +94,9 @@ begin
 
       case state is
         when ST_IDLE =>
-          -- SETUP cycle: psel high, penable low. Latch the request and start the
-          -- local-bus transaction so its latency overlaps the ACCESS phase.
+          -- SETUP cycle: psel high, penable low. Latch the request; the local-bus
+          -- drive below takes effect next cycle (the first ACCESS cycle), so the
+          -- regfile's latency shows up as APB wait states until s2m.ack/err.
           if psel = '1' and penable = '0' then
             m2s.address <= paddr;
             m2s.wdata   <= pwdata;
