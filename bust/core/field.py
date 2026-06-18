@@ -10,12 +10,36 @@ bit range within the parent register's data width.
 
 import logging
 from collections import OrderedDict
-from typing import Dict
+from typing import Dict, List, NamedTuple, Optional
 
-from bust.core.enums import FieldType
+from bust.core.enums import FieldType, SwAccess, HwAccess, OnRead, OnWrite
 from bust.exceptions import InvalidFieldFormat
-from bust.validation.vhdl_validator import is_valid_VHDL
+from bust.validation.vhdl_validator import is_valid_VHDL, is_unique
 from bust.validation.config_validator import ConfigWrapper
+
+
+class EnumValue(NamedTuple):
+    """A named enumerated value for a field (generates a VHDL enum literal)."""
+
+    name: str
+    value: int
+
+
+# Access-mode properties a field inherits from its register's defaults when the
+# field does not set them itself.
+INHERITABLE_ACCESS = (
+    "sw",
+    "hw",
+    "onread",
+    "onwrite",
+    "singlepulse",
+    "we",
+    "wel",
+    "hwset",
+    "hwclr",
+    "swmod",
+    "swacc",
+)
 
 
 class Field:
@@ -37,7 +61,13 @@ class Field:
         mask: Bit mask for extracting this field's value.
     """
 
-    def __init__(self, field: Dict, pos_low: int, parent_register_name: str) -> None:
+    def __init__(
+        self,
+        field: Dict,
+        pos_low: int,
+        parent_register_name: str,
+        inherited: Optional[Dict] = None,
+    ) -> None:
         """Initialize a Field instance.
 
         Args:
@@ -47,8 +77,14 @@ class Field:
                 - width: Bit width (default: 1)
                 - reset: Reset value as hex string (default: "0x0")
                 - description: Field description (default: "")
+                - sw/hw: software/hardware access modes (inheritable)
+                - onread/onwrite: software side effects (inheritable)
+                - we/wel/hwset/hwclr/swmod/swacc/singlepulse: modifiers (inheritable)
+                - enums: list of {name, value} for an enumerated field
             pos_low: Starting bit position within parent register.
             parent_register_name: Name of parent register for error reporting.
+            inherited: Register-level access-mode defaults the field falls back
+                to for any property it does not set itself.
 
         Raises:
             InvalidFieldFormat: If reset value doesn't fit in specified width.
@@ -57,6 +93,7 @@ class Field:
         self.logger = logging.getLogger(__name__)
 
         self.parent_register_name = parent_register_name
+        self._inherited = inherited or {}
 
         self._config = ConfigWrapper(
             field,
@@ -93,6 +130,74 @@ class Field:
 
         # Check that the user-specified reset value is valid
         self.validate_reset_value()
+
+        self._init_access_modes(field)
+
+    def _init_access_modes(self, field: Dict) -> None:
+        """Resolve access modes, side effects, modifiers, and enums.
+
+        Each access-mode property is taken from the field if set, otherwise from
+        the register-level inherited defaults, otherwise a fallback (sw rw, hw r,
+        all modifiers off). SystemRDL-aligned semantics; see enums module.
+        """
+        self.sw = SwAccess.from_string(self._resolve("sw", "rw"))
+        self.hw = HwAccess.from_string(self._resolve("hw", "r"))
+
+        onread = self._resolve("onread", None)
+        self.onread = OnRead.from_string(onread) if onread is not None else None
+        onwrite = self._resolve("onwrite", None)
+        self.onwrite = OnWrite.from_string(onwrite) if onwrite is not None else None
+
+        self.singlepulse = bool(self._resolve("singlepulse", False))
+        self.we = bool(self._resolve("we", False))
+        self.wel = bool(self._resolve("wel", False))
+        self.hwset = bool(self._resolve("hwset", False))
+        self.hwclr = bool(self._resolve("hwclr", False))
+        self.swmod = bool(self._resolve("swmod", False))
+        self.swacc = bool(self._resolve("swacc", False))
+
+        self.enums = self._parse_enums(field.get("enums"))
+
+    def _resolve(self, key: str, fallback):
+        """Field value if set, else inherited register default, else fallback."""
+        if self._config.is_set(key):
+            return self._config.get(key)
+        if key in self._inherited:
+            return self._inherited[key]
+        return fallback
+
+    def _parse_enums(self, enums) -> List[EnumValue]:
+        """Parse and validate the field's enumerated values, if any.
+
+        Raises:
+            InvalidFieldFormat: on duplicate names/values or out-of-range values.
+        """
+        if not enums:
+            return []
+        parsed: List[EnumValue] = []
+        seen_names: List[str] = []
+        seen_values: List[int] = []
+        maxvalue = (2**self.width) - 1
+        for entry in enums:
+            name = entry["name"]
+            is_valid_VHDL(name)
+            is_unique(name, seen_names)
+            value = int(entry["value"])
+            if value < 0 or value > maxvalue:
+                raise InvalidFieldFormat(
+                    f"Enum '{name}' value {value} does not fit field "
+                    f"{self.name} (width {self.width}) in reg "
+                    f"{self.parent_register_name}"
+                )
+            if value in seen_values:
+                raise InvalidFieldFormat(
+                    f"Duplicate enum value {value} in field {self.name} "
+                    f"in reg {self.parent_register_name}"
+                )
+            seen_names.append(name)
+            seen_values.append(value)
+            parsed.append(EnumValue(name, value))
+        return parsed
 
     def validate_reset_value(self) -> None:
         """Validate that the reset value fits within the field's bit width.
