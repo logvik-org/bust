@@ -9,6 +9,8 @@
 #   example_ipbus   Run example/example_ipbus/tb/example_ipbus_ipb_pif_tb.vhd
 #   example_axi     Run example/example_axi/tb/example_axi_axi_pif_tb.vhd
 #   prototype       Run hdl/prototype/tb/prototype_regfile_tb.vhd (UVVM BFM)
+#   prototype_axi   Run hdl/prototype/tb/prototype_axi_endpoint_tb.vhd (AXI-Lite VIP)
+#   prototype_ipbus Run hdl/prototype/tb/prototype_ipb_endpoint_tb.vhd (vip_ipbus)
 #
 # Optional flags:
 #   --wave          Generate a waveform file (FST) for GTKWave debugging.
@@ -123,9 +125,39 @@ case "${TARGET}" in
         )
         TOP_ENTITY="prototype_regfile_tb"
         ;;
+    prototype_axi)
+        # AXI4-Lite wrapper over the local-bus regfile, checked with the stock
+        # Bitvis AXI-Lite VIP (resolved from nvc's system library path).
+        pre_compile() {
+            echo "  [nvc -a] localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_axi_endpoint.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_axi_endpoint_tb.vhd"
+        )
+        TOP_ENTITY="prototype_axi_endpoint_tb"
+        ;;
+    prototype_ipbus)
+        # IPBus wrapper over the local-bus regfile, checked with the stock
+        # vip_ipbus VIP (resolved from nvc's system library path).
+        pre_compile() {
+            echo "  [nvc -a] localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_ipb_endpoint.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_ipb_endpoint_tb.vhd"
+        )
+        TOP_ENTITY="prototype_ipb_endpoint_tb"
+        ;;
     *)
         echo "ERROR: Unknown target '${TARGET}'." >&2
-        echo "Supported targets: example_ipbus, example_axi, prototype" >&2
+        echo "Supported targets: example_ipbus, example_axi, prototype, prototype_axi, prototype_ipbus" >&2
         exit 1
         ;;
 esac

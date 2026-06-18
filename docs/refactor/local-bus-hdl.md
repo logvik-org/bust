@@ -15,8 +15,8 @@ Three VHDL units per module replace today's single per-protocol PIF:
 - `<module>_regfile` owns address decode, base-address check, register storage,
   software read/write semantics, and the hardware-side record ports. It speaks
   only the local bus. One per module, reused by every protocol.
-- Protocol wrappers (`<module>_axi_pif`, `<module>_ipb_pif`) own only the
-  handshake and instantiate the regfile. AXI's five-channel FSM and IPBus's
+- Protocol endpoints (`<module>_axi_endpoint`, `<module>_ipb_endpoint`) own only
+  the handshake and instantiate the regfile. AXI's five-channel FSM and IPBus's
   strobe/stall logic live here and nowhere else.
 
 The current AXI and IPBus PIFs already share their whole register core through
@@ -79,9 +79,11 @@ generator work.
 ### Addressing
 
 The local bus carries a **byte address** so the regfile decode stays
-protocol-agnostic: AXI4-Lite is byte-addressed natively, and the IPBus wrapper
-converts its native word address to a byte address before driving the bus. This
-is an internal-bus convention only, not a restriction on the register map.
+protocol-agnostic: each wrapper forwards the incoming address unchanged and the
+regfile slices the module window from it (low bits select the register, upper
+bits check the base), exactly as the v1 AXI and IPBus PIFs did. No wrapper shifts
+or rewrites the address. This is an internal-bus convention only, not a
+restriction on the register map.
 
 bust must support whatever addressing scheme the register map declares, with
 **byte-addressing and word-addressing** being the two common cases, and the
@@ -275,9 +277,29 @@ onread (rclr/rset) and onwrite (woset/woclr/wot/wzs/wzc/wzt/wclr/wset) side
 effects, the `swmod`/`swacc`/`singlepulse` single-cycle pulses (counted by a
 monitor so their width is checked), the enumerated `reg11.field0` round-tripping
 through its named type, and `err` on both unmapped-offset and wrong-base-address
-transactions for reads and writes. It runs on `nvc` against the project's pre-compiled UVVM. Protocol
-wrappers, once added, get a thin handshake-conformance test on top using the
-stock UVVM AXI/IPBus VIP.
+transactions for reads and writes. It runs on `nvc` against the project's pre-compiled UVVM.
+
+## Protocol endpoints
+
+Each `<bus>` endpoint owns only the handshake and instantiates the regfile,
+serializing one transaction at a time onto the single-outstanding local bus and
+adapting its own reset to the regfile's polarity generic.
+
+The AXI4-Lite endpoint prototype (`hdl/prototype/prototype_axi_endpoint.vhd`) is
+a small AXI subordinate FSM: it accepts AW+W (or AR), drives `wen`/`ren` with the
+full byte address, holds until the regfile answers, and returns the response
+(`err` -> `SLVERR`, `ack` -> `OKAY`). AXI's async active-low reset is passed to
+the regfile via `G_RESET_ACTIVE_LOW`. It is verified with the stock Bitvis
+AXI-Lite VIP (`hdl/prototype/tb/prototype_axi_endpoint_tb.vhd`, `make sim-prototype-axi`).
+
+The IPBus endpoint prototype (`hdl/prototype/prototype_ipb_endpoint.vhd`) is
+thinner, since IPBus is itself a single-beat hold-until-ack protocol: a strobe
+starts one local-bus transaction (`wen`/`ren`), held until the regfile answers,
+forwarded back as `ipb_ack`/`ipb_err`. The address is forwarded unchanged and the
+regfile slices the module window from it (as the AXI endpoint and v1 PIFs do), and
+its sync active-high reset passes
+straight through. It is verified with the stock `vip_ipbus` VIP
+(`hdl/prototype/tb/prototype_ipb_endpoint_tb.vhd`, `make sim-prototype-ipbus`).
 
 ## Prototype demo module
 
