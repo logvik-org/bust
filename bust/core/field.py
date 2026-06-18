@@ -158,6 +158,47 @@ class Field:
 
         self.enums = self._parse_enums(field.get("enums"))
 
+        self._validate_access_modes()
+
+    def _validate_access_modes(self) -> None:
+        """Reject access-mode combinations that have no consistent meaning.
+
+        Grounded in the v1 spec and the prototype regfile: software side effects
+        require the matching software access, hardware write-enables require a
+        hardware-writable field, and the two write-behaviour mechanisms
+        (`onwrite` and `singlepulse`) are mutually exclusive.
+        """
+        sw_readable = self.sw in (SwAccess.RW, SwAccess.RO)
+        sw_writable = self.sw in (SwAccess.RW, SwAccess.WO)
+        hw_writable = self.hw in (HwAccess.W, HwAccess.RW)
+
+        def reject(reason: str) -> None:
+            raise InvalidFieldFormat(
+                f"{reason} (field {self.name} in reg {self.parent_register_name})"
+            )
+
+        if self.sw is SwAccess.NA and self.hw is HwAccess.NA:
+            reject("field has neither software nor hardware access")
+
+        if self.we and self.wel:
+            reject("we and wel are mutually exclusive")
+        if (self.we or self.wel) and not hw_writable:
+            reject("we/wel require a hardware-writable field (hw w or rw)")
+
+        if self.onread is not None and not sw_readable:
+            reject("onread requires a software-readable field (sw rw or ro)")
+        if self.onwrite is not None and not sw_writable:
+            reject("onwrite requires a software-writable field (sw rw or wo)")
+        if self.onwrite is not None and self.singlepulse:
+            reject("onwrite and singlepulse are mutually exclusive")
+
+        if self.singlepulse and not sw_writable:
+            reject("singlepulse requires a software-writable field (sw rw or wo)")
+        if self.swmod and not sw_writable:
+            reject("swmod requires a software-writable field (sw rw or wo)")
+        if self.swacc and self.sw is SwAccess.NA:
+            reject("swacc requires software access (sw not na)")
+
     def _resolve(self, key: str, fallback):
         """Field value if set, else inherited register default, else fallback."""
         if self._config.is_set(key):
