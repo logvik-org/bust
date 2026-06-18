@@ -82,8 +82,87 @@ class RegisterMode(ConfigEnum):
     - PULSE: Write-only, single-cycle pulse
 
     Use `RegisterMode.from_string(value)` to safely create from user input.
+
+    Legacy schema. New configs use the per-field `SwAccess`/`HwAccess` model;
+    these values are translated onto it (see the compatibility layer).
     """
 
     RW = "rw"
     RO = "ro"
     PULSE = "pulse"
+
+
+class SwAccess(ConfigEnum):
+    """Software access mode for a field (aligned with SystemRDL 2.0).
+
+    Values:
+    - RW: software reads and writes
+    - RO: software reads only
+    - WO: software writes only (reads return 0)
+    - NA: no software access
+
+    Use `SwAccess.from_string(value)` to safely create from user input.
+    """
+
+    RW = "rw"
+    RO = "ro"
+    WO = "wo"
+    NA = "na"
+
+
+class HwAccess(ConfigEnum):
+    """Hardware access mode for a field (aligned with SystemRDL 2.0).
+
+    Values:
+    - R:  hardware reads the stored value (value out)
+    - W:  hardware writes the field (value in, see we/wel)
+    - RW: hardware reads and writes
+    - NA: no hardware access (software-only register)
+
+    Use `HwAccess.from_string(value)` to safely create from user input.
+    """
+
+    R = "r"
+    W = "w"
+    RW = "rw"
+    NA = "na"
+
+
+class OnRead(ConfigEnum):
+    """Software read side effect for a field (aligned with SystemRDL 2.0).
+
+    Values:
+    - RCLR: field clears to 0 after a software read
+    - RSET: field sets to all 1s after a software read
+
+    Use `OnRead.from_string(value)` to safely create from user input.
+    """
+
+    RCLR = "rclr"
+    RSET = "rset"
+
+
+class OnWrite(ConfigEnum):
+    """Software write side effect for a field (aligned with SystemRDL 2.0).
+
+    The stored value `f` is combined with the write data `w`:
+    - WOSET: `f or w`      (write 1 sets bits)
+    - WOCLR: `f and not w`  (write 1 clears bits)
+    - WOT:   `f xor w`      (write 1 toggles bits)
+    - WZS:   `f or not w`   (write 0 sets bits)
+    - WZC:   `f and w`      (write 0 clears bits)
+    - WZT:   `f xor not w`  (write 0 toggles bits)
+    - WCLR:  all 0s         (any write clears the field)
+    - WSET:  all 1s         (any write sets the field)
+
+    Use `OnWrite.from_string(value)` to safely create from user input.
+    """
+
+    WOSET = "woset"
+    WOCLR = "woclr"
+    WOT = "wot"
+    WZS = "wzs"
+    WZC = "wzc"
+    WZT = "wzt"
+    WCLR = "wclr"
+    WSET = "wset"
