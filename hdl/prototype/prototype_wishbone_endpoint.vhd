@@ -7,14 +7,15 @@
 -- generator emits it.
 --
 -- Classic Wishbone is a single-beat, hold-until-ack protocol, so the bridge is
--- thin and mirrors the IPBus endpoint: a qualified cycle (cyc_i and stb_i) starts
--- one local-bus transaction (we_i selects write vs read), held until the regfile
--- answers, then ack_o or err_o is pulsed for one clock with dat_o valid. Wishbone
--- has a native err_o line, so a regfile decode error maps to err_o (unlike SBI,
--- where it folds into the single ready beat); dat_o is still forced to 0 on err
--- so reads of invalid addresses are deterministic. A one-cycle guard (ack_o/err_o
--- still registered high the cycle after BUSY) blocks re-triggering the
--- just-completed cycle. Wishbone's sync active-high reset passes straight to the
+-- pure combinational glue: a qualified cycle (cyc_i and stb_i) drives one
+-- local-bus transaction (we_i selects write vs read) and the regfile's response
+-- is forwarded straight back as a one-cycle ack_o/err_o beat. The wrapper adds no
+-- register stage, so the regfile's single registered cycle is the whole latency:
+-- ack_o/err_o assert one clock after the qualified cycle. The regfile's response
+-- guard (it acks a held cycle only once) provides termination, so no FSM is
+-- needed. Wishbone has a native err_o line, so a regfile decode error maps to
+-- err_o; dat_o is still forced to 0 on err so reads of invalid addresses stay
+-- deterministic. Wishbone's sync active-high reset passes straight to the
 -- regfile, and the master drives a byte address mapped directly onto the local
 -- bus.
 library ieee;
@@ -51,15 +52,10 @@ end entity prototype_wishbone_endpoint;
 
 architecture rtl of prototype_wishbone_endpoint is
 
-  type t_state is (ST_IDLE, ST_BUSY);
-  signal state : t_state := ST_IDLE;
-
-  signal m2s : t_lb_m2s := C_LB_M2S_IDLE;
+  signal m2s : t_lb_m2s;
   signal s2m : t_lb_s2m;
 
-  signal dat_o_i : std_logic_vector(31 downto 0) := (others => '0');
-  signal ack_o_i : std_logic := '0';
-  signal err_o_i : std_logic := '0';
+  signal qualified : std_logic;
 
 begin
 
@@ -76,53 +72,15 @@ begin
       to_hw   => to_hw,
       from_hw => from_hw);
 
-  p_wb : process (clk_i) is
-  begin
-    if rising_edge(clk_i) then
-      if rst_i = '1' then
-        state   <= ST_IDLE;
-        m2s     <= C_LB_M2S_IDLE;
-        dat_o_i <= (others => '0');
-        ack_o_i <= '0';
-        err_o_i <= '0';
-      else
-        ack_o_i <= '0';                   -- ack/err are single-cycle
-        err_o_i <= '0';
+  qualified <= cyc_i and stb_i;
 
-        case state is
-          when ST_IDLE =>
-            -- Start a qualified classic cycle, but not while still presenting a
-            -- response (ack/err high): that gates re-triggering the just-acked
-            -- cycle and handles a master that holds cyc/stb across beats.
-            if cyc_i = '1' and stb_i = '1'
-               and ack_o_i = '0' and err_o_i = '0' then
-              m2s.address <= adr_i;
-              m2s.wdata   <= dat_i;
-              m2s.wen     <= we_i;
-              m2s.ren     <= not we_i;
-              state       <= ST_BUSY;
-            end if;
+  m2s.address <= adr_i;
+  m2s.wdata   <= dat_i;
+  m2s.wen     <= qualified and we_i;
+  m2s.ren     <= qualified and not we_i;
 
-          when ST_BUSY =>
-            if s2m.ack = '1' or s2m.err = '1' then
-              m2s.wen <= '0';
-              m2s.ren <= '0';
-              if s2m.err = '1' then
-                dat_o_i <= (others => '0');
-                err_o_i <= '1';
-              else
-                dat_o_i <= s2m.rdata;
-                ack_o_i <= '1';
-              end if;
-              state <= ST_IDLE;
-            end if;
-        end case;
-      end if;
-    end if;
-  end process p_wb;
-
-  dat_o <= dat_o_i;
-  ack_o <= ack_o_i;
-  err_o <= err_o_i;
+  ack_o <= s2m.ack;
+  err_o <= s2m.err;
+  dat_o <= (others => '0') when s2m.err = '1' else s2m.rdata;
 
 end architecture rtl;
