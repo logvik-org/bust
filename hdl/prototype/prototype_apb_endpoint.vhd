@@ -6,21 +6,21 @@
 -- the APB-to-local-bus bridge before the generator emits it.
 --
 -- APB is a two-phase protocol: a SETUP cycle (psel asserted, penable low) is
--- followed by one or more ACCESS cycles (psel and penable both high) until the
--- slave raises pready. On detecting SETUP the bridge latches the request and
--- drives the local-bus transaction from the next cycle (the first ACCESS cycle);
--- the regfile's one-cycle latency then surfaces as APB wait states (pready held
--- low) until it answers, after which pready is pulsed for one clock with prdata
--- valid. The whole response (prdata/pready/pslverr) is registered, like the other
--- endpoints; starting on SETUP detection rather than waiting for penable keeps
--- that latency to a single wait state. (A lower-latency variant could drive the
--- local bus combinationally during SETUP, at the cost of consistency with the
--- other endpoints and the regfile's simple hold-until-ack contract.) The SETUP
--- phase (penable low) delimits every transfer, so no extra re-trigger guard is
--- needed. APB has a native pslverr, so a regfile decode error maps to pslverr
--- (prdata still forced to 0). APB's reset (presetn) is active-low and async,
--- handed to the regfile via G_RESET_ACTIVE_LOW; the master drives a byte address
--- mapped directly onto the local bus.
+-- followed by ACCESS cycles (psel and penable both high) until the slave raises
+-- pready. The bridge drives the local-bus request from the SETUP cycle itself and
+-- holds it (busy) until the regfile answers, so the regfile's single registered
+-- cycle surfaces as pready in the first ACCESS cycle: a zero-wait-state transfer
+-- (the APB two-cycle minimum). The response (pready/prdata/pslverr) is forwarded
+-- combinationally from the local bus, adding no register stage of its own.
+-- Holding the request until ack honours the local-bus hold-until-ack contract,
+-- so a variable-latency register simply stretches the ACCESS phase with wait
+-- states. The busy flag keeps the request asserted for exactly one transaction
+-- (the regfile's own response guard blocks a re-service in the ack cycle), and it
+-- clears on ack so a back-to-back transfer starts cleanly at its SETUP cycle. APB
+-- has a native pslverr, so a regfile decode error maps to pslverr (prdata still
+-- forced to 0). APB's reset (presetn) is active-low and async, handed to the
+-- regfile via G_RESET_ACTIVE_LOW; the master drives a byte address mapped
+-- directly onto the local bus.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -55,15 +55,13 @@ end entity prototype_apb_endpoint;
 
 architecture rtl of prototype_apb_endpoint is
 
-  type t_state is (ST_IDLE, ST_ACCESS);
-  signal state : t_state := ST_IDLE;
-
-  signal m2s : t_lb_m2s := C_LB_M2S_IDLE;
+  signal m2s : t_lb_m2s;
   signal s2m : t_lb_s2m;
 
-  signal prdata_i  : std_logic_vector(31 downto 0) := (others => '0');
-  signal pready_i  : std_logic := '0';
-  signal pslverr_i : std_logic := '0';
+  -- Request held from the SETUP cycle until the regfile answers, so the local-bus
+  -- hold-until-ack contract holds even for a variable-latency register.
+  signal busy       : std_logic := '0';
+  signal req_active : std_logic;
 
 begin
 
@@ -80,49 +78,29 @@ begin
       to_hw   => to_hw,
       from_hw => from_hw);
 
-  p_apb : process (pclk, presetn) is
+  -- Active from the SETUP cycle (psel high, penable low) and held while busy.
+  req_active <= '1' when (psel = '1' and penable = '0') or busy = '1' else '0';
+
+  m2s.address <= paddr;
+  m2s.wdata   <= pwdata;
+  m2s.wen     <= req_active and pwrite;
+  m2s.ren     <= req_active and not pwrite;
+
+  p_busy : process (pclk, presetn) is
   begin
     if presetn = '0' then
-      state     <= ST_IDLE;
-      m2s       <= C_LB_M2S_IDLE;
-      prdata_i  <= (others => '0');
-      pready_i  <= '0';
-      pslverr_i <= '0';
+      busy <= '0';
     elsif rising_edge(pclk) then
-      pready_i  <= '0';                   -- pready/pslverr are single-cycle beats
-      pslverr_i <= '0';
-
-      case state is
-        when ST_IDLE =>
-          -- SETUP cycle: psel high, penable low. Latch the request; the local-bus
-          -- drive below takes effect next cycle (the first ACCESS cycle), so the
-          -- regfile's latency shows up as APB wait states until s2m.ack/err.
-          if psel = '1' and penable = '0' then
-            m2s.address <= paddr;
-            m2s.wdata   <= pwdata;
-            m2s.wen     <= pwrite;
-            m2s.ren     <= not pwrite;
-            state       <= ST_ACCESS;
-          end if;
-
-        when ST_ACCESS =>
-          if s2m.ack = '1' or s2m.err = '1' then
-            m2s.wen   <= '0';
-            m2s.ren   <= '0';
-            prdata_i  <= (others => '0');
-            pslverr_i <= s2m.err;
-            if s2m.err = '0' then
-              prdata_i <= s2m.rdata;
-            end if;
-            pready_i <= '1';
-            state    <= ST_IDLE;
-          end if;
-      end case;
+      if psel = '1' and penable = '0' then
+        busy <= '1';                      -- latch the in-flight transaction at SETUP
+      elsif s2m.ack = '1' or s2m.err = '1' then
+        busy <= '0';                      -- release once the regfile answers
+      end if;
     end if;
-  end process p_apb;
+  end process p_busy;
 
-  prdata  <= prdata_i;
-  pready  <= pready_i;
-  pslverr <= pslverr_i;
+  pready  <= s2m.ack or s2m.err;
+  pslverr <= s2m.err;
+  prdata  <= (others => '0') when s2m.err = '1' else s2m.rdata;
 
 end architecture rtl;

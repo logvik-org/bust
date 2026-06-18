@@ -5,11 +5,18 @@
 -- stock UVVM AXI-Lite VIP, to prove the AXI-to-local-bus bridge before the
 -- generator emits it.
 --
--- A simple AXI4-Lite slave FSM serializes one transaction at a time onto the
--- single-outstanding local bus: it accepts AW+W (or AR), drives wen/ren with the
--- full byte address and holds until the regfile answers with ack/err, then
--- returns the response. err maps to SLVERR; ack maps to OKAY. AXI's native
--- async active-low reset is handed to the regfile via G_RESET_ACTIVE_LOW.
+-- The wrapper adds no latency register on top of the regfile: a transaction is
+-- accepted (AW+W or AR) and driven onto the local bus in the same cycle, and the
+-- regfile's response is presented combinationally on the cycle it acks. So
+-- BVALID/RVALID assert exactly one clock after the address handshake when the
+-- master is ready (the regfile's single registered cycle). AXI's response
+-- channels must, however, stay valid until the master accepts them, so the
+-- response is latched into a hold register only when BREADY/RREADY is low on the
+-- ack cycle: that register exists for back-pressure, not for added latency. The
+-- request is likewise held (addr_q/wdata_q) until ack so the local-bus
+-- hold-until-ack contract holds across wait states. err maps to SLVERR; ack maps
+-- to OKAY. AXI's async active-low reset is handed to the regfile via
+-- G_RESET_ACTIVE_LOW, and the full byte address is forwarded unchanged.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -56,20 +63,23 @@ architecture rtl of prototype_axi_endpoint is
   constant C_RESP_OKAY   : std_logic_vector(1 downto 0) := "00";
   constant C_RESP_SLVERR : std_logic_vector(1 downto 0) := "10";
 
-  type t_state is (ST_IDLE, ST_WRITE, ST_BRESP, ST_READ, ST_RRESP);
+  type t_state is (ST_IDLE, ST_WRITE, ST_BHOLD, ST_READ, ST_RHOLD);
   signal state : t_state := ST_IDLE;
 
-  signal m2s : t_lb_m2s := C_LB_M2S_IDLE;
+  signal m2s : t_lb_m2s;
   signal s2m : t_lb_s2m;
 
-  signal awready_i : std_logic := '0';
-  signal wready_i  : std_logic := '0';
-  signal bvalid_i  : std_logic := '0';
-  signal bresp_i   : std_logic_vector(1 downto 0) := C_RESP_OKAY;
-  signal arready_i : std_logic := '0';
-  signal rvalid_i  : std_logic := '0';
-  signal rresp_i   : std_logic_vector(1 downto 0) := C_RESP_OKAY;
-  signal rdata_i   : std_logic_vector(31 downto 0) := (others => '0');
+  -- Held request (hold-until-ack across wait states) and held response (for AXI
+  -- back-pressure when the master is not ready on the ack cycle).
+  signal addr_q  : std_logic_vector(31 downto 0) := (others => '0');
+  signal wdata_q : std_logic_vector(31 downto 0) := (others => '0');
+  signal rdata_q : std_logic_vector(31 downto 0) := (others => '0');
+  signal rresp_q : std_logic_vector(1 downto 0)  := C_RESP_OKAY;
+  signal bresp_q : std_logic_vector(1 downto 0)  := C_RESP_OKAY;
+
+  signal start_wr : std_logic;
+  signal start_rd : std_logic;
+  signal resp     : std_logic;          -- regfile answered this cycle (ack or err)
 
 begin
 
@@ -86,87 +96,95 @@ begin
       to_hw   => to_hw,
       from_hw => from_hw);
 
-  -- One transaction at a time, mapped onto the single-outstanding local bus.
+  -- Accept in IDLE, write has priority; exactly one of wen/ren is ever driven.
+  start_wr <= '1' when state = ST_IDLE and awvalid = '1' and wvalid = '1' else '0';
+  start_rd <= '1' when state = ST_IDLE and arvalid = '1'
+                       and not (awvalid = '1' and wvalid = '1') else '0';
+
+  resp <= s2m.ack or s2m.err;
+
+  -- Drive the local bus in the accept cycle and hold it (held address/data) until
+  -- the regfile answers.
+  m2s.wen     <= '1' when start_wr = '1' or state = ST_WRITE else '0';
+  m2s.ren     <= '1' when start_rd = '1' or state = ST_READ else '0';
+  m2s.address <= awaddr when start_wr = '1' else
+                 araddr when start_rd = '1' else
+                 addr_q;
+  m2s.wdata   <= wdata when start_wr = '1' else wdata_q;
+
+  -- Accept strobes are single-cycle, asserted only on the accept cycle.
+  awready <= start_wr;
+  wready  <= start_wr;
+  arready <= start_rd;
+
+  -- Write response: combinational on the ack cycle, held while back-pressured.
+  bvalid <= '1' when (state = ST_WRITE and resp = '1') or state = ST_BHOLD else '0';
+  bresp  <= bresp_q       when state = ST_BHOLD else
+            C_RESP_SLVERR when s2m.err = '1'    else
+            C_RESP_OKAY;
+
+  -- Read response: combinational on the ack cycle, held while back-pressured.
+  rvalid <= '1' when (state = ST_READ and resp = '1') or state = ST_RHOLD else '0';
+  rresp  <= rresp_q       when state = ST_RHOLD else
+            C_RESP_SLVERR when s2m.err = '1'    else
+            C_RESP_OKAY;
+  rdata  <= rdata_q         when state = ST_RHOLD else
+            (others => '0') when s2m.err = '1'    else
+            s2m.rdata;
+
   p_axi : process (clk, areset_n) is
   begin
     if areset_n = '0' then
-      state     <= ST_IDLE;
-      m2s       <= C_LB_M2S_IDLE;
-      awready_i <= '0';
-      wready_i  <= '0';
-      bvalid_i  <= '0';
-      bresp_i   <= C_RESP_OKAY;
-      arready_i <= '0';
-      rvalid_i  <= '0';
-      rresp_i   <= C_RESP_OKAY;
-      rdata_i   <= (others => '0');
+      state   <= ST_IDLE;
+      addr_q  <= (others => '0');
+      wdata_q <= (others => '0');
+      rdata_q <= (others => '0');
+      rresp_q <= C_RESP_OKAY;
+      bresp_q <= C_RESP_OKAY;
     elsif rising_edge(clk) then
-      -- Accept strobes are single-cycle.
-      awready_i <= '0';
-      wready_i  <= '0';
-      arready_i <= '0';
-
       case state is
         when ST_IDLE =>
-          -- Write has priority; only one of wen/ren is ever asserted.
-          if awvalid = '1' and wvalid = '1' then
-            m2s.address <= awaddr;
-            m2s.wdata   <= wdata;
-            m2s.wen     <= '1';
-            awready_i   <= '1';
-            wready_i    <= '1';
-            state       <= ST_WRITE;
-          elsif arvalid = '1' then
-            m2s.address <= araddr;
-            m2s.ren     <= '1';
-            arready_i   <= '1';
-            state       <= ST_READ;
+          if start_wr = '1' then
+            addr_q  <= awaddr;
+            wdata_q <= wdata;
+            state   <= ST_WRITE;
+          elsif start_rd = '1' then
+            addr_q <= araddr;
+            state  <= ST_READ;
           end if;
 
         when ST_WRITE =>
-          if s2m.ack = '1' or s2m.err = '1' then
-            m2s.wen  <= '0';
-            bvalid_i <= '1';
-            bresp_i  <= C_RESP_SLVERR when s2m.err = '1' else C_RESP_OKAY;
-            state    <= ST_BRESP;
+          if resp = '1' then
+            if bready = '1' then          -- response accepted same cycle
+              state <= ST_IDLE;
+            else                          -- hold B until the master is ready
+              bresp_q <= C_RESP_SLVERR when s2m.err = '1' else C_RESP_OKAY;
+              state   <= ST_BHOLD;
+            end if;
           end if;
 
-        when ST_BRESP =>
+        when ST_BHOLD =>
           if bready = '1' then
-            bvalid_i <= '0';
-            state    <= ST_IDLE;
+            state <= ST_IDLE;
           end if;
 
         when ST_READ =>
-          if s2m.ack = '1' or s2m.err = '1' then
-            m2s.ren  <= '0';
-            rvalid_i <= '1';
-            if s2m.err = '1' then
-              rresp_i <= C_RESP_SLVERR;
-              rdata_i <= (others => '0');
-            else
-              rresp_i <= C_RESP_OKAY;
-              rdata_i <= s2m.rdata;
+          if resp = '1' then
+            if rready = '1' then          -- response accepted same cycle
+              state <= ST_IDLE;
+            else                          -- hold R until the master is ready
+              rdata_q <= (others => '0') when s2m.err = '1' else s2m.rdata;
+              rresp_q <= C_RESP_SLVERR when s2m.err = '1' else C_RESP_OKAY;
+              state   <= ST_RHOLD;
             end if;
-            state <= ST_RRESP;
           end if;
 
-        when ST_RRESP =>
+        when ST_RHOLD =>
           if rready = '1' then
-            rvalid_i <= '0';
-            state    <= ST_IDLE;
+            state <= ST_IDLE;
           end if;
       end case;
     end if;
   end process p_axi;
-
-  awready <= awready_i;
-  wready  <= wready_i;
-  bresp   <= bresp_i;
-  bvalid  <= bvalid_i;
-  arready <= arready_i;
-  rdata   <= rdata_i;
-  rresp   <= rresp_i;
-  rvalid  <= rvalid_i;
 
 end architecture rtl;
