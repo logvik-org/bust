@@ -39,7 +39,7 @@ GTKWAVE_RUN := docker run --rm \
     -v "$(WAVES_DIR):/waves:ro" \
     $(GTKWAVE_IMAGE)
 
-.PHONY: help build rebuild sim-ipbus sim-axi sim-prototype wave-ipbus wave-axi wave-prototype gtkwave clean
+.PHONY: help build rebuild sim-ipbus sim-axi sim-prototype sim-prototype-axi sim-prototype-ipbus wave-ipbus wave-axi wave-prototype wave-prototype-axi wave-prototype-ipbus gtkwave clean
 
 # Default target
 help:
@@ -51,6 +51,8 @@ help:
 	@echo "  make sim-ipbus      Run the example_ipbus testbench"
 	@echo "  make sim-axi        Run the example_axi testbench"
 	@echo "  make sim-prototype  Run the prototype local-bus regfile testbench"
+	@echo "  make sim-prototype-axi  Run the AXI-Lite wrapper testbench"
+	@echo "  make sim-prototype-ipbus  Run the IPBus wrapper testbench"
 	@echo "  make wave-ipbus     Run example_ipbus + capture FST + open GTKWave"
 	@echo "  make wave-axi       Run example_axi  + capture FST + open GTKWave"
 	@echo "  make wave-prototype Run prototype    + capture FST + open GTKWave"
@@ -91,6 +93,12 @@ sim-axi: _require-image
 sim-prototype: _require-image
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype
 
+sim-prototype-axi: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_axi
+
+sim-prototype-ipbus: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_ipbus
+
 # ---------------------------------------------------------------------------
 # Waveform targets
 #
@@ -114,6 +122,16 @@ wave-prototype: _require-image
 	@mkdir -p "$(WAVES_DIR)"
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype --wave=/work/sim/waves/prototype.fst
 	$(GTKWAVE_RUN) gtkwave /waves/prototype.fst
+
+wave-prototype-axi: _require-image
+	@mkdir -p "$(WAVES_DIR)"
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_axi --wave=/work/sim/waves/prototype_axi.fst
+	$(GTKWAVE_RUN) gtkwave /waves/prototype_axi.fst
+
+wave-prototype-ipbus: _require-image
+	@mkdir -p "$(WAVES_DIR)"
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_ipbus --wave=/work/sim/waves/prototype_ipbus.fst
+	$(GTKWAVE_RUN) gtkwave /waves/prototype_ipbus.fst
 
 # Open any FST or VCD file with GTKWave.
 # Usage: make gtkwave FILE=sim/waves/example_axi.fst
