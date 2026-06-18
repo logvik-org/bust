@@ -323,6 +323,17 @@ Its sync active-high reset passes straight through and the master drives a byte
 address. It is verified with the stock Bitvis Avalon-MM VIP
 (`hdl/prototype/tb/prototype_avalon_endpoint_tb.vhd`, `make sim-prototype-avalon`).
 
+The Wishbone endpoint prototype (`hdl/prototype/prototype_wishbone_endpoint.vhd`)
+bridges a Wishbone B4 classic cycle: a qualified cycle (`cyc_i` and `stb_i`)
+starts one local-bus transaction (`we_i` selects write vs read), held until the
+regfile answers, then `ack_o` or `err_o` is pulsed for one clock with `dat_o`
+valid. Structurally it mirrors the IPBus endpoint (strobe to ack/err, one-cycle
+re-trigger guard). Wishbone has a native `err_o`, so a regfile decode error maps
+to `err_o` (rather than folding into the response as on SBI), with `dat_o` forced
+to 0. UVVM ships no Wishbone VIP, so it is verified with a small hand-written
+classic-cycle master BFM in the testbench
+(`hdl/prototype/tb/prototype_wishbone_endpoint_tb.vhd`, `make sim-prototype-wishbone`).
+
 ## Prototype demo module
 
 `prototype` exercises the core-access matrix, the onread/onwrite software side

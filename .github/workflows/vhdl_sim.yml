@@ -132,3 +132,14 @@ jobs:
             -e WORK_ROOT=/work \
             bust-sim:ci \
             /work/sim/scripts/run_sim.sh prototype_avalon
+
+      # -----------------------------------------------------------------------
+      # 11. Run the Wishbone wrapper prototype testbench
+      # -----------------------------------------------------------------------
+      - name: Run prototype Wishbone wrapper simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_wishbone
