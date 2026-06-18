@@ -121,3 +121,14 @@ jobs:
             -e WORK_ROOT=/work \
             bust-sim:ci \
             /work/sim/scripts/run_sim.sh prototype_sbi
+
+      # -----------------------------------------------------------------------
+      # 10. Run the Avalon-MM wrapper prototype testbench
+      # -----------------------------------------------------------------------
+      - name: Run prototype Avalon-MM wrapper simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_avalon
