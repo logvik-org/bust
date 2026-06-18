@@ -301,6 +301,17 @@ its sync active-high reset passes
 straight through. It is verified with the stock `vip_ipbus` VIP
 (`hdl/prototype/tb/prototype_ipb_endpoint_tb.vhd`, `make sim-prototype-ipbus`).
 
+The SBI endpoint prototype (`hdl/prototype/prototype_sbi_endpoint.vhd`) bridges
+the Simple Bus Interface: the master raises `cs` with `wena`/`rena` and holds
+until the slave asserts `ready`. The endpoint starts one local-bus transaction
+on that strobe, holds until the regfile answers, then raises `ready` (with
+`rdata` valid) and holds it until the master ends the access by dropping `cs`.
+SBI has no error line, so `ack` and `err` both surface as a single `ready` beat,
+matching the regfile reserving `err` for address-decode failures. SBI carries no
+reset, so a sync active-high reset passes straight through, and the master drives
+a byte address directly onto the local bus. It is verified with the stock Bitvis
+SBI VIP (`hdl/prototype/tb/prototype_sbi_endpoint_tb.vhd`, `make sim-prototype-sbi`).
+
 ## Prototype demo module
 
 `prototype` exercises the core-access matrix, the onread/onwrite software side
