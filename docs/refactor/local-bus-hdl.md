@@ -16,8 +16,11 @@ Three VHDL units per module replace today's single per-protocol PIF:
   software read/write semantics, and the hardware-side record ports. It speaks
   only the local bus. One per module, reused by every protocol.
 - Protocol endpoints (`<module>_axi_endpoint`, `<module>_ipb_endpoint`) own only
-  the handshake and instantiate the regfile. AXI's five-channel FSM and IPBus's
-  strobe/stall logic live here and nowhere else.
+  the handshake and instantiate the regfile. Each endpoint is combinational glue
+  that adds no register stage of its own, so the regfile's single registered
+  cycle is the whole latency: the response lands exactly one clock after the
+  request. AXI's five-channel handshake and IPBus's strobe logic live here and
+  nowhere else.
 
 The current AXI and IPBus PIFs already share their whole register core through
 common Jinja macros (`statement_read_reg`, `statement_write_reg`,
@@ -285,66 +288,85 @@ Each `<bus>` endpoint owns only the handshake and instantiates the regfile,
 serializing one transaction at a time onto the single-outstanding local bus and
 adapting its own reset to the regfile's polarity generic.
 
-The AXI4-Lite endpoint prototype (`hdl/prototype/prototype_axi_endpoint.vhd`) is
-a small AXI subordinate FSM: it accepts AW+W (or AR), drives `wen`/`ren` with the
-full byte address, holds until the regfile answers, and returns the response
-(`err` -> `SLVERR`, `ack` -> `OKAY`). AXI's async active-low reset is passed to
-the regfile via `G_RESET_ACTIVE_LOW`. It is verified with the stock Bitvis
-AXI-Lite VIP (`hdl/prototype/tb/prototype_axi_endpoint_tb.vhd`, `make sim-prototype-axi`).
+The endpoints add **no register stage of their own**: the request is forwarded
+combinationally onto the local bus and the regfile's response (`ack`/`err`/
+`rdata`) is forwarded combinationally back. The regfile registers its response
+(and contains a one-cycle guard that acks a held request exactly once), so that
+single registered cycle is the whole latency: the bus response lands exactly one
+clock after the request. Transaction separation comes from that regfile guard,
+not from the request/select line going low, so the sub-cycle inter-transaction
+gap never has to be sampled.
 
-The IPBus endpoint prototype (`hdl/prototype/prototype_ipb_endpoint.vhd`) is
-thinner, since IPBus is itself a single-beat hold-until-ack protocol: a strobe
-starts one local-bus transaction (`wen`/`ren`), held until the regfile answers,
-forwarded back as `ipb_ack`/`ipb_err`. The address is forwarded unchanged and the
-regfile slices the module window from it (as the AXI endpoint and v1 PIFs do), and
-its sync active-high reset passes
+The AXI4-Lite endpoint prototype (`hdl/prototype/prototype_axi_endpoint.vhd`)
+accepts AW+W (or AR) and drives `wen`/`ren` with the full byte address in the
+same cycle, and presents `BVALID`/`RVALID` combinationally on the cycle the
+regfile acks, so the response is one clock after the address handshake
+(`err` -> `SLVERR`, `ack` -> `OKAY`). AXI is the one protocol whose response
+channels must stay valid until the master accepts them, so the response is
+latched into a hold register only when `BREADY`/`RREADY` is low on the ack
+cycle: that register is for back-pressure, not added latency. AXI's async
+active-low reset is passed to the regfile via `G_RESET_ACTIVE_LOW`. It is
+verified with the stock Bitvis AXI-Lite VIP
+(`hdl/prototype/tb/prototype_axi_endpoint_tb.vhd`, `make sim-prototype-axi`).
+
+The IPBus endpoint prototype (`hdl/prototype/prototype_ipb_endpoint.vhd`) is the
+thinnest, since IPBus is itself a single-beat hold-until-ack protocol: a strobe
+drives one local-bus transaction (`wen`/`ren`) and the regfile's response is
+forwarded straight back as `ipb_ack`/`ipb_err`, one clock after the strobe. The
+address is forwarded unchanged and the regfile slices the module window from it
+(as every endpoint and the v1 PIFs do), and its sync active-high reset passes
 straight through. It is verified with the stock `vip_ipbus` VIP
 (`hdl/prototype/tb/prototype_ipb_endpoint_tb.vhd`, `make sim-prototype-ipbus`).
 
 The SBI endpoint prototype (`hdl/prototype/prototype_sbi_endpoint.vhd`) bridges
 the Simple Bus Interface: the master raises `cs` with `wena`/`rena` and holds
-until the slave asserts `ready`. The endpoint starts one local-bus transaction
-on that strobe, holds until the regfile answers, then raises `ready` (with
-`rdata` valid) and holds it until the master ends the access by dropping `cs`.
+until the slave asserts `ready`. The request drives one local-bus transaction and
+`ready` is the regfile's response forwarded combinationally (a one-cycle beat).
 SBI has no error line, so `ack` and `err` both surface as a single `ready` beat,
-matching the regfile reserving `err` for address-decode failures. SBI carries no
-reset, so a sync active-high reset passes straight through, and the master drives
-a byte address directly onto the local bus. It is verified with the stock Bitvis
-SBI VIP (`hdl/prototype/tb/prototype_sbi_endpoint_tb.vhd`, `make sim-prototype-sbi`).
+matching the regfile reserving `err` for address-decode failures; on a decode
+error `rdata` is forced to 0. SBI carries no reset, so a sync active-high reset
+passes straight through, and the master drives a byte address directly onto the
+local bus. It is verified with the stock Bitvis SBI VIP
+(`hdl/prototype/tb/prototype_sbi_endpoint_tb.vhd`, `make sim-prototype-sbi`).
 
 The Avalon-MM endpoint prototype (`hdl/prototype/prototype_avalon_endpoint.vhd`)
-is the dual of the SBI one: Avalon-MM stalls with `waitrequest`, so `waitrequest`
-high is "not ready" (SBI `ready` low) and the accept beat is a single-cycle
-`waitrequest` low (SBI `ready` high) with `readdata` valid, for a
-waitrequest-controlled read without `readdatavalid`. The same one-cycle re-trigger
-guard applies. The endpoint does not implement the optional Avalon-MM `response`
-signal, so decode errors complete as a normal beat with `readdata` 0 (as on SBI).
-Its sync active-high reset passes straight through and the master drives a byte
-address. It is verified with the stock Bitvis Avalon-MM VIP
+is the dual of the SBI one: Avalon-MM stalls with `waitrequest`, so
+`waitrequest` is just `not (ack or err)` (high = "not ready", the accept beat is
+a single-cycle `waitrequest` low with `readdata` valid), for a
+waitrequest-controlled read without `readdatavalid`. With no command asserted,
+`ack`/`err` are low so `waitrequest` defaults high. The endpoint does not
+implement the optional Avalon-MM `response` signal, so decode errors complete as
+a normal beat with `readdata` 0 (as on SBI). Its sync active-high reset passes
+straight through and the master drives a byte address. It is verified with the
+stock Bitvis Avalon-MM VIP
 (`hdl/prototype/tb/prototype_avalon_endpoint_tb.vhd`, `make sim-prototype-avalon`).
 
 The Wishbone endpoint prototype (`hdl/prototype/prototype_wishbone_endpoint.vhd`)
 bridges a Wishbone B4 classic cycle: a qualified cycle (`cyc_i` and `stb_i`)
-starts one local-bus transaction (`we_i` selects write vs read), held until the
-regfile answers, then `ack_o` or `err_o` is pulsed for one clock with `dat_o`
-valid. Structurally it mirrors the IPBus endpoint (strobe to ack/err, one-cycle
-re-trigger guard). Wishbone has a native `err_o`, so a regfile decode error maps
-to `err_o` (rather than folding into the response as on SBI), with `dat_o` forced
-to 0. UVVM ships no Wishbone VIP, so it is verified with a small hand-written
-classic-cycle master BFM in the testbench
+drives one local-bus transaction (`we_i` selects write vs read) and `ack_o` or
+`err_o` is the regfile's response forwarded combinationally, one clock later,
+with `dat_o` valid. Structurally it mirrors the IPBus endpoint. Wishbone has a
+native `err_o`, so a regfile decode error maps to `err_o` (rather than folding
+into the response as on SBI), with `dat_o` forced to 0. UVVM ships no Wishbone
+VIP, so it is verified with a small hand-written classic-cycle master BFM in the
+testbench
 (`hdl/prototype/tb/prototype_wishbone_endpoint_tb.vhd`, `make sim-prototype-wishbone`).
 
 The APB endpoint prototype (`hdl/prototype/prototype_apb_endpoint.vhd`) bridges
 the AMBA APB two-phase protocol: a SETUP cycle (`psel` high, `penable` low) is
 followed by ACCESS cycles (`psel` and `penable` high) until the slave raises
-`pready`. On detecting SETUP the endpoint latches the request and drives the
-local-bus transaction from the first ACCESS cycle; the regfile's one-cycle latency
-then appears as APB wait states (`pready` low) until it answers, after which
-`pready` is pulsed for one clock with `prdata` valid. The SETUP phase delimits every transfer, so no extra
-re-trigger guard is needed. APB has a native `pslverr`, so a decode error maps to
-`pslverr` (with `prdata` forced to 0). APB's reset (`presetn`) is active-low,
-handed to the regfile via `G_RESET_ACTIVE_LOW`. UVVM ships no APB VIP, so it is
-verified with a hand-written APB master BFM in the testbench
+`pready`. Because APB holds `psel` across the whole transfer, the endpoint drives
+the local-bus request from the SETUP cycle and holds it (a `busy` flag) until the
+regfile answers, so the regfile's single registered cycle surfaces as `pready` in
+the **first** ACCESS cycle: a zero-wait-state transfer (the APB two-cycle
+minimum). The `busy` flag keeps the request asserted for exactly one transaction
+(the regfile's response guard blocks a re-service in the ack cycle) and clears on
+ack, and the response (`pready`/`prdata`/`pslverr`) is forwarded combinationally.
+A variable-latency register simply stretches the ACCESS phase with wait states.
+APB has a native `pslverr`, so a decode error maps to `pslverr` (with `prdata`
+forced to 0). APB's reset (`presetn`) is active-low, handed to the regfile via
+`G_RESET_ACTIVE_LOW`. UVVM ships no APB VIP, so it is verified with a hand-written
+APB master BFM in the testbench
 (`hdl/prototype/tb/prototype_apb_endpoint_tb.vhd`, `make sim-prototype-apb`).
 
 ## Prototype demo module
