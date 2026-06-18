@@ -5,6 +5,8 @@ import pytest
 
 from bust.core.enums import SwAccess, HwAccess, OnRead, OnWrite
 from bust.core.field import Field
+from bust.core.register import Register
+from bust.core.legacy_schema import register_access_defaults, uses_new_schema
 from bust.exceptions import InvalidFieldFormat
 
 
@@ -123,3 +125,63 @@ class TestFieldEnums:
                 0,
                 "reg",
             )
+
+
+class TestLegacyTranslation:
+    def test_rw_maps_to_sw_rw_hw_r(self):
+        assert register_access_defaults({"mode": "rw"}) == {"sw": "rw", "hw": "r"}
+
+    def test_ro_maps_to_sw_ro_hw_w(self):
+        assert register_access_defaults({"mode": "ro"}) == {"sw": "ro", "hw": "w"}
+
+    def test_pulse_maps_to_singlepulse(self):
+        d = register_access_defaults({"name": "p", "mode": "pulse"})
+        assert d == {"sw": "wo", "hw": "r", "singlepulse": True}
+
+    def test_pulse_cycles_warns(self, caplog):
+        register_access_defaults({"name": "p", "mode": "pulse", "pulse_cycles": 4})
+        assert "single-cycle" in caplog.text
+
+    def test_absent_mode_defaults_rw(self):
+        assert register_access_defaults({"name": "r"}) == {"sw": "rw", "hw": "r"}
+
+    def test_new_schema_detected(self):
+        assert uses_new_schema({"sw": "ro"})
+        assert not uses_new_schema({"mode": "rw"})
+
+    def test_new_schema_passed_through(self):
+        d = register_access_defaults({"sw": "wo", "hw": "na", "onwrite": "woclr"})
+        assert d == {"sw": "wo", "hw": "na", "onwrite": "woclr"}
+
+
+class TestRegisterInheritance:
+    def _fields_reg(self, extra):
+        cfg = {
+            "name": "r",
+            "type": "fields",
+            "fields": [
+                {"name": "f0", "type": "bit"},
+                {"name": "f1", "type": "bit", "sw": "rw"},
+            ],
+        }
+        cfg.update(extra)
+        return Register(cfg, 0, "mod", 32)
+
+    def test_legacy_ro_register_fields_inherit(self):
+        reg = self._fields_reg({"mode": "ro"})
+        assert reg.sw is SwAccess.RO and reg.hw is HwAccess.W
+        assert reg.fields[0].sw is SwAccess.RO
+        assert reg.fields[0].hw is HwAccess.W
+        # field override still wins
+        assert reg.fields[1].sw is SwAccess.RW
+
+    def test_legacy_pulse_register_fields_inherit_singlepulse(self):
+        reg = self._fields_reg({"mode": "pulse"})
+        assert reg.fields[0].singlepulse is True
+        assert reg.fields[0].sw is SwAccess.WO
+
+    def test_new_schema_register_fields_inherit(self):
+        reg = self._fields_reg({"sw": "ro", "hw": "w"})
+        assert reg.fields[0].sw is SwAccess.RO
+        assert reg.fields[0].hw is HwAccess.W
+        assert reg.fields[1].sw is SwAccess.RW
