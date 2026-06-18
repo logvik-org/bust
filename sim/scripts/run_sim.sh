@@ -12,6 +12,7 @@
 #   prototype_axi   Run hdl/prototype/tb/prototype_axi_endpoint_tb.vhd (AXI-Lite VIP)
 #   prototype_ipbus Run hdl/prototype/tb/prototype_ipb_endpoint_tb.vhd (vip_ipbus)
 #   prototype_sbi   Run hdl/prototype/tb/prototype_sbi_endpoint_tb.vhd (SBI VIP)
+#   prototype_avalon Run hdl/prototype/tb/prototype_avalon_endpoint_tb.vhd (Avalon-MM VIP)
 #
 # Optional flags:
 #   --wave          Generate a waveform file (FST) for GTKWave debugging.
@@ -171,9 +172,24 @@ case "${TARGET}" in
         )
         TOP_ENTITY="prototype_sbi_endpoint_tb"
         ;;
+    prototype_avalon)
+        # Avalon-MM wrapper over the local-bus regfile, checked with the stock
+        # Bitvis Avalon-MM VIP (resolved from nvc's system library path).
+        pre_compile() {
+            echo "  [nvc -a] localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_avalon_endpoint.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_avalon_endpoint_tb.vhd"
+        )
+        TOP_ENTITY="prototype_avalon_endpoint_tb"
+        ;;
     *)
         echo "ERROR: Unknown target '${TARGET}'." >&2
-        echo "Supported targets: example_ipbus, example_axi, prototype, prototype_axi, prototype_ipbus, prototype_sbi" >&2
+        echo "Supported targets: example_ipbus, example_axi, prototype, prototype_axi, prototype_ipbus, prototype_sbi, prototype_avalon" >&2
         exit 1
         ;;
 esac
