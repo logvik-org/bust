@@ -334,6 +334,19 @@ to 0. UVVM ships no Wishbone VIP, so it is verified with a small hand-written
 classic-cycle master BFM in the testbench
 (`hdl/prototype/tb/prototype_wishbone_endpoint_tb.vhd`, `make sim-prototype-wishbone`).
 
+The APB endpoint prototype (`hdl/prototype/prototype_apb_endpoint.vhd`) bridges
+the AMBA APB two-phase protocol: a SETUP cycle (`psel` high, `penable` low) is
+followed by ACCESS cycles (`psel` and `penable` high) until the slave raises
+`pready`. On detecting SETUP the endpoint latches the request and drives the
+local-bus transaction from the first ACCESS cycle; the regfile's one-cycle latency
+then appears as APB wait states (`pready` low) until it answers, after which
+`pready` is pulsed for one clock with `prdata` valid. The SETUP phase delimits every transfer, so no extra
+re-trigger guard is needed. APB has a native `pslverr`, so a decode error maps to
+`pslverr` (with `prdata` forced to 0). APB's reset (`presetn`) is active-low,
+handed to the regfile via `G_RESET_ACTIVE_LOW`. UVVM ships no APB VIP, so it is
+verified with a hand-written APB master BFM in the testbench
+(`hdl/prototype/tb/prototype_apb_endpoint_tb.vhd`, `make sim-prototype-apb`).
+
 ## Prototype demo module
 
 `prototype` exercises the core-access matrix, the onread/onwrite software side
