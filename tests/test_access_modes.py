@@ -185,3 +185,56 @@ class TestRegisterInheritance:
         assert reg.fields[0].sw is SwAccess.RO
         assert reg.fields[0].hw is HwAccess.W
         assert reg.fields[1].sw is SwAccess.RW
+
+
+class TestAccessModeValidation:
+    def _f(self, cfg):
+        base = {"name": "f", "type": "bit"}
+        base.update(cfg)
+        return Field(base, 0, "reg")
+
+    def test_no_access_rejected(self):
+        with pytest.raises(InvalidFieldFormat):
+            self._f({"sw": "na", "hw": "na"})
+
+    def test_we_and_wel_conflict(self):
+        with pytest.raises(InvalidFieldFormat):
+            self._f({"hw": "w", "we": True, "wel": True})
+
+    def test_we_requires_hw_writable(self):
+        with pytest.raises(InvalidFieldFormat):
+            self._f({"hw": "r", "we": True})
+
+    def test_onread_requires_sw_readable(self):
+        with pytest.raises(InvalidFieldFormat):
+            self._f({"sw": "wo", "onread": "rclr"})
+
+    def test_onwrite_requires_sw_writable(self):
+        with pytest.raises(InvalidFieldFormat):
+            self._f({"sw": "ro", "onwrite": "woset"})
+
+    def test_onwrite_and_singlepulse_conflict(self):
+        with pytest.raises(InvalidFieldFormat):
+            self._f({"sw": "rw", "onwrite": "woset", "singlepulse": True})
+
+    def test_singlepulse_requires_sw_writable(self):
+        with pytest.raises(InvalidFieldFormat):
+            self._f({"sw": "ro", "singlepulse": True})
+
+    def test_swmod_requires_sw_writable(self):
+        with pytest.raises(InvalidFieldFormat):
+            self._f({"sw": "ro", "swmod": True})
+
+    def test_swacc_requires_sw_access(self):
+        with pytest.raises(InvalidFieldFormat):
+            self._f({"sw": "na", "hw": "w", "swacc": True})
+
+    def test_valid_combinations_accepted(self):
+        # mirror prototype fields that must remain legal
+        self._f({"sw": "rw", "hw": "rw", "we": True})  # reg4.field0
+        self._f({"sw": "rw", "hw": "r", "hwset": True, "hwclr": True})  # reg4.field1
+        self._f({"sw": "rw", "hw": "r", "onread": "rclr"})  # reg5.field0
+        self._f({"sw": "rw", "hw": "r", "onwrite": "woset"})  # reg6.field0
+        self._f({"sw": "rw", "hw": "r", "swmod": True})  # reg9.field0
+        self._f({"sw": "rw", "hw": "r", "singlepulse": True})  # reg10.field0
+        self._f({"sw": "ro", "hw": "w", "wel": True})  # reg1.field2
