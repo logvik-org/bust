@@ -31,6 +31,15 @@ jobs:
     - name: Run type checking with mypy
       run: |
         mypy bust
-    - name: Run setup tests
+    - name: Run tests with coverage
       run: |
-        pytest
+        pytest --cov=bust --cov-report=term-missing --cov-report=xml
+    - name: Coverage summary
+      if: matrix.python-version == '3.11'
+      run: |
+        {
+          echo '### Coverage report'
+          echo '```'
+          coverage report
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
