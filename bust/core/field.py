@@ -14,7 +14,7 @@ from typing import Dict, List, NamedTuple, Optional
 
 from bust.core.enums import FieldType, SwAccess, HwAccess, OnRead, OnWrite
 from bust.exceptions import InvalidFieldFormat
-from bust.validation.vhdl_validator import is_valid_VHDL, is_unique
+from bust.validation.vhdl_validator import is_valid_VHDL
 from bust.validation.config_validator import ConfigWrapper
 
 
@@ -222,7 +222,11 @@ class Field:
         for entry in enums:
             name = entry["name"]
             is_valid_VHDL(name)
-            is_unique(name, seen_names)
+            if name in seen_names:
+                raise InvalidFieldFormat(
+                    f"Duplicate enum name '{name}' in field {self.name} "
+                    f"in reg {self.parent_register_name}"
+                )
             value = int(entry["value"])
             if value < 0 or value > maxvalue:
                 raise InvalidFieldFormat(
