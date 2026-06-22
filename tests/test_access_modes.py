@@ -44,7 +44,7 @@ class TestAccessEnums:
             OnRead.from_string("clr")
 
 
-def make_field(cfg, inherited=None, pos_low=0, width_key=True):
+def make_field(cfg, inherited=None, pos_low=0):
     base = {"name": "f", "type": "bit"}
     base.update(cfg)
     return Field(base, pos_low, "reg", inherited=inherited)
@@ -126,6 +126,35 @@ class TestFieldEnums:
                 "reg",
             )
 
+    def test_duplicate_enum_name(self):
+        with pytest.raises(InvalidFieldFormat):
+            Field(
+                {
+                    "name": "mode",
+                    "type": "vector",
+                    "width": 2,
+                    "enums": [
+                        {"name": "A", "value": 0},
+                        {"name": "A", "value": 1},
+                    ],
+                },
+                0,
+                "reg",
+            )
+
+    def test_invalid_vhdl_enum_name(self):
+        with pytest.raises(Exception):
+            Field(
+                {
+                    "name": "mode",
+                    "type": "vector",
+                    "width": 2,
+                    "enums": [{"name": "1bad", "value": 0}],
+                },
+                0,
+                "reg",
+            )
+
 
 class TestLegacyTranslation:
     def test_rw_maps_to_sw_rw_hw_r(self):
@@ -185,6 +214,11 @@ class TestRegisterInheritance:
         assert reg.fields[0].sw is SwAccess.RO
         assert reg.fields[0].hw is HwAccess.W
         assert reg.fields[1].sw is SwAccess.RW
+
+    def test_register_modifier_inherited_by_fields(self):
+        reg = self._fields_reg({"hw": "w", "we": True})
+        assert reg.fields[0].we is True
+        assert reg.fields[0].hw is HwAccess.W
 
 
 class TestAccessModeValidation:
