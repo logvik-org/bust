@@ -22,13 +22,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pylint", "mypy", "pydocstyle"]
+dev = ["pytest", "pytest-cov", "pylint", "mypy", "pydocstyle"]
 
 [project.scripts]
 bust = "bust.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/grottviq/bust"
+
+[tool.coverage.run]
+source = ["bust"]
+omit = ["bust/_version.py"]
 
 [tool.mypy]
 python_version = "3.9"
