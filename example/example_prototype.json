@@ -1,0 +1,124 @@
+{
+    "settings": {
+        "mod_subdir": true,
+        "bus_subdir": false,
+        "uvvm_rel_path": "../../../UVVM",
+        "coverage": true
+    },
+    "bus": {
+        "type": "axi",
+        "addr_width": 32,
+        "data_width": 32,
+        "comp_library": "bust"
+    },
+    "module": {
+        "name": "prototype",
+        "version": "1.0",
+        "description": "Comprehensive example exercising every v1 access mode, mirroring the prototype demo module (reg0..reg11).",
+        "register": [
+            {
+                "name": "reg0", "sw": "rw", "hw": "r", "type": "fields",
+                "description": "Plain rw storage, hardware reads back.",
+                "fields": [
+                    { "name": "field0", "type": "bit" },
+                    { "name": "field1", "type": "vector", "width": 2 }
+                ]
+            },
+            {
+                "name": "reg1", "sw": "ro", "hw": "w", "type": "fields",
+                "description": "Hardware-driven status, software read-only.",
+                "fields": [
+                    { "name": "field0", "type": "vector", "width": 4, "we": true },
+                    { "name": "field1", "type": "bit" },
+                    { "name": "field2", "type": "bit", "wel": true }
+                ]
+            },
+            {
+                "name": "reg2", "sw": "wo", "hw": "r", "type": "fields",
+                "description": "Write-only command field.",
+                "fields": [
+                    { "name": "field0", "type": "bit" }
+                ]
+            },
+            {
+                "name": "reg3", "sw": "rw", "hw": "na", "type": "fields",
+                "description": "Software-only scratch register.",
+                "fields": [
+                    { "name": "field0", "type": "vector", "width": 8 }
+                ]
+            },
+            {
+                "name": "reg4", "sw": "rw", "hw": "r", "type": "fields",
+                "description": "Hardware write-enable and hardware set/clear.",
+                "fields": [
+                    { "name": "field0", "type": "vector", "width": 4, "hw": "rw", "we": true },
+                    { "name": "field1", "type": "bit", "hwset": true, "hwclr": true }
+                ]
+            },
+            {
+                "name": "reg5", "sw": "rw", "hw": "r", "type": "fields",
+                "description": "Read side effects.",
+                "fields": [
+                    { "name": "field0", "type": "vector", "width": 4, "onread": "rclr" },
+                    { "name": "field1", "type": "vector", "width": 4, "onread": "rset" }
+                ]
+            },
+            {
+                "name": "reg6", "sw": "rw", "hw": "r", "type": "fields",
+                "description": "Write-1 onwrite effects.",
+                "fields": [
+                    { "name": "field0", "type": "vector", "width": 4, "onwrite": "woset" },
+                    { "name": "field1", "type": "vector", "width": 4, "onwrite": "woclr", "reset": "0xf" },
+                    { "name": "field2", "type": "vector", "width": 4, "onwrite": "wot" }
+                ]
+            },
+            {
+                "name": "reg7", "sw": "rw", "hw": "r", "type": "fields",
+                "description": "Write-0 onwrite effects.",
+                "fields": [
+                    { "name": "field0", "type": "vector", "width": 4, "onwrite": "wzs" },
+                    { "name": "field1", "type": "vector", "width": 4, "onwrite": "wzc", "reset": "0xf" },
+                    { "name": "field2", "type": "vector", "width": 4, "onwrite": "wzt" }
+                ]
+            },
+            {
+                "name": "reg8", "sw": "rw", "hw": "r", "type": "fields",
+                "description": "Whole-field onwrite effects.",
+                "fields": [
+                    { "name": "field0", "type": "vector", "width": 4, "onwrite": "wclr", "reset": "0xf" },
+                    { "name": "field1", "type": "vector", "width": 4, "onwrite": "wset" }
+                ]
+            },
+            {
+                "name": "reg9", "sw": "rw", "hw": "r", "type": "fields",
+                "description": "Software-access pulses.",
+                "fields": [
+                    { "name": "field0", "type": "vector", "width": 4, "swmod": true },
+                    { "name": "field1", "type": "vector", "width": 4, "swacc": true }
+                ]
+            },
+            {
+                "name": "reg10", "sw": "rw", "hw": "r", "type": "fields",
+                "description": "Single-cycle pulse on software write.",
+                "fields": [
+                    { "name": "field0", "type": "vector", "width": 4, "singlepulse": true }
+                ]
+            },
+            {
+                "name": "reg11", "sw": "rw", "hw": "r", "type": "fields",
+                "description": "Enumerated field.",
+                "fields": [
+                    {
+                        "name": "field0", "type": "vector", "width": 2,
+                        "enums": [
+                            { "name": "STATE0", "value": 0 },
+                            { "name": "STATE1", "value": 1 },
+                            { "name": "STATE2", "value": 2 },
+                            { "name": "STATE3", "value": 3 }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
