@@ -19,11 +19,11 @@ the golden-file suite green against regenerated reference output.
 | `<mod>.vhd` (top entity) | `<mod>.vhd` (top entity, instantiates endpoint) |
 | `<mod>_<bus>_pif.vhd` (decode + storage + handshake fused) | `<mod>_regfile.vhd` (protocol-agnostic) + `<mod>_<bus>_endpoint.vhd` (handshake only) |
 | `<mod>_pif_pkg.vhd` (records) | `<mod>_regfile_pkg.vhd` (records + enum types) |
-| `axi_pkg.vhd` (AXI only) | `localbus_pkg.vhd` (shared) + any per-bus pkg |
+| `axi_pkg.vhd` (AXI only) | `localbus_pkg.vhd` (shared, emitted once) + any per-bus pkg |
 
 The hand-written prototype files in `hdl/prototype/` are the reference for each of
-these. `localbus_pkg.vhd` is module-independent and can be emitted verbatim (or
-shipped as a static library file).
+these. `localbus_pkg.vhd` is module-independent; see "Resolved decisions" for how
+it is emitted in multi-module designs.
 
 ### Access-mode model: the main gap
 
@@ -64,6 +64,21 @@ reference for every one of these.
      `process_pulse` macros are the seam to generalize; the prototype regfile shows
      the target per-access-mode emission.
 
+   **Template architecture.** One template per emitted file is the spine
+   (`module.j2`, `module_regfile.vhd.j2`, `regfile_pkg.j2`, one endpoint template
+   per bus, `localbus_pkg.j2`). A shared macro library under
+   `templates/vhdl/macros/` holds only the fragments that genuinely repeat: the
+   per-access-mode emission (`read_field`, `write_field`, `onread_clear`,
+   `singlepulse`, `enum_convert`, ...). The boundary is deliberate: macros emit
+   protocol-agnostic access-mode logic, defined once and used by the regfile;
+   per-file templates own structure and protocol (entity/port/architecture
+   skeletons). This keeps the regfile bus-agnostic and makes a new bus "add one
+   endpoint template," never "touch the access-mode macros." This mirrors today's
+   convention (`pif.j2` includes `axi.j2`/`ipbus.j2`, which import the
+   `statement_*`/`process_*` macros), just disciplined around the access-mode
+   matrix where copy-paste would otherwise explode across protocols. Avoid both a
+   single-file monolith and a sprawl of tiny includes.
+
 3. **Endpoint generators** (`templates/vhdl/.../endpoint/`)
    - AXI4-Lite and IPBus endpoints from the verified combinational prototypes.
    - Top-level `<mod>.vhd` instantiates the chosen endpoint; `G_BASE_ADDRESS` /
@@ -78,10 +93,13 @@ reference for every one of these.
    - LaTeX docs: new access-mode columns (sw/hw/effects), enum tables.
 
 5. **Golden fixtures + tests**
-   - Extend `example/example_axi.json` and `example/example_ipbus.json` to exercise
-     the v1 access modes (mirror the prototype demo module).
-   - Regenerate the full `example/example_{axi,ipbus}/` trees and commit as the new
-     golden reference. The doc test pins `0.14.0-dev` (bump deliberately if needed).
+   - Keep `example/example_axi.json` and `example/example_ipbus.json` as the simple
+     examples (they also exercise the legacy-schema translation path) and add a new
+     comprehensive example per bus mirroring the prototype demo module
+     (reg0..reg11), per resolved decision 3.
+   - Regenerate the full `example/example_{axi,ipbus}/` trees and the new
+     comprehensive trees, and commit as the new golden reference. The doc test pins
+     `0.14.0-dev` (bump deliberately if needed).
    - The sim CI (`vhdl_sim.yml`) runs the regenerated `example/**/*.vhd`, so the
      generated HDL is simulated end-to-end, not just diffed.
 
@@ -103,18 +121,27 @@ reference for every one of these.
    translation path) and add a new full-coverage example per bus mirroring the
    prototype demo module (reg0..reg11). All trees are regenerated as goldens.
 
-## Open questions (non-blocking, recommendation given)
+4. **Template architecture: one template per file + a shared access-mode macro
+   library.** Per-file templates own structure and protocol; a single
+   `templates/vhdl/macros/` library owns the per-access-mode logic, used by the
+   regfile and reused across buses. Not a monolith, not a sprawl of tiny includes.
+   See workstream 2 for the macro boundary.
 
-1. **Byte/word address translation (deferred in step 1).** Today `Module` carries
-   `byte_addressable` (True for AXI, False for IPBus) and assigns integer addresses
-   in byte or word units; the prototype regfile decodes byte offsets against
-   `C_MODULE_ADDR_WIDTH`. Recommendation: the generator emits byte offsets into the
-   regfile and the endpoint forwards the raw address (matches the prototype and the
-   v1 PIFs), so word-addressed maps reduce to byte offsets at generation time.
+5. **`localbus_pkg.vhd`: emit once into a shared location.** The package is
+   module-independent and identical across modules, so it is not emitted per
+   module (N identical copies in `work` would collide). It is emitted once into a
+   shared output location and compiled into its own VHDL library (not `work`);
+   modules reference it via that library. This requires the output-tree layout
+   (and `generate_output` / `Settings`) to gain a shared/common area rather than
+   being strictly one-directory-per-module.
 
-2. **`localbus_pkg.vhd`: emit vs ship static.** It is module-independent.
-   Recommendation: emit it verbatim into the module output tree so generated
-   projects stay self-contained, sourced from a single canonical template.
+6. **Byte/word addressing: exact match, minus the module offset.** The generated
+   VHDL does not know or care whether a map is byte- or word-addressable. Register
+   addresses in the package are the literal values to match; the incoming address
+   must equal them exactly, with no shifting or unit conversion. The only
+   adjustment is subtracting the module base/offset address before the compare.
+   `byte_addressable` therefore stays a generation-time concern (how the package
+   constants are computed), not something the emitted HDL reasons about.
 
 ## Risks / notes
 
@@ -131,10 +158,9 @@ reference for every one of these.
 
 ## Suggested sequencing
 
-1. Resolve the open questions above (especially 1-3).
-2. Model + schema + validation + unit tests (no template changes yet).
-3. Regfile pkg + regfile templates; diff generated output against the prototype
+1. Model + schema + validation + unit tests (no template changes yet).
+2. Regfile pkg + regfile templates; diff generated output against the prototype
    `prototype_regfile*.vhd` for a matching input.
-4. Endpoint + top-level templates; same prototype diff for AXI and IPBus.
-5. Downstream artifacts (TB, headers, docs).
-6. Extend examples, regenerate goldens, green the suite + sim CI.
+3. Endpoint + top-level templates; same prototype diff for AXI and IPBus.
+4. Downstream artifacts (TB, headers, docs).
+5. Extend examples, regenerate goldens, green the suite + sim CI.
