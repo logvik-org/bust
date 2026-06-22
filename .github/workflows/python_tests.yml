@@ -33,7 +33,7 @@ jobs:
         mypy bust
     - name: Run tests with coverage
       run: |
-        pytest --cov=bust --cov-report=term-missing --cov-report=xml
+        pytest --cov=bust --cov-report=term-missing --cov-report=xml --cov-fail-under=60
     - name: Coverage summary
       if: matrix.python-version == '3.11'
       run: |
