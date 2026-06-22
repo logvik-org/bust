@@ -22,13 +22,35 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pylint", "mypy", "pydocstyle"]
+dev = ["pytest", "pytest-cov", "pylint", "mypy", "pydocstyle"]
 
 [project.scripts]
 bust = "bust.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/grottviq/bust"
+
+[tool.coverage.run]
+source = ["bust"]
+omit = [
+    "bust/_version.py",
+    "bust/editor.py",         # interactive curses UI, not exercised in CI
+    "bust/__main__.py",       # docopt CLI entrypoint
+    # Backward-compatibility shims that only re-export from the new locations.
+    "bust/bus.py",
+    "bust/bus_vhdl_gen.py",
+    "bust/config_wrapper.py",
+    "bust/documentation.py",
+    "bust/enums.py",
+    "bust/field.py",
+    "bust/generator_factory.py",
+    "bust/header.py",
+    "bust/module.py",
+    "bust/module_vhdl_gen.py",
+    "bust/register.py",
+    "bust/testbench.py",
+    "bust/utils.py",
+]
 
 [tool.mypy]
 python_version = "3.9"
