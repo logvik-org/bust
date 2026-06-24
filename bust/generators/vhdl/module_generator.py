@@ -29,6 +29,10 @@ class ModuleGenerator:
             },
         )
 
+    def generate_regfile_package_vhdl(self, module) -> str:
+        """Generate the local-bus regfile package (record families + decode helpers)."""
+        return render_template("vhdl/module/regfile_pkg.j2", {"module": module})
+
     def generate_module_vhdl(self, module) -> str:
         """Generate VHDL module code."""
         return render_template(

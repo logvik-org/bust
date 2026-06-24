@@ -33,6 +33,11 @@ def hex_format(value, width):
     return f"{value:0{width}X}"
 
 
+def to_binary(value, width):
+    """Format an integer as a width-bit binary string for VHDL literals."""
+    return f"{value:0{width}b}"
+
+
 def utf8tolatex(text):
     """Convert UTF-8 text to LaTeX-safe encoding."""
     # Imported lazily so VHDL/header rendering does not require pylatexenc.
