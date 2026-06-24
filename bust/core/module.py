@@ -227,6 +227,11 @@ class Module:
             reg.address = addr
 
     @property
+    def stored_registers(self) -> List[Register]:
+        """Registers with at least one state-holding field."""
+        return [reg for reg in self.registers if reg.stored_fields]
+
+    @property
     def to_hw_registers(self) -> List[Register]:
         """Registers with at least one hardware-readable field."""
         return [reg for reg in self.registers if reg.in_to_hw]
