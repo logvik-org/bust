@@ -93,6 +93,25 @@ def test_constant_only_module_omits_empty_record_families():
     assert "return sel_is(sel, C_ADDR_STAT);" in out
 
 
+def test_constant_only_entity_uses_literals_not_regs():
+    """The entity must not reference the `regs` signal for a module whose fields
+    hold no state (the storage record is omitted); reads/outputs use the constant."""
+    reg = {
+        "name": "stat",
+        "sw": "ro",
+        "hw": "r",
+        "type": "fields",
+        "fields": [{"name": "id", "type": "vector", "width": 8, "reset": "0xAB"}],
+    }
+    module = Module({"name": "ronly", "register": [reg]}, _axi_bus(), settings=None)
+    out = GeneratorFactory.generate_regfile_vhdl(module)
+
+    assert "signal regs " not in out
+    assert "regs." not in out
+    assert 'rdata(7 downto 0) <= 8X"AB";' in out
+    assert 'to_hw.stat <= (id => 8X"AB");' in out
+
+
 def test_empty_module_is_mapped_returns_false():
     """is_mapped must be valid VHDL when the module has no registers."""
     module = Module({"name": "empty", "register": []}, _axi_bus(), settings=None)

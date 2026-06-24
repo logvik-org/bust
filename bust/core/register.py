@@ -317,13 +317,21 @@ class Register:
         """
         next_free = self.get_next_pos_low()
         position = field_cfg.get("position")
+        field_name = field_cfg.get("name", "<unknown>")
         if position is None:
             pos_low = next_free
+        elif (
+            not isinstance(position, int) or isinstance(position, bool) or position < 0
+        ):
+            raise InvalidFieldFormat(
+                f"Field '{field_name}' in register '{self.name}': position must "
+                f"be a non-negative integer, got {position!r}."
+            )
         elif position < next_free:
             raise InvalidFieldFormat(
-                f"Field '{field_cfg.get('name', '<unknown>')}' in register "
-                f"'{self.name}': position {position} overlaps bits already in "
-                f"use (next free bit is {next_free})."
+                f"Field '{field_name}' in register '{self.name}': position "
+                f"{position} overlaps bits already in use (next free bit is "
+                f"{next_free})."
             )
         else:
             pos_low = position

@@ -2,11 +2,10 @@
 {% set lhs = "regs." ~ reg.name ~ "." ~ f.name -%}
 {% set fin = "from_hw." ~ reg.name ~ "." ~ f.name -%}
 {% set wslice = "lb_m2s.wdata(" ~ f.get_pos_vhdl() ~ ")" -%}
-{% if f.hw_writable and not f.we and not f.wel and not f.sw_writable %}
-      {{ lhs }} <= {{ fin }};
-{% else %}
 {% if f.singlepulse %}
       {{ lhs }} <= {{ f.zeros_literal }};
+{% elif f.hw_writable and not f.we and not f.wel %}
+      {{ lhs }} <= {{ fin }};
 {% endif %}
 {% set ns = namespace(branches=[]) %}
 {% if f.hwclr %}{% set ns.branches = ns.branches + [(fin ~ ".clr = '1'", lhs ~ " <= " ~ f.zeros_literal)] %}{% endif %}
@@ -30,7 +29,9 @@
 {% if ns.branches %}
       end if;
 {% endif %}
-{% endif %}
+{%- endmacro -%}
+{% macro field_value(reg, f) -%}
+{%- if f.holds_state -%}regs.{{ reg.name }}.{{ f.name }}{%- else -%}{{ f.reset_value_vhdl }}{%- endif -%}
 {%- endmacro -%}
 -- Protocol-agnostic register file for the {{ module.name }} module.
 -- Speaks only the local bus; protocol wrappers (AXI, IPBus, ...) instantiate it.
@@ -215,7 +216,7 @@ begin
 {% for reg in module.registers %}
         elsif sel_is(sel, C_ADDR_{{ reg.name | upper }}) then
 {% for f in reg.fields if f.sw_readable %}
-          rdata({{ f.get_pos_vhdl() }}) <= {{ ("to_slv(regs." ~ reg.name ~ "." ~ f.name ~ ")") if f.is_enum else ("regs." ~ reg.name ~ "." ~ f.name) }};
+          rdata({{ f.get_pos_vhdl() }}) <= {{ ("to_slv(" ~ field_value(reg, f) ~ ")") if f.is_enum else field_value(reg, f) }};
 {% endfor %}
           rd_ack <= '1';
 {% endfor %}
@@ -235,7 +236,7 @@ begin
 {% if module.to_hw_registers %}
   -- Hardware-side outputs, one aggregate per register.
 {% for reg in module.to_hw_registers %}
-  to_hw.{{ reg.name }} <= ({% for f in reg.to_hw_fields %}{{ f.name }} => {% if f.to_hw_is_record %}(value => regs.{{ reg.name }}.{{ f.name }}{% if f.swmod %}, swmod => swmod_{{ reg.name }}_{{ f.name }}{% endif %}{% if f.swacc %}, swacc => swacc_{{ reg.name }}_{{ f.name }}{% endif %}){% else %}regs.{{ reg.name }}.{{ f.name }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %});
+  to_hw.{{ reg.name }} <= ({% for f in reg.to_hw_fields %}{{ f.name }} => {% if f.to_hw_is_record %}(value => {{ field_value(reg, f) }}{% if f.swmod %}, swmod => swmod_{{ reg.name }}_{{ f.name }}{% endif %}{% if f.swacc %}, swacc => swacc_{{ reg.name }}_{{ f.name }}{% endif %}){% else %}{{ field_value(reg, f) }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %});
 {% endfor %}
 
 {% endif %}
