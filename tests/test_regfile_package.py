@@ -18,6 +18,9 @@ _GOLDEN = os.path.join(
     _REPO_ROOT, "example", "example_prototype", "hdl", "prototype_regfile_pkg.vhd"
 )
 _PROTOTYPE = os.path.join(_REPO_ROOT, "hdl", "prototype", "prototype_regfile_pkg.vhd")
+_ENTITY_GOLDEN = os.path.join(
+    _REPO_ROOT, "example", "example_prototype", "hdl", "prototype_regfile.vhd"
+)
 
 
 def _build_module():
@@ -55,6 +58,12 @@ def test_regfile_package_matches_verified_prototype():
     generated = GeneratorFactory.generate_regfile_package_vhdl(_build_module())
     with open(_PROTOTYPE) as fp:
         assert _structural_lines(generated) == _structural_lines(fp.read())
+
+
+def test_regfile_entity_matches_golden():
+    generated = GeneratorFactory.generate_regfile_vhdl(_build_module())
+    with open(_ENTITY_GOLDEN) as fp:
+        assert generated == fp.read()
 
 
 def _axi_bus():
