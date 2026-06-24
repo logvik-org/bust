@@ -113,6 +113,18 @@ jobs:
             /work/sim/scripts/run_sim.sh prototype_axi
 
       # -----------------------------------------------------------------------
+      # 7b. Run the generated AXI endpoint (generated package + regfile +
+      #     endpoint) against the verified AXI testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated AXI endpoint simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_axi_generated
+
+      # -----------------------------------------------------------------------
       # 8. Run the IPBus wrapper prototype testbench
       # -----------------------------------------------------------------------
       - name: Run prototype IPBus wrapper simulation
@@ -122,6 +134,18 @@ jobs:
             -e WORK_ROOT=/work \
             bust-sim:ci \
             /work/sim/scripts/run_sim.sh prototype_ipbus
+
+      # -----------------------------------------------------------------------
+      # 8b. Run the generated IPBus endpoint (generated package + regfile +
+      #     endpoint) against the verified IPBus testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated IPBus endpoint simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_ipbus_generated
 
       # -----------------------------------------------------------------------
       # 9. Run the SBI wrapper prototype testbench
