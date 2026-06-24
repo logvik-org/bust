@@ -90,6 +90,18 @@ jobs:
             /work/sim/scripts/run_sim.sh prototype
 
       # -----------------------------------------------------------------------
+      # 6b. Run the same testbench against the GENERATED regfile package, so the
+      #     generator output is compiled and simulated, not only diffed.
+      # -----------------------------------------------------------------------
+      - name: Run generated regfile package simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_generated
+
+      # -----------------------------------------------------------------------
       # 7. Run the AXI4-Lite wrapper prototype testbench
       # -----------------------------------------------------------------------
       - name: Run prototype AXI-Lite wrapper simulation
