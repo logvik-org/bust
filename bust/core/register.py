@@ -17,6 +17,7 @@ from bust.exceptions import (
     UndefinedRegisterType,
     InvalidRegisterFormat,
     InvalidStallValue,
+    InvalidFieldFormat,
 )
 from bust.core.field import Field
 from bust.core.legacy_schema import register_access_defaults
@@ -314,9 +315,30 @@ class Register:
         Raises:
             ValueError: If field name is not unique within this register.
         """
+        next_free = self.get_next_pos_low()
+        position = field_cfg.get("position")
+        field_name = field_cfg.get("name", "<unknown>")
+        if position is None:
+            pos_low = next_free
+        elif (
+            not isinstance(position, int) or isinstance(position, bool) or position < 0
+        ):
+            raise InvalidFieldFormat(
+                f"Field '{field_name}' in register '{self.name}': position must "
+                f"be a non-negative integer, got {position!r}."
+            )
+        elif position < next_free:
+            raise InvalidFieldFormat(
+                f"Field '{field_name}' in register '{self.name}': position "
+                f"{position} overlaps bits already in use (next free bit is "
+                f"{next_free})."
+            )
+        else:
+            pos_low = position
+
         field = Field(
             field_cfg,
-            self.get_next_pos_low(),
+            pos_low,
             self.name,
             inherited=self.access_defaults,
         )
@@ -325,8 +347,8 @@ class Register:
         existing_names = [f.name for f in self.fields]
         is_unique(field.name, existing_names)
 
-        # Increment register width
-        self.width += field.width
+        # Register spans up to its highest field bit, so reserved gaps count.
+        self.width = max(self.width, field.pos_high + 1)
 
         # Maintain the register reset value
         reg_reset_int = int(self.reset, 16)

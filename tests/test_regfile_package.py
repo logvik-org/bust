@@ -18,6 +18,9 @@ _GOLDEN = os.path.join(
     _REPO_ROOT, "example", "example_prototype", "hdl", "prototype_regfile_pkg.vhd"
 )
 _PROTOTYPE = os.path.join(_REPO_ROOT, "hdl", "prototype", "prototype_regfile_pkg.vhd")
+_ENTITY_GOLDEN = os.path.join(
+    _REPO_ROOT, "example", "example_prototype", "hdl", "prototype_regfile.vhd"
+)
 
 
 def _build_module():
@@ -57,6 +60,12 @@ def test_regfile_package_matches_verified_prototype():
         assert _structural_lines(generated) == _structural_lines(fp.read())
 
 
+def test_regfile_entity_matches_golden():
+    generated = GeneratorFactory.generate_regfile_vhdl(_build_module())
+    with open(_ENTITY_GOLDEN) as fp:
+        assert generated == fp.read()
+
+
 def _axi_bus():
     return Bus(
         {"type": "axi", "addr_width": 32, "data_width": 32, "comp_library": "bust"}
@@ -82,6 +91,25 @@ def test_constant_only_module_omits_empty_record_families():
     assert "type t_ronly_from_hw is record" not in out
     assert "type t_ronly_to_hw is record" in out
     assert "return sel_is(sel, C_ADDR_STAT);" in out
+
+
+def test_constant_only_entity_uses_literals_not_regs():
+    """The entity must not reference the `regs` signal for a module whose fields
+    hold no state (the storage record is omitted); reads/outputs use the constant."""
+    reg = {
+        "name": "stat",
+        "sw": "ro",
+        "hw": "r",
+        "type": "fields",
+        "fields": [{"name": "id", "type": "vector", "width": 8, "reset": "0xAB"}],
+    }
+    module = Module({"name": "ronly", "register": [reg]}, _axi_bus(), settings=None)
+    out = GeneratorFactory.generate_regfile_vhdl(module)
+
+    assert "signal regs " not in out
+    assert "regs." not in out
+    assert 'rdata(7 downto 0) <= 8X"AB";' in out
+    assert 'to_hw.stat <= (id => 8X"AB");' in out
 
 
 def test_empty_module_is_mapped_returns_false():
