@@ -167,10 +167,11 @@ class Register:
 
         The local-bus generator is field-based, so a `bit`/`vector`/`default`
         register is treated as one field spanning the whole register, named after
-        the register and inheriting its access. `self.fields` stays empty so the
-        legacy generator (which keys off the register type) is unaffected.
+        the register and inheriting its access. A register with real fields keeps
+        `self.fields` empty here so the legacy generator (which keys off the
+        register type) is unaffected.
         """
-        if self.type == RegisterType.FIELDS:
+        if self.fields:  # real fields were parsed (type fields or a `fields` key)
             return None  # type: ignore[return-value]
         field_type = "bit" if self.type == RegisterType.BIT else "vector"
         cfg: Dict = {"name": self.name, "type": field_type, "reset": self.reset}
@@ -181,9 +182,7 @@ class Register:
     @property
     def effective_fields(self) -> List["Field"]:
         """Fields for local-bus generation: real fields, or the implicit one."""
-        return (
-            self.fields if self.type == RegisterType.FIELDS else [self._implicit_field]
-        )
+        return self.fields if self.fields else [self._implicit_field]
 
     def _init_fields(self) -> None:
         """Initialize fields from configuration for FIELDS type registers."""
