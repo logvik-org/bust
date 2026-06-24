@@ -98,10 +98,10 @@ architecture rtl of {{ module.name }}_regfile is
   signal rd_ack : std_logic;
   signal rd_err : std_logic;
 {% for reg in module.registers %}
-{% for f in reg.fields if f.swmod %}
+{% for f in reg.effective_fields if f.swmod %}
   signal swmod_{{ reg.name }}_{{ f.name }} : std_logic;
 {% endfor %}
-{% for f in reg.fields if f.swacc %}
+{% for f in reg.effective_fields if f.swacc %}
   signal swacc_{{ reg.name }}_{{ f.name }} : std_logic;
 {% endfor %}
 {% endfor %}
@@ -144,7 +144,7 @@ begin
 
 {% endfor %}
 {% for reg in module.registers %}
-{% set onread_fields = reg.fields | selectattr('onread') | list %}
+{% set onread_fields = reg.effective_fields | selectattr('onread') | list %}
 {% if onread_fields %}
       -- {{ reg.name }} onread effects, applied when the software read is serviced.
       if rd_service and sel_is(sel, C_ADDR_{{ reg.name | upper }}) then
@@ -156,8 +156,8 @@ begin
 {% endif %}
 {% endfor %}
 {% for reg in module.registers %}
-{% set swmod_fields = reg.fields | selectattr('swmod') | list %}
-{% set swacc_fields = reg.fields | selectattr('swacc') | list %}
+{% set swmod_fields = reg.effective_fields | selectattr('swmod') | list %}
+{% set swacc_fields = reg.effective_fields | selectattr('swacc') | list %}
 {% if swmod_fields or swacc_fields %}
       -- {{ reg.name }} software-access strobes (swmod on write, swacc on any access).
 {% for f in swmod_fields %}
@@ -201,10 +201,10 @@ begin
         wr_ack     <= '0';
         wr_err     <= '0';
 {% for reg in module.registers %}
-{% for f in reg.fields if f.swmod %}
+{% for f in reg.effective_fields if f.swmod %}
         swmod_{{ reg.name }}_{{ f.name }} <= '0';
 {% endfor %}
-{% for f in reg.fields if f.swacc %}
+{% for f in reg.effective_fields if f.swacc %}
         swacc_{{ reg.name }}_{{ f.name }} <= '0';
 {% endfor %}
 {% endfor %}
@@ -228,7 +228,7 @@ begin
           rd_err <= '1';
 {% for reg in module.registers %}
         elsif sel_is(sel, C_ADDR_{{ reg.name | upper }}) then
-{% for f in reg.fields if f.sw_readable %}
+{% for f in reg.effective_fields if f.sw_readable %}
           rdata({{ f.get_pos_vhdl() }}) <= {{ ("to_slv(" ~ field_value(reg, f) ~ ")") if f.is_enum else field_value(reg, f) }};
 {% endfor %}
           rd_ack <= '1';
