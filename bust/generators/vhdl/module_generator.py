@@ -46,6 +46,10 @@ class ModuleGenerator:
         """Generate the AXI4-Lite endpoint wrapper over the local-bus regfile."""
         return render_template("vhdl/module/axi_endpoint.j2", {"module": module})
 
+    def generate_ipb_endpoint_vhdl(self, module) -> str:
+        """Generate the IPBus endpoint wrapper over the local-bus regfile."""
+        return render_template("vhdl/module/ipb_endpoint.j2", {"module": module})
+
     def generate_module_vhdl(self, module) -> str:
         """Generate VHDL module code."""
         return render_template(
