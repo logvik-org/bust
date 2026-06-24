@@ -19,10 +19,11 @@ from bust.exceptions import (
     InvalidStallValue,
 )
 from bust.core.field import Field
+from bust.core.legacy_schema import register_access_defaults
 from bust.utils.formatting import indent_string
 from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
 from bust.validation.config_validator import ConfigWrapper
-from bust.core.enums import RegisterMode, RegisterType
+from bust.core.enums import RegisterMode, RegisterType, SwAccess, HwAccess
 
 
 class Register:
@@ -115,6 +116,13 @@ class Register:
         if self.stall:
             if self.stall_cycles < 2 or self.stall_cycles > 255:
                 raise InvalidStallValue(self.stall_cycles)
+
+        # bust 1.0 access-mode defaults the register's fields inherit. Legacy `mode`
+        # registers are translated onto sw/hw here (see legacy_schema). Fields
+        # are constructed below, so this must precede _init_fields.
+        self.access_defaults = register_access_defaults(reg)
+        self.sw = SwAccess.from_string(self.access_defaults.get("sw", "rw"))
+        self.hw = HwAccess.from_string(self.access_defaults.get("hw", "r"))
 
         # Assign width
         if self.type == RegisterType.DEFAULT:
@@ -264,6 +272,36 @@ class Register:
             "Only default, vector and bit registers can extract reset value directly"
         )
 
+    @property
+    def stored_fields(self) -> List[Field]:
+        """Fields that hold state (members of t_<reg>_regs)."""
+        return [f for f in self.fields if f.holds_state]
+
+    @property
+    def to_hw_fields(self) -> List[Field]:
+        """Fields the hardware can read (members of t_<reg>_to_hw)."""
+        return [f for f in self.fields if f.hw_readable]
+
+    @property
+    def from_hw_fields(self) -> List[Field]:
+        """Fields the hardware drives or strobes (members of t_<reg>_from_hw)."""
+        return [f for f in self.fields if f.driven_by_hw]
+
+    @property
+    def enum_fields(self) -> List[Field]:
+        """Fields carrying enumerated values."""
+        return [f for f in self.fields if f.is_enum]
+
+    @property
+    def in_to_hw(self) -> bool:
+        """True when at least one field is hardware-readable."""
+        return any(f.hw_readable for f in self.fields)
+
+    @property
+    def in_from_hw(self) -> bool:
+        """True when at least one field is hardware-driven."""
+        return any(f.driven_by_hw for f in self.fields)
+
     def add_field(self, field_cfg: Dict) -> None:
         """Add a bitfield to this register.
 
@@ -276,7 +314,12 @@ class Register:
         Raises:
             ValueError: If field name is not unique within this register.
         """
-        field = Field(field_cfg, self.get_next_pos_low(), self.name)
+        field = Field(
+            field_cfg,
+            self.get_next_pos_low(),
+            self.name,
+            inherited=self.access_defaults,
+        )
 
         # Validate uniqueness of field name
         existing_names = [f.name for f in self.fields]
