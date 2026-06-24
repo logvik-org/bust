@@ -216,7 +216,7 @@ begin
   -- Read mux and read response. The onread side effects live in p_write (sole
   -- driver of `regs`); this process only selects read data and the response.
   -- Reads of non-readable fields (sw wo / na) return 0 and ack; err is reserved
-  -- for address-decode failures, matching SystemRDL and the v1 bus PIFs.
+  -- for address-decode failures, matching SystemRDL and the legacy bus PIFs.
   p_read : process (clk) is
     variable sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
   begin
