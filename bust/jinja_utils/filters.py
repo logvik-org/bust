@@ -19,6 +19,7 @@ Copyright (c) 2025 Grottviq
 All rights reserved.
 """
 
+
 def indent_all(text, spaces=4):
     """Indent all non-empty lines in a multi-line string by the given number of spaces."""
     prefix = " " * spaces
