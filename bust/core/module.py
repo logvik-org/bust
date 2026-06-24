@@ -227,6 +227,11 @@ class Module:
             reg.address = addr
 
     @property
+    def stored_registers(self) -> List[Register]:
+        """Registers with at least one state-holding field."""
+        return [reg for reg in self.registers if reg.stored_fields]
+
+    @property
     def to_hw_registers(self) -> List[Register]:
         """Registers with at least one hardware-readable field."""
         return [reg for reg in self.registers if reg.in_to_hw]
@@ -240,6 +245,17 @@ class Module:
     def enum_fields(self) -> List["Field"]:
         """Every enumerated field across the module, in register order."""
         return [field for reg in self.registers for field in reg.enum_fields]
+
+    @property
+    def register_select_width(self) -> int:
+        """Bits needed to decode this module's register window (C_MODULE_ADDR_WIDTH).
+
+        Covers the span from offset 0 to the last register plus one stride, so the
+        window is a power-of-two byte range the base address must align to.
+        """
+        stride = self.data_width // 8 if self.byte_addressable else 1
+        top = max((reg.address for reg in self.registers), default=0) + stride
+        return max(1, (top - 1).bit_length())
 
     @property
     def num_ro_regs(self) -> int:
