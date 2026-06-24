@@ -370,3 +370,94 @@ class Field:
             val = "'" + format(int(self.reset, 16), "X") + "'"
 
         return val
+
+    @property
+    def sw_readable(self) -> bool:
+        """True when software can read the field (sw rw or ro)."""
+        return self.sw in (SwAccess.RW, SwAccess.RO)
+
+    @property
+    def sw_writable(self) -> bool:
+        """True when software can write the field (sw rw or wo)."""
+        return self.sw in (SwAccess.RW, SwAccess.WO)
+
+    @property
+    def hw_readable(self) -> bool:
+        """True when hardware can read the field (hw r or rw)."""
+        return self.hw in (HwAccess.R, HwAccess.RW)
+
+    @property
+    def hw_writable(self) -> bool:
+        """True when hardware can write the field's value (hw w or rw)."""
+        return self.hw in (HwAccess.W, HwAccess.RW)
+
+    @property
+    def holds_state(self) -> bool:
+        """True when the field stores a value (gets a t_<reg>_regs member)."""
+        return self.sw is not SwAccess.NA or self.hw_writable
+
+    @property
+    def driven_by_hw(self) -> bool:
+        """True when hardware writes or strobes the field (it appears in from_hw)."""
+        return self.hw_writable or self.hwset or self.hwclr
+
+    @property
+    def is_enum(self) -> bool:
+        """True when the field carries enumerated values."""
+        return bool(self.enums)
+
+    @property
+    def enum_type_name(self) -> str:
+        """VHDL enum type name generated for an enumerated field."""
+        return f"t_{self.parent_register_name}_{self.name}"
+
+    @property
+    def value_type_vhdl(self) -> str:
+        """Field value type: the enum type when enumerated, else the bit type."""
+        return self.enum_type_name if self.is_enum else self.type_vhdl
+
+    @property
+    def to_hw_is_record(self) -> bool:
+        """True when the to_hw view pairs the value with a strobe (swmod/swacc)."""
+        return self.swmod or self.swacc
+
+    @property
+    def to_hw_record_name(self) -> str:
+        """Per-field to_hw record type name (value + swmod/swacc strobes)."""
+        return f"t_{self.parent_register_name}_{self.name}_out"
+
+    @property
+    def to_hw_members(self) -> List[str]:
+        """Members of the field's to_hw record, value first then strobes."""
+        members = ["value"]
+        if self.swmod:
+            members.append("swmod")
+        if self.swacc:
+            members.append("swacc")
+        return members
+
+    @property
+    def from_hw_is_record(self) -> bool:
+        """True when the from_hw view needs a record (carries we/wel/set/clr)."""
+        return self.we or self.wel or self.hwset or self.hwclr
+
+    @property
+    def from_hw_record_name(self) -> str:
+        """Per-field from_hw record type name (value + enable/strobe members)."""
+        return f"t_{self.parent_register_name}_{self.name}_in"
+
+    @property
+    def from_hw_members(self) -> List[str]:
+        """Members of the field's from_hw record: value (with we/wel) and set/clr."""
+        members: List[str] = []
+        if self.hw_writable:
+            members.append("value")
+            if self.we:
+                members.append("we")
+            if self.wel:
+                members.append("wel")
+        if self.hwset:
+            members.append("set")
+        if self.hwclr:
+            members.append("clr")
+        return members
