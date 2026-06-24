@@ -117,7 +117,7 @@ class Register:
             if self.stall_cycles < 2 or self.stall_cycles > 255:
                 raise InvalidStallValue(self.stall_cycles)
 
-        # v1 access-mode defaults the register's fields inherit. Legacy `mode`
+        # bust 1.0 access-mode defaults the register's fields inherit. Legacy `mode`
         # registers are translated onto sw/hw here (see legacy_schema). Fields
         # are constructed below, so this must precede _init_fields.
         self.access_defaults = register_access_defaults(reg)
