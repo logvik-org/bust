@@ -69,3 +69,46 @@ def test_enum_field(prototype):
     enums = field(prototype, "reg11", "field0").enums
     assert [e.name for e in enums] == ["STATE0", "STATE1", "STATE2", "STATE3"]
     assert [e.value for e in enums] == [0, 1, 2, 3]
+
+
+def reg(mod, name):
+    return next(r for r in mod.registers if r.name == name)
+
+
+def test_to_hw_registers_exclude_write_only_and_na(prototype):
+    # reg1 is hw w (not readable), reg3 is hw na; everything else is hw r/rw.
+    names = [r.name for r in prototype.to_hw_registers]
+    assert "reg1" not in names and "reg3" not in names
+    assert {"reg0", "reg4", "reg11"}.issubset(set(names))
+
+
+def test_from_hw_registers_only_hw_driven(prototype):
+    # Only reg1 (hw w) and reg4 (field0 hw rw, field1 hwset/hwclr) are driven.
+    assert [r.name for r in prototype.from_hw_registers] == ["reg1", "reg4"]
+
+
+def test_from_hw_record_shapes(prototype):
+    # value+we, plain continuous value, value+wel, set/clr-only.
+    assert field(prototype, "reg1", "field0").from_hw_members == ["value", "we"]
+    assert field(prototype, "reg1", "field1").from_hw_is_record is False
+    assert field(prototype, "reg1", "field2").from_hw_members == ["value", "wel"]
+    assert field(prototype, "reg4", "field1").from_hw_members == ["set", "clr"]
+
+
+def test_to_hw_record_shapes(prototype):
+    assert field(prototype, "reg9", "field0").to_hw_members == ["value", "swmod"]
+    assert field(prototype, "reg9", "field1").to_hw_members == ["value", "swacc"]
+    assert field(prototype, "reg10", "field0").to_hw_is_record is False
+
+
+def test_enum_field_typing(prototype):
+    f = field(prototype, "reg11", "field0")
+    assert f.enum_type_name == "t_reg11_field0"
+    assert f.value_type_vhdl == "t_reg11_field0"
+    assert prototype.enum_fields == [f]
+
+
+def test_stored_fields_cover_all_demo_fields(prototype):
+    # Every field in the demo holds state.
+    for register in prototype.registers:
+        assert register.stored_fields == register.fields

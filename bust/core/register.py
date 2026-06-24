@@ -272,6 +272,36 @@ class Register:
             "Only default, vector and bit registers can extract reset value directly"
         )
 
+    @property
+    def stored_fields(self) -> List[Field]:
+        """Fields that hold state (members of t_<reg>_regs)."""
+        return [f for f in self.fields if f.holds_state]
+
+    @property
+    def to_hw_fields(self) -> List[Field]:
+        """Fields the hardware can read (members of t_<reg>_to_hw)."""
+        return [f for f in self.fields if f.hw_readable]
+
+    @property
+    def from_hw_fields(self) -> List[Field]:
+        """Fields the hardware drives or strobes (members of t_<reg>_from_hw)."""
+        return [f for f in self.fields if f.driven_by_hw]
+
+    @property
+    def enum_fields(self) -> List[Field]:
+        """Fields carrying enumerated values."""
+        return [f for f in self.fields if f.is_enum]
+
+    @property
+    def in_to_hw(self) -> bool:
+        """True when at least one field is hardware-readable."""
+        return any(f.hw_readable for f in self.fields)
+
+    @property
+    def in_from_hw(self) -> bool:
+        """True when at least one field is hardware-driven."""
+        return any(f.driven_by_hw for f in self.fields)
+
     def add_field(self, field_cfg: Dict) -> None:
         """Add a bitfield to this register.
 
