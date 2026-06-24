@@ -42,6 +42,10 @@ class ModuleGenerator:
         # blank lines so consecutive blocks are separated by exactly one.
         return re.sub(r"\n{3,}", "\n\n", out)
 
+    def generate_axi_endpoint_vhdl(self, module) -> str:
+        """Generate the AXI4-Lite endpoint wrapper over the local-bus regfile."""
+        return render_template("vhdl/module/axi_endpoint.j2", {"module": module})
+
     def generate_module_vhdl(self, module) -> str:
         """Generate VHDL module code."""
         return render_template(
