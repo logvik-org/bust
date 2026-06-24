@@ -1,4 +1,4 @@
-"""Verify the comprehensive prototype example parses into the v1 access-mode
+"""Verify the comprehensive prototype example parses into the bust 1.0 access-mode
 model: register-level inheritance, field overrides, side effects, modifiers,
 and enums. This is the input fixture the regfile generator is developed against."""
 

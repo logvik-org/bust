@@ -52,9 +52,9 @@ When `G_CHECK_BASE_ADDRESS` is false, the instantiator handles address decoding 
 
 Generated VHDL uses records throughout (bus interfaces, hardware-side signals, register grouping). Fields with enumerated values generate proper VHDL `type` definitions, not raw `std_logic_vector` constants, enabling compile-time type checking on the hardware side.
 
-## Access mode specification (v1)
+## Access mode specification (bust 1.0)
 
-The access mode system bust v1 will support. Implement exactly this, no more, no less. All keywords are conceptually aligned with SystemRDL 2.0.
+The access mode system bust 1.0 will support. ("bust 1.0" is the refactor described above; "legacy" refers to the format and functionality being replaced.) Implement exactly this, no more, no less. All keywords are conceptually aligned with SystemRDL 2.0.
 
 **Software access (`sw`)**: `rw` (read+write), `ro` (read only), `wo` (write only), `na` (no access).
 
@@ -119,11 +119,11 @@ Tracked in GitHub issues for future versions. Do not implement these in the curr
 
 `precedence` (hw/sw simultaneous write arbitration), `counter` fields, `intr` (interrupt aggregation), `nonsticky` interrupt behaviour, queue/FIFO/LIFO interfaces, array registers, RAM interface generation, `addrmap` hierarchy and multi-instance address maps.
 
-JSON schema note: design the schema to accommodate a future `addrmap` hierarchy (multiple register-map instances at different base addresses) even though v1 does not implement it. Do not hardcode the assumption of a single address space.
+JSON schema note: design the schema to accommodate a future `addrmap` hierarchy (multiple register-map instances at different base addresses) even though bust 1.0 does not implement it. Do not hardcode the assumption of a single address space.
 
 ## Bus support
 
-- **Current (v1)**: AXI4-Lite, IPBus.
+- **Current (bust 1.0)**: AXI4-Lite, IPBus.
 - **Planned**: Wishbone, custom buses via Jinja2 templates. All current and future single-beat protocols use the local bus abstraction internally.
 
 ## Commands
