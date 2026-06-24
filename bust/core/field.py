@@ -393,8 +393,19 @@ class Field:
 
     @property
     def holds_state(self) -> bool:
-        """True when the field stores a value (gets a t_<reg>_regs member)."""
-        return self.sw is not SwAccess.NA or self.hw_writable
+        """True when the field's value can change after reset (gets a t_<reg>_regs member).
+
+        A field needs storage only if something can modify it: a software or
+        hardware write, a hardware set/clear, or an onread side effect. A pure
+        read-only constant (sw ro, hw r with no side effects) does not.
+        """
+        return (
+            self.sw_writable
+            or self.hw_writable
+            or self.hwset
+            or self.hwclr
+            or self.onread is not None
+        )
 
     @property
     def driven_by_hw(self) -> bool:

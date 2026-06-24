@@ -78,6 +78,18 @@ class TestFieldAccessModes:
         assert f.onread is OnRead.RCLR
         assert f.onwrite is OnWrite.WOSET
 
+    def test_read_only_constant_holds_no_state(self):
+        assert not make_field({"sw": "ro", "hw": "r"}).holds_state
+        assert not make_field({"sw": "ro", "hw": "na"}).holds_state
+
+    def test_modifiable_fields_hold_state(self):
+        assert make_field({"sw": "rw", "hw": "r"}).holds_state
+        assert make_field({"sw": "wo", "hw": "r"}).holds_state
+        assert make_field({"sw": "ro", "hw": "w"}).holds_state
+        assert make_field({"sw": "ro", "hw": "r", "hwset": True}).holds_state
+        assert make_field({"sw": "ro", "hw": "r", "hwclr": True}).holds_state
+        assert make_field({"sw": "rw", "hw": "r", "onread": "rclr"}).holds_state
+
 
 class TestFieldEnums:
     def test_parse_enums(self):
