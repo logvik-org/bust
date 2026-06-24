@@ -1,23 +1,17 @@
-{% macro field_write(reg, f) -%}
+{% macro sw_action(reg, f) -%}
+{% set lhs = "regs." ~ reg.name ~ "." ~ f.name -%}
+{% set wslice = "lb_m2s.wdata(" ~ f.get_pos_vhdl() ~ ")" -%}
+{%- if f.is_enum -%}{{ lhs }} <= to_{{ reg.name }}_{{ f.name }}({{ wslice }}){%- elif f.onwrite -%}{{ lhs }} <= {{ f.onwrite_rhs(lhs, wslice) }}{%- else -%}{{ lhs }} <= {{ wslice }}{%- endif -%}
+{%- endmacro -%}
+{% macro field_chain(reg, f) -%}
 {% set lhs = "regs." ~ reg.name ~ "." ~ f.name -%}
 {% set fin = "from_hw." ~ reg.name ~ "." ~ f.name -%}
-{% set wslice = "lb_m2s.wdata(" ~ f.get_pos_vhdl() ~ ")" -%}
-{% if f.singlepulse %}
-      {{ lhs }} <= {{ f.zeros_literal }};
-{% elif f.hw_writable and not f.we and not f.wel %}
-      {{ lhs }} <= {{ fin }};
-{% endif %}
 {% set ns = namespace(branches=[]) %}
 {% if f.hwclr %}{% set ns.branches = ns.branches + [(fin ~ ".clr = '1'", lhs ~ " <= " ~ f.zeros_literal)] %}{% endif %}
 {% if f.hwset %}{% set ns.branches = ns.branches + [(fin ~ ".set = '1'", lhs ~ " <= " ~ f.ones_literal)] %}{% endif %}
 {% if f.we %}{% set ns.branches = ns.branches + [(fin ~ ".we = '1'", lhs ~ " <= " ~ fin ~ ".value")] %}{% endif %}
 {% if f.wel %}{% set ns.branches = ns.branches + [(fin ~ ".wel = '0'", lhs ~ " <= " ~ fin ~ ".value")] %}{% endif %}
-{% if f.sw_writable %}
-{% if f.is_enum %}{% set swact = lhs ~ " <= to_" ~ reg.name ~ "_" ~ f.name ~ "(" ~ wslice ~ ")" %}
-{% elif f.onwrite %}{% set swact = lhs ~ " <= " ~ f.onwrite_rhs(lhs, wslice) %}
-{% else %}{% set swact = lhs ~ " <= " ~ wslice %}{% endif %}
-{% set ns.branches = ns.branches + [("sw_write and sel_is(sel, C_ADDR_" ~ reg.name | upper ~ ")", swact)] %}
-{% endif %}
+{% if f.sw_writable %}{% set ns.branches = ns.branches + [("sw_write and sel_is(sel, C_ADDR_" ~ reg.name | upper ~ ")", sw_action(reg, f))] %}{% endif %}
 {% for cond, act in ns.branches %}
 {% if loop.first %}
       if {{ cond }} then
@@ -27,6 +21,26 @@
         {{ act }};
 {% endfor %}
 {% if ns.branches %}
+      end if;
+{% endif %}
+{%- endmacro -%}
+{% macro register_write(reg) -%}
+{% for f in reg.stored_fields %}
+{% if f.singlepulse %}
+      regs.{{ reg.name }}.{{ f.name }} <= {{ f.zeros_literal }};
+{% elif f.hw_writable and not f.we and not f.wel %}
+      regs.{{ reg.name }}.{{ f.name }} <= from_hw.{{ reg.name }}.{{ f.name }};
+{% endif %}
+{% endfor %}
+{% for f in reg.stored_fields if (f.we or f.wel or f.hwset or f.hwclr) %}
+{{ field_chain(reg, f) }}
+{% endfor %}
+{% set sw_fields = reg.stored_fields | selectattr('sw_writable') | rejectattr('we') | rejectattr('wel') | rejectattr('hwset') | rejectattr('hwclr') | list %}
+{% if sw_fields %}
+      if sw_write and sel_is(sel, C_ADDR_{{ reg.name | upper }}) then
+{% for f in sw_fields %}
+        {{ sw_action(reg, f) }};
+{% endfor %}
       end if;
 {% endif %}
 {%- endmacro -%}
@@ -125,10 +139,9 @@ begin
       rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0'
                     and base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS);
 
-{% for reg in module.registers %}
-{% for f in reg.stored_fields if f.sw_writable or f.driven_by_hw %}
-{{ field_write(reg, f) }}
-{% endfor %}
+{% for reg in module.registers if reg.stored_fields %}
+{{ register_write(reg) }}
+
 {% endfor %}
 {% for reg in module.registers %}
 {% set onread_fields = reg.fields | selectattr('onread') | list %}
