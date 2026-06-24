@@ -39,7 +39,7 @@ GTKWAVE_RUN := docker run --rm \
     -v "$(WAVES_DIR):/waves:ro" \
     $(GTKWAVE_IMAGE)
 
-.PHONY: help build rebuild sim-ipbus sim-axi sim-prototype sim-prototype-generated sim-prototype-axi sim-prototype-ipbus sim-prototype-sbi sim-prototype-avalon sim-prototype-wishbone sim-prototype-apb wave-ipbus wave-axi wave-prototype wave-prototype-generated wave-prototype-axi wave-prototype-ipbus wave-prototype-sbi wave-prototype-avalon wave-prototype-wishbone wave-prototype-apb gtkwave clean
+.PHONY: help build rebuild sim-ipbus sim-axi sim-prototype sim-prototype-generated sim-prototype-axi sim-prototype-axi-generated sim-prototype-ipbus sim-prototype-sbi sim-prototype-avalon sim-prototype-wishbone sim-prototype-apb wave-ipbus wave-axi wave-prototype wave-prototype-generated wave-prototype-axi wave-prototype-ipbus wave-prototype-sbi wave-prototype-avalon wave-prototype-wishbone wave-prototype-apb gtkwave clean
 
 # Default target
 help:
@@ -103,6 +103,9 @@ sim-prototype-generated: _require-image
 
 sim-prototype-axi: _require-image
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_axi
+
+sim-prototype-axi-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_axi_generated
 
 sim-prototype-ipbus: _require-image
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_ipbus
