@@ -20,6 +20,7 @@ from bust.validation.config_validator import ConfigWrapper
 
 if TYPE_CHECKING:
     from bust.core.bus import Bus
+    from bust.core.field import Field
     from bust.settings import Settings
 
 
@@ -224,6 +225,21 @@ class Module:
         for reg in self.registers:
             addr = self.get_next_address()
             reg.address = addr
+
+    @property
+    def to_hw_registers(self) -> List[Register]:
+        """Registers with at least one hardware-readable field."""
+        return [reg for reg in self.registers if reg.in_to_hw]
+
+    @property
+    def from_hw_registers(self) -> List[Register]:
+        """Registers with at least one hardware-driven field."""
+        return [reg for reg in self.registers if reg.in_from_hw]
+
+    @property
+    def enum_fields(self) -> List["Field"]:
+        """Every enumerated field across the module, in register order."""
+        return [field for reg in self.registers for field in reg.enum_fields]
 
     @property
     def num_ro_regs(self) -> int:
