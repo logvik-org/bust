@@ -130,6 +130,35 @@ def test_constant_only_entity_uses_literals_not_regs():
     assert 'to_hw.stat <= (id => 8X"AB");' in out
 
 
+def test_non_fields_registers_normalize_to_implicit_field():
+    """A bit/vector/default register stands for one full-width field named after
+    it, so the field-based regfile generator works on legacy register maps."""
+    registers = [
+        {"name": "flag", "type": "bit", "mode": "rw"},
+        {"name": "word", "type": "vector", "width": 12, "mode": "rw"},
+        {"name": "whole", "type": "default", "mode": "rw"},
+    ]
+    module = Module(
+        {"name": "legacy", "register": registers}, _axi_bus(), settings=None
+    )
+
+    flag, word, whole = module.registers
+    assert flag.fields == []  # legacy generator still sees no fields
+    assert [f.name for f in flag.effective_fields] == ["flag"]
+    assert [f.name for f in word.effective_fields] == ["word"]
+    assert [f.name for f in whole.effective_fields] == ["whole"]
+
+    pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
+    assert "field0" not in pkg
+    assert "flag : std_logic;" in pkg
+    assert "word : std_logic_vector(11 downto 0);" in pkg
+    # default register spans the full module data width (32).
+    assert "whole : std_logic_vector(31 downto 0);" in pkg
+    # The whole stack generates without referencing a non-existent member.
+    GeneratorFactory.generate_regfile_vhdl(module)
+    GeneratorFactory.generate_axi_endpoint_vhdl(module)
+
+
 def test_empty_module_is_mapped_returns_false():
     """is_mapped must be valid VHDL when the module has no registers."""
     module = Module({"name": "empty", "register": []}, _axi_bus(), settings=None)
