@@ -37,26 +37,28 @@ package {{ module.name }}_regfile_pkg is
 
   -- Internal storage, one record per register, each member a field that holds
   -- state (every software- or hardware-writable field).
-{% for reg in module.registers if reg.stored_fields %}
+{% for reg in module.stored_registers %}
   type t_{{ reg.name }}_regs is record
 {% for f in reg.stored_fields %}
     {{ f.name }} : {{ f.value_type_vhdl }};
 {% endfor %}
   end record;
 {% endfor %}
+{% if module.stored_registers %}
 
   -- Whole-module storage: the regfile keeps this as a single signal.
   type t_{{ module.name }}_regs is record
-{% for reg in module.registers if reg.stored_fields %}
+{% for reg in module.stored_registers %}
     {{ reg.name }} : t_{{ reg.name }}_regs;
 {% endfor %}
   end record;
 
   constant C_{{ module.name | upper }}_REGS_RESET : t_{{ module.name }}_regs := (
-{% for reg in module.registers if reg.stored_fields %}
+{% for reg in module.stored_registers %}
     {{ reg.name }} => ({% for f in reg.stored_fields %}{{ f.name }} => {{ f.reset_value_vhdl }}{% if not loop.last %}, {% endif %}{% endfor %}){% if not loop.last %},{% else %});{% endif %}
 
 {% endfor %}
+{% endif %}
 
   -- regfile -> hardware: only fields the hardware can read (hw r / rw). Fields
   -- with a software-access pulse (swmod/swacc) pair the value with the strobe.
@@ -76,12 +78,14 @@ package {{ module.name }}_regfile_pkg is
   end record;
 {% endfor %}
 
+{% if module.to_hw_registers %}
   -- Whole-module regfile -> hardware bundle.
   type t_{{ module.name }}_to_hw is record
 {% for reg in module.to_hw_registers %}
     {{ reg.name }} : t_{{ reg.name }}_to_hw;
 {% endfor %}
   end record;
+{% endif %}
 
   -- hardware -> regfile: per-field input records pairing each value with the
   -- modifier strobes that gate it. A field gets its own record only when it
@@ -102,12 +106,14 @@ package {{ module.name }}_regfile_pkg is
   end record;
 {% endfor %}
 
+{% if module.from_hw_registers %}
   -- Whole-module hardware -> regfile bundle.
   type t_{{ module.name }}_from_hw is record
 {% for reg in module.from_hw_registers %}
     {{ reg.name }} : t_{{ reg.name }}_from_hw;
 {% endfor %}
   end record;
+{% endif %}
 
   function base_match(addr  : std_logic_vector({{ module.addr_width - 1 }} downto 0);
                       base  : unsigned({{ module.addr_width - 1 }} downto 0);
@@ -142,7 +148,7 @@ package body {{ module.name }}_regfile_pkg is
 
   function is_mapped(sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
   begin
-    return {% for reg in module.registers %}sel_is(sel, C_ADDR_{{ reg.name | upper }}){% if not loop.last %} or {% endif %}{% endfor %};
+    return {% if module.registers %}{% for reg in module.registers %}sel_is(sel, C_ADDR_{{ reg.name | upper }}){% if not loop.last %} or {% endif %}{% endfor %}{% else %}false{% endif %};
   end function;
 {% for f in module.enum_fields %}
 
