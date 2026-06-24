@@ -1,15 +1,15 @@
-"""Compatibility layer: translate the legacy register schema onto the v1
+"""Compatibility layer: translate the legacy register schema onto the bust 1.0
 access-mode model.
 
 The legacy schema describes a register with a single `mode` (`rw`/`ro`/`pulse`)
-plus `pulse_cycles`/`stall_cycles`. The v1 model describes access per field with
+plus `pulse_cycles`/`stall_cycles`. The 1.0 model describes access per field with
 `sw`/`hw` plus side effects and modifiers (see `bust.core.enums`). This module
 maps the former onto the latter so existing JSON keeps working while the new
 generator consumes a single representation.
 
 Translation is intentionally lossless for `rw`/`ro`. A legacy `pulse` register
 maps to a single-cycle pulse (`singlepulse`), which is the only pulse mechanism
-v1 supports; a `pulse_cycles` other than 1 cannot be represented and is reported.
+bust 1.0 supports; a `pulse_cycles` other than 1 cannot be represented and is reported.
 """
 
 import logging
@@ -25,7 +25,7 @@ _NEW_SCHEMA_KEYS: List[str] = list(INHERITABLE_ACCESS)
 
 
 def uses_new_schema(reg: Dict) -> bool:
-    """Return True if the register uses the v1 access-mode keys directly."""
+    """Return True if the register uses the bust 1.0 access-mode keys directly."""
     return any(key in reg for key in _NEW_SCHEMA_KEYS)
 
 
@@ -50,12 +50,12 @@ def _translate_legacy_mode(reg: Dict) -> Dict:
         return {"sw": "ro", "hw": "w"}
 
     # PULSE: software writes a value that reaches hardware as a pulse, then
-    # self-clears. v1 expresses this as a single-cycle pulse.
+    # self-clears. bust 1.0 expresses this as a single-cycle pulse.
     pulse_cycles = reg.get("pulse_cycles", 1)
     if pulse_cycles != 1:
         logger.warning(
             "Register '%s': legacy pulse_cycles=%s collapses to a single-cycle "
-            "pulse under the v1 access model (singlepulse).",
+            "pulse under the bust 1.0 access model (singlepulse).",
             reg.get("name", "<unknown>"),
             pulse_cycles,
         )

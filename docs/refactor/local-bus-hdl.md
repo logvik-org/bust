@@ -65,7 +65,7 @@ stall mechanism. This covers every protocol in scope:
 - **AXI4-Lite** has no stall wire; the slave back-pressures by delaying
   `RVALID`/`BVALID`, i.e. the wrapper delays its response channel until the
   regfile answers.
-- **IPBus** "stall" in v1 is implemented purely by delaying `ipb_ack`
+- **IPBus** "stall" in the legacy PIF is implemented purely by delaying `ipb_ack`
   (`process_stall` counts wait cycles, then asserts ack). The local bus
   expresses the same thing directly.
 - **Wishbone (classic)** inserts wait states by delaying `ACK`.
@@ -84,7 +84,7 @@ generator work.
 The local bus carries a **byte address** so the regfile decode stays
 protocol-agnostic: each wrapper forwards the incoming address unchanged and the
 regfile slices the module window from it (low bits select the register, upper
-bits check the base), exactly as the v1 AXI and IPBus PIFs did. No wrapper shifts
+bits check the base), exactly as the legacy AXI and IPBus PIFs did. No wrapper shifts
 or rewrites the address. This is an internal-bus convention only, not a
 restriction on the register map.
 
@@ -264,8 +264,8 @@ Reading a mapped register whose addressed fields are all software-unreadable
 (`sw: wo`/`na`) returns 0 with a normal `ack`. `err` is reserved for
 address-decode failures (unmapped offset, wrong base). This matches SystemRDL
 (a read of a `wo` field yields 0), the common AXI-Lite / IPBus behavior, and the
-v1 bus PIFs, and keeps generic driver patterns (read-back, read-modify-write)
-working. A stricter "error on read of non-readable" mode is not part of v1.
+legacy bus PIFs, and keeps generic driver patterns (read-back, read-modify-write)
+working. A stricter "error on read of non-readable" mode is not part of bust 1.0.
 
 ## Verification (step 2)
 
@@ -314,7 +314,7 @@ thinnest, since IPBus is itself a single-beat hold-until-ack protocol: a strobe
 drives one local-bus transaction (`wen`/`ren`) and the regfile's response is
 forwarded straight back as `ipb_ack`/`ipb_err`, one clock after the strobe. The
 address is forwarded unchanged and the regfile slices the module window from it
-(as every endpoint and the v1 PIFs do), and its sync active-high reset passes
+(as every endpoint and the legacy PIFs do), and its sync active-high reset passes
 straight through. It is verified with the stock `vip_ipbus` VIP
 (`hdl/prototype/tb/prototype_ipb_endpoint_tb.vhd`, `make sim-prototype-ipbus`).
 
@@ -402,7 +402,7 @@ the structure and naming scheme can be reviewed without semantic distraction:
 | reg10    | 0x28   | field0 | 3..0  | rw   | r    | singlepulse     |
 | reg11    | 0x2C   | field0 | 1..0  | rw   | r    | enum STATE0..STATE3 |
 
-With this the prototype covers the full v1 access-mode spec: software access and
+With this the prototype covers the full bust 1.0 access-mode spec: software access and
 side effects, hardware access and modifiers, the software-access pulses, and
 enum types. The next step is the generator work (step 3), emitting this HDL from
 the register-map JSON.

@@ -163,7 +163,7 @@ class Field:
     def _validate_access_modes(self) -> None:
         """Reject access-mode combinations that have no consistent meaning.
 
-        Grounded in the v1 spec and the prototype regfile: software side effects
+        Grounded in the bust 1.0 spec and the prototype regfile: software side effects
         require the matching software access, hardware write-enables require a
         hardware-writable field, and the two write-behaviour mechanisms
         (`onwrite` and `singlepulse`) are mutually exclusive.
