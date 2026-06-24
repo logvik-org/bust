@@ -428,6 +428,16 @@ class Field:
         return self.enum_type_name if self.is_enum else self.type_vhdl
 
     @property
+    def reset_value_vhdl(self) -> str:
+        """Reset literal in the field's value type (the enum literal when enumerated)."""
+        if not self.is_enum:
+            return self.reset_val_vhdl
+        target = int(self.reset, 16)
+        return next(
+            (e.name for e in self.enums if e.value == target), self.enums[0].name
+        )
+
+    @property
     def to_hw_is_record(self) -> bool:
         """True when the to_hw view pairs the value with a strobe (swmod/swacc)."""
         return self.swmod or self.swacc
