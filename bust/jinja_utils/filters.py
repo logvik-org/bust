@@ -19,9 +19,6 @@ Copyright (c) 2025 Grottviq
 All rights reserved.
 """
 
-from pylatexenc.latexencode import utf8tolatex as _utf8tolatex
-
-
 def indent_all(text, spaces=4):
     """Indent all non-empty lines in a multi-line string by the given number of spaces."""
     prefix = " " * spaces
@@ -37,6 +34,9 @@ def hex_format(value, width):
 
 def utf8tolatex(text):
     """Convert UTF-8 text to LaTeX-safe encoding."""
+    # Imported lazily so VHDL/header rendering does not require pylatexenc.
+    from pylatexenc.latexencode import utf8tolatex as _utf8tolatex
+
     return _utf8tolatex(text)
 
 
