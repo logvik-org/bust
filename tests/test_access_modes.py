@@ -1,4 +1,4 @@
-"""Unit tests for the v1 access-mode model: enums, field-level access modes,
+"""Unit tests for the bust 1.0 access-mode model: enums, field-level access modes,
 register-level inheritance, legacy-schema translation, and validation."""
 
 import pytest
