@@ -86,6 +86,20 @@ class GeneratorFactory:
         return generator.generate_regfile_package_vhdl(module)
 
     @staticmethod
+    def generate_regfile_vhdl(module: "Module") -> str:
+        """Generate the local-bus regfile entity VHDL for a module.
+
+        Args:
+            module: Module instance to generate the regfile entity for.
+
+        Returns:
+            VHDL entity/architecture implementing storage, software side effects,
+            hardware updates, the read mux, and the bus response.
+        """
+        generator = GeneratorFactory.create_module_generator(module)
+        return generator.generate_regfile_vhdl(module)
+
+    @staticmethod
     def generate_module_vhdl(module: "Module") -> str:
         """Generate main VHDL module entity and architecture.
 
