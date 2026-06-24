@@ -78,17 +78,13 @@ begin
 
       if sw_write and sel_is(sel, C_ADDR_REG0) then
         regs.reg0.field0 <= lb_m2s.wdata(0);
-      end if;
-
-      if sw_write and sel_is(sel, C_ADDR_REG0) then
         regs.reg0.field1 <= lb_m2s.wdata(2 downto 1);
       end if;
 
+      regs.reg1.field1 <= from_hw.reg1.field1;
       if from_hw.reg1.field0.we = '1' then
         regs.reg1.field0 <= from_hw.reg1.field0.value;
       end if;
-
-      regs.reg1.field1 <= from_hw.reg1.field1;
 
       if from_hw.reg1.field2.wel = '0' then
         regs.reg1.field2 <= from_hw.reg1.field2.value;
@@ -118,49 +114,28 @@ begin
 
       if sw_write and sel_is(sel, C_ADDR_REG5) then
         regs.reg5.field0 <= lb_m2s.wdata(3 downto 0);
-      end if;
-
-      if sw_write and sel_is(sel, C_ADDR_REG5) then
         regs.reg5.field1 <= lb_m2s.wdata(7 downto 4);
       end if;
 
       if sw_write and sel_is(sel, C_ADDR_REG6) then
         regs.reg6.field0 <= regs.reg6.field0 or lb_m2s.wdata(3 downto 0);
-      end if;
-
-      if sw_write and sel_is(sel, C_ADDR_REG6) then
         regs.reg6.field1 <= regs.reg6.field1 and not lb_m2s.wdata(7 downto 4);
-      end if;
-
-      if sw_write and sel_is(sel, C_ADDR_REG6) then
         regs.reg6.field2 <= regs.reg6.field2 xor lb_m2s.wdata(11 downto 8);
       end if;
 
       if sw_write and sel_is(sel, C_ADDR_REG7) then
         regs.reg7.field0 <= regs.reg7.field0 or not lb_m2s.wdata(3 downto 0);
-      end if;
-
-      if sw_write and sel_is(sel, C_ADDR_REG7) then
         regs.reg7.field1 <= regs.reg7.field1 and lb_m2s.wdata(7 downto 4);
-      end if;
-
-      if sw_write and sel_is(sel, C_ADDR_REG7) then
         regs.reg7.field2 <= regs.reg7.field2 xor not lb_m2s.wdata(11 downto 8);
       end if;
 
       if sw_write and sel_is(sel, C_ADDR_REG8) then
         regs.reg8.field0 <= (others => '0');
-      end if;
-
-      if sw_write and sel_is(sel, C_ADDR_REG8) then
         regs.reg8.field1 <= (others => '1');
       end if;
 
       if sw_write and sel_is(sel, C_ADDR_REG9) then
         regs.reg9.field0 <= lb_m2s.wdata(3 downto 0);
-      end if;
-
-      if sw_write and sel_is(sel, C_ADDR_REG9) then
         regs.reg9.field1 <= lb_m2s.wdata(7 downto 4);
       end if;
 
