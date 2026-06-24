@@ -1,0 +1,92 @@
+"""Verify the generated local-bus regfile package.
+
+Two guards: a golden-file comparison against the committed reference (regression),
+and a structural comparison against the hand-written, simulation-verified prototype
+package in `hdl/prototype/` (the generator must reproduce the verified HDL)."""
+
+import json
+import os
+import re
+
+from bust.core.bus import Bus
+from bust.core.module import Module
+from bust.generators.factory import GeneratorFactory
+
+_REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
+_EXAMPLE = os.path.join(_REPO_ROOT, "example", "example_prototype.json")
+_GOLDEN = os.path.join(
+    _REPO_ROOT, "example", "example_prototype", "hdl", "prototype_regfile_pkg.vhd"
+)
+_PROTOTYPE = os.path.join(_REPO_ROOT, "hdl", "prototype", "prototype_regfile_pkg.vhd")
+
+
+def _build_module():
+    with open(_EXAMPLE) as fp:
+        cfg = json.load(fp)
+    return Module(cfg["module"], Bus(cfg["bus"]), settings=None)
+
+
+def _structural_lines(text):
+    """Declaration lines with comments, blanks, and whitespace normalized away.
+
+    Reset-aggregate and is_mapped lines are dropped: the verified prototype and the
+    generator express the same values differently (`(others => '1')` vs `4X"F"`,
+    wrapped vs single-line boolean), which is functional, not structural. Enum
+    decode `when ... =>` arms are kept so the generated conversion logic is
+    checked."""
+    lines = []
+    for raw in text.splitlines():
+        line = re.sub(r"--.*$", "", raw).strip()
+        line = re.sub(r"\s+", " ", line)
+        is_reset_aggregate = "=>" in line and not line.startswith("when")
+        if not line or is_reset_aggregate or re.match(r"(return |or )?sel_is", line):
+            continue
+        lines.append(line)
+    return lines
+
+
+def test_regfile_package_matches_golden():
+    generated = GeneratorFactory.generate_regfile_package_vhdl(_build_module())
+    with open(_GOLDEN) as fp:
+        assert generated == fp.read()
+
+
+def test_regfile_package_matches_verified_prototype():
+    generated = GeneratorFactory.generate_regfile_package_vhdl(_build_module())
+    with open(_PROTOTYPE) as fp:
+        assert _structural_lines(generated) == _structural_lines(fp.read())
+
+
+def _axi_bus():
+    return Bus(
+        {"type": "axi", "addr_width": 32, "data_width": 32, "comp_library": "bust"}
+    )
+
+
+def test_constant_only_module_omits_empty_record_families():
+    """A field that holds no state and is not hw-driven must not produce empty
+    storage / from_hw records (an empty VHDL record is illegal)."""
+    reg = {
+        "name": "stat",
+        "sw": "ro",
+        "hw": "r",
+        "type": "fields",
+        "fields": [{"name": "id", "type": "vector", "width": 8}],
+    }
+    module = Module({"name": "ronly", "register": [reg]}, _axi_bus(), settings=None)
+    out = GeneratorFactory.generate_regfile_package_vhdl(module)
+
+    assert not re.search(r"is record\s+end record", out)
+    assert "type t_ronly_regs is record" not in out
+    assert "C_RONLY_REGS_RESET" not in out
+    assert "type t_ronly_from_hw is record" not in out
+    assert "type t_ronly_to_hw is record" in out
+    assert "return sel_is(sel, C_ADDR_STAT);" in out
+
+
+def test_empty_module_is_mapped_returns_false():
+    """is_mapped must be valid VHDL when the module has no registers."""
+    module = Module({"name": "empty", "register": []}, _axi_bus(), settings=None)
+    out = GeneratorFactory.generate_regfile_package_vhdl(module)
+    assert "return false;" in out
+    assert "return ;" not in out

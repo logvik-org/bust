@@ -39,7 +39,7 @@ GTKWAVE_RUN := docker run --rm \
     -v "$(WAVES_DIR):/waves:ro" \
     $(GTKWAVE_IMAGE)
 
-.PHONY: help build rebuild sim-ipbus sim-axi sim-prototype sim-prototype-axi sim-prototype-ipbus sim-prototype-sbi sim-prototype-avalon sim-prototype-wishbone sim-prototype-apb wave-ipbus wave-axi wave-prototype wave-prototype-axi wave-prototype-ipbus wave-prototype-sbi wave-prototype-avalon wave-prototype-wishbone wave-prototype-apb gtkwave clean
+.PHONY: help build rebuild sim-ipbus sim-axi sim-prototype sim-prototype-generated sim-prototype-axi sim-prototype-ipbus sim-prototype-sbi sim-prototype-avalon sim-prototype-wishbone sim-prototype-apb wave-ipbus wave-axi wave-prototype wave-prototype-generated wave-prototype-axi wave-prototype-ipbus wave-prototype-sbi wave-prototype-avalon wave-prototype-wishbone wave-prototype-apb gtkwave clean
 
 # Default target
 help:
@@ -51,6 +51,7 @@ help:
 	@echo "  make sim-ipbus      Run the example_ipbus testbench"
 	@echo "  make sim-axi        Run the example_axi testbench"
 	@echo "  make sim-prototype  Run the prototype local-bus regfile testbench"
+	@echo "  make sim-prototype-generated  Run that testbench against the generated package"
 	@echo "  make sim-prototype-axi  Run the AXI-Lite wrapper testbench"
 	@echo "  make sim-prototype-ipbus  Run the IPBus wrapper testbench"
 	@echo "  make sim-prototype-sbi  Run the SBI wrapper testbench"
@@ -96,6 +97,9 @@ sim-axi: _require-image
 
 sim-prototype: _require-image
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype
+
+sim-prototype-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_generated
 
 sim-prototype-axi: _require-image
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_axi
