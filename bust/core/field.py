@@ -427,6 +427,35 @@ class Field:
         """Field value type: the enum type when enumerated, else the bit type."""
         return self.enum_type_name if self.is_enum else self.type_vhdl
 
+    def onwrite_rhs(self, stored: str, wdata: str) -> str:
+        """VHDL value the field takes on a software write, per its onwrite effect.
+
+        `stored` is the current-value expression, `wdata` the write-data slice.
+        """
+        if self.onwrite is None:
+            raise ValueError("onwrite_rhs requires a field with an onwrite effect")
+        combine = {
+            OnWrite.WOSET: f"{stored} or {wdata}",
+            OnWrite.WOCLR: f"{stored} and not {wdata}",
+            OnWrite.WOT: f"{stored} xor {wdata}",
+            OnWrite.WZS: f"{stored} or not {wdata}",
+            OnWrite.WZC: f"{stored} and {wdata}",
+            OnWrite.WZT: f"{stored} xor not {wdata}",
+            OnWrite.WCLR: self.zeros_literal,
+            OnWrite.WSET: self.ones_literal,
+        }
+        return combine[self.onwrite]
+
+    @property
+    def zeros_literal(self) -> str:
+        """All-zeros literal in the field's bit type (`'0'` or `(others => '0')`)."""
+        return "'0'" if self.type == FieldType.BIT else "(others => '0')"
+
+    @property
+    def ones_literal(self) -> str:
+        """All-ones literal in the field's bit type (`'1'` or `(others => '1')`)."""
+        return "'1'" if self.type == FieldType.BIT else "(others => '1')"
+
     @property
     def reset_value_vhdl(self) -> str:
         """Reset literal in the field's value type (the enum literal when enumerated)."""
