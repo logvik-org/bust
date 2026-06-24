@@ -132,11 +132,10 @@ case "${TARGET}" in
         TOP_ENTITY="prototype_regfile_tb"
         ;;
     prototype_generated)
-        # Same verified regfile entity and UVVM testbench as 'prototype', but
-        # compiling the generator's emitted package (example/example_prototype)
-        # in place of the hand-written one. A PASS proves the generated output
-        # compiles and behaves under the self-checking testbench, not just that
-        # it matches the prototype textually.
+        # The generator's emitted package AND entity (example/example_prototype)
+        # compiled against the same verified UVVM testbench as 'prototype'. A PASS
+        # proves the generated output compiles and behaves under the self-checking
+        # testbench, not just that it matches the prototype textually.
         pre_compile() {
             echo "  [nvc -a] localbus_pkg.vhd"
             nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/localbus_pkg.vhd"
@@ -145,7 +144,7 @@ case "${TARGET}" in
         }
         COMPILE_ORDER=(
             "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
-            "${WORK_ROOT}/hdl/prototype/prototype_regfile.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
             "${WORK_ROOT}/hdl/prototype/tb/prototype_regfile_tb.vhd"
         )
         TOP_ENTITY="prototype_regfile_tb"
