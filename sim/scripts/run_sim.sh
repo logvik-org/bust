@@ -12,6 +12,8 @@
 #   prototype_generated  As 'prototype', but compiling the generator's emitted
 #                   package (example/example_prototype) instead of the hand-written one
 #   prototype_axi   Run hdl/prototype/tb/prototype_axi_endpoint_tb.vhd (AXI-Lite VIP)
+#   prototype_axi_generated  As 'prototype_axi', but compiling the generator's
+#                   emitted package, regfile, and AXI endpoint
 #   prototype_ipbus Run hdl/prototype/tb/prototype_ipb_endpoint_tb.vhd (vip_ipbus)
 #   prototype_sbi   Run hdl/prototype/tb/prototype_sbi_endpoint_tb.vhd (SBI VIP)
 #   prototype_avalon Run hdl/prototype/tb/prototype_avalon_endpoint_tb.vhd (Avalon-MM VIP)
@@ -164,6 +166,22 @@ case "${TARGET}" in
         )
         TOP_ENTITY="prototype_axi_endpoint_tb"
         ;;
+    prototype_axi_generated)
+        # The generator's emitted package, regfile, and AXI endpoint compiled
+        # against the verified AXI-Lite endpoint testbench. Proves the generated
+        # AXI stack behaves, not just that it matches the prototype textually.
+        pre_compile() {
+            echo "  [nvc -a] localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_axi_endpoint.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_axi_endpoint_tb.vhd"
+        )
+        TOP_ENTITY="prototype_axi_endpoint_tb"
+        ;;
     prototype_ipbus)
         # IPBus wrapper over the local-bus regfile, checked with the stock
         # vip_ipbus VIP (resolved from nvc's system library path).
@@ -243,7 +261,7 @@ case "${TARGET}" in
         ;;
     *)
         echo "ERROR: Unknown target '${TARGET}'." >&2
-        echo "Supported targets: example_ipbus, example_axi, prototype, prototype_generated, prototype_axi, prototype_ipbus, prototype_sbi, prototype_avalon, prototype_wishbone, prototype_apb" >&2
+        echo "Supported targets: example_ipbus, example_axi, prototype, prototype_generated, prototype_axi, prototype_axi_generated, prototype_ipbus, prototype_sbi, prototype_avalon, prototype_wishbone, prototype_apb" >&2
         exit 1
         ;;
 esac
