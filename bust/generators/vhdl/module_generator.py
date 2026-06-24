@@ -4,6 +4,8 @@ This module provides the ModuleGenerator class for generating VHDL module
 code and package definitions from Module instances.
 """
 
+import re
+
 from bust.jinja_utils.environment import render_template
 
 
@@ -35,7 +37,10 @@ class ModuleGenerator:
 
     def generate_regfile_vhdl(self, module) -> str:
         """Generate the local-bus regfile entity (storage, side effects, read mux)."""
-        return render_template("vhdl/module/regfile.j2", {"module": module})
+        out = render_template("vhdl/module/regfile.j2", {"module": module})
+        # Per-register write blocks render with variable spacing; collapse runs of
+        # blank lines so consecutive blocks are separated by exactly one.
+        return re.sub(r"\n{3,}", "\n\n", out)
 
     def generate_module_vhdl(self, module) -> str:
         """Generate VHDL module code."""
