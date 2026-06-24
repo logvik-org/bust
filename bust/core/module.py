@@ -242,6 +242,17 @@ class Module:
         return [field for reg in self.registers for field in reg.enum_fields]
 
     @property
+    def register_select_width(self) -> int:
+        """Bits needed to decode this module's register window (C_MODULE_ADDR_WIDTH).
+
+        Covers the span from offset 0 to the last register plus one stride, so the
+        window is a power-of-two byte range the base address must align to.
+        """
+        stride = self.data_width // 8 if self.byte_addressable else 1
+        top = max((reg.address for reg in self.registers), default=0) + stride
+        return max(1, (top - 1).bit_length())
+
+    @property
     def num_ro_regs(self) -> int:
         """Count of read-only registers.
 
