@@ -160,6 +160,31 @@ class Register:
         # Perform check that data bits are not exceeded
         self.check_register_data_width(module_data_width)
 
+        self._implicit_field = self._make_implicit_field()
+
+    def _make_implicit_field(self) -> "Field":
+        """Synthesize the single full-width field a non-fields register stands for.
+
+        The local-bus generator is field-based, so a `bit`/`vector`/`default`
+        register is treated as one field spanning the whole register, named after
+        the register and inheriting its access. `self.fields` stays empty so the
+        legacy generator (which keys off the register type) is unaffected.
+        """
+        if self.type == RegisterType.FIELDS:
+            return None  # type: ignore[return-value]
+        field_type = "bit" if self.type == RegisterType.BIT else "vector"
+        cfg: Dict = {"name": self.name, "type": field_type, "reset": self.reset}
+        if field_type == "vector":
+            cfg["width"] = self.width
+        return Field(cfg, 0, self.name, inherited=self.access_defaults)
+
+    @property
+    def effective_fields(self) -> List["Field"]:
+        """Fields for local-bus generation: real fields, or the implicit one."""
+        return (
+            self.fields if self.type == RegisterType.FIELDS else [self._implicit_field]
+        )
+
     def _init_fields(self) -> None:
         """Initialize fields from configuration for FIELDS type registers."""
         fields = self._config.require("fields")
@@ -276,32 +301,32 @@ class Register:
     @property
     def stored_fields(self) -> List[Field]:
         """Fields that hold state (members of t_<reg>_regs)."""
-        return [f for f in self.fields if f.holds_state]
+        return [f for f in self.effective_fields if f.holds_state]
 
     @property
     def to_hw_fields(self) -> List[Field]:
         """Fields the hardware can read (members of t_<reg>_to_hw)."""
-        return [f for f in self.fields if f.hw_readable]
+        return [f for f in self.effective_fields if f.hw_readable]
 
     @property
     def from_hw_fields(self) -> List[Field]:
         """Fields the hardware drives or strobes (members of t_<reg>_from_hw)."""
-        return [f for f in self.fields if f.driven_by_hw]
+        return [f for f in self.effective_fields if f.driven_by_hw]
 
     @property
     def enum_fields(self) -> List[Field]:
         """Fields carrying enumerated values."""
-        return [f for f in self.fields if f.is_enum]
+        return [f for f in self.effective_fields if f.is_enum]
 
     @property
     def in_to_hw(self) -> bool:
         """True when at least one field is hardware-readable."""
-        return any(f.hw_readable for f in self.fields)
+        return any(f.hw_readable for f in self.effective_fields)
 
     @property
     def in_from_hw(self) -> bool:
         """True when at least one field is hardware-driven."""
-        return any(f.driven_by_hw for f in self.fields)
+        return any(f.driven_by_hw for f in self.effective_fields)
 
     def add_field(self, field_cfg: Dict) -> None:
         """Add a bitfield to this register.
