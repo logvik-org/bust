@@ -24,6 +24,9 @@ _ENTITY_GOLDEN = os.path.join(
 _AXI_ENDPOINT_GOLDEN = os.path.join(
     _REPO_ROOT, "example", "example_prototype", "hdl", "prototype_axi_endpoint.vhd"
 )
+_IPB_ENDPOINT_GOLDEN = os.path.join(
+    _REPO_ROOT, "example", "example_prototype", "hdl", "prototype_ipb_endpoint.vhd"
+)
 
 
 def _build_module():
@@ -72,6 +75,12 @@ def test_regfile_entity_matches_golden():
 def test_axi_endpoint_matches_golden():
     generated = GeneratorFactory.generate_axi_endpoint_vhdl(_build_module())
     with open(_AXI_ENDPOINT_GOLDEN) as fp:
+        assert generated == fp.read()
+
+
+def test_ipb_endpoint_matches_golden():
+    generated = GeneratorFactory.generate_ipb_endpoint_vhdl(_build_module())
+    with open(_IPB_ENDPOINT_GOLDEN) as fp:
         assert generated == fp.read()
 
 
