@@ -100,6 +100,32 @@ class GeneratorFactory:
         return generator.generate_regfile_vhdl(module)
 
     @staticmethod
+    def generate_axi_endpoint_vhdl(module: "Module") -> str:
+        """Generate the AXI4-Lite endpoint wrapper VHDL for a module.
+
+        Args:
+            module: Module instance to generate the AXI endpoint for.
+
+        Returns:
+            VHDL entity/architecture bridging AXI4-Lite to the local bus regfile.
+        """
+        generator = GeneratorFactory.create_module_generator(module)
+        return generator.generate_axi_endpoint_vhdl(module)
+
+    @staticmethod
+    def generate_ipb_endpoint_vhdl(module: "Module") -> str:
+        """Generate the IPBus endpoint wrapper VHDL for a module.
+
+        Args:
+            module: Module instance to generate the IPBus endpoint for.
+
+        Returns:
+            VHDL entity/architecture bridging IPBus to the local bus regfile.
+        """
+        generator = GeneratorFactory.create_module_generator(module)
+        return generator.generate_ipb_endpoint_vhdl(module)
+
+    @staticmethod
     def generate_module_vhdl(module: "Module") -> str:
         """Generate main VHDL module entity and architecture.
 
