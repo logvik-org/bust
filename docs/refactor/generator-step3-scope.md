@@ -7,7 +7,7 @@ generator emit that verified architecture. No generator code is changed yet.
 ## Goal
 
 Replace the current per-protocol PIF emission with the verified local-bus
-architecture, for the v1 buses (AXI4-Lite, IPBus), keeping `mypy bust` clean and
+architecture, for the bust 1.0 buses (AXI4-Lite, IPBus), keeping `mypy bust` clean and
 the golden-file suite green against regenerated reference output.
 
 ## Current vs target
@@ -27,9 +27,9 @@ it is emitted in multi-module designs.
 
 ### Access-mode model: the main gap
 
-The current domain model is far behind the v1 spec in the design notes.
+The current domain model is far behind the bust 1.0 spec in the design notes.
 
-| Concept | Today | v1 target |
+| Concept | Today | 1.0 target |
 | --- | --- | --- |
 | Register mode | `RegisterMode` = `rw/ro/pulse` | per-field `sw` (`rw/ro/wo/na`) and `hw` (`r/w/rw/na`) with register-level defaults + field override |
 | Field access | none (name/type/width/reset only) | full sw/hw access + modifiers |
@@ -111,7 +111,7 @@ reference for every one of these.
    new access-mode representation; a compatibility layer normalizes legacy input
    before the model is built. Validation must cover both input shapes.
 
-2. **Bus scope: AXI4-Lite + IPBus only.** Matches the design notes v1. The other four
+2. **Bus scope: AXI4-Lite + IPBus only.** Matches the design notes bust 1.0. The other four
    endpoints (SBI/Avalon/Wishbone/APB) stay as verified reference HDL for a later
    pass; the model/regfile work is bus-agnostic so adding them later is template +
    testbench work only.
