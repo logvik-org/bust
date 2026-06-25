@@ -137,6 +137,35 @@ def test_ipbus_module_top_matches_golden():
         assert generated == fp.read()
 
 
+def _prototype_header(method):
+    from bust.generators.header_generator import HeaderGenerator
+
+    return getattr(HeaderGenerator(_build_module()), method)()
+
+
+def test_prototype_headers_match_golden():
+    """The generated headers express the bust 1.0 access-mode system and match the
+    committed prototype goldens (onread/onwrite/singlepulse/enum included)."""
+    hdr = os.path.join(_REPO_ROOT, "example", "example_prototype", "header")
+    for filename, method in (
+        ("prototype.h", "generate_c_header"),
+        ("prototype.hpp", "generate_cpp_header"),
+        ("prototype.py", "generate_python_header"),
+    ):
+        with open(os.path.join(hdr, filename)) as fp:
+            assert _prototype_header(method) == fp.read(), filename
+
+
+def test_prototype_c_header_surfaces_access_modes():
+    """Side effects and enums reach the C header, not just sw/hw access."""
+    out = _prototype_header("generate_c_header")
+    assert '#define REG5_FIELD0_ONREAD "rclr"' in out
+    assert '#define REG6_FIELD0_ONWRITE "woset"' in out
+    assert "#define REG10_FIELD0_SINGLEPULSE 1" in out
+    assert "#define REG11_FIELD0_STATE3 3" in out
+    assert "_MODE" not in out  # legacy mode macro is gone
+
+
 def test_axi_and_ipbus_testbenches_share_the_test_body():
     """Both testbenches drive the same bus-neutral self-check sequence; only the
     bus stimulus (procedures, signals, reset) differs."""
