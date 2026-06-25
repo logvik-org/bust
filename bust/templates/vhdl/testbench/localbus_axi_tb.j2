@@ -3,9 +3,12 @@
 {%- endmacro -%}
 -- Generated UVVM testbench for the {{ module.name }} module (AXI4-Lite).
 -- Drives the {{ module.name }} top entity with the stock Bitvis AXI-Lite VIP and
--- self-checks every plain software read-write register (write then read back).
--- Registers with access-mode side effects (onread/onwrite/singlepulse, enum,
--- hardware-driven) are not exercised here yet.
+-- self-checks every register whose readback is a pure function of software
+-- traffic: plain read-write, enumerated, write-only/singlepulse (reads back 0),
+-- and onread/onwrite software side effects. It drives only the software bus, so
+-- the hardware-facing parts are not checked here yet: the we/wel and hwset/hwclr
+-- from_hw inputs, the swmod/swacc to_hw strobe outputs, and hardware-driven
+-- field values.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -134,6 +137,19 @@ begin
     log(ID_LOG_HDR, "{{ reg.name }}: write-only / pulse reads back zero", C_SCOPE);
     axi_write(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "write {{ reg.name }}");
     axi_check(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ module.data_width }}x"0", "{{ reg.name }} reads back zero");
+{% endfor %}
+{% for reg in module.registers if reg.is_onwrite_readback %}
+
+    log(ID_LOG_HDR, "{{ reg.name }}: onwrite software side effects", C_SCOPE);
+    axi_write(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.onwrite_write_value_vhdl }}, "write {{ reg.name }}");
+    axi_check(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.onwrite_expected_value_vhdl }}, "{{ reg.name }} applies onwrite effects");
+{% endfor %}
+{% for reg in module.registers if reg.is_onread_readback %}
+
+    log(ID_LOG_HDR, "{{ reg.name }}: onread software side effects", C_SCOPE);
+    axi_write(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.onread_write_value_vhdl }}, "write {{ reg.name }}");
+    axi_check(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.onread_write_value_vhdl }}, "{{ reg.name }} first read returns stored value");
+    axi_check(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.onread_post_read_value_vhdl }}, "{{ reg.name }} second read reflects onread");
 {% endfor %}
 
     wait for 10*C_CLK_PERIOD;

@@ -446,6 +446,39 @@ class Field:
         }
         return combine[self.onwrite]
 
+    def written_result(self, written: int) -> int:
+        """Field-local stored value after one software write of `written` from reset.
+
+        Accounts for the field's onwrite effect; a field with no effect simply
+        stores the written bits. Mirrors `onwrite_rhs` for value prediction in
+        generated self-checking testbenches.
+        """
+        mask = (1 << int(self.width)) - 1
+        w = written & mask
+        if self.onwrite is None:
+            return w
+        reset = int(self.reset, 16)
+        effect = {
+            OnWrite.WOSET: reset | w,
+            OnWrite.WOCLR: reset & ~w & mask,
+            OnWrite.WOT: reset ^ w,
+            OnWrite.WZS: reset | (~w & mask),
+            OnWrite.WZC: reset & w,
+            OnWrite.WZT: reset ^ (~w & mask),
+            OnWrite.WCLR: 0,
+            OnWrite.WSET: mask,
+        }
+        return effect[self.onwrite]
+
+    def read_result(self, stored: int) -> int:
+        """Field-local value after a software read, accounting for the onread effect."""
+        mask = (1 << int(self.width)) - 1
+        if self.onread is OnRead.RCLR:
+            return 0
+        if self.onread is OnRead.RSET:
+            return mask
+        return stored & mask
+
     @property
     def zeros_literal(self) -> str:
         """All-zeros literal in the field's bit type (`'0'` or `(others => '0')`)."""
