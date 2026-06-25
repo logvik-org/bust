@@ -151,6 +151,12 @@ def test_testbench_register_categories():
         '32x"0000000A"',
     ]
 
+    # reg9/reg10 emit to_hw strobes counted by the generated monitor process.
+    assert [r.name for r in module.strobe_registers] == ["reg9", "reg10"]
+    assert [f.name for f in by_name["reg9"].swmod_fields] == ["field0"]
+    assert [f.name for f in by_name["reg9"].swacc_fields] == ["field1"]
+    assert [f.name for f in by_name["reg10"].singlepulse_fields] == ["field0"]
+
 
 def test_selftest_value_covers_non_nibble_width():
     """The self-test literal uses ceil(width/4) hex digits, so non-nibble data
