@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <node id="{{ module.name }}">
 {% for reg in module.registers %}
-    <node id="{{ reg.name }}" address="0x{{ "%08X" | format(reg.address) }}" permission="{{ 'w' if reg.mode.value == 'pulse' else ('r' if reg.mode.value == 'ro' else reg.mode.value) }}" description="{{ reg.description }}" parameters="reset={{ reg.reset }}{% if reg.mode.value == "pulse" %};pulse_cycles={{ reg.pulse_cycles }}{% endif %}{% if reg.stall %};stall_cycles={{ reg.stall_cycles }}{% endif %}"{% if reg.type != reg_type_fields %}/{% endif %}>
+    <node id="{{ reg.name }}" address="0x{{ "%08X" | format(reg.address) }}" permission="{{ {'rw': 'rw', 'ro': 'r', 'wo': 'w'}.get(reg.sw.value, '') }}" description="{{ reg.description }}" parameters="reset={{ reg.reset }}{% if reg.mode.value == "pulse" %};pulse_cycles={{ reg.pulse_cycles }}{% endif %}{% if reg.stall %};stall_cycles={{ reg.stall_cycles }}{% endif %}"{% if reg.type != reg_type_fields %}/{% endif %}>
 {% if reg.type == reg_type_fields %}
 {% for field in reg.fields %}
         <node id="{{ field.name }}" mask="{{ "0x%x" | format(field.mask) }}" description="{{ field.description }}" parameters="reset={{ field.reset }}"/>

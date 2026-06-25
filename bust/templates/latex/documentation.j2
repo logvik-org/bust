@@ -48,11 +48,11 @@
     \label{tab:table1}
     \begin{tabularx}{\linewidth}{|l|X|l|l|l|c|l|}
       \hline
-      \textbf{\#} & \textbf{Name} & \textbf{Mode} & \textbf{Address} & \textbf{Type} & \textbf{Width} &
+      \textbf{\#} & \textbf{Name} & \textbf{SW/HW} & \textbf{Address} & \textbf{Type} & \textbf{Width} &
       \textbf{Reset} \\
       \hline
 {% for reg in module.registers %}
-      {{ loop.index0 }} & {{ reg.name | utf8tolatex }} & {{ reg.mode.value.upper() }}{{ reg.return_stall_string() }} & \texttt{0x{{ "%08X" | format(reg.address) }}} & {{ reg.type.value.upper() }} & {{ reg.width }} & \texttt{0x{{ "%X" | format(reg.reset[2:]|int(base=16)) }}} \\
+      {{ loop.index0 }} & {{ reg.name | utf8tolatex }} & {{ reg.sw.value.upper() }}/{{ reg.hw.value.upper() }}{{ reg.return_stall_string() }} & \texttt{0x{{ "%08X" | format(reg.address) }}} & {{ reg.type.value.upper() }} & {{ reg.width }} & \texttt{0x{{ "%X" | format(reg.reset[2:]|int(base=16)) }}} \\
       \hline
 {% endfor %}
     \end{tabularx}
@@ -62,7 +62,7 @@
 \section{Registers}
 
 {% for reg in module.registers %}
-\begin{register}{{ '{' }}H{{ '}' }}{{ '{' }}{{ reg.name | utf8tolatex }} - {{ reg.mode.value.upper() }}{% if reg.mode.value.lower() == "pulse" %} for {{ reg.pulse_cycles }} cycles {% endif %}{% if reg.stall %} - STALL for {{ reg.stall_cycles }} cycles{% endif %}{{ '}' }}{{ '{' }}0x{{ "%08X" | format(reg.address) }}{{ '}' }}  \par {{ reg.description | utf8tolatex }} \regnewline
+\begin{register}{{ '{' }}H{{ '}' }}{{ '{' }}{{ reg.name | utf8tolatex }} - {{ reg.sw.value.upper() }}/{{ reg.hw.value.upper() }}{% if reg.mode.value.lower() == "pulse" %} for {{ reg.pulse_cycles }} cycles {% endif %}{% if reg.stall %} - STALL for {{ reg.stall_cycles }} cycles{% endif %}{{ '}' }}{{ '{' }}0x{{ "%08X" | format(reg.address) }}{{ '}' }}  \par {{ reg.description | utf8tolatex }} \regnewline
   \label{{ '{' }}{{ reg.name }}{{ '}' }}
 {% if reg.width < module.data_width %}
   \regfield{{ '{' }}unused{{ '}' }}{{ '{' }}{{ module.data_width - reg.width }}{{ '}' }}{{ '{' }}{{ reg.width }}{{ '}' }}{{ '{' }}-{{ '}' }}
@@ -78,7 +78,7 @@
 {% if reg.type == reg_type_fields %}
   \begin{{ '{' }}regdesc{{ '}' }}\begin{{ '{' }}reglist{{ '}' }}[{{ reg.fields | map(attribute='name') | min | utf8tolatex }}]
 {% for field in reg.fields %}
-    \item [{{ field.name | utf8tolatex }}] {{ field.description | utf8tolatex }}
+    \item [{{ field.name | utf8tolatex }}] {{ field.description | utf8tolatex }} (sw: {{ field.sw.value }}, hw: {{ field.hw.value }}{% if field.onread %}, onread: {{ field.onread.value }}{% endif %}{% if field.onwrite %}, onwrite: {{ field.onwrite.value }}{% endif %}{% if field.singlepulse %}, singlepulse{% endif %}{% if field.is_enum %}; values: {% for e in field.enums %}{{ e.name }}={{ e.value }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %})
 {% endfor %}  \end{{ '{' }}reglist{{ '}' }}\end{{ '{' }}regdesc{{ '}' }}
 {% endif %}
 \end{register}
