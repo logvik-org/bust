@@ -10,7 +10,7 @@ can optionally contain multiple named bitfields.
 """
 
 import logging
-from typing import Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 
 from bust.exceptions import (
     ModuleDataBitsExceeded,
@@ -555,6 +555,140 @@ class Register:
                     "literal": f.value_literal(self._alternating_bits(f.width)),
                 }
             )
+        return steps
+
+    @property
+    def is_hw_modify_register(self) -> bool:
+        """Software-writable, hardware-readable register exercising hardware value
+        overrides (we) and/or hardware set/clear (hwset/hwclr). Its readback is
+        predictable through a fixed sw-write -> we-override -> hwset -> hwclr
+        scenario. Hardware-writable fields must gate on we (no continuous write
+        racing software)."""
+        fields = self.effective_fields
+        if not fields or not any(f.we or f.hwset or f.hwclr for f in fields):
+            return False
+        return all(
+            f.sw is SwAccess.RW
+            and f.hw_readable
+            and f.onread is None
+            and f.onwrite is None
+            and not f.singlepulse
+            and not f.is_enum
+            and not f.swmod
+            and not f.swacc
+            and not f.wel
+            and (f.we if f.hw_writable else True)
+            for f in fields
+        )
+
+    def _compose(self, state: Dict[str, int]) -> int:
+        """Pack a per-field value map into a full register value."""
+        value = 0
+        for f in self.effective_fields:
+            mask = (1 << f.width) - 1
+            value |= (state[f.name] & mask) << f.pos_low
+        return value
+
+    @property
+    def hw_modify_steps(self) -> List[Dict[str, Any]]:
+        """Ordered scenario for a hardware-modify register: software baseline,
+        then hardware we override, hwset, and hwclr (clr beats set). Each step
+        carries the from_hw drives/strobes to apply and the expected readback."""
+        self._require_predictable(
+            self.is_hw_modify_register, "hw_modify_steps", "hardware-modify"
+        )
+        fields = self.effective_fields
+        state = {f.name: self._alternating_bits(f.width) for f in fields}
+        steps: List[Dict[str, Any]] = []
+
+        steps.append(
+            {
+                "log": f"{self.name}: software baseline write",
+                "sw_write": self._data_width_literal(self._compose(state)),
+                "drives": [],
+                "strobes": [],
+                "expected": self._data_width_literal(self._compose(state)),
+                "expected_msg": f"{self.name} reads back the software value",
+                "to_hw_checks": [
+                    {
+                        "target": f.name + (".value" if f.to_hw_is_record else ""),
+                        "literal": f.value_literal(state[f.name]),
+                        "name": f.name,
+                    }
+                    for f in fields
+                    if f.hw_readable
+                ],
+            }
+        )
+
+        we_fields = [f for f in fields if f.we]
+        if we_fields:
+            for f in we_fields:
+                state[f.name] = (~self._alternating_bits(f.width)) & (
+                    (1 << f.width) - 1
+                )
+            steps.append(
+                {
+                    "log": f"{self.name}: hardware we overrides the stored value",
+                    "sw_write": None,
+                    "drives": [
+                        {
+                            "target": f.name + ".value",
+                            "literal": f.value_literal(state[f.name]),
+                        }
+                        for f in we_fields
+                    ],
+                    "strobes": [
+                        {"target": f.name + ".we", "on": "'1'", "off": "'0'"}
+                        for f in we_fields
+                    ],
+                    "expected": self._data_width_literal(self._compose(state)),
+                    "expected_msg": f"{self.name} reflects the hardware we override",
+                    "to_hw_checks": [],
+                }
+            )
+
+        hwset_fields = [f for f in fields if f.hwset]
+        if hwset_fields:
+            for f in hwset_fields:
+                state[f.name] = (1 << f.width) - 1
+            steps.append(
+                {
+                    "log": f"{self.name}: hwset drives fields high",
+                    "sw_write": None,
+                    "drives": [],
+                    "strobes": [
+                        {"target": f.name + ".set", "on": "'1'", "off": "'0'"}
+                        for f in hwset_fields
+                    ],
+                    "expected": self._data_width_literal(self._compose(state)),
+                    "expected_msg": f"{self.name} reflects hwset",
+                    "to_hw_checks": [],
+                }
+            )
+
+        hwclr_fields = [f for f in fields if f.hwclr]
+        if hwclr_fields:
+            strobes = []
+            for f in hwclr_fields:
+                state[f.name] = 0
+                if f.hwset:  # assert set in the same cycle: clr must win
+                    strobes.append(
+                        {"target": f.name + ".set", "on": "'1'", "off": "'0'"}
+                    )
+                strobes.append({"target": f.name + ".clr", "on": "'1'", "off": "'0'"})
+            steps.append(
+                {
+                    "log": f"{self.name}: hwclr clears fields (and beats hwset)",
+                    "sw_write": None,
+                    "drives": [],
+                    "strobes": strobes,
+                    "expected": self._data_width_literal(self._compose(state)),
+                    "expected_msg": f"{self.name} reflects hwclr",
+                    "to_hw_checks": [],
+                }
+            )
+
         return steps
 
     def add_field(self, field_cfg: Dict) -> None:
