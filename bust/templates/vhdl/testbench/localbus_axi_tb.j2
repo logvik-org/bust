@@ -123,6 +123,18 @@ begin
     axi_write(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "write {{ reg.name }}");
     axi_check(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "{{ reg.name }} reads back");
 {% endfor %}
+{% for reg in module.registers if reg.is_enum_readback %}
+
+    log(ID_LOG_HDR, "{{ reg.name }}: enumerated round-trip", C_SCOPE);
+    axi_write(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.enum_selftest_value_vhdl }}, "write {{ reg.name }}");
+    axi_check(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.enum_selftest_value_vhdl }}, "{{ reg.name }} reads back encoded value");
+{% endfor %}
+{% for reg in module.registers if reg.reads_back_zero %}
+
+    log(ID_LOG_HDR, "{{ reg.name }}: write-only / pulse reads back zero", C_SCOPE);
+    axi_write(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "write {{ reg.name }}");
+    axi_check(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ module.data_width }}x"0", "{{ reg.name }} reads back zero");
+{% endfor %}
 
     wait for 10*C_CLK_PERIOD;
     report_alert_counters(FINAL);

@@ -105,6 +105,21 @@ def test_axi_testbench_matches_golden():
         assert generated == fp.read()
 
 
+def test_testbench_register_categories():
+    """The generated testbench covers plain-rw, enum, and write-zero registers."""
+    module = _build_module()
+    by_name = {r.name: r for r in module.registers}
+    assert [r.name for r in module.registers if r.is_simple_readback] == [
+        "reg0",
+        "reg3",
+        "reg9",
+    ]
+    assert by_name["reg11"].is_enum_readback
+    assert by_name["reg11"].enum_selftest_value_vhdl == '32x"00000003"'  # STATE3
+    assert by_name["reg2"].reads_back_zero  # sw write-only
+    assert by_name["reg10"].reads_back_zero  # singlepulse
+
+
 def test_selftest_value_covers_non_nibble_width():
     """The self-test literal uses ceil(width/4) hex digits, so non-nibble data
     widths are not truncated."""
