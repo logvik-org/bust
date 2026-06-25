@@ -6,9 +6,9 @@
 -- self-checks every register whose readback is predictable: plain read-write,
 -- enumerated, write-only/singlepulse (reads back 0), onread/onwrite software
 -- side effects, and software-readonly registers driven entirely from from_hw
--- (we/wel value inputs). Not checked here yet: the hwset/hwclr from_hw inputs,
--- the swmod/swacc to_hw strobe outputs, and to_hw values on software-writable
--- registers.
+-- (we/wel value inputs). It also checks the to_hw values the hardware sees on
+-- plain read-write registers. Not checked here yet: the hwset/hwclr from_hw
+-- inputs and the swmod/swacc to_hw strobe outputs.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -125,6 +125,9 @@ begin
     log(ID_LOG_HDR, "{{ reg.name }}: software read-write round-trip", C_SCOPE);
     axi_write(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "write {{ reg.name }}");
     axi_check(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "{{ reg.name }} reads back");
+{% for f in reg.to_hw_fields %}
+    check_value(to_hw.{{ reg.name }}.{{ f.name }}{{ ".value" if f.to_hw_is_record else "" }}, {{ f.all_ones_literal }}, error, "{{ reg.name }}.{{ f.name }} exposed to hw", C_SCOPE);
+{% endfor %}
 {% endfor %}
 {% for reg in module.registers if reg.is_enum_readback %}
 
