@@ -1,11 +1,11 @@
 -- Generated UVVM testbench for the prototype module (AXI4-Lite).
 -- Drives the prototype top entity with the stock Bitvis AXI-Lite VIP and
--- self-checks every register whose readback is predictable: plain read-write,
--- enumerated, write-only/singlepulse (reads back 0), onread/onwrite software
--- side effects, software-readonly registers driven from from_hw (we/wel), and
--- the hardware we override / hwset / hwclr modifiers on read-write registers. It
--- also checks the to_hw values the hardware sees. Not checked here yet: the
--- swmod/swacc/singlepulse to_hw strobe outputs (single-cycle pulses).
+-- self-checks every register whose behaviour the prototype exercises: plain
+-- read-write, enumerated, write-only/singlepulse (reads back 0), onread/onwrite
+-- software side effects, software-readonly registers driven from from_hw
+-- (we/wel), the hardware we override / hwset / hwclr modifiers, the to_hw values
+-- the hardware sees, and the swmod/swacc/singlepulse to_hw strobe pulses (counted
+-- by a monitor process, since they are single-cycle).
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -53,6 +53,13 @@ architecture tb of prototype_tb is
     return unsigned(base) + unsigned(reg);
   end function;
 
+  -- Strobe monitors: count the cycles each swmod/swacc/singlepulse output is
+  -- high, so single-cycle pulses are verifiable without cycle-accurate sampling.
+  signal reg9_field0_swmod_count : natural := 0;
+  signal reg9_field1_swacc_count : natural := 0;
+  signal reg10_field0_sp_count : natural := 0;
+  signal reg10_field0_sp_value : std_logic_vector(3 downto 0) := (others => '0');
+
 begin
 
   clock_generator(clk, C_CLK_PERIOD);
@@ -81,6 +88,22 @@ begin
       rvalid   => axilite_if.read_data_channel.rvalid,
       rready   => axilite_if.read_data_channel.rready,      to_hw    => to_hw,      from_hw  => from_hw);
 
+  p_strobe_monitor : process (clk) is
+  begin
+    if rising_edge(clk) then
+      if to_hw.reg9.field0.swmod = '1' then
+        reg9_field0_swmod_count <= reg9_field0_swmod_count + 1;
+      end if;
+      if to_hw.reg9.field1.swacc = '1' then
+        reg9_field1_swacc_count <= reg9_field1_swacc_count + 1;
+      end if;
+      if to_hw.reg10.field0 /= 4x"0" then
+        reg10_field0_sp_count <= reg10_field0_sp_count + 1;
+        reg10_field0_sp_value <= to_hw.reg10.field0;
+      end if;
+    end if;
+  end process p_strobe_monitor;
+
   p_main : process is
 
     procedure axi_write(constant addr : in unsigned;
@@ -98,6 +121,9 @@ begin
       axilite_check(addr, data, msg, clk, axilite_if, error, C_SCOPE,
                     shared_msg_id_panel, axilite_bfm_config);
     end procedure;
+    variable v_reg9_field0_swmod : natural;
+    variable v_reg9_field1_swacc : natural;
+    variable v_reg10_field0_sp : natural;
 
   begin
     axilite_bfm_config.clock_period <= C_CLK_PERIOD;
@@ -193,6 +219,24 @@ begin
     from_hw.reg4.field1.set <= '0';
     from_hw.reg4.field1.clr <= '0';
     axi_check(f_addr(C_BASE, C_ADDR_REG4), 32x"0000000A", "reg4 reflects hwclr");
+
+    log(ID_LOG_HDR, "reg9: software-access strobe pulses", C_SCOPE);
+    v_reg9_field0_swmod := reg9_field0_swmod_count;
+    v_reg9_field1_swacc := reg9_field1_swacc_count;
+    axi_write(f_addr(C_BASE, C_ADDR_REG9), 32x"000000FF", "write reg9");
+    axi_check(f_addr(C_BASE, C_ADDR_REG9), 32x"000000FF", "read reg9");
+    wait until rising_edge(clk);
+    wait until rising_edge(clk);
+    check_value(reg9_field0_swmod_count - v_reg9_field0_swmod, 1, error, "reg9.field0 swmod pulses once per write", C_SCOPE);
+    check_value(reg9_field1_swacc_count - v_reg9_field1_swacc, 2, error, "reg9.field1 swacc pulses per access (write + read)", C_SCOPE);
+
+    log(ID_LOG_HDR, "reg10: software-access strobe pulses", C_SCOPE);
+    v_reg10_field0_sp := reg10_field0_sp_count;
+    axi_write(f_addr(C_BASE, C_ADDR_REG10), 32x"0000000F", "write reg10");
+    wait until rising_edge(clk);
+    wait until rising_edge(clk);
+    check_value(reg10_field0_sp_count - v_reg10_field0_sp, 1, error, "reg10.field0 singlepulse high exactly one cycle", C_SCOPE);
+    check_value(reg10_field0_sp_value, 4x"F", error, "reg10.field0 hw saw the pulse value", C_SCOPE);
 
     wait for 10*C_CLK_PERIOD;
     report_alert_counters(FINAL);
