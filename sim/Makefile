@@ -39,7 +39,7 @@ GTKWAVE_RUN := docker run --rm \
     -v "$(WAVES_DIR):/waves:ro" \
     $(GTKWAVE_IMAGE)
 
-.PHONY: help build rebuild sim-ipbus sim-axi sim-prototype sim-prototype-generated sim-prototype-axi sim-prototype-axi-generated sim-prototype-ipbus sim-prototype-ipbus-generated sim-prototype-sbi sim-prototype-avalon sim-prototype-wishbone sim-prototype-apb wave-ipbus wave-axi wave-prototype wave-prototype-generated wave-prototype-axi wave-prototype-ipbus wave-prototype-sbi wave-prototype-avalon wave-prototype-wishbone wave-prototype-apb gtkwave clean
+.PHONY: help build rebuild sim-ipbus sim-axi sim-prototype sim-prototype-generated sim-prototype-axi sim-prototype-axi-generated sim-prototype-tb-generated sim-prototype-ipbus sim-prototype-ipbus-generated sim-prototype-sbi sim-prototype-avalon sim-prototype-wishbone sim-prototype-apb wave-ipbus wave-axi wave-prototype wave-prototype-generated wave-prototype-axi wave-prototype-ipbus wave-prototype-sbi wave-prototype-avalon wave-prototype-wishbone wave-prototype-apb gtkwave clean
 
 # Default target
 help:
@@ -54,6 +54,7 @@ help:
 	@echo "  make sim-prototype-generated  Run that testbench against the generated package"
 	@echo "  make sim-prototype-axi  Run the AXI-Lite wrapper testbench"
 	@echo "  make sim-prototype-axi-generated  Run that testbench against the generated AXI stack"
+	@echo "  make sim-prototype-tb-generated  Run the fully generated AXI stack incl. generated testbench"
 	@echo "  make sim-prototype-ipbus  Run the IPBus wrapper testbench"
 	@echo "  make sim-prototype-ipbus-generated  Run that testbench against the generated IPBus stack"
 	@echo "  make sim-prototype-sbi  Run the SBI wrapper testbench"
@@ -108,6 +109,9 @@ sim-prototype-axi: _require-image
 
 sim-prototype-axi-generated: _require-image
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_axi_generated
+
+sim-prototype-tb-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_tb_generated
 
 sim-prototype-ipbus: _require-image
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_ipbus
