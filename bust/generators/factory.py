@@ -126,6 +126,20 @@ class GeneratorFactory:
         return generator.generate_ipb_endpoint_vhdl(module)
 
     @staticmethod
+    def generate_module_top_vhdl(module: "Module") -> str:
+        """Generate the thin top-level wrapper VHDL for a module.
+
+        Args:
+            module: Module instance to generate the top-level wrapper for.
+
+        Returns:
+            VHDL entity/architecture instantiating the bus endpoint, exposing the
+            protocol ports and the to_hw/from_hw records.
+        """
+        generator = GeneratorFactory.create_module_generator(module)
+        return generator.generate_module_top_vhdl(module)
+
+    @staticmethod
     def generate_module_vhdl(module: "Module") -> str:
         """Generate main VHDL module entity and architecture.
 
