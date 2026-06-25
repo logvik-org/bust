@@ -453,7 +453,7 @@ class Field:
         stores the written bits. Mirrors `onwrite_rhs` for value prediction in
         generated self-checking testbenches.
         """
-        mask = (1 << self.width) - 1
+        mask = (1 << int(self.width)) - 1
         w = written & mask
         if self.onwrite is None:
             return w
@@ -472,7 +472,7 @@ class Field:
 
     def read_result(self, stored: int) -> int:
         """Field-local value after a software read, accounting for the onread effect."""
-        mask = (1 << self.width) - 1
+        mask = (1 << int(self.width)) - 1
         if self.onread is OnRead.RCLR:
             return 0
         if self.onread is OnRead.RSET:
