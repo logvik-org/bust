@@ -47,10 +47,9 @@ architecture tb of prototype_tb is
                       := init_axilite_if_signals(C_DATA_W, C_ADDR_W);
   signal axilite_bfm_config : t_axilite_bfm_config := C_AXILITE_BFM_CONFIG_DEFAULT;
 
-  function f_addr(base : std_logic_vector(31 downto 0);
-                  reg  : std_logic_vector(31 downto 0)) return unsigned is
+  function f_addr(reg : std_logic_vector(31 downto 0)) return unsigned is
   begin
-    return unsigned(base) + unsigned(reg);
+    return unsigned(C_BASE) + unsigned(reg);
   end function;
 
   -- Strobe monitors: count the cycles each swmod/swacc/singlepulse output is
@@ -106,7 +105,7 @@ begin
 
   p_main : process is
 
-    procedure axi_write(constant addr : in unsigned;
+    procedure bus_write(constant addr : in unsigned;
                         constant data : in std_logic_vector;
                         constant msg  : in string) is
     begin
@@ -114,7 +113,7 @@ begin
                     shared_msg_id_panel, axilite_bfm_config);
     end procedure;
 
-    procedure axi_check(constant addr : in unsigned;
+    procedure bus_check(constant addr : in unsigned;
                         constant data : in std_logic_vector;
                         constant msg  : in string) is
     begin
@@ -134,49 +133,49 @@ begin
     gen_pulse(areset_n, '0', 500 ns, BLOCKING, "Reset for 500 ns");
 
     log(ID_LOG_HDR, "reg0: software read-write round-trip", C_SCOPE);
-    axi_write(f_addr(C_BASE, C_ADDR_REG0), 32x"00000007", "write reg0");
-    axi_check(f_addr(C_BASE, C_ADDR_REG0), 32x"00000007", "reg0 reads back");
+    bus_write(f_addr(C_ADDR_REG0), 32x"00000007", "write reg0");
+    bus_check(f_addr(C_ADDR_REG0), 32x"00000007", "reg0 reads back");
     check_value(to_hw.reg0.field0, '1', error, "reg0.field0 exposed to hw", C_SCOPE);
     check_value(to_hw.reg0.field1, 2x"3", error, "reg0.field1 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg3: software read-write round-trip", C_SCOPE);
-    axi_write(f_addr(C_BASE, C_ADDR_REG3), 32x"000000FF", "write reg3");
-    axi_check(f_addr(C_BASE, C_ADDR_REG3), 32x"000000FF", "reg3 reads back");
+    bus_write(f_addr(C_ADDR_REG3), 32x"000000FF", "write reg3");
+    bus_check(f_addr(C_ADDR_REG3), 32x"000000FF", "reg3 reads back");
 
     log(ID_LOG_HDR, "reg9: software read-write round-trip", C_SCOPE);
-    axi_write(f_addr(C_BASE, C_ADDR_REG9), 32x"000000FF", "write reg9");
-    axi_check(f_addr(C_BASE, C_ADDR_REG9), 32x"000000FF", "reg9 reads back");
+    bus_write(f_addr(C_ADDR_REG9), 32x"000000FF", "write reg9");
+    bus_check(f_addr(C_ADDR_REG9), 32x"000000FF", "reg9 reads back");
     check_value(to_hw.reg9.field0.value, 4x"F", error, "reg9.field0 exposed to hw", C_SCOPE);
     check_value(to_hw.reg9.field1.value, 4x"F", error, "reg9.field1 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg11: enumerated round-trip", C_SCOPE);
-    axi_write(f_addr(C_BASE, C_ADDR_REG11), 32x"00000003", "write reg11");
-    axi_check(f_addr(C_BASE, C_ADDR_REG11), 32x"00000003", "reg11 reads back encoded value");
+    bus_write(f_addr(C_ADDR_REG11), 32x"00000003", "write reg11");
+    bus_check(f_addr(C_ADDR_REG11), 32x"00000003", "reg11 reads back encoded value");
 
     log(ID_LOG_HDR, "reg2: write-only / pulse reads back zero", C_SCOPE);
-    axi_write(f_addr(C_BASE, C_ADDR_REG2), 32x"00000001", "write reg2");
-    axi_check(f_addr(C_BASE, C_ADDR_REG2), 32x"0", "reg2 reads back zero");
+    bus_write(f_addr(C_ADDR_REG2), 32x"00000001", "write reg2");
+    bus_check(f_addr(C_ADDR_REG2), 32x"0", "reg2 reads back zero");
 
     log(ID_LOG_HDR, "reg10: write-only / pulse reads back zero", C_SCOPE);
-    axi_write(f_addr(C_BASE, C_ADDR_REG10), 32x"0000000F", "write reg10");
-    axi_check(f_addr(C_BASE, C_ADDR_REG10), 32x"0", "reg10 reads back zero");
+    bus_write(f_addr(C_ADDR_REG10), 32x"0000000F", "write reg10");
+    bus_check(f_addr(C_ADDR_REG10), 32x"0", "reg10 reads back zero");
 
     log(ID_LOG_HDR, "reg6: onwrite software side effects", C_SCOPE);
-    axi_write(f_addr(C_BASE, C_ADDR_REG6), 32x"00000555", "write reg6");
-    axi_check(f_addr(C_BASE, C_ADDR_REG6), 32x"000005A5", "reg6 applies onwrite effects");
+    bus_write(f_addr(C_ADDR_REG6), 32x"00000555", "write reg6");
+    bus_check(f_addr(C_ADDR_REG6), 32x"000005A5", "reg6 applies onwrite effects");
 
     log(ID_LOG_HDR, "reg7: onwrite software side effects", C_SCOPE);
-    axi_write(f_addr(C_BASE, C_ADDR_REG7), 32x"00000555", "write reg7");
-    axi_check(f_addr(C_BASE, C_ADDR_REG7), 32x"00000A5A", "reg7 applies onwrite effects");
+    bus_write(f_addr(C_ADDR_REG7), 32x"00000555", "write reg7");
+    bus_check(f_addr(C_ADDR_REG7), 32x"00000A5A", "reg7 applies onwrite effects");
 
     log(ID_LOG_HDR, "reg8: onwrite software side effects", C_SCOPE);
-    axi_write(f_addr(C_BASE, C_ADDR_REG8), 32x"00000055", "write reg8");
-    axi_check(f_addr(C_BASE, C_ADDR_REG8), 32x"000000F0", "reg8 applies onwrite effects");
+    bus_write(f_addr(C_ADDR_REG8), 32x"00000055", "write reg8");
+    bus_check(f_addr(C_ADDR_REG8), 32x"000000F0", "reg8 applies onwrite effects");
 
     log(ID_LOG_HDR, "reg5: onread software side effects", C_SCOPE);
-    axi_write(f_addr(C_BASE, C_ADDR_REG5), 32x"00000055", "write reg5");
-    axi_check(f_addr(C_BASE, C_ADDR_REG5), 32x"00000055", "reg5 first read returns stored value");
-    axi_check(f_addr(C_BASE, C_ADDR_REG5), 32x"000000F0", "reg5 second read reflects onread");
+    bus_write(f_addr(C_ADDR_REG5), 32x"00000055", "write reg5");
+    bus_check(f_addr(C_ADDR_REG5), 32x"00000055", "reg5 first read returns stored value");
+    bus_check(f_addr(C_ADDR_REG5), 32x"000000F0", "reg5 second read reflects onread");
 
     log(ID_LOG_HDR, "reg1: hardware-driven status read back over the bus", C_SCOPE);
     wait until falling_edge(clk);
@@ -188,11 +187,11 @@ begin
     wait until falling_edge(clk);
     from_hw.reg1.field0.we <= '0';
     from_hw.reg1.field2.wel <= '1';
-    axi_check(f_addr(C_BASE, C_ADDR_REG1), 32x"00000035", "reg1 reflects hardware inputs");
+    bus_check(f_addr(C_ADDR_REG1), 32x"00000035", "reg1 reflects hardware inputs");
 
     log(ID_LOG_HDR, "reg4: software baseline write", C_SCOPE);
-    axi_write(f_addr(C_BASE, C_ADDR_REG4), 32x"00000105", "write reg4");
-    axi_check(f_addr(C_BASE, C_ADDR_REG4), 32x"00000105", "reg4 reads back the software value");
+    bus_write(f_addr(C_ADDR_REG4), 32x"00000105", "write reg4");
+    bus_check(f_addr(C_ADDR_REG4), 32x"00000105", "reg4 reads back the software value");
     check_value(to_hw.reg4.field0, 4x"5", error, "reg4.field0 exposed to hw", C_SCOPE);
     check_value(to_hw.reg4.field1, '1', error, "reg4.field1 exposed to hw", C_SCOPE);
 
@@ -202,14 +201,14 @@ begin
     from_hw.reg4.field0.we <= '1';
     wait until falling_edge(clk);
     from_hw.reg4.field0.we <= '0';
-    axi_check(f_addr(C_BASE, C_ADDR_REG4), 32x"0000010A", "reg4 reflects the hardware we override");
+    bus_check(f_addr(C_ADDR_REG4), 32x"0000010A", "reg4 reflects the hardware we override");
 
     log(ID_LOG_HDR, "reg4: hwset drives fields high", C_SCOPE);
     wait until falling_edge(clk);
     from_hw.reg4.field1.set <= '1';
     wait until falling_edge(clk);
     from_hw.reg4.field1.set <= '0';
-    axi_check(f_addr(C_BASE, C_ADDR_REG4), 32x"0000010A", "reg4 reflects hwset");
+    bus_check(f_addr(C_ADDR_REG4), 32x"0000010A", "reg4 reflects hwset");
 
     log(ID_LOG_HDR, "reg4: hwclr clears fields (and beats hwset)", C_SCOPE);
     wait until falling_edge(clk);
@@ -218,13 +217,13 @@ begin
     wait until falling_edge(clk);
     from_hw.reg4.field1.set <= '0';
     from_hw.reg4.field1.clr <= '0';
-    axi_check(f_addr(C_BASE, C_ADDR_REG4), 32x"0000000A", "reg4 reflects hwclr");
+    bus_check(f_addr(C_ADDR_REG4), 32x"0000000A", "reg4 reflects hwclr");
 
     log(ID_LOG_HDR, "reg9: software-access strobe pulses", C_SCOPE);
     v_reg9_field0_swmod := reg9_field0_swmod_count;
     v_reg9_field1_swacc := reg9_field1_swacc_count;
-    axi_write(f_addr(C_BASE, C_ADDR_REG9), 32x"000000FF", "write reg9");
-    axi_check(f_addr(C_BASE, C_ADDR_REG9), 32x"000000FF", "read reg9");
+    bus_write(f_addr(C_ADDR_REG9), 32x"000000FF", "write reg9");
+    bus_check(f_addr(C_ADDR_REG9), 32x"000000FF", "read reg9");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(reg9_field0_swmod_count - v_reg9_field0_swmod, 1, error, "reg9.field0 swmod pulses once per write", C_SCOPE);
@@ -232,7 +231,7 @@ begin
 
     log(ID_LOG_HDR, "reg10: software-access strobe pulses", C_SCOPE);
     v_reg10_field0_sp := reg10_field0_sp_count;
-    axi_write(f_addr(C_BASE, C_ADDR_REG10), 32x"0000000F", "write reg10");
+    bus_write(f_addr(C_ADDR_REG10), 32x"0000000F", "write reg10");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(reg10_field0_sp_count - v_reg10_field0_sp, 1, error, "reg10.field0 singlepulse high exactly one cycle", C_SCOPE);

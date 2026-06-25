@@ -154,6 +154,20 @@ class GeneratorFactory:
         return generator.generate_localbus_axi_testbench_vhdl(module)
 
     @staticmethod
+    def generate_localbus_ipbus_testbench_vhdl(module: "Module") -> str:
+        """Generate the UVVM IPBus testbench for a module's local-bus top wrapper.
+
+        Args:
+            module: Module instance to generate the testbench for.
+
+        Returns:
+            VHDL UVVM testbench that drives the top wrapper over the vip_ipbus VIP
+            and self-checks the register-map access modes.
+        """
+        generator = GeneratorFactory.create_module_generator(module)
+        return generator.generate_localbus_ipbus_testbench_vhdl(module)
+
+    @staticmethod
     def generate_module_vhdl(module: "Module") -> str:
         """Generate main VHDL module entity and architecture.
 
