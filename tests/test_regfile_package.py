@@ -135,6 +135,12 @@ def test_testbench_register_categories():
     # reg1 = field2(5)|field1(4)|field0(3:0) = 1|1|0101 = 0x35.
     assert by_name["reg1"].hw_driven_expected_value_vhdl == '32x"00000035"'
 
+    # to_hw value checks ride along with the plain rw round-trip on hw-readable
+    # registers; reg3 (hw na) contributes none.
+    assert [f.name for f in by_name["reg0"].to_hw_fields] == ["field0", "field1"]
+    assert by_name["reg3"].to_hw_fields == []
+    assert by_name["reg0"].fields[1].all_ones_literal == '2x"3"'
+
 
 def test_selftest_value_covers_non_nibble_width():
     """The self-test literal uses ceil(width/4) hex digits, so non-nibble data

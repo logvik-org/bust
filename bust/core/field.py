@@ -501,6 +501,12 @@ class Field:
         return f'{self.width}x"{value:0{digits}X}"'
 
     @property
+    def all_ones_literal(self) -> str:
+        """All-ones as a sized literal (`'1'` or `4x"F"`), usable as a typed
+        expression where the aggregate `ones_literal` would be ambiguous."""
+        return self.value_literal((1 << self.width) - 1)
+
+    @property
     def reset_value_vhdl(self) -> str:
         """Reset literal in the field's value type (the enum literal when enumerated)."""
         if not self.is_enum:
