@@ -327,6 +327,34 @@ class Register:
         """True when at least one field is hardware-driven."""
         return any(f.driven_by_hw for f in self.effective_fields)
 
+    @property
+    def is_simple_readback(self) -> bool:
+        """True when writing a value then reading it returns the same value.
+
+        Holds for a register whose fields are all plain software read-write with no
+        side effects, enum encoding, or hardware writer, so a generated testbench can
+        write and read it back without modelling access-mode behaviour.
+        """
+        fields = self.effective_fields
+        return bool(fields) and all(
+            f.sw is SwAccess.RW
+            and not f.is_enum
+            and f.onread is None
+            and f.onwrite is None
+            and not f.singlepulse
+            and not f.driven_by_hw
+            for f in fields
+        )
+
+    @property
+    def selftest_value_vhdl(self) -> str:
+        """Data-width literal with every field bit set, for readback self-tests."""
+        mask = 0
+        for f in self.effective_fields:
+            mask |= f.mask
+        digits = self.module_data_width // 4
+        return f'{self.module_data_width}x"{mask:0{digits}X}"'
+
     def add_field(self, field_cfg: Dict) -> None:
         """Add a bitfield to this register.
 
