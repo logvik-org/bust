@@ -2,7 +2,7 @@
 """bust register tool.
 
 Usage:
-  bust.py FILE [-o DIR] [[[-F | -f] [-u] [-d | -p] [-b] [-t] [-i] [-m] [-l]] | [-a] | [-c | -e]]
+  bust.py FILE [-o DIR] [[[-F | -f] [-d | -p] [-i]] | [-a] | [-c | -e]]
   bust.py --version
   bust.py -h | --help
 
@@ -10,14 +10,9 @@ Options:
   -o DIR         Specify output directory. Overrides settings (either JSON dir, or specified project dir in JSON)
   -f             Force overwrite of existing files except module top level VHDL file
   -F             Force overwrite of ALL existing files
-  -u             Try to update top-level file - MAY OVERWRITE USER EDITS!
   -d             Do not generate documentation (neither LaTeX nor PDF)
   -p             Do not generate PDF from LaTeX
-  -b             Do not generate the bus VHDL package file
-  -t             Do not generate the testbench VHDL file and the simulation scripts
   -i             Do not generate the include header files (.h, .hpp & .py)
-  -m             Do not generate the module VHDL files
-  -l             Also generate the experimental local-bus VHDL (regfile package, regfile, bus endpoint)
   -a             Update register addresses and save JSON file
   -e             Edit the JSON file
   -c             Create a new JSON file
@@ -41,7 +36,6 @@ from bust.core.bus import Bus
 from bust.generators.header_generator import Header
 from bust.generators.documentation_generator import Documentation
 from bust.settings import Settings
-from bust.generators.testbench_generator import Testbench
 from bust.generation import generate_output
 from bust.exceptions import (
     FormatError,
@@ -51,7 +45,6 @@ from bust.exceptions import (
     InvalidResetMode,
 )
 from bust.editor import Editor
-from bust.generators.factory import GeneratorFactory
 from bust._version import __VERSION__
 
 
@@ -109,9 +102,6 @@ def main():
                 module = Module(json_dict["module"], bus, settings)
                 header = Header(module)
                 documentation = Documentation(module)
-                testbench = Testbench(
-                    module, GeneratorFactory.create_bus_generator(bus), settings
-                )
 
             except (
                 FormatError,
@@ -142,26 +132,7 @@ def main():
                 gs["dir"] = args["-o"]
 
             # Check if force overwrite is set
-            gs["force_ow"] = False
-            gs["force_ow_top"] = False
-            if args["-F"]:
-                gs["force_ow"] = True
-                gs["force_ow_top"] = True
-            elif args["-f"]:
-                gs["force_ow"] = True
-
-            # Check if top-level are to be updated
-            gs["update_top"] = False
-            if args["-u"]:
-                gs["update_top"] = True
-                gs["force_ow_top"] = True
-
-            if bus.bus_type == "axi":
-                gs["gen_bus"] = True
-            else:
-                gs["gen_bus"] = False
-            if args["-b"]:
-                gs["gen_bus"] = False
+            gs["force_ow"] = bool(args["-F"] or args["-f"])
 
             gs["gen_doc"] = True
             gs["gen_pdf"] = True
@@ -171,19 +142,11 @@ def main():
             elif args["-p"]:
                 gs["gen_pdf"] = False
 
-            gs["gen_tb"] = True
-            if args["-t"]:
-                gs["gen_tb"] = False
-
             gs["gen_header"] = True
             if args["-i"]:
                 gs["gen_header"] = False
 
-            gs["gen_mod"] = True
-            if args["-m"]:
-                gs["gen_mod"] = False
-
-            gs["gen_localbus"] = bool(args["-l"])
+            gs["gen_localbus"] = True
 
             if args["-a"]:
                 module.update_addresses()
@@ -196,9 +159,7 @@ def main():
                     return
             else:
                 try:
-                    generate_output(
-                        settings, bus, module, header, documentation, testbench, gs
-                    )
+                    generate_output(settings, bus, module, header, documentation, gs)
                 except Exception as e:
                     logger.error("An error occurred during output generation...")
                     logger.error(f"{type(e).__name__}: {e}")
