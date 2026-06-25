@@ -349,7 +349,10 @@ class Register:
     @property
     def selftest_value_vhdl(self) -> str:
         """Data-width literal with every field bit set, for readback self-tests."""
-        return self._data_width_literal(sum(f.mask for f in self.effective_fields))
+        mask = 0
+        for f in self.effective_fields:
+            mask |= f.mask
+        return self._data_width_literal(mask)
 
     def _data_width_literal(self, value: int) -> str:
         digits = (self.module_data_width + 3) // 4  # ceil: cover non-nibble widths
@@ -389,6 +392,11 @@ class Register:
     @property
     def enum_selftest_value_vhdl(self) -> str:
         """Data-width literal encoding the field's highest defined enum value."""
+        if not self.is_enum_readback:
+            raise ValueError(
+                f"enum_selftest_value_vhdl is only valid for a single plain "
+                f"read-write enum register (register '{self.name}')"
+            )
         field = self.effective_fields[0]
         value = max(e.value for e in field.enums) << field.pos_low
         return self._data_width_literal(value)
