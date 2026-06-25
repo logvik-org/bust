@@ -176,9 +176,9 @@ def generate_output(
                 write_string_to_file(
                     endpoint, filename, mod_hdl, gen_settings["force_ow"]
                 )
-        except Exception as e:
+        except Exception:
             logger.error("ERROR: Could not generate local-bus VHDL files")
-            raise e
+            raise
 
     if gen_settings["gen_header"]:
         logger.info("Generating Module Include Files...")
