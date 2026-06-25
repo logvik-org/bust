@@ -5,8 +5,10 @@
 -- Drives the {{ module.name }} top entity with the stock Bitvis AXI-Lite VIP and
 -- self-checks every register whose readback is a pure function of software
 -- traffic: plain read-write, enumerated, write-only/singlepulse (reads back 0),
--- and onread/onwrite software side effects. Hardware-driven registers (we/wel,
--- hwset/hwclr, swmod/swacc) need from_hw stimulus and are not exercised here yet.
+-- and onread/onwrite software side effects. It drives only the software bus, so
+-- the hardware-facing parts are not checked here yet: the we/wel and hwset/hwclr
+-- from_hw inputs, the swmod/swacc to_hw strobe outputs, and hardware-driven
+-- field values.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
