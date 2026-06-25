@@ -56,6 +56,10 @@ class ModuleGenerator:
             "vhdl/module/module_top.j2", {"module": module, "bus": module.bus}
         )
 
+    def generate_localbus_axi_testbench_vhdl(self, module) -> str:
+        """Generate the UVVM AXI testbench driving the module's top wrapper."""
+        return render_template("vhdl/testbench/localbus_axi_tb.j2", {"module": module})
+
     def generate_module_vhdl(self, module) -> str:
         """Generate VHDL module code."""
         return render_template(

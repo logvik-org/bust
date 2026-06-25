@@ -140,6 +140,20 @@ class GeneratorFactory:
         return generator.generate_module_top_vhdl(module)
 
     @staticmethod
+    def generate_localbus_axi_testbench_vhdl(module: "Module") -> str:
+        """Generate the UVVM AXI testbench for a module's local-bus top wrapper.
+
+        Args:
+            module: Module instance to generate the testbench for.
+
+        Returns:
+            VHDL UVVM testbench that drives the top wrapper over the AXI-Lite VIP
+            and self-checks the plain read-write registers.
+        """
+        generator = GeneratorFactory.create_module_generator(module)
+        return generator.generate_localbus_axi_testbench_vhdl(module)
+
+    @staticmethod
     def generate_module_vhdl(module: "Module") -> str:
         """Generate main VHDL module entity and architecture.
 
