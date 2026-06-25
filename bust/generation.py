@@ -184,10 +184,19 @@ def generate_output(
                     gen_settings["force_ow"],
                 )
                 if bus.bus_type == "axi":
-                    filename = f"{module.name}_tb.vhd"
+                    testbench = GeneratorFactory.generate_localbus_axi_testbench_vhdl(
+                        module
+                    )
+                elif bus.bus_type == "ipbus":
+                    testbench = GeneratorFactory.generate_localbus_ipbus_testbench_vhdl(
+                        module
+                    )
+                else:
+                    testbench = None
+                if testbench is not None:
                     write_string_to_file(
-                        GeneratorFactory.generate_localbus_axi_testbench_vhdl(module),
-                        filename,
+                        testbench,
+                        f"{module.name}_tb.vhd",
                         mod_tb,
                         gen_settings["force_ow"],
                     )
