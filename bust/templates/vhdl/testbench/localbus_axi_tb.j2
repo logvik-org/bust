@@ -3,12 +3,12 @@
 {%- endmacro -%}
 -- Generated UVVM testbench for the {{ module.name }} module (AXI4-Lite).
 -- Drives the {{ module.name }} top entity with the stock Bitvis AXI-Lite VIP and
--- self-checks every register whose readback is a pure function of software
--- traffic: plain read-write, enumerated, write-only/singlepulse (reads back 0),
--- and onread/onwrite software side effects. It drives only the software bus, so
--- the hardware-facing parts are not checked here yet: the we/wel and hwset/hwclr
--- from_hw inputs, the swmod/swacc to_hw strobe outputs, and hardware-driven
--- field values.
+-- self-checks every register whose readback is predictable: plain read-write,
+-- enumerated, write-only/singlepulse (reads back 0), onread/onwrite software
+-- side effects, and software-readonly registers driven entirely from from_hw
+-- (we/wel value inputs). Not checked here yet: the hwset/hwclr from_hw inputs,
+-- the swmod/swacc to_hw strobe outputs, and to_hw values on software-writable
+-- registers.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -150,6 +150,28 @@ begin
     axi_write(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.onread_write_value_vhdl }}, "write {{ reg.name }}");
     axi_check(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.onread_write_value_vhdl }}, "{{ reg.name }} first read returns stored value");
     axi_check(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.onread_post_read_value_vhdl }}, "{{ reg.name }} second read reflects onread");
+{% endfor %}
+{% for reg in module.registers if reg.is_hw_driven_readback %}
+
+    log(ID_LOG_HDR, "{{ reg.name }}: hardware-driven status read back over the bus", C_SCOPE);
+    wait until falling_edge(clk);
+{% for s in reg.hw_drive_steps %}
+    from_hw.{{ reg.name }}.{{ s.field }}{{ ("." ~ s.member) if s.member else "" }} <= {{ s.literal }};
+{% if s.enable == 'we' %}
+    from_hw.{{ reg.name }}.{{ s.field }}.we <= '1';
+{% elif s.enable == 'wel' %}
+    from_hw.{{ reg.name }}.{{ s.field }}.wel <= '0';
+{% endif %}
+{% endfor %}
+    wait until falling_edge(clk);
+{% for s in reg.hw_drive_steps if s.enable %}
+{% if s.enable == 'we' %}
+    from_hw.{{ reg.name }}.{{ s.field }}.we <= '0';
+{% else %}
+    from_hw.{{ reg.name }}.{{ s.field }}.wel <= '1';
+{% endif %}
+{% endfor %}
+    axi_check(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.hw_driven_expected_value_vhdl }}, "{{ reg.name }} reflects hardware inputs");
 {% endfor %}
 
     wait for 10*C_CLK_PERIOD;

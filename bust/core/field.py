@@ -489,6 +489,17 @@ class Field:
         """All-ones literal in the field's bit type (`'1'` or `(others => '1')`)."""
         return "'1'" if self.type == FieldType.BIT else "(others => '1')"
 
+    def value_literal(self, value: int) -> str:
+        """VHDL literal for `value` in the field's bit type.
+
+        `'1'`/`'0'` for a bit, a sized bit-string (`4x"5"`) for a vector. Used to
+        drive a concrete from_hw stimulus in a generated testbench.
+        """
+        if self.type == FieldType.BIT:
+            return "'1'" if value & 1 else "'0'"
+        digits = (self.width + 3) // 4
+        return f'{self.width}x"{value:0{digits}X}"'
+
     @property
     def reset_value_vhdl(self) -> str:
         """Reset literal in the field's value type (the enum literal when enumerated)."""
