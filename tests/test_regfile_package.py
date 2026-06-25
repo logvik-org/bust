@@ -194,7 +194,12 @@ def test_localbus_flag_emits_local_bus_files(tmp_path):
 
 def test_localbus_flag_off_emits_nothing(tmp_path):
     hdl = _generate_only_localbus(tmp_path, gen_localbus=False)
-    assert not os.path.isfile(os.path.join(hdl, "example_axi_regfile_pkg.vhd"))
+    for name in (
+        "example_axi_regfile_pkg.vhd",
+        "example_axi_regfile.vhd",
+        "example_axi_axi_endpoint.vhd",
+    ):
+        assert not os.path.isfile(os.path.join(hdl, name))
 
 
 def test_empty_module_is_mapped_returns_false():
