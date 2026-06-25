@@ -3,7 +3,8 @@
 This module handles the creation of all output files: the local-bus VHDL stack
 (regfile package, regfile, bus endpoint, top wrapper) and its UVVM testbench,
 language headers, and documentation. It manages the directory structure and
-coordinates file generation from the Module, Bus, Header, and Documentation.
+coordinates file generation from the Module, Bus, Header, and Documentation
+instances.
 """
 
 import os
