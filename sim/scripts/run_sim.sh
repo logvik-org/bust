@@ -180,6 +180,7 @@ case "${TARGET}" in
             "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
             "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
             "${WORK_ROOT}/example/example_prototype/hdl/prototype_axi_endpoint.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype.vhd"
             "${WORK_ROOT}/hdl/prototype/tb/prototype_axi_endpoint_tb.vhd"
         )
         TOP_ENTITY="prototype_axi_endpoint_tb"
