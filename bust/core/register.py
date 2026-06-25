@@ -313,6 +313,26 @@ class Register:
         return [f for f in self.effective_fields if f.driven_by_hw]
 
     @property
+    def swmod_fields(self) -> List[Field]:
+        """Fields that pulse a swmod strobe when software modifies them."""
+        return [f for f in self.effective_fields if f.swmod]
+
+    @property
+    def swacc_fields(self) -> List[Field]:
+        """Fields that pulse a swacc strobe when software accesses them."""
+        return [f for f in self.effective_fields if f.swacc]
+
+    @property
+    def singlepulse_fields(self) -> List[Field]:
+        """Fields that drive the hardware for a single cycle after a write."""
+        return [f for f in self.effective_fields if f.singlepulse]
+
+    @property
+    def has_strobes(self) -> bool:
+        """True when a field emits a swmod/swacc/singlepulse to_hw strobe."""
+        return bool(self.swmod_fields or self.swacc_fields or self.singlepulse_fields)
+
+    @property
     def enum_fields(self) -> List[Field]:
         """Fields carrying enumerated values."""
         return [f for f in self.effective_fields if f.is_enum]
