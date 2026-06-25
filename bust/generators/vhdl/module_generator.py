@@ -50,6 +50,12 @@ class ModuleGenerator:
         """Generate the IPBus endpoint wrapper over the local-bus regfile."""
         return render_template("vhdl/module/ipb_endpoint.j2", {"module": module})
 
+    def generate_module_top_vhdl(self, module) -> str:
+        """Generate the thin top-level wrapper instantiating the bus endpoint."""
+        return render_template(
+            "vhdl/module/module_top.j2", {"module": module, "bus": module.bus}
+        )
+
     def generate_module_vhdl(self, module) -> str:
         """Generate VHDL module code."""
         return render_template(
