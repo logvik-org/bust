@@ -11,6 +11,9 @@ import re
 from bust.core.bus import Bus
 from bust.core.module import Module
 from bust.generators.factory import GeneratorFactory
+from bust.generation import generate_output
+from bust.settings import Settings
+from bust.utils.json_utils import json_parser
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
 _EXAMPLE = os.path.join(_REPO_ROOT, "example", "example_prototype.json")
@@ -157,6 +160,41 @@ def test_non_fields_registers_normalize_to_implicit_field():
     # The whole stack generates without referencing a non-existent member.
     GeneratorFactory.generate_regfile_vhdl(module)
     GeneratorFactory.generate_axi_endpoint_vhdl(module)
+
+
+def _generate_only_localbus(out_dir, gen_localbus):
+    cfg_path = os.path.join(_REPO_ROOT, "example", "example_axi.json")
+    cfg = json_parser(cfg_path)
+    settings = Settings(cfg_path, cfg["settings"])
+    bus = Bus(cfg["bus"])
+    module = Module(cfg["module"], bus, settings)
+    gen_settings = {
+        "dir": str(out_dir),
+        "force_ow": True,
+        "force_ow_top": True,
+        "update_top": False,
+        "gen_bus": False,
+        "gen_doc": False,
+        "gen_pdf": False,
+        "gen_tb": False,
+        "gen_header": False,
+        "gen_mod": False,
+        "gen_localbus": gen_localbus,
+    }
+    generate_output(settings, bus, module, None, None, None, gen_settings)
+    return os.path.join(str(out_dir), "example_axi", "hdl")
+
+
+def test_localbus_flag_emits_local_bus_files(tmp_path):
+    hdl = _generate_only_localbus(tmp_path, gen_localbus=True)
+    assert os.path.isfile(os.path.join(hdl, "example_axi_regfile_pkg.vhd"))
+    assert os.path.isfile(os.path.join(hdl, "example_axi_regfile.vhd"))
+    assert os.path.isfile(os.path.join(hdl, "example_axi_axi_endpoint.vhd"))
+
+
+def test_localbus_flag_off_emits_nothing(tmp_path):
+    hdl = _generate_only_localbus(tmp_path, gen_localbus=False)
+    assert not os.path.isfile(os.path.join(hdl, "example_axi_regfile_pkg.vhd"))
 
 
 def test_empty_module_is_mapped_returns_false():
