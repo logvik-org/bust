@@ -3,12 +3,12 @@
 {%- endmacro -%}
 -- Generated UVVM testbench for the {{ module.name }} module (AXI4-Lite).
 -- Drives the {{ module.name }} top entity with the stock Bitvis AXI-Lite VIP and
--- self-checks every register whose readback is predictable: plain read-write,
--- enumerated, write-only/singlepulse (reads back 0), onread/onwrite software
--- side effects, software-readonly registers driven from from_hw (we/wel), and
--- the hardware we override / hwset / hwclr modifiers on read-write registers. It
--- also checks the to_hw values the hardware sees. Not checked here yet: the
--- swmod/swacc/singlepulse to_hw strobe outputs (single-cycle pulses).
+-- self-checks every register whose behaviour the prototype exercises: plain
+-- read-write, enumerated, write-only/singlepulse (reads back 0), onread/onwrite
+-- software side effects, software-readonly registers driven from from_hw
+-- (we/wel), the hardware we override / hwset / hwclr modifiers, the to_hw values
+-- the hardware sees, and the swmod/swacc/singlepulse to_hw strobe pulses (counted
+-- by a monitor process, since they are single-cycle).
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -61,6 +61,23 @@ architecture tb of {{ module.name }}_tb is
   begin
     return unsigned(base) + unsigned(reg);
   end function;
+{% if module.strobe_registers %}
+
+  -- Strobe monitors: count the cycles each swmod/swacc/singlepulse output is
+  -- high, so single-cycle pulses are verifiable without cycle-accurate sampling.
+{% for reg in module.strobe_registers %}
+{% for f in reg.swmod_fields %}
+  signal {{ reg.name }}_{{ f.name }}_swmod_count : natural := 0;
+{% endfor %}
+{% for f in reg.swacc_fields %}
+  signal {{ reg.name }}_{{ f.name }}_swacc_count : natural := 0;
+{% endfor %}
+{% for f in reg.singlepulse_fields %}
+  signal {{ reg.name }}_{{ f.name }}_sp_count : natural := 0;
+  signal {{ reg.name }}_{{ f.name }}_sp_value : {{ f.type_vhdl }} := {{ f.zeros_literal }};
+{% endfor %}
+{% endfor %}
+{% endif %}
 
 begin
 
@@ -94,6 +111,32 @@ begin
 {% endif %}
 {% if module.from_hw_registers %}
       from_hw  => from_hw{% endif %});
+{% if module.strobe_registers %}
+
+  p_strobe_monitor : process (clk) is
+  begin
+    if rising_edge(clk) then
+{% for reg in module.strobe_registers %}
+{% for f in reg.swmod_fields %}
+      if to_hw.{{ reg.name }}.{{ f.name }}.swmod = '1' then
+        {{ reg.name }}_{{ f.name }}_swmod_count <= {{ reg.name }}_{{ f.name }}_swmod_count + 1;
+      end if;
+{% endfor %}
+{% for f in reg.swacc_fields %}
+      if to_hw.{{ reg.name }}.{{ f.name }}.swacc = '1' then
+        {{ reg.name }}_{{ f.name }}_swacc_count <= {{ reg.name }}_{{ f.name }}_swacc_count + 1;
+      end if;
+{% endfor %}
+{% for f in reg.singlepulse_fields %}
+      if to_hw.{{ reg.name }}.{{ f.name }} /= {{ f.value_literal(0) }} then
+        {{ reg.name }}_{{ f.name }}_sp_count <= {{ reg.name }}_{{ f.name }}_sp_count + 1;
+        {{ reg.name }}_{{ f.name }}_sp_value <= to_hw.{{ reg.name }}.{{ f.name }};
+      end if;
+{% endfor %}
+{% endfor %}
+    end if;
+  end process p_strobe_monitor;
+{% endif %}
 
   p_main : process is
 
@@ -112,6 +155,17 @@ begin
       axilite_check(addr, data, msg, clk, axilite_if, error, C_SCOPE,
                     shared_msg_id_panel, axilite_bfm_config);
     end procedure;
+{% for reg in module.strobe_registers %}
+{% for f in reg.swmod_fields %}
+    variable v_{{ reg.name }}_{{ f.name }}_swmod : natural;
+{% endfor %}
+{% for f in reg.swacc_fields %}
+    variable v_{{ reg.name }}_{{ f.name }}_swacc : natural;
+{% endfor %}
+{% for f in reg.singlepulse_fields %}
+    variable v_{{ reg.name }}_{{ f.name }}_sp : natural;
+{% endfor %}
+{% endfor %}
 
   begin
     axilite_bfm_config.clock_period <= C_CLK_PERIOD;
@@ -200,6 +254,35 @@ begin
 {% for c in step.to_hw_checks %}
     check_value(to_hw.{{ reg.name }}.{{ c.target }}, {{ c.literal }}, error, "{{ reg.name }}.{{ c.name }} exposed to hw", C_SCOPE);
 {% endfor %}
+{% endfor %}
+{% endfor %}
+{% for reg in module.strobe_registers %}
+
+    log(ID_LOG_HDR, "{{ reg.name }}: software-access strobe pulses", C_SCOPE);
+{% for f in reg.swmod_fields %}
+    v_{{ reg.name }}_{{ f.name }}_swmod := {{ reg.name }}_{{ f.name }}_swmod_count;
+{% endfor %}
+{% for f in reg.swacc_fields %}
+    v_{{ reg.name }}_{{ f.name }}_swacc := {{ reg.name }}_{{ f.name }}_swacc_count;
+{% endfor %}
+{% for f in reg.singlepulse_fields %}
+    v_{{ reg.name }}_{{ f.name }}_sp := {{ reg.name }}_{{ f.name }}_sp_count;
+{% endfor %}
+    axi_write(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "write {{ reg.name }}");
+{% if reg.swacc_fields %}
+    axi_check(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "read {{ reg.name }}");
+{% endif %}
+    wait until rising_edge(clk);
+    wait until rising_edge(clk);
+{% for f in reg.swmod_fields %}
+    check_value({{ reg.name }}_{{ f.name }}_swmod_count - v_{{ reg.name }}_{{ f.name }}_swmod, 1, error, "{{ reg.name }}.{{ f.name }} swmod pulses once per write", C_SCOPE);
+{% endfor %}
+{% for f in reg.swacc_fields %}
+    check_value({{ reg.name }}_{{ f.name }}_swacc_count - v_{{ reg.name }}_{{ f.name }}_swacc, 2, error, "{{ reg.name }}.{{ f.name }} swacc pulses per access (write + read)", C_SCOPE);
+{% endfor %}
+{% for f in reg.singlepulse_fields %}
+    check_value({{ reg.name }}_{{ f.name }}_sp_count - v_{{ reg.name }}_{{ f.name }}_sp, 1, error, "{{ reg.name }}.{{ f.name }} singlepulse high exactly one cycle", C_SCOPE);
+    check_value({{ reg.name }}_{{ f.name }}_sp_value, {{ f.all_ones_literal }}, error, "{{ reg.name }}.{{ f.name }} hw saw the pulse value", C_SCOPE);
 {% endfor %}
 {% endfor %}
 

@@ -242,6 +242,11 @@ class Module:
         return [reg for reg in self.registers if reg.in_from_hw]
 
     @property
+    def strobe_registers(self) -> List[Register]:
+        """Registers with a swmod/swacc/singlepulse to_hw strobe output."""
+        return [reg for reg in self.registers if reg.has_strobes]
+
+    @property
     def enum_fields(self) -> List["Field"]:
         """Every enumerated field across the module, in register order."""
         return [field for reg in self.registers for field in reg.enum_fields]
