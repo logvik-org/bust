@@ -1,0 +1,26 @@
+{% if module.strobe_registers %}
+
+  p_strobe_monitor : process (clk) is
+  begin
+    if rising_edge(clk) then
+{% for reg in module.strobe_registers %}
+{% for f in reg.swmod_fields %}
+      if to_hw.{{ reg.name }}.{{ f.name }}.swmod = '1' then
+        {{ reg.name }}_{{ f.name }}_swmod_count <= {{ reg.name }}_{{ f.name }}_swmod_count + 1;
+      end if;
+{% endfor %}
+{% for f in reg.swacc_fields %}
+      if to_hw.{{ reg.name }}.{{ f.name }}.swacc = '1' then
+        {{ reg.name }}_{{ f.name }}_swacc_count <= {{ reg.name }}_{{ f.name }}_swacc_count + 1;
+      end if;
+{% endfor %}
+{% for f in reg.singlepulse_fields %}
+      if to_hw.{{ reg.name }}.{{ f.name }}{{ ".value" if f.to_hw_is_record else "" }} /= {{ f.value_literal(0) }} then
+        {{ reg.name }}_{{ f.name }}_sp_count <= {{ reg.name }}_{{ f.name }}_sp_count + 1;
+        {{ reg.name }}_{{ f.name }}_sp_value <= to_hw.{{ reg.name }}.{{ f.name }}{{ ".value" if f.to_hw_is_record else "" }};
+      end if;
+{% endfor %}
+{% endfor %}
+    end if;
+  end process p_strobe_monitor;
+{% endif %}

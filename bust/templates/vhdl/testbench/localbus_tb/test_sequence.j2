@@ -1,0 +1,113 @@
+{# Shared local-bus testbench body. Bus-neutral: drives the register-map through
+   bus_write/bus_check(f_addr(offset), ...), defined per bus shell. #}
+{% for reg in module.registers if reg.is_simple_readback %}
+
+    log(ID_LOG_HDR, "{{ reg.name }}: software read-write round-trip", C_SCOPE);
+    bus_write(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "write {{ reg.name }}");
+    bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "{{ reg.name }} reads back");
+{% for f in reg.to_hw_fields %}
+    check_value(to_hw.{{ reg.name }}.{{ f.name }}{{ ".value" if f.to_hw_is_record else "" }}, {{ f.all_ones_literal }}, error, "{{ reg.name }}.{{ f.name }} exposed to hw", C_SCOPE);
+{% endfor %}
+{% endfor %}
+{% for reg in module.registers if reg.is_enum_readback %}
+
+    log(ID_LOG_HDR, "{{ reg.name }}: enumerated round-trip", C_SCOPE);
+    bus_write(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.enum_selftest_value_vhdl }}, "write {{ reg.name }}");
+    bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.enum_selftest_value_vhdl }}, "{{ reg.name }} reads back encoded value");
+{% endfor %}
+{% for reg in module.registers if reg.reads_back_zero %}
+
+    log(ID_LOG_HDR, "{{ reg.name }}: write-only / pulse reads back zero", C_SCOPE);
+    bus_write(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "write {{ reg.name }}");
+    bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ module.data_width }}x"0", "{{ reg.name }} reads back zero");
+{% endfor %}
+{% for reg in module.registers if reg.is_onwrite_readback %}
+
+    log(ID_LOG_HDR, "{{ reg.name }}: onwrite software side effects", C_SCOPE);
+    bus_write(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.onwrite_write_value_vhdl }}, "write {{ reg.name }}");
+    bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.onwrite_expected_value_vhdl }}, "{{ reg.name }} applies onwrite effects");
+{% endfor %}
+{% for reg in module.registers if reg.is_onread_readback %}
+
+    log(ID_LOG_HDR, "{{ reg.name }}: onread software side effects", C_SCOPE);
+    bus_write(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.onread_write_value_vhdl }}, "write {{ reg.name }}");
+    bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.onread_write_value_vhdl }}, "{{ reg.name }} first read returns stored value");
+    bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.onread_post_read_value_vhdl }}, "{{ reg.name }} second read reflects onread");
+{% endfor %}
+{% for reg in module.registers if reg.is_hw_driven_readback %}
+
+    log(ID_LOG_HDR, "{{ reg.name }}: hardware-driven status read back over the bus", C_SCOPE);
+    wait until falling_edge(clk);
+{% for s in reg.hw_drive_steps %}
+    from_hw.{{ reg.name }}.{{ s.field }}{{ ("." ~ s.member) if s.member else "" }} <= {{ s.literal }};
+{% if s.enable == 'we' %}
+    from_hw.{{ reg.name }}.{{ s.field }}.we <= '1';
+{% elif s.enable == 'wel' %}
+    from_hw.{{ reg.name }}.{{ s.field }}.wel <= '0';
+{% endif %}
+{% endfor %}
+    wait until falling_edge(clk);
+{% for s in reg.hw_drive_steps if s.enable %}
+{% if s.enable == 'we' %}
+    from_hw.{{ reg.name }}.{{ s.field }}.we <= '0';
+{% else %}
+    from_hw.{{ reg.name }}.{{ s.field }}.wel <= '1';
+{% endif %}
+{% endfor %}
+    bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.hw_driven_expected_value_vhdl }}, "{{ reg.name }} reflects hardware inputs");
+{% endfor %}
+{% for reg in module.registers if reg.is_hw_modify_register %}
+{% for step in reg.hw_modify_steps %}
+
+    log(ID_LOG_HDR, "{{ step.log }}", C_SCOPE);
+{% if step.sw_write %}
+    bus_write(f_addr(C_ADDR_{{ reg.name | upper }}), {{ step.sw_write }}, "write {{ reg.name }}");
+{% endif %}
+{% if step.drives or step.strobes %}
+    wait until falling_edge(clk);
+{% for d in step.drives %}
+    from_hw.{{ reg.name }}.{{ d.target }} <= {{ d.literal }};
+{% endfor %}
+{% for s in step.strobes %}
+    from_hw.{{ reg.name }}.{{ s.target }} <= {{ s.on }};
+{% endfor %}
+    wait until falling_edge(clk);
+{% for s in step.strobes %}
+    from_hw.{{ reg.name }}.{{ s.target }} <= {{ s.off }};
+{% endfor %}
+{% endif %}
+    bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ step.expected }}, "{{ step.expected_msg }}");
+{% for c in step.to_hw_checks %}
+    check_value(to_hw.{{ reg.name }}.{{ c.target }}, {{ c.literal }}, error, "{{ reg.name }}.{{ c.name }} exposed to hw", C_SCOPE);
+{% endfor %}
+{% endfor %}
+{% endfor %}
+{% for reg in module.strobe_registers %}
+
+    log(ID_LOG_HDR, "{{ reg.name }}: software-access strobe pulses", C_SCOPE);
+{% for f in reg.swmod_fields %}
+    v_{{ reg.name }}_{{ f.name }}_swmod := {{ reg.name }}_{{ f.name }}_swmod_count;
+{% endfor %}
+{% for f in reg.swacc_fields %}
+    v_{{ reg.name }}_{{ f.name }}_swacc := {{ reg.name }}_{{ f.name }}_swacc_count;
+{% endfor %}
+{% for f in reg.singlepulse_fields %}
+    v_{{ reg.name }}_{{ f.name }}_sp := {{ reg.name }}_{{ f.name }}_sp_count;
+{% endfor %}
+    bus_write(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "write {{ reg.name }}");
+{% if reg.swacc_fields %}
+    bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ (module.data_width ~ 'x"0"') if reg.reads_back_zero else reg.selftest_value_vhdl }}, "read {{ reg.name }}");
+{% endif %}
+    wait until rising_edge(clk);
+    wait until rising_edge(clk);
+{% for f in reg.swmod_fields %}
+    check_value({{ reg.name }}_{{ f.name }}_swmod_count - v_{{ reg.name }}_{{ f.name }}_swmod, 1, error, "{{ reg.name }}.{{ f.name }} swmod pulses once per write", C_SCOPE);
+{% endfor %}
+{% for f in reg.swacc_fields %}
+    check_value({{ reg.name }}_{{ f.name }}_swacc_count - v_{{ reg.name }}_{{ f.name }}_swacc, 2, error, "{{ reg.name }}.{{ f.name }} swacc pulses per access (write + read)", C_SCOPE);
+{% endfor %}
+{% for f in reg.singlepulse_fields %}
+    check_value({{ reg.name }}_{{ f.name }}_sp_count - v_{{ reg.name }}_{{ f.name }}_sp, 1, error, "{{ reg.name }}.{{ f.name }} singlepulse high exactly one cycle", C_SCOPE);
+    check_value({{ reg.name }}_{{ f.name }}_sp_value, {{ f.all_ones_literal }}, error, "{{ reg.name }}.{{ f.name }} hw saw the pulse value", C_SCOPE);
+{% endfor %}
+{% endfor %}
