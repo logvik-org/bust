@@ -3,9 +3,9 @@
 -- self-checks every register whose readback is predictable: plain read-write,
 -- enumerated, write-only/singlepulse (reads back 0), onread/onwrite software
 -- side effects, and software-readonly registers driven entirely from from_hw
--- (we/wel value inputs). Not checked here yet: the hwset/hwclr from_hw inputs,
--- the swmod/swacc to_hw strobe outputs, and to_hw values on software-writable
--- registers.
+-- (we/wel value inputs). It also checks the to_hw values the hardware sees on
+-- plain read-write registers. Not checked here yet: the hwset/hwclr from_hw
+-- inputs and the swmod/swacc to_hw strobe outputs.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -110,6 +110,8 @@ begin
     log(ID_LOG_HDR, "reg0: software read-write round-trip", C_SCOPE);
     axi_write(f_addr(C_BASE, C_ADDR_REG0), 32x"00000007", "write reg0");
     axi_check(f_addr(C_BASE, C_ADDR_REG0), 32x"00000007", "reg0 reads back");
+    check_value(to_hw.reg0.field0, '1', error, "reg0.field0 exposed to hw", C_SCOPE);
+    check_value(to_hw.reg0.field1, 2x"3", error, "reg0.field1 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg3: software read-write round-trip", C_SCOPE);
     axi_write(f_addr(C_BASE, C_ADDR_REG3), 32x"000000FF", "write reg3");
@@ -118,6 +120,8 @@ begin
     log(ID_LOG_HDR, "reg9: software read-write round-trip", C_SCOPE);
     axi_write(f_addr(C_BASE, C_ADDR_REG9), 32x"000000FF", "write reg9");
     axi_check(f_addr(C_BASE, C_ADDR_REG9), 32x"000000FF", "reg9 reads back");
+    check_value(to_hw.reg9.field0.value, 4x"F", error, "reg9.field0 exposed to hw", C_SCOPE);
+    check_value(to_hw.reg9.field1.value, 4x"F", error, "reg9.field1 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg11: enumerated round-trip", C_SCOPE);
     axi_write(f_addr(C_BASE, C_ADDR_REG11), 32x"00000003", "write reg11");
