@@ -156,6 +156,24 @@ def test_prototype_headers_match_golden():
             assert _prototype_header(method) == fp.read(), filename
 
 
+def test_prototype_doc_matches_golden():
+    """The LaTeX docs express the access-mode system (sw/hw, onread/onwrite,
+    singlepulse, enums). Needs pylatexenc, so it is skipped where unavailable."""
+    import pytest
+
+    pytest.importorskip("pylatexenc")
+    from bust.generators.documentation_generator import DocumentationGenerator
+
+    generated = DocumentationGenerator(_build_module()).generate_tex_documentation(
+        "0.14.0-dev"
+    )
+    golden = os.path.join(
+        _REPO_ROOT, "example", "example_prototype", "doc", "prototype.tex"
+    )
+    with open(golden) as fp:
+        assert generated == fp.read()
+
+
 def test_prototype_c_header_surfaces_access_modes():
     """Side effects and enums reach the C header, not just sw/hw access."""
     out = _prototype_header("generate_c_header")
