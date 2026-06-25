@@ -1,9 +1,9 @@
 """Output file generation module for bust.
 
-This module handles the creation of all output files including VHDL code,
-testbenches, documentation, headers, and simulation scripts. It manages
-directory structure and coordinates file generation from Module, Bus,
-Header, Documentation, and Testbench instances.
+This module handles the creation of all output files: the local-bus VHDL stack
+(regfile package, regfile, bus endpoint, top wrapper) and its UVVM testbench,
+language headers, and documentation. It manages the directory structure and
+coordinates file generation from the Module, Bus, Header, and Documentation.
 """
 
 import os
@@ -84,7 +84,7 @@ def generate_output(settings, bus, module, header, documentation, gen_settings):
         logger.debug("Successfully created all output directories")
 
     if gen_settings.get("gen_localbus"):
-        logger.info("Generating local-bus VHDL files (experimental)...")
+        logger.info("Generating local-bus VHDL files...")
         try:
             filename = f"{module.name}_regfile_pkg.vhd"
             write_string_to_file(
