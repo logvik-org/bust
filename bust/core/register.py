@@ -401,6 +401,113 @@ class Register:
         value = max(e.value for e in field.enums) << field.pos_low
         return self._data_width_literal(value)
 
+    @staticmethod
+    def _alternating_bits(width: int) -> int:
+        """0b0101… within `width` bits: a mix of set and clear bits so set, clear,
+        and toggle write/read effects each produce an observable change."""
+        value = 0
+        for bit in range(0, width, 2):
+            value |= 1 << bit
+        return value
+
+    def _register_value(self, field_value) -> int:
+        """OR each field's contribution into a full-register value.
+
+        `field_value(field)` returns the field-local integer, shifted here to the
+        field's position.
+        """
+        value = 0
+        for f in self.effective_fields:
+            value |= field_value(f) << f.pos_low
+        return value
+
+    def _require_predictable(self, condition: bool, prop: str, kind: str) -> None:
+        if not condition:
+            raise ValueError(
+                f"{prop} is only valid for a {kind} register (register '{self.name}')"
+            )
+
+    @property
+    def is_onwrite_readback(self) -> bool:
+        """Plain rw register whose readback after one write is a pure function of the
+        write value: onwrite side effects only, no read effect or hardware writer."""
+        fields = self.effective_fields
+        return (
+            bool(fields)
+            and any(f.onwrite is not None for f in fields)
+            and all(
+                f.sw is SwAccess.RW
+                and f.onread is None
+                and not f.singlepulse
+                and not f.is_enum
+                and not f.driven_by_hw
+                for f in fields
+            )
+        )
+
+    @property
+    def onwrite_write_value_vhdl(self) -> str:
+        """Data-width literal of the stimulus written to an onwrite register."""
+        self._require_predictable(
+            self.is_onwrite_readback, "onwrite_write_value_vhdl", "write-effect"
+        )
+        return self._data_width_literal(
+            self._register_value(lambda f: self._alternating_bits(f.width))
+        )
+
+    @property
+    def onwrite_expected_value_vhdl(self) -> str:
+        """Data-width literal read back after the onwrite stimulus is applied."""
+        self._require_predictable(
+            self.is_onwrite_readback, "onwrite_expected_value_vhdl", "write-effect"
+        )
+        return self._data_width_literal(
+            self._register_value(
+                lambda f: f.written_result(self._alternating_bits(f.width))
+            )
+        )
+
+    @property
+    def is_onread_readback(self) -> bool:
+        """Plain rw register whose value after a read is a pure function of the
+        stored value: onread side effects only, no write effect or hardware writer."""
+        fields = self.effective_fields
+        return (
+            bool(fields)
+            and any(f.onread is not None for f in fields)
+            and all(
+                f.sw is SwAccess.RW
+                and f.onwrite is None
+                and not f.singlepulse
+                and not f.is_enum
+                and not f.driven_by_hw
+                for f in fields
+            )
+        )
+
+    @property
+    def onread_write_value_vhdl(self) -> str:
+        """Data-width literal written to an onread register (also its first readback,
+        since these fields store the written value before the read effect)."""
+        self._require_predictable(
+            self.is_onread_readback, "onread_write_value_vhdl", "read-effect"
+        )
+        return self._data_width_literal(
+            self._register_value(lambda f: self._alternating_bits(f.width))
+        )
+
+    @property
+    def onread_post_read_value_vhdl(self) -> str:
+        """Data-width literal returned by a second read, after the onread effect."""
+        self._require_predictable(
+            self.is_onread_readback, "onread_post_read_value_vhdl", "read-effect"
+        )
+        return self._data_width_literal(
+            self._register_value(
+                lambda f: f.read_result(self._alternating_bits(f.width))
+            )
+        )
+
     def add_field(self, field_cfg: Dict) -> None:
         """Add a bitfield to this register.
 
