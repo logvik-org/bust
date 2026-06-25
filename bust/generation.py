@@ -183,6 +183,14 @@ def generate_output(
                     mod_hdl,
                     gen_settings["force_ow"],
                 )
+                if bus.bus_type == "axi":
+                    filename = f"{module.name}_tb.vhd"
+                    write_string_to_file(
+                        GeneratorFactory.generate_localbus_axi_testbench_vhdl(module),
+                        filename,
+                        mod_tb,
+                        gen_settings["force_ow"],
+                    )
         except Exception:
             logger.error("ERROR: Could not generate local-bus VHDL files")
             raise
