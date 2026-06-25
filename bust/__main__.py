@@ -2,7 +2,7 @@
 """bust register tool.
 
 Usage:
-  bust.py FILE [-o DIR] [[[-F | -f] [-u] [-d | -p] [-b] [-t] [-i] [-m]] | [-a] | [-c | -e]]
+  bust.py FILE [-o DIR] [[[-F | -f] [-u] [-d | -p] [-b] [-t] [-i] [-m] [-l]] | [-a] | [-c | -e]]
   bust.py --version
   bust.py -h | --help
 
@@ -17,6 +17,7 @@ Options:
   -t             Do not generate the testbench VHDL file and the simulation scripts
   -i             Do not generate the include header files (.h, .hpp & .py)
   -m             Do not generate the module VHDL files
+  -l             Also generate the experimental local-bus VHDL (regfile package, regfile, bus endpoint)
   -a             Update register addresses and save JSON file
   -e             Edit the JSON file
   -c             Create a new JSON file
@@ -181,6 +182,8 @@ def main():
             gs["gen_mod"] = True
             if args["-m"]:
                 gs["gen_mod"] = False
+
+            gs["gen_localbus"] = bool(args["-l"])
 
             if args["-a"]:
                 module.update_addresses()
