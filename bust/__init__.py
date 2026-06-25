@@ -15,7 +15,6 @@ Main components:
     - Bus: Bus interface configuration
     - Header: Language header file generation
     - Documentation: LaTeX documentation generation
-    - Testbench: UVVM testbench generation
 
 Package structure:
     - core: Domain models (Module, Bus, Register, Field, Enums)
@@ -40,14 +39,12 @@ from bust.core import (
 from bust.generators import (
     HeaderGenerator,
     DocumentationGenerator,
-    TestbenchGenerator,
     GeneratorFactory,
 )
 
 # Backward compatibility aliases
 Header = HeaderGenerator
 Documentation = DocumentationGenerator
-Testbench = TestbenchGenerator
 
 __all__ = [
     # Core domain classes
@@ -61,10 +58,8 @@ __all__ = [
     # Generator classes
     "HeaderGenerator",
     "DocumentationGenerator",
-    "TestbenchGenerator",
     "GeneratorFactory",
     # Backward compatibility
     "Header",
     "Documentation",
-    "Testbench",
 ]
