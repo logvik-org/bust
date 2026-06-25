@@ -352,7 +352,7 @@ class Register:
         mask = 0
         for f in self.effective_fields:
             mask |= f.mask
-        digits = self.module_data_width // 4
+        digits = (self.module_data_width + 3) // 4  # ceil: cover non-nibble widths
         return f'{self.module_data_width}x"{mask:0{digits}X}"'
 
     def add_field(self, field_cfg: Dict) -> None:
