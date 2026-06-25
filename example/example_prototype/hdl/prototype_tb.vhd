@@ -116,6 +116,18 @@ begin
     axi_write(f_addr(C_BASE, C_ADDR_REG9), 32x"000000FF", "write reg9");
     axi_check(f_addr(C_BASE, C_ADDR_REG9), 32x"000000FF", "reg9 reads back");
 
+    log(ID_LOG_HDR, "reg11: enumerated round-trip", C_SCOPE);
+    axi_write(f_addr(C_BASE, C_ADDR_REG11), 32x"00000003", "write reg11");
+    axi_check(f_addr(C_BASE, C_ADDR_REG11), 32x"00000003", "reg11 reads back encoded value");
+
+    log(ID_LOG_HDR, "reg2: write-only / pulse reads back zero", C_SCOPE);
+    axi_write(f_addr(C_BASE, C_ADDR_REG2), 32x"00000001", "write reg2");
+    axi_check(f_addr(C_BASE, C_ADDR_REG2), 32x"0", "reg2 reads back zero");
+
+    log(ID_LOG_HDR, "reg10: write-only / pulse reads back zero", C_SCOPE);
+    axi_write(f_addr(C_BASE, C_ADDR_REG10), 32x"0000000F", "write reg10");
+    axi_check(f_addr(C_BASE, C_ADDR_REG10), 32x"0", "reg10 reads back zero");
+
     wait for 10*C_CLK_PERIOD;
     report_alert_counters(FINAL);
     log(ID_LOG_HDR, "SIMULATION COMPLETED", C_SCOPE);
