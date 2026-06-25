@@ -133,6 +133,7 @@ class EXAMPLE_IPBUS_H:
     REG9_WIDTH = 1
     REG9_OFFSET = 0x24
     REG9_RESET = 0x1
+    REG9_SINGLEPULSE = True
 
     """Register: reg10"""
     REG10_SW = "wo"
@@ -140,6 +141,7 @@ class EXAMPLE_IPBUS_H:
     REG10_WIDTH = 4
     REG10_OFFSET = 0x28
     REG10_RESET = 0xa
+    REG10_SINGLEPULSE = True
 
     """Register: reg11"""
     REG11_SW = "wo"

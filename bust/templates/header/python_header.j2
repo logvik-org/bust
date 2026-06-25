@@ -7,6 +7,18 @@ class {{ module.name.upper() }}_H:
     {{ reg.name.upper() }}_WIDTH = {{ reg.width }}
     {{ reg.name.upper() }}_OFFSET = {{ "0x%x" | format(reg.address) }}
     {{ reg.name.upper() }}_RESET = {{ reg.reset }}
+{% if not reg.fields %}
+{% set f = reg.effective_fields[0] %}
+{% if f.onread %}
+    {{ reg.name.upper() }}_ONREAD = "{{ f.onread.value }}"
+{% endif %}
+{% if f.onwrite %}
+    {{ reg.name.upper() }}_ONWRITE = "{{ f.onwrite.value }}"
+{% endif %}
+{% if f.singlepulse %}
+    {{ reg.name.upper() }}_SINGLEPULSE = True
+{% endif %}
+{% endif %}
 {% if reg.type == reg_type_fields %}
 
 {% for field in reg.fields %}
