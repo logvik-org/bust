@@ -105,6 +105,17 @@ def test_axi_testbench_matches_golden():
         assert generated == fp.read()
 
 
+def test_selftest_value_covers_non_nibble_width():
+    """The self-test literal uses ceil(width/4) hex digits, so non-nibble data
+    widths are not truncated."""
+    from bust.core.register import Register
+
+    reg = Register(
+        {"name": "r", "type": "vector", "width": 18, "mode": "rw"}, 0, "m", 18
+    )
+    assert reg.selftest_value_vhdl == '18x"3FFFF"'
+
+
 def _one_register_module(bus):
     return Module(
         {"name": "m", "register": [{"name": "r", "type": "default", "mode": "rw"}]},
