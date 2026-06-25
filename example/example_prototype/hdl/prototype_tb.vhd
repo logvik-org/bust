@@ -2,10 +2,10 @@
 -- Drives the prototype top entity with the stock Bitvis AXI-Lite VIP and
 -- self-checks every register whose readback is predictable: plain read-write,
 -- enumerated, write-only/singlepulse (reads back 0), onread/onwrite software
--- side effects, and software-readonly registers driven entirely from from_hw
--- (we/wel value inputs). It also checks the to_hw values the hardware sees on
--- plain read-write registers. Not checked here yet: the hwset/hwclr from_hw
--- inputs and the swmod/swacc to_hw strobe outputs.
+-- side effects, software-readonly registers driven from from_hw (we/wel), and
+-- the hardware we override / hwset / hwclr modifiers on read-write registers. It
+-- also checks the to_hw values the hardware sees. Not checked here yet: the
+-- swmod/swacc/singlepulse to_hw strobe outputs (single-cycle pulses).
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -163,6 +163,36 @@ begin
     from_hw.reg1.field0.we <= '0';
     from_hw.reg1.field2.wel <= '1';
     axi_check(f_addr(C_BASE, C_ADDR_REG1), 32x"00000035", "reg1 reflects hardware inputs");
+
+    log(ID_LOG_HDR, "reg4: software baseline write", C_SCOPE);
+    axi_write(f_addr(C_BASE, C_ADDR_REG4), 32x"00000105", "write reg4");
+    axi_check(f_addr(C_BASE, C_ADDR_REG4), 32x"00000105", "reg4 reads back the software value");
+    check_value(to_hw.reg4.field0, 4x"5", error, "reg4.field0 exposed to hw", C_SCOPE);
+    check_value(to_hw.reg4.field1, '1', error, "reg4.field1 exposed to hw", C_SCOPE);
+
+    log(ID_LOG_HDR, "reg4: hardware we overrides the stored value", C_SCOPE);
+    wait until falling_edge(clk);
+    from_hw.reg4.field0.value <= 4x"A";
+    from_hw.reg4.field0.we <= '1';
+    wait until falling_edge(clk);
+    from_hw.reg4.field0.we <= '0';
+    axi_check(f_addr(C_BASE, C_ADDR_REG4), 32x"0000010A", "reg4 reflects the hardware we override");
+
+    log(ID_LOG_HDR, "reg4: hwset drives fields high", C_SCOPE);
+    wait until falling_edge(clk);
+    from_hw.reg4.field1.set <= '1';
+    wait until falling_edge(clk);
+    from_hw.reg4.field1.set <= '0';
+    axi_check(f_addr(C_BASE, C_ADDR_REG4), 32x"0000010A", "reg4 reflects hwset");
+
+    log(ID_LOG_HDR, "reg4: hwclr clears fields (and beats hwset)", C_SCOPE);
+    wait until falling_edge(clk);
+    from_hw.reg4.field1.set <= '1';
+    from_hw.reg4.field1.clr <= '1';
+    wait until falling_edge(clk);
+    from_hw.reg4.field1.set <= '0';
+    from_hw.reg4.field1.clr <= '0';
+    axi_check(f_addr(C_BASE, C_ADDR_REG4), 32x"0000000A", "reg4 reflects hwclr");
 
     wait for 10*C_CLK_PERIOD;
     report_alert_counters(FINAL);
