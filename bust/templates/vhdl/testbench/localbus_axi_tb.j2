@@ -5,10 +5,10 @@
 -- Drives the {{ module.name }} top entity with the stock Bitvis AXI-Lite VIP and
 -- self-checks every register whose readback is predictable: plain read-write,
 -- enumerated, write-only/singlepulse (reads back 0), onread/onwrite software
--- side effects, and software-readonly registers driven entirely from from_hw
--- (we/wel value inputs). It also checks the to_hw values the hardware sees on
--- plain read-write registers. Not checked here yet: the hwset/hwclr from_hw
--- inputs and the swmod/swacc to_hw strobe outputs.
+-- side effects, software-readonly registers driven from from_hw (we/wel), and
+-- the hardware we override / hwset / hwclr modifiers on read-write registers. It
+-- also checks the to_hw values the hardware sees. Not checked here yet: the
+-- swmod/swacc/singlepulse to_hw strobe outputs (single-cycle pulses).
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -175,6 +175,32 @@ begin
 {% endif %}
 {% endfor %}
     axi_check(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ reg.hw_driven_expected_value_vhdl }}, "{{ reg.name }} reflects hardware inputs");
+{% endfor %}
+{% for reg in module.registers if reg.is_hw_modify_register %}
+{% for step in reg.hw_modify_steps %}
+
+    log(ID_LOG_HDR, "{{ step.log }}", C_SCOPE);
+{% if step.sw_write %}
+    axi_write(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ step.sw_write }}, "write {{ reg.name }}");
+{% endif %}
+{% if step.drives or step.strobes %}
+    wait until falling_edge(clk);
+{% for d in step.drives %}
+    from_hw.{{ reg.name }}.{{ d.target }} <= {{ d.literal }};
+{% endfor %}
+{% for s in step.strobes %}
+    from_hw.{{ reg.name }}.{{ s.target }} <= {{ s.on }};
+{% endfor %}
+    wait until falling_edge(clk);
+{% for s in step.strobes %}
+    from_hw.{{ reg.name }}.{{ s.target }} <= {{ s.off }};
+{% endfor %}
+{% endif %}
+    axi_check(f_addr(C_BASE, C_ADDR_{{ reg.name | upper }}), {{ step.expected }}, "{{ step.expected_msg }}");
+{% for c in step.to_hw_checks %}
+    check_value(to_hw.{{ reg.name }}.{{ c.target }}, {{ c.literal }}, error, "{{ reg.name }}.{{ c.name }} exposed to hw", C_SCOPE);
+{% endfor %}
+{% endfor %}
 {% endfor %}
 
     wait for 10*C_CLK_PERIOD;
