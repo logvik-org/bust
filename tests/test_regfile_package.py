@@ -126,10 +126,14 @@ def test_testbench_register_categories():
         "reg7",
         "reg8",
     ]
+    assert [r.name for r in module.registers if r.is_hw_driven_readback] == ["reg1"]
+
     # Predicted readbacks match the simulation-verified hand-written testbench.
     assert by_name["reg5"].onread_post_read_value_vhdl == '32x"000000F0"'
     assert by_name["reg7"].onwrite_expected_value_vhdl == '32x"00000A5A"'
     assert by_name["reg8"].onwrite_expected_value_vhdl == '32x"000000F0"'
+    # reg1 = field2(5)|field1(4)|field0(3:0) = 1|1|0101 = 0x35.
+    assert by_name["reg1"].hw_driven_expected_value_vhdl == '32x"00000035"'
 
 
 def test_selftest_value_covers_non_nibble_width():
