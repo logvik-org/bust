@@ -147,6 +147,39 @@ def generate_output(
             logger.error("ERROR: Could not generate Module VHDL Files")
             raise e
 
+    if gen_settings.get("gen_localbus"):
+        logger.info("Generating local-bus VHDL files (experimental)...")
+        try:
+            filename = f"{module.name}_regfile_pkg.vhd"
+            write_string_to_file(
+                GeneratorFactory.generate_regfile_package_vhdl(module),
+                filename,
+                mod_hdl,
+                gen_settings["force_ow"],
+            )
+            filename = f"{module.name}_regfile.vhd"
+            write_string_to_file(
+                GeneratorFactory.generate_regfile_vhdl(module),
+                filename,
+                mod_hdl,
+                gen_settings["force_ow"],
+            )
+            if bus.bus_type == "axi":
+                endpoint = GeneratorFactory.generate_axi_endpoint_vhdl(module)
+                filename = f"{module.name}_axi_endpoint.vhd"
+            elif bus.bus_type == "ipbus":
+                endpoint = GeneratorFactory.generate_ipb_endpoint_vhdl(module)
+                filename = f"{module.name}_ipb_endpoint.vhd"
+            else:
+                endpoint = None
+            if endpoint is not None:
+                write_string_to_file(
+                    endpoint, filename, mod_hdl, gen_settings["force_ow"]
+                )
+        except Exception:
+            logger.error("ERROR: Could not generate local-bus VHDL files")
+            raise
+
     if gen_settings["gen_header"]:
         logger.info("Generating Module Include Files...")
         try:
