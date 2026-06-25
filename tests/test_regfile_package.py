@@ -141,6 +141,16 @@ def test_testbench_register_categories():
     assert by_name["reg3"].to_hw_fields == []
     assert by_name["reg0"].fields[1].all_ones_literal == '2x"3"'
 
+    # reg4 exercises hw we override + hwset + hwclr; the scenario must reproduce
+    # the simulation-verified value sequence 0x105 -> 0x10A -> 0x10A -> 0x00A.
+    assert [r.name for r in module.registers if r.is_hw_modify_register] == ["reg4"]
+    assert [s["expected"] for s in by_name["reg4"].hw_modify_steps] == [
+        '32x"00000105"',
+        '32x"0000010A"',
+        '32x"0000010A"',
+        '32x"0000000A"',
+    ]
+
 
 def test_selftest_value_covers_non_nibble_width():
     """The self-test literal uses ceil(width/4) hex digits, so non-nibble data
