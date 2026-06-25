@@ -1,8 +1,11 @@
 -- Generated UVVM testbench for the prototype module (AXI4-Lite).
 -- Drives the prototype top entity with the stock Bitvis AXI-Lite VIP and
--- self-checks every plain software read-write register (write then read back).
--- Registers with access-mode side effects (onread/onwrite/singlepulse, enum,
--- hardware-driven) are not exercised here yet.
+-- self-checks every register whose readback is a pure function of software
+-- traffic: plain read-write, enumerated, write-only/singlepulse (reads back 0),
+-- and onread/onwrite software side effects. It drives only the software bus, so
+-- the hardware-facing parts are not checked here yet: the we/wel and hwset/hwclr
+-- from_hw inputs, the swmod/swacc to_hw strobe outputs, and hardware-driven
+-- field values.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -127,6 +130,23 @@ begin
     log(ID_LOG_HDR, "reg10: write-only / pulse reads back zero", C_SCOPE);
     axi_write(f_addr(C_BASE, C_ADDR_REG10), 32x"0000000F", "write reg10");
     axi_check(f_addr(C_BASE, C_ADDR_REG10), 32x"0", "reg10 reads back zero");
+
+    log(ID_LOG_HDR, "reg6: onwrite software side effects", C_SCOPE);
+    axi_write(f_addr(C_BASE, C_ADDR_REG6), 32x"00000555", "write reg6");
+    axi_check(f_addr(C_BASE, C_ADDR_REG6), 32x"000005A5", "reg6 applies onwrite effects");
+
+    log(ID_LOG_HDR, "reg7: onwrite software side effects", C_SCOPE);
+    axi_write(f_addr(C_BASE, C_ADDR_REG7), 32x"00000555", "write reg7");
+    axi_check(f_addr(C_BASE, C_ADDR_REG7), 32x"00000A5A", "reg7 applies onwrite effects");
+
+    log(ID_LOG_HDR, "reg8: onwrite software side effects", C_SCOPE);
+    axi_write(f_addr(C_BASE, C_ADDR_REG8), 32x"00000055", "write reg8");
+    axi_check(f_addr(C_BASE, C_ADDR_REG8), 32x"000000F0", "reg8 applies onwrite effects");
+
+    log(ID_LOG_HDR, "reg5: onread software side effects", C_SCOPE);
+    axi_write(f_addr(C_BASE, C_ADDR_REG5), 32x"00000055", "write reg5");
+    axi_check(f_addr(C_BASE, C_ADDR_REG5), 32x"00000055", "reg5 first read returns stored value");
+    axi_check(f_addr(C_BASE, C_ADDR_REG5), 32x"000000F0", "reg5 second read reflects onread");
 
     wait for 10*C_CLK_PERIOD;
     report_alert_counters(FINAL);
