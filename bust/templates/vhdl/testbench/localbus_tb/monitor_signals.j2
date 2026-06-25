@@ -1,0 +1,17 @@
+{% if module.strobe_registers %}
+
+  -- Strobe monitors: count the cycles each swmod/swacc/singlepulse output is
+  -- high, so single-cycle pulses are verifiable without cycle-accurate sampling.
+{% for reg in module.strobe_registers %}
+{% for f in reg.swmod_fields %}
+  signal {{ reg.name }}_{{ f.name }}_swmod_count : natural := 0;
+{% endfor %}
+{% for f in reg.swacc_fields %}
+  signal {{ reg.name }}_{{ f.name }}_swacc_count : natural := 0;
+{% endfor %}
+{% for f in reg.singlepulse_fields %}
+  signal {{ reg.name }}_{{ f.name }}_sp_count : natural := 0;
+  signal {{ reg.name }}_{{ f.name }}_sp_value : {{ f.type_vhdl }} := {{ f.zeros_literal }};
+{% endfor %}
+{% endfor %}
+{% endif %}
