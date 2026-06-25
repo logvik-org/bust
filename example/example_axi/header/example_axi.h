@@ -135,6 +135,7 @@
 #define REG9_WIDTH 1
 #define REG9_OFFSET 0x24
 #define REG9_RESET 0x1
+#define REG9_SINGLEPULSE 1
 
 /* Register: reg10 */
 #define REG10_SW "wo"
@@ -142,6 +143,7 @@
 #define REG10_WIDTH 4
 #define REG10_OFFSET 0x28
 #define REG10_RESET 0xa
+#define REG10_SINGLEPULSE 1
 
 /* Register: reg11 */
 #define REG11_SW "wo"
