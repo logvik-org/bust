@@ -96,19 +96,30 @@ def test_module_top_matches_golden():
         assert generated == fp.read()
 
 
-def test_module_top_instantiates_bus_endpoint():
-    """The thin wrapper instantiates the bus-appropriate endpoint entity."""
-    axi = Module(
-        {
-            "name": "m",
-            "register": [{"name": "r", "type": "default", "mode": "rw"}],
-        },
-        _axi_bus(),
+def _one_register_module(bus):
+    return Module(
+        {"name": "m", "register": [{"name": "r", "type": "default", "mode": "rw"}]},
+        bus,
         settings=None,
     )
-    out = GeneratorFactory.generate_module_top_vhdl(axi)
+
+
+def test_module_top_instantiates_axi_endpoint():
+    out = GeneratorFactory.generate_module_top_vhdl(_one_register_module(_axi_bus()))
     assert "entity m is" in out
     assert "i_endpoint : entity work.m_axi_endpoint" in out
+    assert "awaddr" in out and "rready" in out
+
+
+def test_module_top_instantiates_ipb_endpoint():
+    bus = Bus(
+        {"type": "ipbus", "addr_width": 32, "data_width": 32, "comp_library": "bust"}
+    )
+    out = GeneratorFactory.generate_module_top_vhdl(_one_register_module(bus))
+    assert "entity m is" in out
+    assert "i_endpoint : entity work.m_ipb_endpoint" in out
+    assert "ipb_in" in out and "ipb_out" in out
+    assert "use ipbus.ipbus.all;" in out
 
 
 def _axi_bus():
