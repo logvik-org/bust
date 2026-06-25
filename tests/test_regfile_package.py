@@ -33,6 +33,9 @@ _IPB_ENDPOINT_GOLDEN = os.path.join(
 _MODULE_TOP_GOLDEN = os.path.join(
     _REPO_ROOT, "example", "example_prototype", "hdl", "prototype.vhd"
 )
+_AXI_TB_GOLDEN = os.path.join(
+    _REPO_ROOT, "example", "example_prototype", "hdl", "prototype_tb.vhd"
+)
 
 
 def _build_module():
@@ -93,6 +96,12 @@ def test_ipb_endpoint_matches_golden():
 def test_module_top_matches_golden():
     generated = GeneratorFactory.generate_module_top_vhdl(_build_module())
     with open(_MODULE_TOP_GOLDEN) as fp:
+        assert generated == fp.read()
+
+
+def test_axi_testbench_matches_golden():
+    generated = GeneratorFactory.generate_localbus_axi_testbench_vhdl(_build_module())
+    with open(_AXI_TB_GOLDEN) as fp:
         assert generated == fp.read()
 
 
@@ -232,6 +241,8 @@ def test_localbus_flag_emits_local_bus_files(tmp_path):
     hdl = _generate_only_localbus(tmp_path, gen_localbus=True)
     for name in _LOCALBUS_FILES:
         assert os.path.isfile(os.path.join(hdl, name))
+    tb = os.path.join(str(tmp_path), "example_axi", "tb", "example_axi_tb.vhd")
+    assert os.path.isfile(tb)
 
 
 def test_localbus_flag_off_emits_nothing(tmp_path):
