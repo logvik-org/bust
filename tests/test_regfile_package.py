@@ -376,17 +376,12 @@ def _generate_only_localbus(out_dir, gen_localbus):
     gen_settings = {
         "dir": str(out_dir),
         "force_ow": True,
-        "force_ow_top": True,
-        "update_top": False,
-        "gen_bus": False,
         "gen_doc": False,
         "gen_pdf": False,
-        "gen_tb": False,
         "gen_header": False,
-        "gen_mod": False,
         "gen_localbus": gen_localbus,
     }
-    generate_output(settings, bus, module, None, None, None, gen_settings)
+    generate_output(settings, bus, module, None, None, gen_settings)
     return os.path.join(str(out_dir), "example_axi", "hdl")
 
 
