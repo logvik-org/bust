@@ -139,6 +139,7 @@ const std::string REG9_HW = "r";
 const uint32_t REG9_WIDTH = 1;
 const uint32_t REG9_OFFSET = 0x24;
 const uint32_t REG9_RESET = 0x1;
+const bool REG9_SINGLEPULSE = true;
 
 /* Register: reg10 */
 const std::string REG10_SW = "wo";
@@ -146,6 +147,7 @@ const std::string REG10_HW = "r";
 const uint32_t REG10_WIDTH = 4;
 const uint32_t REG10_OFFSET = 0x28;
 const uint32_t REG10_RESET = 0xa;
+const bool REG10_SINGLEPULSE = true;
 
 /* Register: reg11 */
 const std::string REG11_SW = "wo";

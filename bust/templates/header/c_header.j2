@@ -9,6 +9,15 @@
 #define {{ reg.name.upper() }}_WIDTH {{ reg.width }}
 #define {{ reg.name.upper() }}_OFFSET {{ "0x%x" | format(reg.address) }}
 #define {{ reg.name.upper() }}_RESET {{ reg.reset }}
+{% if not reg.fields %}
+{% set f = reg.effective_fields[0] %}
+{% if f.onread %}#define {{ reg.name.upper() }}_ONREAD "{{ f.onread.value }}"
+{% endif %}
+{% if f.onwrite %}#define {{ reg.name.upper() }}_ONWRITE "{{ f.onwrite.value }}"
+{% endif %}
+{% if f.singlepulse %}#define {{ reg.name.upper() }}_SINGLEPULSE 1
+{% endif %}
+{% endif %}
 
 {% if reg.type == reg_type_fields %}
 {% for field in reg.fields %}
