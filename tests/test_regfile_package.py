@@ -30,6 +30,9 @@ _AXI_ENDPOINT_GOLDEN = os.path.join(
 _IPB_ENDPOINT_GOLDEN = os.path.join(
     _REPO_ROOT, "example", "example_prototype", "hdl", "prototype_ipb_endpoint.vhd"
 )
+_MODULE_TOP_GOLDEN = os.path.join(
+    _REPO_ROOT, "example", "example_prototype", "hdl", "prototype.vhd"
+)
 
 
 def _build_module():
@@ -85,6 +88,38 @@ def test_ipb_endpoint_matches_golden():
     generated = GeneratorFactory.generate_ipb_endpoint_vhdl(_build_module())
     with open(_IPB_ENDPOINT_GOLDEN) as fp:
         assert generated == fp.read()
+
+
+def test_module_top_matches_golden():
+    generated = GeneratorFactory.generate_module_top_vhdl(_build_module())
+    with open(_MODULE_TOP_GOLDEN) as fp:
+        assert generated == fp.read()
+
+
+def _one_register_module(bus):
+    return Module(
+        {"name": "m", "register": [{"name": "r", "type": "default", "mode": "rw"}]},
+        bus,
+        settings=None,
+    )
+
+
+def test_module_top_instantiates_axi_endpoint():
+    out = GeneratorFactory.generate_module_top_vhdl(_one_register_module(_axi_bus()))
+    assert "entity m is" in out
+    assert "i_endpoint : entity work.m_axi_endpoint" in out
+    assert "awaddr" in out and "rready" in out
+
+
+def test_module_top_instantiates_ipb_endpoint():
+    bus = Bus(
+        {"type": "ipbus", "addr_width": 32, "data_width": 32, "comp_library": "bust"}
+    )
+    out = GeneratorFactory.generate_module_top_vhdl(_one_register_module(bus))
+    assert "entity m is" in out
+    assert "i_endpoint : entity work.m_ipb_endpoint" in out
+    assert "ipb_in" in out and "ipb_out" in out
+    assert "use ipbus.ipbus.all;" in out
 
 
 def _axi_bus():
@@ -185,20 +220,23 @@ def _generate_only_localbus(out_dir, gen_localbus):
     return os.path.join(str(out_dir), "example_axi", "hdl")
 
 
+_LOCALBUS_FILES = (
+    "example_axi_regfile_pkg.vhd",
+    "example_axi_regfile.vhd",
+    "example_axi_axi_endpoint.vhd",
+    "example_axi.vhd",
+)
+
+
 def test_localbus_flag_emits_local_bus_files(tmp_path):
     hdl = _generate_only_localbus(tmp_path, gen_localbus=True)
-    assert os.path.isfile(os.path.join(hdl, "example_axi_regfile_pkg.vhd"))
-    assert os.path.isfile(os.path.join(hdl, "example_axi_regfile.vhd"))
-    assert os.path.isfile(os.path.join(hdl, "example_axi_axi_endpoint.vhd"))
+    for name in _LOCALBUS_FILES:
+        assert os.path.isfile(os.path.join(hdl, name))
 
 
 def test_localbus_flag_off_emits_nothing(tmp_path):
     hdl = _generate_only_localbus(tmp_path, gen_localbus=False)
-    for name in (
-        "example_axi_regfile_pkg.vhd",
-        "example_axi_regfile.vhd",
-        "example_axi_axi_endpoint.vhd",
-    ):
+    for name in _LOCALBUS_FILES:
         assert not os.path.isfile(os.path.join(hdl, name))
 
 
