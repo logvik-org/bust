@@ -51,12 +51,14 @@ def _build_module():
 
 
 def _build_ipbus_module():
-    """The prototype register map driven over an IPBus interface."""
+    """The prototype register map driven over an IPBus interface.
+
+    Reuses the example's bus config (widths, library) and only swaps the type, so
+    the IPBus setup tracks the JSON rather than hard-coding values.
+    """
     with open(_EXAMPLE) as fp:
         cfg = json.load(fp)
-    bus = Bus(
-        {"type": "ipbus", "addr_width": 32, "data_width": 32, "comp_library": "bust"}
-    )
+    bus = Bus(dict(cfg["bus"], type="ipbus"))
     return Module(cfg["module"], bus, settings=None)
 
 
