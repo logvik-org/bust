@@ -106,7 +106,8 @@ def test_axi_testbench_matches_golden():
 
 
 def test_testbench_register_categories():
-    """The generated testbench covers plain-rw, enum, and write-zero registers."""
+    """The generated testbench covers plain-rw, enum, write-zero, and the onread/
+    onwrite software side-effect registers."""
     module = _build_module()
     by_name = {r.name: r for r in module.registers}
     assert [r.name for r in module.registers if r.is_simple_readback] == [
@@ -118,6 +119,17 @@ def test_testbench_register_categories():
     assert by_name["reg11"].enum_selftest_value_vhdl == '32x"00000003"'  # STATE3
     assert by_name["reg2"].reads_back_zero  # sw write-only
     assert by_name["reg10"].reads_back_zero  # singlepulse
+
+    assert [r.name for r in module.registers if r.is_onread_readback] == ["reg5"]
+    assert [r.name for r in module.registers if r.is_onwrite_readback] == [
+        "reg6",
+        "reg7",
+        "reg8",
+    ]
+    # Predicted readbacks match the simulation-verified hand-written testbench.
+    assert by_name["reg5"].onread_post_read_value_vhdl == '32x"000000F0"'
+    assert by_name["reg7"].onwrite_expected_value_vhdl == '32x"00000A5A"'
+    assert by_name["reg8"].onwrite_expected_value_vhdl == '32x"000000F0"'
 
 
 def test_selftest_value_covers_non_nibble_width():
