@@ -97,28 +97,36 @@ pre_compile() { :; }  # default: no-op
 
 case "${TARGET}" in
     example_ipbus)
-        COMPILE_ORDER=(
-            "${WORK_ROOT}/example/example_ipbus/hdl/example_ipbus_pif_pkg.vhd"
-            "${WORK_ROOT}/example/example_ipbus/hdl/example_ipbus_ipb_pif.vhd"
-            "${WORK_ROOT}/example/example_ipbus/tb/example_ipbus_ipb_pif_tb.vhd"
-        )
-        TOP_ENTITY="example_ipbus_ipb_pif_tb"
-        ;;
-    example_axi)
-        # axi_pkg.vhd is referenced as 'library bust' in the testbench.
-        # We compile it into a separate 'bust' library inside the scratch dir.
+        # The generated local-bus IPBus stack (package, regfile, endpoint, top)
+        # and generated UVVM testbench over the stock vip_ipbus VIP.
         pre_compile() {
-            echo "  [nvc -a] axi_pkg.vhd -> library bust"
-            local bust_path="${SIM_WORK_DIR}/bust"
-            nvc --std=08 --work="bust:${bust_path}" \
-                -a "${WORK_ROOT}/example/example_axi/hdl/axi_pkg.vhd"
+            echo "  [nvc -a] localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/localbus_pkg.vhd"
         }
         COMPILE_ORDER=(
-            "${WORK_ROOT}/example/example_axi/hdl/example_axi_pif_pkg.vhd"
-            "${WORK_ROOT}/example/example_axi/hdl/example_axi_axi_pif.vhd"
-            "${WORK_ROOT}/example/example_axi/tb/example_axi_axi_pif_tb.vhd"
+            "${WORK_ROOT}/example/example_ipbus/hdl/example_ipbus_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_ipbus/hdl/example_ipbus_regfile.vhd"
+            "${WORK_ROOT}/example/example_ipbus/hdl/example_ipbus_ipb_endpoint.vhd"
+            "${WORK_ROOT}/example/example_ipbus/hdl/example_ipbus.vhd"
+            "${WORK_ROOT}/example/example_ipbus/tb/example_ipbus_tb.vhd"
         )
-        TOP_ENTITY="example_axi_axi_pif_tb"
+        TOP_ENTITY="example_ipbus_tb"
+        ;;
+    example_axi)
+        # The generated local-bus AXI stack (package, regfile, endpoint, top) and
+        # generated UVVM testbench over the stock Bitvis AXI-Lite VIP.
+        pre_compile() {
+            echo "  [nvc -a] localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi_regfile.vhd"
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi_axi_endpoint.vhd"
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi.vhd"
+            "${WORK_ROOT}/example/example_axi/tb/example_axi_tb.vhd"
+        )
+        TOP_ENTITY="example_axi_tb"
         ;;
     prototype)
         # Local-bus register-file prototype with a UVVM testbench.
