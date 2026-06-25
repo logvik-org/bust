@@ -36,12 +36,28 @@ _MODULE_TOP_GOLDEN = os.path.join(
 _AXI_TB_GOLDEN = os.path.join(
     _REPO_ROOT, "example", "example_prototype", "hdl", "prototype_tb.vhd"
 )
+_IPBUS_TB_GOLDEN = os.path.join(
+    _REPO_ROOT, "example", "example_prototype", "hdl", "prototype_ipbus_tb.vhd"
+)
+_IPBUS_TOP_GOLDEN = os.path.join(
+    _REPO_ROOT, "example", "example_prototype", "hdl", "prototype_ipbus.vhd"
+)
 
 
 def _build_module():
     with open(_EXAMPLE) as fp:
         cfg = json.load(fp)
     return Module(cfg["module"], Bus(cfg["bus"]), settings=None)
+
+
+def _build_ipbus_module():
+    """The prototype register map driven over an IPBus interface."""
+    with open(_EXAMPLE) as fp:
+        cfg = json.load(fp)
+    bus = Bus(
+        {"type": "ipbus", "addr_width": 32, "data_width": 32, "comp_library": "bust"}
+    )
+    return Module(cfg["module"], bus, settings=None)
 
 
 def _structural_lines(text):
@@ -103,6 +119,38 @@ def test_axi_testbench_matches_golden():
     generated = GeneratorFactory.generate_localbus_axi_testbench_vhdl(_build_module())
     with open(_AXI_TB_GOLDEN) as fp:
         assert generated == fp.read()
+
+
+def test_ipbus_testbench_matches_golden():
+    generated = GeneratorFactory.generate_localbus_ipbus_testbench_vhdl(
+        _build_ipbus_module()
+    )
+    with open(_IPBUS_TB_GOLDEN) as fp:
+        assert generated == fp.read()
+
+
+def test_ipbus_module_top_matches_golden():
+    generated = GeneratorFactory.generate_module_top_vhdl(_build_ipbus_module())
+    with open(_IPBUS_TOP_GOLDEN) as fp:
+        assert generated == fp.read()
+
+
+def test_axi_and_ipbus_testbenches_share_the_test_body():
+    """Both testbenches drive the same bus-neutral self-check sequence; only the
+    bus stimulus (procedures, signals, reset) differs."""
+    axi = GeneratorFactory.generate_localbus_axi_testbench_vhdl(_build_module())
+    ipbus = GeneratorFactory.generate_localbus_ipbus_testbench_vhdl(
+        _build_ipbus_module()
+    )
+    for marker in (
+        'bus_check(f_addr(C_ADDR_REG7), 32x"00000A5A", "reg7 applies onwrite effects");',
+        'bus_check(f_addr(C_ADDR_REG4), 32x"0000000A", "reg4 reflects hwclr");',
+        "reg10.field0 singlepulse high exactly one cycle",
+    ):
+        assert marker in axi
+        assert marker in ipbus
+    assert "axilite_write" in axi and "ipbus_write" in ipbus
+    assert "ipbus_write" not in axi and "axilite_write" not in ipbus
 
 
 def test_testbench_register_categories():
