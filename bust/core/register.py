@@ -349,11 +349,49 @@ class Register:
     @property
     def selftest_value_vhdl(self) -> str:
         """Data-width literal with every field bit set, for readback self-tests."""
-        mask = 0
-        for f in self.effective_fields:
-            mask |= f.mask
+        return self._data_width_literal(sum(f.mask for f in self.effective_fields))
+
+    def _data_width_literal(self, value: int) -> str:
         digits = (self.module_data_width + 3) // 4  # ceil: cover non-nibble widths
-        return f'{self.module_data_width}x"{mask:0{digits}X}"'
+        return f'{self.module_data_width}x"{value:0{digits}X}"'
+
+    @property
+    def reads_back_zero(self) -> bool:
+        """True when a software read returns 0 after a write (write-only or singlepulse)."""
+        fields = self.effective_fields
+        return (
+            bool(fields)
+            and any(f.sw_writable for f in fields)
+            and all(
+                (f.singlepulse or not f.sw_readable)
+                and f.onread is None
+                and f.onwrite is None
+                and not f.is_enum
+                and not f.driven_by_hw
+                for f in fields
+            )
+        )
+
+    @property
+    def is_enum_readback(self) -> bool:
+        """Single plain read-write enum field: write a valid encoding and read it back."""
+        fields = self.effective_fields
+        return (
+            len(fields) == 1
+            and fields[0].is_enum
+            and fields[0].sw is SwAccess.RW
+            and fields[0].onread is None
+            and fields[0].onwrite is None
+            and not fields[0].singlepulse
+            and not fields[0].driven_by_hw
+        )
+
+    @property
+    def enum_selftest_value_vhdl(self) -> str:
+        """Data-width literal encoding the field's highest defined enum value."""
+        field = self.effective_fields[0]
+        value = max(e.value for e in field.enums) << field.pos_low
+        return self._data_width_literal(value)
 
     def add_field(self, field_cfg: Dict) -> None:
         """Add a bitfield to this register.
