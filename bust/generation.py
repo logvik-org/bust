@@ -176,6 +176,13 @@ def generate_output(
                 write_string_to_file(
                     endpoint, filename, mod_hdl, gen_settings["force_ow"]
                 )
+                filename = f"{module.name}.vhd"
+                write_string_to_file(
+                    GeneratorFactory.generate_module_top_vhdl(module),
+                    filename,
+                    mod_hdl,
+                    gen_settings["force_ow"],
+                )
         except Exception:
             logger.error("ERROR: Could not generate local-bus VHDL files")
             raise
