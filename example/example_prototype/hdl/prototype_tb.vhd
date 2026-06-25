@@ -1,11 +1,11 @@
 -- Generated UVVM testbench for the prototype module (AXI4-Lite).
 -- Drives the prototype top entity with the stock Bitvis AXI-Lite VIP and
--- self-checks every register whose readback is a pure function of software
--- traffic: plain read-write, enumerated, write-only/singlepulse (reads back 0),
--- and onread/onwrite software side effects. It drives only the software bus, so
--- the hardware-facing parts are not checked here yet: the we/wel and hwset/hwclr
--- from_hw inputs, the swmod/swacc to_hw strobe outputs, and hardware-driven
--- field values.
+-- self-checks every register whose readback is predictable: plain read-write,
+-- enumerated, write-only/singlepulse (reads back 0), onread/onwrite software
+-- side effects, and software-readonly registers driven entirely from from_hw
+-- (we/wel value inputs). Not checked here yet: the hwset/hwclr from_hw inputs,
+-- the swmod/swacc to_hw strobe outputs, and to_hw values on software-writable
+-- registers.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -147,6 +147,18 @@ begin
     axi_write(f_addr(C_BASE, C_ADDR_REG5), 32x"00000055", "write reg5");
     axi_check(f_addr(C_BASE, C_ADDR_REG5), 32x"00000055", "reg5 first read returns stored value");
     axi_check(f_addr(C_BASE, C_ADDR_REG5), 32x"000000F0", "reg5 second read reflects onread");
+
+    log(ID_LOG_HDR, "reg1: hardware-driven status read back over the bus", C_SCOPE);
+    wait until falling_edge(clk);
+    from_hw.reg1.field0.value <= 4x"5";
+    from_hw.reg1.field0.we <= '1';
+    from_hw.reg1.field1 <= '1';
+    from_hw.reg1.field2.value <= '1';
+    from_hw.reg1.field2.wel <= '0';
+    wait until falling_edge(clk);
+    from_hw.reg1.field0.we <= '0';
+    from_hw.reg1.field2.wel <= '1';
+    axi_check(f_addr(C_BASE, C_ADDR_REG1), 32x"00000035", "reg1 reflects hardware inputs");
 
     wait for 10*C_CLK_PERIOD;
     report_alert_counters(FINAL);

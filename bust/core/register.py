@@ -10,7 +10,7 @@ can optionally contain multiple named bitfields.
 """
 
 import logging
-from typing import Dict, List, cast
+from typing import Dict, List, Optional, cast
 
 from bust.exceptions import (
     ModuleDataBitsExceeded,
@@ -507,6 +507,55 @@ class Register:
                 lambda f: f.read_result(self._alternating_bits(f.width))
             )
         )
+
+    @property
+    def is_hw_driven_readback(self) -> bool:
+        """Pure hardware status register: software-readonly fields driven entirely
+        by hardware value inputs, so driving from_hw and reading back over the bus
+        is fully predictable. Excludes hwset/hwclr-only and software-writable fields
+        (their sequencing is covered separately)."""
+        fields = self.effective_fields
+        return bool(fields) and all(
+            f.sw is SwAccess.RO
+            and f.hw_writable
+            and not f.hwset
+            and not f.hwclr
+            and f.onread is None
+            and f.onwrite is None
+            and not f.is_enum
+            for f in fields
+        )
+
+    @property
+    def hw_driven_expected_value_vhdl(self) -> str:
+        """Data-width literal read back after the from_hw stimulus is driven."""
+        self._require_predictable(
+            self.is_hw_driven_readback,
+            "hw_driven_expected_value_vhdl",
+            "hardware-driven status",
+        )
+        return self._data_width_literal(
+            self._register_value(lambda f: self._alternating_bits(f.width))
+        )
+
+    @property
+    def hw_drive_steps(self) -> List[Dict[str, Optional[str]]]:
+        """Per-field from_hw stimulus for a hardware-driven status register: the
+        target member, its enable strobe (we/wel/none), and the value literal."""
+        self._require_predictable(
+            self.is_hw_driven_readback, "hw_drive_steps", "hardware-driven status"
+        )
+        steps: List[Dict[str, Optional[str]]] = []
+        for f in self.from_hw_fields:
+            steps.append(
+                {
+                    "field": f.name,
+                    "member": "value" if f.from_hw_is_record else None,
+                    "enable": "we" if f.we else ("wel" if f.wel else None),
+                    "literal": f.value_literal(self._alternating_bits(f.width)),
+                }
+            )
+        return steps
 
     def add_field(self, field_cfg: Dict) -> None:
         """Add a bitfield to this register.
