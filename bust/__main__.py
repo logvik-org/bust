@@ -8,8 +8,8 @@ Usage:
 
 Options:
   -o DIR         Specify output directory. Overrides settings (either JSON dir, or specified project dir in JSON)
-  -f             Force overwrite of existing files
-  -F             Force overwrite of all existing files (same as -f; the top-level wrapper is a fixed, regenerated file)
+  -f             Force overwrite of existing files (the top-level wrapper is a fixed, regenerated file)
+  -F             Alias for -f, kept for compatibility
   -d             Do not generate documentation (neither LaTeX nor PDF)
   -p             Do not generate PDF from LaTeX
   -i             Do not generate the include header files (.h, .hpp & .py)
