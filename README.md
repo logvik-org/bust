@@ -50,7 +50,7 @@ The folder also contains the output files generated based on the JSON files.
 ### Simulation
 bust does not generate simulator-specific run scripts. There are too many simulators and flows to pick a one-size-fits-all approach, so compiling and running the output is left to you. The repository's own simulation (under `sim/`) exists only to verify that bust itself works and that the generated example designs simulate; it is not a user-facing flow.
 
-The generated testbenches use UVVM - which can be cloned from their [Github page](https://github.com/UVVM/UVVM) - and, for IPBus, the vip_ipbus VIP.
+The generated testbenches use UVVM - which can be cloned from their [GitHub page](https://github.com/UVVM/UVVM) - and, for IPBus, the vip_ipbus VIP.
 
 ### IPBus
 IPBus requires the bus package file from the [IPBus firmware repo](https://github.com/ipbus/ipbus-firmware) and the custom [IPBus BFM repo](https://github.com/olagrottvik/vip_ipbus).
@@ -59,7 +59,7 @@ See the example files for how you point to the specific folders.
 
 ## Latest Development Version (Bleeding Edge)
 
-The latest development version can be found in the [dev branch](https://github.com/olagrottvik/bust/tree/dev) on Github. Clone the repo and check out the branch.
+The latest development version can be found in the [dev branch](https://github.com/olagrottvik/bust/tree/dev) on GitHub. Clone the repo and check out the branch.
 
 `git clone https://github.com/olagrottvik/bust.git`
 
