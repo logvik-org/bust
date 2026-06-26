@@ -7,7 +7,6 @@ This module is a backward compatibility shim. Import from bust.utils subpackages
 from bust.utils.formatting import (
     indent_string,
     fix_last_indent_only_line,
-    splitkeepsep,
     add_line_breaks,
     is_mixed,
     NL,
@@ -16,9 +15,6 @@ from bust.utils.formatting import (
 from bust.utils.json_utils import json_parser, compare_JSON
 from bust.utils.file_utils import (
     write_string_to_file,
-    update_module_top_level,
-    analyze_top_level_file,
-    restore_user_in_top_level,
     cont,
     is_int,
     get_int,
@@ -35,7 +31,6 @@ __all__ = [
     # Formatting utilities
     "indent_string",
     "fix_last_indent_only_line",
-    "splitkeepsep",
     "add_line_breaks",
     "is_mixed",
     "NL",
@@ -45,9 +40,6 @@ __all__ = [
     "compare_JSON",
     # File utilities
     "write_string_to_file",
-    "update_module_top_level",
-    "analyze_top_level_file",
-    "restore_user_in_top_level",
     # User interaction
     "cont",
     "is_int",
