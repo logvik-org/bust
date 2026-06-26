@@ -8,17 +8,11 @@ and string formatting:
 - formatting: String formatting utilities
 """
 
-from bust.utils.file_utils import (
-    write_string_to_file,
-    update_module_top_level,
-    analyze_top_level_file,
-    restore_user_in_top_level,
-)
+from bust.utils.file_utils import write_string_to_file
 from bust.utils.json_utils import json_parser, compare_JSON
 from bust.utils.formatting import (
     indent_string,
     add_line_breaks,
-    splitkeepsep,
     fix_last_indent_only_line,
     is_mixed,
     NL,
@@ -42,16 +36,12 @@ from bust.interaction import (
 __all__ = [
     # File utilities
     "write_string_to_file",
-    "update_module_top_level",
-    "analyze_top_level_file",
-    "restore_user_in_top_level",
     # JSON utilities
     "json_parser",
     "compare_JSON",
     # Formatting utilities
     "indent_string",
     "add_line_breaks",
-    "splitkeepsep",
     "fix_last_indent_only_line",
     "is_mixed",
     "NL",

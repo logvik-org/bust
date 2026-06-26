@@ -32,6 +32,18 @@ class BusHolder:
         return self.get_type()
 
 
+def _load_prototype(bus_type):
+    """Build the prototype module over the requested bus.
+
+    The prototype JSON pins AXI; the IPBus variant reuses its bus config and only
+    swaps the type, so both stay in lockstep with the JSON.
+    """
+    json = json_parser("example/example_prototype.json")
+    bus = Bus(dict(json["bus"], type=bus_type))
+    mod = Module(json["module"], bus, settings=None)
+    return bus, mod, Documentation(mod), Header(mod)
+
+
 class Test_Suite(unittest.TestCase):
     maxDiff = None
 
@@ -145,12 +157,89 @@ class Test_Suite(unittest.TestCase):
             with self.subTest(holder=holder):
                 self.logger.info("Testing Doc generation...")
                 self._assert_matches(
-                    holder.doc.generate_tex_documentation("0.14.0-dev"),
+                    holder.doc.generate_tex_documentation("1.0.0-dev"),
                     "example/example_{0}/doc/example_{0}.tex".format(
                         holder.bus.bus_type
                     ),
                     "doc must match manual file",
                 )
+
+    ############## Prototype (full access-mode coverage) ##################
+
+    def test_prototype_hdl(self):
+        """The prototype exercises the full bust 1.0 access-mode system over both
+        buses from a single register map."""
+        self.logger.info("Testing prototype local-bus HDL generation...")
+        _, axi_mod, _, _ = _load_prototype("axi")
+        _, ipbus_mod, _, _ = _load_prototype("ipbus")
+        hdl = "example/example_prototype/hdl"
+        self._assert_matches(
+            GeneratorFactory.generate_localbus_package_vhdl(axi_mod),
+            hdl + "/localbus_pkg.vhd",
+            "prototype local-bus package must match manual file",
+        )
+        self._assert_matches(
+            GeneratorFactory.generate_regfile_package_vhdl(axi_mod),
+            hdl + "/prototype_regfile_pkg.vhd",
+            "prototype regfile package must match manual file",
+        )
+        self._assert_matches(
+            GeneratorFactory.generate_regfile_vhdl(axi_mod),
+            hdl + "/prototype_regfile.vhd",
+            "prototype regfile must match manual file",
+        )
+        self._assert_matches(
+            GeneratorFactory.generate_axi_endpoint_vhdl(axi_mod),
+            hdl + "/prototype_axi_endpoint.vhd",
+            "prototype axi endpoint must match manual file",
+        )
+        self._assert_matches(
+            GeneratorFactory.generate_ipb_endpoint_vhdl(ipbus_mod),
+            hdl + "/prototype_ipb_endpoint.vhd",
+            "prototype ipb endpoint must match manual file",
+        )
+        self._assert_matches(
+            GeneratorFactory.generate_module_top_vhdl(axi_mod),
+            hdl + "/prototype.vhd",
+            "prototype axi top must match manual file",
+        )
+        self._assert_matches(
+            GeneratorFactory.generate_module_top_vhdl(ipbus_mod),
+            hdl + "/prototype_ipbus.vhd",
+            "prototype ipbus top must match manual file",
+        )
+
+    def test_prototype_tb(self):
+        self.logger.info("Testing prototype testbench generation...")
+        _, axi_mod, _, _ = _load_prototype("axi")
+        _, ipbus_mod, _, _ = _load_prototype("ipbus")
+        hdl = "example/example_prototype/hdl"
+        self._assert_matches(
+            GeneratorFactory.generate_localbus_axi_testbench_vhdl(axi_mod),
+            hdl + "/prototype_tb.vhd",
+            "prototype axi testbench must match manual file",
+        )
+        self._assert_matches(
+            GeneratorFactory.generate_localbus_ipbus_testbench_vhdl(ipbus_mod),
+            hdl + "/prototype_ipbus_tb.vhd",
+            "prototype ipbus testbench must match manual file",
+        )
+
+    def test_prototype_hdr(self):
+        self.logger.info("Testing prototype header generation...")
+        _, _, _, hdr = _load_prototype("axi")
+        base = "example/example_prototype/header/prototype"
+        self._assert_matches(
+            hdr.generate_c_header(), base + ".h", "prototype c header must match"
+        )
+        self._assert_matches(
+            hdr.generate_cpp_header(), base + ".hpp", "prototype cpp header must match"
+        )
+        self._assert_matches(
+            hdr.generate_python_header(),
+            base + ".py",
+            "prototype python header must match",
+        )
 
 
 if __name__ == "__main__":
