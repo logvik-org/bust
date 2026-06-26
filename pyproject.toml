@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bust"
-version = "0.14"
+version = "1.0.0-dev"
 description = "Utility for simply creating and modifying VHDL bus slave modules"
 readme = "README.md"
 authors = [

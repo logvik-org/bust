@@ -5,8 +5,6 @@ including indentation, line breaking, and text processing.
 """
 
 import re
-from functools import reduce
-from typing import List
 
 spaces_in_tab = 2
 NL = "\n"
@@ -58,23 +56,6 @@ def fix_last_indent_only_line(string: str, tabs: int) -> str:
 
     string = "\n".join(string_list)
     return string
-
-
-def splitkeepsep(s: str, sep: str) -> List[str]:
-    """Split string while keeping separator with each segment.
-
-    Args:
-        s: String to split.
-        sep: Separator string.
-
-    Returns:
-        List of strings where each element ends with the separator.
-    """
-    return reduce(
-        lambda acc, elem: acc[:-1] + [acc[-1] + elem] if elem == sep else acc + [elem],
-        re.split("(%s)" % re.escape(sep), s),
-        [],
-    )
 
 
 def add_line_breaks(string: str, min_length: int) -> str:
