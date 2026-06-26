@@ -14,6 +14,10 @@ from bust.jinja_utils.environment import render_template
 class ModuleGenerator:
     """VHDL code generator for Module."""
 
+    def generate_localbus_package_vhdl(self, module) -> str:
+        """Generate the protocol-agnostic local-bus interface support package."""
+        return render_template("vhdl/module/localbus_pkg.j2", {"module": module})
+
     def generate_regfile_package_vhdl(self, module) -> str:
         """Generate the local-bus regfile package (record families + decode helpers)."""
         return render_template("vhdl/module/regfile_pkg.j2", {"module": module})
