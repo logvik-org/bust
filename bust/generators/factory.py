@@ -35,6 +35,20 @@ class GeneratorFactory:
         return ModuleGenerator()
 
     @staticmethod
+    def generate_localbus_package_vhdl(module: "Module") -> str:
+        """Generate the protocol-agnostic local-bus interface support package.
+
+        Args:
+            module: Module instance whose address/data widths size the interface.
+
+        Returns:
+            VHDL package defining the local-bus master/slave records and idle
+            constants that the regfile and every bus endpoint depend on.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_localbus_package_vhdl(module)
+
+    @staticmethod
     def generate_regfile_package_vhdl(module: "Module") -> str:
         """Generate the local-bus regfile package VHDL for a module.
 
