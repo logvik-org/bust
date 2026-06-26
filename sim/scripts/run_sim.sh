@@ -97,13 +97,11 @@ pre_compile() { :; }  # default: no-op
 
 case "${TARGET}" in
     example_ipbus)
-        # The generated local-bus IPBus stack (package, regfile, endpoint, top)
-        # and generated UVVM testbench over the stock vip_ipbus VIP.
-        pre_compile() {
-            echo "  [nvc -a] localbus_pkg.vhd"
-            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/localbus_pkg.vhd"
-        }
+        # The fully self-contained generated local-bus IPBus stack (its own
+        # localbus_pkg, regfile, endpoint, top) and generated UVVM testbench
+        # over the stock vip_ipbus VIP.
         COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_ipbus/hdl/localbus_pkg.vhd"
             "${WORK_ROOT}/example/example_ipbus/hdl/example_ipbus_regfile_pkg.vhd"
             "${WORK_ROOT}/example/example_ipbus/hdl/example_ipbus_regfile.vhd"
             "${WORK_ROOT}/example/example_ipbus/hdl/example_ipbus_ipb_endpoint.vhd"
@@ -113,13 +111,11 @@ case "${TARGET}" in
         TOP_ENTITY="example_ipbus_tb"
         ;;
     example_axi)
-        # The generated local-bus AXI stack (package, regfile, endpoint, top) and
-        # generated UVVM testbench over the stock Bitvis AXI-Lite VIP.
-        pre_compile() {
-            echo "  [nvc -a] localbus_pkg.vhd"
-            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/localbus_pkg.vhd"
-        }
+        # The fully self-contained generated local-bus AXI stack (its own
+        # localbus_pkg, regfile, endpoint, top) and generated UVVM testbench over
+        # the stock Bitvis AXI-Lite VIP.
         COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_axi/hdl/localbus_pkg.vhd"
             "${WORK_ROOT}/example/example_axi/hdl/example_axi_regfile_pkg.vhd"
             "${WORK_ROOT}/example/example_axi/hdl/example_axi_regfile.vhd"
             "${WORK_ROOT}/example/example_axi/hdl/example_axi_axi_endpoint.vhd"

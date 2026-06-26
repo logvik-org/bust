@@ -60,6 +60,11 @@ class Test_Suite(unittest.TestCase):
                 mod = holder.mod
                 base = "example/example_{0}/hdl/example_{0}".format(t)
                 self._assert_matches(
+                    GeneratorFactory.generate_localbus_package_vhdl(mod),
+                    "example/example_{0}/hdl/localbus_pkg.vhd".format(t),
+                    "local-bus package must match manual file",
+                )
+                self._assert_matches(
                     GeneratorFactory.generate_regfile_package_vhdl(mod),
                     base + "_regfile_pkg.vhd",
                     "regfile package must match manual file",
