@@ -174,7 +174,7 @@ def test_prototype_doc_matches_golden():
     from bust.generators.documentation_generator import DocumentationGenerator
 
     generated = DocumentationGenerator(_build_module()).generate_tex_documentation(
-        "0.14.0-dev"
+        "1.0.0-dev"
     )
     golden = os.path.join(
         _REPO_ROOT, "example", "example_prototype", "doc", "prototype.tex"
