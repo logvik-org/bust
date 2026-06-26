@@ -8,8 +8,7 @@ Utility for simply creating and modifying VHDL bus slave modules.
 
 The main goal of the project is to able to automatically create and modify VHDL bus slave modules based on a simple definition format.
 By employing VHDL records the handling of the registers can be completely hidden in a module separate from the rest of the design.
-All referring to the registers are done via a record that specifies if the register is read-only or read-write, and also includes the name.
-All bus-specific signals are also wrapped in records. This increases the readability of the design as a whole.
+Every supported bus protocol is a thin wrapper (an "endpoint") around a small protocol-agnostic local bus, so the register-map logic stays the same regardless of bus. The hardware side references each field by name through `to_hw`/`from_hw` records, with software/hardware access modes and side effects (read/write clear/set, single-pulse, hardware set/clear, enumerated values) described in the JSON.
 
 ## Bus support
 
@@ -49,8 +48,9 @@ The files are human-readable to the point that you can create your own from this
 The folder also contains the output files generated based on the JSON files.
 
 ### Simulation
-Simulation scripts are made solely for Modelsim/Questasim. For any other simulators, you need to compile everything yourselves.
-All testbenches require UVVM - which can be cloned from their [Github page](https://github.com/UVVM/UVVM).
+bust does not generate simulator-specific run scripts. There are too many simulators and flows to pick a one-size-fits-all approach, so compiling and running the output is left to you. The repository's own simulation (under `sim/`) exists only to verify that bust itself works and that the generated example designs simulate; it is not a user-facing flow.
+
+The generated testbenches use UVVM - which can be cloned from their [Github page](https://github.com/UVVM/UVVM) - and, for IPBus, the vip_ipbus VIP.
 
 ### IPBus
 IPBus requires the bus package file from the [IPBus firmware repo](https://github.com/ipbus/ipbus-firmware) and the custom [IPBus BFM repo](https://github.com/olagrottvik/vip_ipbus).
