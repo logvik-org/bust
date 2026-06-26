@@ -137,7 +137,7 @@ pytest                                 # run the full test suite
 pytest tests/test_suite.py::Test_Suite::test_localbus_hdl   # run a single test
 mypy bust                              # type-check (CI runs this; must pass)
 black bust tests                       # format (excludes example/)
-pre-commit run --all-files             # trailing-ws, eof, tabs, crlf, black, flake8(script/)
+pre-commit run --all-files             # trailing-ws, eof, tabs, crlf, black, flake8
 ```
 
 CI (`.github/workflows/python_tests.yml`) runs `mypy bust` then `pytest` across Python 3.9/3.10/3.11. Both must be green.
