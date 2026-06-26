@@ -49,33 +49,19 @@ def generate_output(settings, bus, module, header, documentation, gen_settings):
     else:
         mod_dir = proj_dir
 
-    if settings.bus_subdir and not bus.bus_type == "ipbus":
-        bus_dir = os.path.join(proj_dir, bus.bus_type)
-    else:
-        bus_dir = mod_dir
-
     mod_hdl = os.path.join(mod_dir, settings.hdl_dir)
-    mod_script = os.path.join(mod_dir, settings.script_dir)
     mod_tb = os.path.join(mod_dir, settings.tb_dir)
     mod_doc = os.path.join(mod_dir, settings.doc_dir)
     mod_header = os.path.join(mod_dir, settings.header_dir)
-    mod_sim = os.path.join(mod_dir, settings.sim_dir)
-    bus_hdl = os.path.join(bus_dir, settings.hdl_dir)
-    bus_sim = os.path.join(bus_dir, settings.sim_dir)
 
     logger.debug("Creating all output directories")
     try:
         os.makedirs(proj_dir, exist_ok=True)
         os.makedirs(mod_dir, exist_ok=True)
-        os.makedirs(bus_dir, exist_ok=True)
         os.makedirs(mod_hdl, exist_ok=True)
-        os.makedirs(mod_script, exist_ok=True)
         os.makedirs(mod_tb, exist_ok=True)
         os.makedirs(mod_doc, exist_ok=True)
         os.makedirs(mod_header, exist_ok=True)
-        os.makedirs(mod_sim, exist_ok=True)
-        os.makedirs(bus_hdl, exist_ok=True)
-        os.makedirs(bus_sim, exist_ok=True)
 
     except Exception as e:
         logger.error("ERROR: Could not create output directories")
