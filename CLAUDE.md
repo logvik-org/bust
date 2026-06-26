@@ -8,32 +8,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Maintained by Ola Grøttvik. MIT licensed, hosted at https://github.com/grottviq/bust. Target runtimes: Python 3.9, 3.10, 3.11 (3.9 is the mypy baseline). Python 2.7 is not supported.
 
-## Status: major refactor in progress
+## Architecture
 
-**The codebase is undergoing a significant architectural refactor. Do not treat the existing code as the target architecture.** Many parts of the current implementation will be replaced. When in doubt, ask before assuming the existing approach should be preserved. The sections below labeled "current implementation" describe what exists today; the sections labeled "target" describe where it is going.
+`bust` is built around a **local bus abstraction**. Every supported single-beat protocol (AXI4-Lite, IPBus, and future Wishbone/custom buses) is a thin **endpoint** wrapper around one small internal local-bus interface, so the register-map logic stays protocol-agnostic. The generated VHDL stack per module is:
 
-### What is being refactored and why
+```
+localbus_pkg            local-bus records (t_lb_m2s / t_lb_s2m), sized from the module
+<module>_regfile_pkg    storage / to_hw / from_hw record families, address-decode helpers
+<module>_regfile        storage, access-mode behaviour, hardware updates, read mux, response
+<module>_<bus>_endpoint protocol bridge (axi_endpoint / ipb_endpoint) over the local bus
+<module>                thin, fixed top wrapper instantiating the endpoint
+<module>_tb             self-checking UVVM testbench over the stock VIP (AXI-Lite / vip_ipbus)
+```
 
-1. **HDL architecture**: a local bus abstraction is being introduced. All single-beat transaction protocols (AXI4-Lite, IPBus, Wishbone, custom buses) will be implemented as wrappers around a simple internal local bus interface. This keeps the register-map logic protocol-agnostic and makes adding new bus protocols much easier.
-2. **Access mode system**: a richer access mode system aligned with SystemRDL 2.0 concepts (see the spec below). The current per-protocol HDL does not support this.
-3. **Python and Jinja2 generator**: updated to reflect the new HDL architecture and access mode system. This work comes **after** the HDL is designed and verified. Do not modify the generator ahead of the HDL work.
+The hardware side references each field by name through `to_hw`/`from_hw` records. The access-mode system (full spec below) is richer than a read-only/read-write `mode`: separate software (`sw`) and hardware (`hw`) access, software side effects (onread/onwrite/singlepulse), hardware modifiers (we/wel/hwset/hwclr/swmod/swacc), and enumerated field types that generate VHDL enums.
 
-### Order of operations (do not skip ahead)
+This was built in order: (1) design the HDL for every access-mode combination, (2) verify with UVVM testbenches, (3) implement the Python/Jinja2 generator to match the verified HDL, (4) update headers and documentation. All four are complete for AXI4-Lite and IPBus, and the legacy per-protocol "PIF" generation path has been fully removed: local-bus generation is the only path and is always on. When changing generated HDL, keep the generated testbench in lockstep.
 
-1. Design the HDL for all access mode combinations.
-2. Verify with UVVM testbenches.
-3. Update the Python/Jinja2 generator to match the verified HDL.
-4. Update documentation.
+The hand-written, simulation-verified reference HDL still lives in `hdl/prototype/` (local-bus package, `prototype` regfile, local-bus BFM, and self-checking testbenches); the design rationale is in `docs/refactor/local-bus-hdl.md`. These are reference HDL, not generator output, so they are not in the golden-file suite, but the generator is checked structurally and by simulation against them. Run with `cd sim && make sim-prototype`.
 
-The testbench is generated alongside the HDL and must be updated in lockstep with any HDL change. Do not modify HDL without a corresponding testbench update.
-
-The step-1 design and its hand-written prototype live outside the generator: the design rationale is in `docs/refactor/local-bus-hdl.md`, and the verified prototype HDL (local bus package, `prototype` register file, and self-checking testbench) is in `hdl/prototype/`. Run it with `cd sim && make sim-prototype`, or directly with ghdl/nvc (it is plain VHDL-2008, no UVVM). These files are hand-written reference HDL, not generator output, so they are not part of the golden-file test suite.
-
-## Target architecture decisions
+## Architecture decisions
 
 ### Local bus abstraction
 
-A minimal single-beat transaction interface: address, write data, read data, write enable, read enable, acknowledge. It targets register-map access patterns (single-beat, non-bursting). All supported bus protocols become thin wrappers around it. Burst-capable protocols (AXI4 full, AXI Stream) are a future concern and will use native implementations, not this abstraction.
+A minimal single-beat transaction interface: address, write data, read data, write enable, read enable, acknowledge. It targets register-map access patterns (single-beat, non-bursting). All supported bus protocols are thin wrappers around it. Burst-capable protocols (AXI4 full, AXI Stream) are a future concern and will use native implementations, not this abstraction.
 
 ### Base address as a generic
 
@@ -54,7 +52,7 @@ Generated VHDL uses records throughout (bus interfaces, hardware-side signals, r
 
 ## Access mode specification (bust 1.0)
 
-The access mode system bust 1.0 will support. ("bust 1.0" is the refactor described above; "legacy" refers to the format and functionality being replaced.) Implement exactly this, no more, no less. All keywords are conceptually aligned with SystemRDL 2.0.
+The access mode system bust 1.0 implements. ("legacy" refers to the old `mode`-based format; legacy JSON is still accepted and translated onto `sw`/`hw`, but the legacy generation path is gone.) All keywords are conceptually aligned with SystemRDL 2.0.
 
 **Software access (`sw`)**: `rw` (read+write), `ro` (read only), `wo` (write only), `na` (no access).
 
@@ -136,50 +134,50 @@ python -m bust example/example_axi.json -o /tmp/out   # run the generator
 bust --version                               # console-script entry point
 
 pytest                                 # run the full test suite
-pytest tests/test_suite.py::Test_Suite::test_pif       # run a single test
+pytest tests/test_suite.py::Test_Suite::test_localbus_hdl   # run a single test
 mypy bust                              # type-check (CI runs this; must pass)
 black bust tests                       # format (excludes example/)
-pre-commit run --all-files             # trailing-ws, eof, tabs, crlf, black, flake8(script/)
+pre-commit run --all-files             # trailing-ws, eof, tabs, crlf, black, flake8
 ```
 
 CI (`.github/workflows/python_tests.yml`) runs `mypy bust` then `pytest` across Python 3.9/3.10/3.11. Both must be green.
 
-## Current implementation: generation pipeline
+## Generation pipeline
 
 `bust/__main__.py` is the orchestrator and the clearest map of the flow:
 
 ```
 json_parser(file) -> Settings -> Bus -> Module(json, bus, settings)
-                                          -> Header / Documentation / Testbench
+                                          -> Header / Documentation
                                           -> generate_output(...)  (bust/generation.py)
 ```
 
-`generate_output` creates the project directory tree (controlled by `Settings`) and writes every artifact. The CLI flags (`-f/-F/-u/-d/-p/-b/-t/-i/-m/-a/-c/-e`) toggle which artifacts are produced and overwrite behavior. The docopt usage string at the top of `__main__.py` is the source of truth for the interface.
+`generate_output` creates the project directory tree (controlled by `Settings`) and writes every artifact: the local-bus VHDL stack and testbench, language headers, and documentation. The CLI flags (`-f/-F/-d/-p/-i/-a/-c/-e`) toggle artifacts and overwrite behaviour; local-bus generation is always on. The docopt usage string at the top of `__main__.py` is the source of truth for the interface.
 
-## Current implementation: package layout
+## Package layout
 
 The package uses a layered structure. **The flat top-level modules in `bust/` (e.g. `bust/bus.py`, `bust/module.py`, `bust/header.py`, `bust/utils.py`, `bust/generator_factory.py`) are backward-compatibility shims** that only re-export from the new locations. Write and import new code from the real homes below. Only touch a shim to keep its re-export list in sync.
 
-- **`bust/core/`**: domain model, no generation logic. `Bus`, `Module`, `Register`, `Field`, and `enums` (`RegisterMode`, `RegisterType`). `Module` owns the register list, address assignment (`update_addresses`), and validation.
+- **`bust/core/`**: domain model, no generation logic. `Bus`, `Module`, `Register`, `Field`, and `enums` (`RegisterMode`, `RegisterType`, `SwAccess`, `HwAccess`, `OnRead`, `OnWrite`). `Module` owns the register list, address assignment (`update_addresses`), and validation. `Register`/`Field` carry the access-mode model and the per-register/field helpers the templates render from.
 - **`bust/generators/`**: all code emission.
-  - `factory.py` `GeneratorFactory` is the seam that decouples `core` domain objects from generator implementations. **Domain classes never import generators; everything goes through this factory.** Call its static methods (`generate_module_vhdl`, `generate_bus_pif_vhdl`, `generate_bus_package_vhdl`, `generate_module_package_vhdl`, `create_bus_generator`) rather than instantiating generators directly.
-  - `vhdl/bus_generator.py`, `vhdl/module_generator.py` are the VHDL emitters.
-  - `header_generator.py` (C/C++/Python/IPBus-XML), `testbench_generator.py` (UVVM testbench + TCL sim script + component list), `documentation_generator.py` (LaTeX).
+  - `factory.py` `GeneratorFactory` is the seam that decouples `core` domain objects from generator implementations. **Domain classes never import generators; everything goes through this factory.** Call its static methods (`generate_localbus_package_vhdl`, `generate_regfile_package_vhdl`, `generate_regfile_vhdl`, `generate_axi_endpoint_vhdl`, `generate_ipb_endpoint_vhdl`, `generate_module_top_vhdl`, `generate_localbus_axi_testbench_vhdl`, `generate_localbus_ipbus_testbench_vhdl`) rather than instantiating generators directly.
+  - `vhdl/module_generator.py` is the (stateless) VHDL emitter for the local-bus stack and testbenches.
+  - `header_generator.py` (C/C++/Python/IPBus-XML), `documentation_generator.py` (LaTeX).
 - **`bust/validation/`**: `config_validator.py` (`ConfigWrapper`, JSON key validation) and `vhdl_validator.py` (`is_valid_VHDL`).
-- **`bust/utils/`**: `file_utils.py` (write/overwrite, plus `update_module_top_level` which preserves user edits between markers in the top-level entity), `formatting.py` (`indent_string`), `json_utils.py` (`json_parser`).
+- **`bust/utils/`**: `file_utils.py` (write/overwrite helpers), `formatting.py` (`indent_string`), `json_utils.py` (`json_parser`).
 - **`bust/jinja_utils/`**: `environment.py` (`get_environment` / `render_template`) and `filters.py`. All text output is rendered from Jinja2 templates.
-- **`bust/templates/`**: the `.j2` templates, organized by artifact (`vhdl/`, `header/`, `ipbus/`, `latex/`, `tcl/`, `uvvm/`). **This is where the emitted text lives**, so most output changes happen here, not in Python.
+- **`bust/templates/`**: the `.j2` templates, organized by artifact (`vhdl/module/` for the local-bus stack, `vhdl/testbench/` for the UVVM testbenches incl. the shared `localbus_tb/` body fragments, `header/`, `ipbus/`, `latex/`). **This is where the emitted text lives**, so most output changes happen here, not in Python.
 - **`bust/editor.py`**: interactive curses-menu editor for creating/editing JSON configs (`-c` / `-e` flags).
 
 ## Testing model: golden files
 
-`tests/test_suite.py` is **not** unit-style. It regenerates output from `example/example_axi.json` and `example/example_ipbus.json` and asserts byte-for-byte equality against the committed reference files under `example/example_axi/` and `example/example_ipbus/` (subdirs `hdl/`, `tb/`, `scripts/`, `header/`, `doc/`).
+`tests/test_suite.py` is **not** unit-style. It regenerates output from `example/example_axi.json` and `example/example_ipbus.json` and asserts byte-for-byte equality against the committed reference files under `example/example_axi/` and `example/example_ipbus/` (subdirs `hdl/`, `tb/`, `header/`, `doc/`). `tests/test_regfile_package.py` does the same for the new-format `example/example_prototype.json` (which exercises every access mode) plus structural checks against the hand-written prototype.
 
-Consequence: **any change to a generator or template that alters output will fail the suite until you regenerate and commit the corresponding `example/.../` reference files.** Treat the example output tree as a fixture that must be updated alongside generator/template changes. The doc test pins the version string `"0.14.0-dev"`, so keep generated reference docs consistent with that.
+Consequence: **any change to a generator or template that alters output will fail the suite until you regenerate and commit the corresponding `example/.../` reference files** (for all affected examples: axi, ipbus, and prototype). Treat the example output trees as fixtures that must be updated alongside generator/template changes. The doc test pins the version string, so keep generated reference docs consistent with it. `test_doc` needs `pylatexenc` (the `utf8tolatex` filter); where it is unavailable it is skipped/expected-to-fail and runs in CI instead.
 
 ## VHDL simulation (`sim/`)
 
-Optional infrastructure for simulating the generated example testbenches with the open-source **nvc** simulator inside Docker (UVVM + IPBus firmware + vip_ipbus pre-compiled into the image). No local VHDL toolchain needed. (The bundled simulation scripts emitted by bust itself target Modelsim/Questasim; other simulators require manual compilation setup.)
+bust does **not** emit simulator-specific run scripts; choosing a simulator and flow is left to the user. The `sim/` infrastructure exists only to verify that bust itself works and that the generated example designs simulate. It runs the generated example testbenches (and the hand-written prototype testbenches) with the open-source **nvc** simulator inside Docker (UVVM + IPBus firmware + vip_ipbus pre-compiled into the image). No local VHDL toolchain needed.
 
 ```bash
 cd sim && make build          # build the nvc+UVVM image (once)
@@ -188,7 +186,7 @@ make sim-ipbus                # run example_ipbus testbench
 make wave-axi                 # simulate + capture FST + open GTKWave
 ```
 
-`sim/README.md` documents the library layering, the `nvc --relaxed` flag gotcha, and how to add a new testbench target (`run_sim.sh` + `sim/Makefile` + `.github/workflows/vhdl_sim.yml`). The sim CI (`vhdl_sim.yml`) triggers only on changes under `sim/**` or `example/**/*.vhd`.
+`sim/README.md` documents the library layering, the `nvc --relaxed` flag gotcha, and how to add a new testbench target (`run_sim.sh` + `sim/Makefile` + `.github/workflows/vhdl_sim.yml`). The sim CI (`vhdl_sim.yml`) triggers only on changes under `sim/**`, `example/**/*.vhd`, or `hdl/**/*.vhd`.
 
 ## Conventions
 
