@@ -46,10 +46,10 @@ regression. CI installs them and runs `test_doc`. Do not treat the local
 | R1 | Backlog reconciliation (triage every open issue to 1.0 / deferred) | release | in progress | this document |
 | R2 | Doc finalization: normalize org refs to `logvik-org`, fix README badge + "dev branch" link, pyproject `Homepage` (`grottviq` -> `logvik-org`) | docs | todo | no issue yet |
 | R3 | Decide CONTRIBUTING.md / CODE_OF_CONDUCT.md: add them or drop README links | docs | todo | files referenced but absent |
-| R4 | License resolution (#90): LICENSE/README/pyproject say MIT; #90 proposes Polyform Noncommercial | legal/scope | **needs human** | blocks tag |
-| R5 | Bus scope: AXI+IPBus only, or promote Wishbone (#1) into 1.0.0 | scope | **needs human** | Wishbone endpoint+TB verified as prototype |
-| R6 | Independent adversarial review of the completed refactor (generator vs spec, edge cases) | verify | proposed | release-manager due diligence |
-| R7 | Full sim pass on the integration branch (nvc) before release | verify | todo | confirm green, not just CI-trusted |
+| R4 | License resolution (#90): LICENSE/README/pyproject say MIT; #90 proposes Polyform Noncommercial. Generated files carry no header, so no golden churn; touches LICENSE, README, pyproject, and stray "All rights reserved" strings (enums.py, filters.py) | legal/scope | **discussing with human** | blocks tag |
+| R5 | Bus scope DECIDED: ship all six prototyped buses. AXI4-Lite + IPBus done; add SBI (#13), Avalon-MM (#75), Wishbone (#1), APB. Each = endpoint generator template + generated TB + goldens + sim wiring, one PR per bus | scope | decided, todo | generator is bus-agnostic |
+| R6 | Independent adversarial review of the shared foundation (regfile/access-mode generation, schema/validation/legacy) before building the new buses | verify | in progress | two independent reviewers running |
+| R7 | Sim verification | verify | via CI | no Docker locally; `vhdl_sim.yml` runs nvc on every `example/**/*.vhd` + `hdl/**/*.vhd` per PR |
 | R8 | Mark design docs historical; ensure no stale "in progress / not yet" language remains user-facing | docs | todo | `local-bus-hdl.md`/`step3-scope.md` read as live plans |
 | R9 | Version finalize `1.0.0-dev` -> `1.0.0` via bumpversion; update doc-test pin + `.tex` goldens | release | todo (last) | after all output frozen |
 | R10 | Un-draft + merge PR #164 to `master` (merge method), tag `1.0.0`, draft release notes | release | **needs human** | requires approval |
@@ -71,12 +71,16 @@ regression. CI installs them and runs `test_doc`. Do not treat the local
 - **#76** Refactor codebase (partial) — Jinja2, f-strings, `core/generators/...`
   layout done; confirm remaining sub-boxes before closing or keep open scoped.
 
+### Promoted to 1.0.0 (decided: ship every prototyped bus)
+- **#1** Wishbone, **#13** SBI, **#75** Avalon-MM, and APB (no issue yet — open one).
+  Endpoint + testbench are verified hand-written prototypes; the generator is
+  bus-agnostic, so each is endpoint-template + generated-TB + goldens + sim wiring.
+  Sequenced after the foundation review (R6). One PR per bus.
+
 ### Deferred to post-v1 (out of scope, with reason)
 - **#98** SystemRDL "beyond" features (counters, interrupts, FIFO/LIFO, array regs,
   RAM) — explicitly deferred; each needs design sign-off.
 - **#155** Raw whole-register HW access — explicitly post-v1 in the issue.
-- **#75** Avalon, **#13** SBI — verified prototypes exist, but bus scope is
-  AXI+IPBus; adding them is template+TB work for a later release.
 - **#62 / #167** vsg style / auto-run vsg — output-style enhancement; post-v1
   unless promoted.
 - **#112** pydantic models, **#117** error/logging consistency, **#118** split test
@@ -93,18 +97,17 @@ regression. CI installs them and runs `test_doc`. Do not treat the local
 - **#90** License change — R4.
 - **#1** Wishbone bus support — R5.
 
-## Open decisions (pending human)
+## Decisions log
 
-1. **License (#90).** MIT today vs Polyform Noncommercial 1.0 proposed. This
-   changes LICENSE, README, pyproject, and every generated-file header. Must be
-   settled before tagging 1.0.0.
-2. **Bus scope (#5/#1).** Ship AXI+IPBus only (matches current CLAUDE.md) or
-   promote Wishbone now (endpoint + TB are verified prototypes; generator is
-   bus-agnostic, so it is one endpoint template + one TB body + goldens + sim).
-3. **Verification depth.** Run an independent adversarial review of the generator
-   against the access-mode spec and a full local nvc sim before declaring done, or
-   trust the existing green CI.
-4. **Roadmap home.** This doc, or also a pinned GitHub tracking issue mirroring it.
+- **Bus scope (RESOLVED 2026-06-28).** Ship every prototyped bus in 1.0.0:
+  AXI4-Lite, IPBus, SBI, Avalon-MM, Wishbone, APB. CLAUDE.md/README "Bus support"
+  text must be updated to match when the buses land.
+- **Verification (RESOLVED 2026-06-28).** Independent adversarial review + sim.
+  Review of the foundation is in progress; sim runs in CI (no local Docker).
+- **License (OPEN, discussing).** MIT today vs Polyform Noncommercial 1.0 (#90).
+  Pros/cons under discussion with the maintainer; gates the tag.
+- **Roadmap home (RESOLVED).** This doc is the source of truth; mirror into a
+  pinned GitHub tracking issue once scope is frozen.
 
 ## Working agreement
 
