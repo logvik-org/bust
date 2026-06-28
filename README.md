@@ -85,4 +85,4 @@ If you have ideas on how to improve the project, please review [CONTRIBUTING.md]
 
 ## License
 
-This project is licensed under the MIT license - see [LICENSE](LICENSE) for details.
+This project is licensed under the Apache License, Version 2.0 - see [LICENSE](LICENSE) for details.
