@@ -264,6 +264,40 @@ def test_testbench_register_categories():
     assert [f.name for f in by_name["reg10"].singlepulse_fields] == ["field0"]
 
 
+def test_sparse_enum_encodes_by_value_not_position():
+    """to_slv must follow each enum's declared value, not its literal position;
+    a sparse enum (A=0, D=3) round-trips only if D encodes to "11"."""
+    cfg = {
+        "name": "m",
+        "description": "",
+        "byte_addressable": True,
+        "register": [
+            {
+                "name": "r0",
+                "type": "fields",
+                "sw": "rw",
+                "hw": "r",
+                "fields": [
+                    {
+                        "name": "f",
+                        "type": "vector",
+                        "width": 2,
+                        "sw": "rw",
+                        "hw": "r",
+                        "enums": [{"name": "A", "value": 0}, {"name": "D", "value": 3}],
+                    }
+                ],
+            }
+        ],
+    }
+    bus = Bus({"type": "axi", "data_width": 32, "addr_width": 32, "reset": "async"})
+    pkg = GeneratorFactory.generate_regfile_package_vhdl(
+        Module(cfg, bus, settings=None)
+    )
+    assert 'when D => slv := "11";' in pkg
+    assert "'pos(v)" not in pkg
+
+
 def test_selftest_value_covers_non_nibble_width():
     """The self-test literal uses ceil(width/4) hex digits, so non-nibble data
     widths are not truncated."""

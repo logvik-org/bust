@@ -152,9 +152,17 @@ package body {{ module.name }}_regfile_pkg is
   end function;
 {% for f in module.enum_fields %}
 
+  -- case over the literals so the encoding follows each enum's declared value,
+  -- not its position; the two only coincide for in-order 0,1,2,.. enums.
   function to_slv(v : {{ f.enum_type_name }}) return std_logic_vector is
+    variable slv : std_logic_vector({{ f.range_vhdl }});
   begin
-    return std_logic_vector(to_unsigned({{ f.enum_type_name }}'pos(v), {{ f.width }}));
+    case v is
+{% for e in f.enums %}
+      when {{ e.name }} => slv := "{{ e.value | to_binary(f.width) }}";
+{% endfor %}
+    end case;
+    return slv;
   end function;
 
   -- case decode rather than to_integer(unsigned(s)) so meta-values (X/U/Z/-)
