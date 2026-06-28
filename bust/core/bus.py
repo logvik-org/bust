@@ -27,7 +27,7 @@ class Bus:
         - sbi: Simple Bus Interface (sync reset)
 
     Attributes:
-        bus_type: Bus standard identifier ("axi" or "ipbus").
+        bus_type: Bus standard identifier (one of supported_bus).
         data_width: Width of data bus in bits.
         addr_width: Width of address bus in bits.
         comp_library: VHDL library name for bus components.
@@ -78,7 +78,7 @@ class Bus:
 
         Args:
             bus: Dictionary containing bus configuration with keys:
-                - type: Bus type, must be "axi" or "ipbus" (required)
+                - type: Bus type, must be a supported_bus value (required)
                 - data_width: Data bus width in bits (required)
                 - addr_width: Address bus width in bits (required)
                 - comp_library: VHDL component library (optional, defaults based on type)
