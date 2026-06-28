@@ -368,9 +368,18 @@ package body prototype_regfile_pkg is
         or sel_is(sel, C_ADDR_REG10) or sel_is(sel, C_ADDR_REG11);
   end function;
 
+  -- case over the literals so the encoding follows each enum's declared value,
+  -- not its position; the two only coincide for in-order 0,1,2,.. enums.
   function to_slv(v : t_reg11_field0) return std_logic_vector is
+    variable slv : std_logic_vector(1 downto 0);
   begin
-    return std_logic_vector(to_unsigned(t_reg11_field0'pos(v), 2));
+    case v is
+      when STATE0 => slv := "00";
+      when STATE1 => slv := "01";
+      when STATE2 => slv := "10";
+      when STATE3 => slv := "11";
+    end case;
+    return slv;
   end function;
 
   -- case decode rather than to_integer(unsigned(s)) so meta-values (X/U/Z/-)
