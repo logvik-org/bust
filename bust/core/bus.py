@@ -9,7 +9,7 @@ reset type, and component library references.
 """
 
 from collections import OrderedDict
-from typing import Dict
+from typing import Any, Dict
 
 from bust.exceptions import InvalidBusType
 
@@ -32,16 +32,38 @@ class Bus:
         comp_library: VHDL library name for bus components.
         short_name: Abbreviated bus name for code generation.
         bus_reset: Reset type ("async" or "sync").
+        byte_addressable: Whether the bus addresses by byte (else by word).
+        endpoint_suffix: File-name suffix for the generated endpoint VHDL.
 
     Class Attributes:
-        supported_bus: List of supported bus type strings.
-        default_comp_library: Default VHDL library ("work").
-        default_comp_library_ipbus: Default library for IPBus ("ipbus").
+        BUS_CONFIG: Per-bus-type configuration (short name, reset convention,
+            forced component library, byte addressing, endpoint file suffix).
+        supported_bus: Supported bus type strings (the BUS_CONFIG keys).
+        default_comp_library: Default VHDL library ("work") used when no library
+            is forced by the bus or supplied in the JSON.
     """
 
-    supported_bus = ["axi", "ipbus"]
+    # One row per supported bus. Adding a single-beat bus is a new entry here
+    # plus its endpoint/testbench templates, not edits scattered across methods.
+    # comp_library None means "use the JSON value, else default_comp_library".
+    BUS_CONFIG: Dict[str, Dict[str, Any]] = {
+        "axi": {
+            "short_name": "axi",
+            "bus_reset": "async",
+            "comp_library": None,
+            "byte_addressable": True,
+            "endpoint_suffix": "axi_endpoint",
+        },
+        "ipbus": {
+            "short_name": "ipb",
+            "bus_reset": "sync",
+            "comp_library": "ipbus",
+            "byte_addressable": False,
+            "endpoint_suffix": "ipb_endpoint",
+        },
+    }
     default_comp_library = "work"
-    default_comp_library_ipbus = "ipbus"
+    supported_bus = list(BUS_CONFIG)
 
     def __init__(self, bus: Dict) -> None:
         """Initialize a Bus instance.
@@ -56,28 +78,25 @@ class Bus:
         Raises:
             InvalidBusType: If bus type is not in supported_bus list.
         """
-        if bus["type"] in Bus.supported_bus:
-            self.bus_type = bus["type"]
-        else:
+        if bus["type"] not in Bus.BUS_CONFIG:
             raise InvalidBusType(bus["type"])
+        self.bus_type = bus["type"]
+        config = Bus.BUS_CONFIG[self.bus_type]
 
         self.data_width = bus["data_width"]
         self.addr_width = bus["addr_width"]
+        self.short_name = config["short_name"]
+        self.bus_reset = config["bus_reset"]
+        self.byte_addressable = config["byte_addressable"]
+        self.endpoint_suffix = config["endpoint_suffix"]
 
-        if self.bus_type == "ipbus":
-            self.comp_library = Bus.default_comp_library_ipbus
+        forced_library = config["comp_library"]
+        if forced_library is not None:
+            self.comp_library = forced_library
         elif "comp_library" in bus:
             self.comp_library = bus["comp_library"]
         else:
             self.comp_library = Bus.default_comp_library
-
-        # Set reset type and short name based on bus
-        if self.bus_type == "axi":
-            self.short_name = "axi"
-            self.bus_reset = "async"
-        elif self.bus_type == "ipbus":
-            self.short_name = "ipb"
-            self.bus_reset = "sync"
 
     def to_json(self) -> OrderedDict:
         """Export bus configuration as an ordered dictionary.

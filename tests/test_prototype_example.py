@@ -14,7 +14,9 @@ from bust.utils.json_utils import json_parser
 @pytest.fixture(scope="module")
 def prototype():
     config = json_parser("example/example_prototype.json")
-    bus = SimpleNamespace(bus_type="axi", addr_width=32, data_width=32)
+    bus = SimpleNamespace(
+        bus_type="axi", addr_width=32, data_width=32, byte_addressable=True
+    )
     return Module(config["module"], bus, settings=None)
 
 
