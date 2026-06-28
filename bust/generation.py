@@ -16,6 +16,17 @@ from bust.utils.file_utils import write_string_to_file
 
 logger = logging.getLogger(__name__)
 
+# Per-bus endpoint and testbench generators. Adding a bus is a new entry plus
+# its templates; the file name comes from the bus's endpoint_suffix.
+_ENDPOINT_GENERATORS = {
+    "axi": GeneratorFactory.generate_axi_endpoint_vhdl,
+    "ipbus": GeneratorFactory.generate_ipb_endpoint_vhdl,
+}
+_TESTBENCH_GENERATORS = {
+    "axi": GeneratorFactory.generate_localbus_axi_testbench_vhdl,
+    "ipbus": GeneratorFactory.generate_localbus_ipbus_testbench_vhdl,
+}
+
 
 def generate_output(settings, bus, module, header, documentation, gen_settings):
     """Generate all output files for a bus slave module.
@@ -94,15 +105,10 @@ def generate_output(settings, bus, module, header, documentation, gen_settings):
                 mod_hdl,
                 gen_settings["force_ow"],
             )
-            if bus.bus_type == "axi":
-                endpoint = GeneratorFactory.generate_axi_endpoint_vhdl(module)
-                filename = f"{module.name}_axi_endpoint.vhd"
-            elif bus.bus_type == "ipbus":
-                endpoint = GeneratorFactory.generate_ipb_endpoint_vhdl(module)
-                filename = f"{module.name}_ipb_endpoint.vhd"
-            else:
-                endpoint = None
-            if endpoint is not None:
+            endpoint_generator = _ENDPOINT_GENERATORS.get(bus.bus_type)
+            if endpoint_generator is not None:
+                endpoint = endpoint_generator(module)
+                filename = f"{module.name}_{bus.endpoint_suffix}.vhd"
                 write_string_to_file(
                     endpoint, filename, mod_hdl, gen_settings["force_ow"]
                 )
@@ -113,17 +119,9 @@ def generate_output(settings, bus, module, header, documentation, gen_settings):
                     mod_hdl,
                     gen_settings["force_ow"],
                 )
-                if bus.bus_type == "axi":
-                    testbench = GeneratorFactory.generate_localbus_axi_testbench_vhdl(
-                        module
-                    )
-                elif bus.bus_type == "ipbus":
-                    testbench = GeneratorFactory.generate_localbus_ipbus_testbench_vhdl(
-                        module
-                    )
-                else:
-                    testbench = None
-                if testbench is not None:
+                testbench_generator = _TESTBENCH_GENERATORS.get(bus.bus_type)
+                if testbench_generator is not None:
+                    testbench = testbench_generator(module)
                     write_string_to_file(
                         testbench,
                         f"{module.name}_tb.vhd",
