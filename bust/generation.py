@@ -21,10 +21,12 @@ logger = logging.getLogger(__name__)
 _ENDPOINT_GENERATORS = {
     "axi": GeneratorFactory.generate_axi_endpoint_vhdl,
     "ipbus": GeneratorFactory.generate_ipb_endpoint_vhdl,
+    "sbi": GeneratorFactory.generate_sbi_endpoint_vhdl,
 }
 _TESTBENCH_GENERATORS = {
     "axi": GeneratorFactory.generate_localbus_axi_testbench_vhdl,
     "ipbus": GeneratorFactory.generate_localbus_ipbus_testbench_vhdl,
+    "sbi": GeneratorFactory.generate_localbus_sbi_testbench_vhdl,
 }
 
 
