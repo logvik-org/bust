@@ -16,7 +16,7 @@ Filters defined:
 - get_reset_value: Returns the formatted VHDL reset value for registers.
 
 Copyright (c) 2025 Grottviq
-All rights reserved.
+Licensed under the Apache License, Version 2.0. See the LICENSE file for details.
 """
 
 
