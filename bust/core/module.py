@@ -37,7 +37,7 @@ class Module:
         description: Optional module description.
         version: Module version string.
         git_hash: Git commit hash (currently unused).
-        byte_addressable: Whether addresses are byte-based (True for AXI).
+        byte_addressable: Whether addresses are byte-based (defaults to the bus).
         addr_width: Address bus width in bits.
         data_width: Data bus width in bits.
         bus: Bus configuration instance.
@@ -55,7 +55,7 @@ class Module:
                 - description: Module description (default: "")
                 - version: Version string (default: "")
                 - git_hash: Git hash for tracking (optional)
-                - byte_addressable: Use byte addressing (default: True for AXI)
+                - byte_addressable: Use byte addressing (default: from the bus)
                 - register: List of register configurations (required)
             bus: Bus interface configuration.
             settings: Project-wide settings.
@@ -82,7 +82,7 @@ class Module:
                 "description": "",
                 "version": "",
                 "git_hash": None,
-                "byte_addressable": bus.bus_type == "axi",
+                "byte_addressable": bus.byte_addressable,
             },
         )
 
