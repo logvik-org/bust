@@ -131,7 +131,10 @@ class Module:
             try:
                 self.registers.append(Register(reg, addr, self.name, self.data_width))
             except Exception as e:
-                self.logger.error(str(e))
+                self.logger.error(
+                    f"Failed to parse register {reg.get('name', '<unknown>')}: "
+                    f"{type(e).__name__}: {e}"
+                )
                 raise InvalidRegister(reg) from e
 
         else:
@@ -139,7 +142,10 @@ class Module:
             try:
                 self.registers.append(Register(reg, addr, self.name, self.data_width))
             except Exception as e:
-                self.logger.error(str(e))
+                self.logger.error(
+                    f"Failed to parse register {reg.get('name', '<unknown>')}: "
+                    f"{type(e).__name__}: {e}"
+                )
                 raise InvalidRegister(reg) from e
 
     def get_next_address(self) -> int:
