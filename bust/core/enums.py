@@ -16,7 +16,7 @@ All enums include a `from_string()` method to safely convert user-provided
 strings with validation and case normalization.
 
 Copyright (c) 2025 Grottviq
-All rights reserved.
+Licensed under the Apache License, Version 2.0. See the LICENSE file for details.
 """
 
 from enum import Enum
