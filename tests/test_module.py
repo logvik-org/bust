@@ -14,7 +14,10 @@ from bust.validation.vhdl_validator import InvalidVHDLIdentifier
 
 def stub_bus(bus_type="axi", addr_width=8, data_width=32):
     return SimpleNamespace(
-        bus_type=bus_type, addr_width=addr_width, data_width=data_width
+        bus_type=bus_type,
+        addr_width=addr_width,
+        data_width=data_width,
+        byte_addressable=(bus_type == "axi"),
     )
 
 
