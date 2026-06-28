@@ -24,6 +24,7 @@ class Bus:
     Supported bus types:
         - axi: AXI4-Lite (async reset)
         - ipbus: IPBus (sync reset)
+        - sbi: Simple Bus Interface (sync reset)
 
     Attributes:
         bus_type: Bus standard identifier ("axi" or "ipbus").
@@ -60,6 +61,13 @@ class Bus:
             "comp_library": "ipbus",
             "byte_addressable": False,
             "endpoint_suffix": "ipb_endpoint",
+        },
+        "sbi": {
+            "short_name": "sbi",
+            "bus_reset": "sync",
+            "comp_library": None,
+            "byte_addressable": True,
+            "endpoint_suffix": "sbi_endpoint",
         },
     }
     default_comp_library = "work"
