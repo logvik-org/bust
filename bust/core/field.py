@@ -242,6 +242,14 @@ class Field:
             seen_names.append(name)
             seen_values.append(value)
             parsed.append(EnumValue(name, value))
+        # An explicit reset on an enumerated field is only meaningful as one of
+        # the named states; otherwise the generated reset silently falls back to
+        # the first literal. A default reset (unset) is left alone for back-compat.
+        if self._config.is_set("reset") and int(self.reset, 16) not in seen_values:
+            raise InvalidFieldFormat(
+                f"Reset value {self.reset} of enumerated field {self.name} in reg "
+                f"{self.parent_register_name} matches no declared enum value"
+            )
         return parsed
 
     def validate_reset_value(self) -> None:
