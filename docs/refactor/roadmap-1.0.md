@@ -48,7 +48,7 @@ regression. CI installs them and runs `test_doc`. Do not treat the local
 | R3 | Decide CONTRIBUTING.md / CODE_OF_CONDUCT.md: add them or drop README links | docs | todo | files referenced but absent |
 | R4 | License resolution (#90): LICENSE/README/pyproject say MIT; #90 proposes Polyform Noncommercial. Generated files carry no header, so no golden churn; touches LICENSE, README, pyproject, and stray "All rights reserved" strings (enums.py, filters.py) | legal/scope | **discussing with human** | blocks tag |
 | R5 | Bus scope DECIDED: ship all six prototyped buses. AXI4-Lite + IPBus done; add SBI (#13), Avalon-MM (#75), Wishbone (#1), APB. Each = endpoint generator template + generated TB + goldens + sim wiring, one PR per bus | scope | decided, todo | generator is bus-agnostic |
-| R6 | Independent adversarial review of the shared foundation (regfile/access-mode generation, schema/validation/legacy) before building the new buses | verify | in progress | two independent reviewers running |
+| R6 | Independent adversarial review of the shared foundation (regfile/access-mode generation, schema/validation/legacy) before building the new buses | verify | done | foundation sound; 3 defects fixed, 2 minor deferred (below) |
 | R7 | Sim verification | verify | via CI | no Docker locally; `vhdl_sim.yml` runs nvc on every `example/**/*.vhd` + `hdl/**/*.vhd` per PR |
 | R8 | Mark design docs historical; ensure no stale "in progress / not yet" language remains user-facing | docs | todo | `local-bus-hdl.md`/`step3-scope.md` read as live plans |
 | R9 | Version finalize `1.0.0-dev` -> `1.0.0` via bumpversion; update doc-test pin + `.tex` goldens | release | todo (last) | after all output frozen |
@@ -96,6 +96,35 @@ regression. CI installs them and runs `test_doc`. Do not treat the local
 ### Decision-gated (see Open decisions)
 - **#90** License change — R4.
 - **#1** Wishbone bus support — R5.
+
+## Foundation review (R6) outcome
+
+Two independent adversarial reviewers covered (a) regfile/access-mode VHDL
+generation and (b) the schema/model/validation/legacy translation. The full sw/hw
+matrix, we/wel, hwclr>hwset>we>sw precedence, the eight onwrite effects, onread,
+singlepulse, swmod/swacc, bit slices, base-address handling, and the 1-cycle AXI/
+IPBus handshake all matched the verified prototype. Three defects were found and
+fixed before building the new buses:
+
+- **Enum encode by position, not value (critical).** `to_slv` used the VHDL
+  literal position; sparse/reordered enums round-tripped wrong. Now a value-keyed
+  `case`, with a regression test and the hand-written prototype pkg updated to match.
+- **Enum reset outside the declared set (major).** An explicit reset matching no
+  enum value silently fell back to the first literal; now rejected.
+- **Legacy `mode` mixed with bust 1.0 keys (major).** Silently honored one and
+  dropped the other; now rejected.
+- Plus a diagnostic fix: address-less register parse errors now surface as
+  `InvalidRegister` instead of "An unknown error has occurred".
+
+Deferred (tracked, not release-blocking):
+- **Dead `mode` metadata.** New-schema registers default `mode=RW`, which leaks
+  into the `type_vhdl` infix and `num_*_regs` counts. Cosmetic / test-only and
+  internally consistent; deriving `mode` from sw/hw or dropping it churns naming
+  goldens and needs a small naming decision. Open a cleanup issue.
+- **singlepulse/pulse + non-zero reset.** The reset is silently ineffective
+  (self-clearing field). A hard reject would break committed legacy examples
+  (`example_axi`/`ipbus` reg9/reg10 carry non-zero resets), so this should be a
+  warning, not an error. Track separately.
 
 ## Decisions log
 
