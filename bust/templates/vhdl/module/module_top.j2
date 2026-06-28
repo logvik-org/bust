@@ -45,6 +45,17 @@ entity {{ module.name }} is
     reset   : in  std_logic;
     ipb_in  : in  ipb_wbus;
     ipb_out : out ipb_rbus{% if module.to_hw_registers or module.from_hw_registers %};{% endif %}
+{% elif bus.bus_type == 'sbi' %}
+    clk     : in  std_logic;
+    reset   : in  std_logic;
+
+    cs      : in  std_logic;
+    addr    : in  std_logic_vector({{ module.addr_width - 1 }} downto 0);
+    rena    : in  std_logic;
+    wena    : in  std_logic;
+    wdata   : in  std_logic_vector({{ module.data_width - 1 }} downto 0);
+    ready   : out std_logic;
+    rdata   : out std_logic_vector({{ module.data_width - 1 }} downto 0){% if module.to_hw_registers or module.from_hw_registers %};{% endif %}
 {% endif %}
 {% if module.to_hw_registers %}
 
@@ -60,7 +71,7 @@ end entity {{ module.name }};
 architecture rtl of {{ module.name }} is
 begin
 
-  i_endpoint : entity work.{{ module.name }}_{{ "axi_endpoint" if bus.bus_type == "axi" else "ipb_endpoint" }}
+  i_endpoint : entity work.{{ module.name }}_{{ bus.endpoint_suffix }}
     generic map (
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS)
@@ -89,6 +100,16 @@ begin
       reset   => reset,
       ipb_in  => ipb_in,
       ipb_out => ipb_out{{ "," if module.to_hw_registers or module.from_hw_registers else "" }}
+{% elif bus.bus_type == 'sbi' %}
+      clk     => clk,
+      reset   => reset,
+      cs      => cs,
+      addr    => addr,
+      rena    => rena,
+      wena    => wena,
+      wdata   => wdata,
+      ready   => ready,
+      rdata   => rdata{{ "," if module.to_hw_registers or module.from_hw_registers else "" }}
 {% endif %}
 {% if module.to_hw_registers %}
       to_hw    => to_hw{{ "," if module.from_hw_registers else "" }}
