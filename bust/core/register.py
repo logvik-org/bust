@@ -20,7 +20,7 @@ from bust.exceptions import (
     InvalidFieldFormat,
 )
 from bust.core.field import Field
-from bust.core.legacy_schema import register_access_defaults
+from bust.core.legacy_schema import register_access_defaults, uses_new_schema
 from bust.utils.formatting import indent_string
 from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
 from bust.validation.config_validator import ConfigWrapper
@@ -104,6 +104,13 @@ class Register:
 
         self.description: str = self._config.get("description")
         self.mode = RegisterMode.from_string(self._config.get("mode"))
+        # The legacy `mode` and the bust 1.0 `sw`/`hw` keys are two ways to say the
+        # same thing; honoring one and silently dropping the other hides intent.
+        if self._config.is_set("mode") and uses_new_schema(reg):
+            raise InvalidRegisterFormat(
+                f"Register {self.name} sets the legacy 'mode' key together with "
+                "bust 1.0 access-mode keys (sw/hw/...); use one schema, not both"
+            )
         self.type = RegisterType.from_string(self._config.get("type"))
         self.width = self._config.get(
             "width"

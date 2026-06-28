@@ -7,7 +7,7 @@ from bust.core.enums import SwAccess, HwAccess, OnRead, OnWrite
 from bust.core.field import Field
 from bust.core.register import Register
 from bust.core.legacy_schema import register_access_defaults, uses_new_schema
-from bust.exceptions import InvalidFieldFormat
+from bust.exceptions import InvalidFieldFormat, InvalidRegisterFormat
 
 
 class TestAccessEnums:
@@ -166,6 +166,60 @@ class TestFieldEnums:
                 0,
                 "reg",
             )
+
+    def test_explicit_reset_outside_enum_set_rejected(self):
+        with pytest.raises(InvalidFieldFormat):
+            Field(
+                {
+                    "name": "mode",
+                    "type": "vector",
+                    "width": 2,
+                    "reset": "0x2",
+                    "enums": [
+                        {"name": "A", "value": 0},
+                        {"name": "B", "value": 1},
+                        {"name": "D", "value": 3},
+                    ],
+                },
+                0,
+                "reg",
+            )
+
+    def test_explicit_reset_matching_enum_value_accepted(self):
+        f = Field(
+            {
+                "name": "mode",
+                "type": "vector",
+                "width": 2,
+                "reset": "0x3",
+                "enums": [{"name": "A", "value": 0}, {"name": "D", "value": 3}],
+            },
+            0,
+            "reg",
+        )
+        assert f.reset_value_vhdl == "D"
+
+
+class TestSchemaConflicts:
+    def test_legacy_mode_mixed_with_new_keys_rejected(self):
+        with pytest.raises(InvalidRegisterFormat):
+            Register(
+                {
+                    "name": "reg",
+                    "mode": "pulse",
+                    "sw": "rw",
+                    "hw": "r",
+                    "type": "fields",
+                    "fields": [{"name": "f0", "type": "bit"}],
+                },
+                0,
+                "m",
+                32,
+            )
+
+    def test_legacy_mode_alone_accepted(self):
+        reg = Register({"name": "reg", "mode": "ro", "type": "default"}, 0, "m", 32)
+        assert reg.sw is SwAccess.RO
 
 
 class TestLegacyTranslation:
