@@ -39,7 +39,7 @@ GTKWAVE_RUN := docker run --rm \
     -v "$(WAVES_DIR):/waves:ro" \
     $(GTKWAVE_IMAGE)
 
-.PHONY: help build rebuild sim-ipbus sim-axi sim-prototype sim-prototype-generated sim-prototype-axi sim-prototype-axi-generated sim-prototype-tb-generated sim-prototype-ipbus sim-prototype-ipbus-generated sim-prototype-ipbus-tb-generated sim-prototype-sbi sim-prototype-avalon sim-prototype-wishbone sim-prototype-apb wave-ipbus wave-axi wave-prototype wave-prototype-generated wave-prototype-axi wave-prototype-ipbus wave-prototype-sbi wave-prototype-avalon wave-prototype-wishbone wave-prototype-apb gtkwave clean
+.PHONY: help build rebuild sim-ipbus sim-axi sim-prototype sim-prototype-generated sim-prototype-axi sim-prototype-axi-generated sim-prototype-tb-generated sim-prototype-ipbus sim-prototype-ipbus-generated sim-prototype-ipbus-tb-generated sim-prototype-sbi sim-prototype-sbi-generated sim-prototype-sbi-tb-generated sim-prototype-avalon sim-prototype-wishbone sim-prototype-apb wave-ipbus wave-axi wave-prototype wave-prototype-generated wave-prototype-axi wave-prototype-ipbus wave-prototype-sbi wave-prototype-avalon wave-prototype-wishbone wave-prototype-apb gtkwave clean
 
 # Default target
 help:
@@ -59,6 +59,8 @@ help:
 	@echo "  make sim-prototype-ipbus-generated  Run that testbench against the generated IPBus stack"
 	@echo "  make sim-prototype-ipbus-tb-generated  Run the fully generated IPBus stack incl. generated testbench"
 	@echo "  make sim-prototype-sbi  Run the SBI wrapper testbench"
+	@echo "  make sim-prototype-sbi-generated  Run that testbench against the generated SBI stack"
+	@echo "  make sim-prototype-sbi-tb-generated  Run the fully generated SBI stack incl. generated testbench"
 	@echo "  make sim-prototype-avalon  Run the Avalon-MM wrapper testbench"
 	@echo "  make sim-prototype-wishbone  Run the Wishbone wrapper testbench"
 	@echo "  make sim-prototype-apb  Run the APB wrapper testbench"
@@ -125,6 +127,12 @@ sim-prototype-ipbus-tb-generated: _require-image
 
 sim-prototype-sbi: _require-image
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_sbi
+
+sim-prototype-sbi-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_sbi_generated
+
+sim-prototype-sbi-tb-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_sbi_tb_generated
 
 sim-prototype-avalon: _require-image
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_avalon
