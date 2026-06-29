@@ -250,6 +250,30 @@ jobs:
             /work/sim/scripts/run_sim.sh prototype_wishbone
 
       # -----------------------------------------------------------------------
+      # 11b. Run the generated Wishbone endpoint (generated package + regfile +
+      #      endpoint) against the verified Wishbone endpoint testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated Wishbone endpoint simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_wishbone_generated
+
+      # -----------------------------------------------------------------------
+      # 11c. Run the fully generated Wishbone stack including the generated
+      #      testbench (inlined hand-written master BFM).
+      # -----------------------------------------------------------------------
+      - name: Run generated Wishbone testbench simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_wishbone_tb_generated
+
+      # -----------------------------------------------------------------------
       # 12. Run the APB wrapper prototype testbench
       # -----------------------------------------------------------------------
       - name: Run prototype APB wrapper simulation
