@@ -215,6 +215,30 @@ jobs:
             /work/sim/scripts/run_sim.sh prototype_avalon
 
       # -----------------------------------------------------------------------
+      # 10b. Run the generated Avalon-MM endpoint (generated package + regfile +
+      #      endpoint) against the verified Avalon-MM endpoint testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated Avalon-MM endpoint simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_avalon_generated
+
+      # -----------------------------------------------------------------------
+      # 10c. Run the fully generated Avalon-MM stack including the generated
+      #      testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated Avalon-MM testbench simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_avalon_tb_generated
+
+      # -----------------------------------------------------------------------
       # 11. Run the Wishbone wrapper prototype testbench
       # -----------------------------------------------------------------------
       - name: Run prototype Wishbone wrapper simulation
