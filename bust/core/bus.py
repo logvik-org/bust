@@ -24,9 +24,10 @@ class Bus:
     Supported bus types:
         - axi: AXI4-Lite (async reset)
         - ipbus: IPBus (sync reset)
+        - sbi: Simple Bus Interface (sync reset)
 
     Attributes:
-        bus_type: Bus standard identifier ("axi" or "ipbus").
+        bus_type: Bus standard identifier (one of supported_bus).
         data_width: Width of data bus in bits.
         addr_width: Width of address bus in bits.
         comp_library: VHDL library name for bus components.
@@ -61,6 +62,13 @@ class Bus:
             "byte_addressable": False,
             "endpoint_suffix": "ipb_endpoint",
         },
+        "sbi": {
+            "short_name": "sbi",
+            "bus_reset": "sync",
+            "comp_library": None,
+            "byte_addressable": True,
+            "endpoint_suffix": "sbi_endpoint",
+        },
     }
     default_comp_library = "work"
     supported_bus = list(BUS_CONFIG)
@@ -70,7 +78,7 @@ class Bus:
 
         Args:
             bus: Dictionary containing bus configuration with keys:
-                - type: Bus type, must be "axi" or "ipbus" (required)
+                - type: Bus type, must be a supported_bus value (required)
                 - data_width: Data bus width in bits (required)
                 - addr_width: Address bus width in bits (required)
                 - comp_library: VHDL component library (optional, defaults based on type)
