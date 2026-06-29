@@ -89,6 +89,7 @@ begin
       while wb_ack = '0' and wb_err = '0' loop
         wait until rising_edge(clk);
       end loop;
+      check_value(wb_err, '0', error, "write must terminate on ack, not err: " & msg, C_SCOPE);
       wb_cyc   <= '0';
       wb_stb   <= '0';
       wb_we    <= '0';
