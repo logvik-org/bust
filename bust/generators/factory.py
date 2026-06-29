@@ -116,6 +116,19 @@ class GeneratorFactory:
         return generator.generate_sbi_endpoint_vhdl(module)
 
     @staticmethod
+    def generate_avalon_endpoint_vhdl(module: "Module") -> str:
+        """Generate the Avalon-MM endpoint wrapper VHDL for a module.
+
+        Args:
+            module: Module instance to generate the Avalon-MM endpoint for.
+
+        Returns:
+            VHDL entity/architecture bridging Avalon-MM to the local bus regfile.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_avalon_endpoint_vhdl(module)
+
+    @staticmethod
     def generate_module_top_vhdl(module: "Module") -> str:
         """Generate the thin top-level wrapper VHDL for a module.
 
@@ -170,3 +183,17 @@ class GeneratorFactory:
         """
         generator = GeneratorFactory.create_module_generator()
         return generator.generate_localbus_sbi_testbench_vhdl(module)
+
+    @staticmethod
+    def generate_localbus_avalon_testbench_vhdl(module: "Module") -> str:
+        """Generate the UVVM Avalon-MM testbench for a module's top wrapper.
+
+        Args:
+            module: Module instance to generate the testbench for.
+
+        Returns:
+            VHDL UVVM testbench that drives the top wrapper over the Bitvis
+            Avalon-MM VIP and self-checks the register-map access modes.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_localbus_avalon_testbench_vhdl(module)
