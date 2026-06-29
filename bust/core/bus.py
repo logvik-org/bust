@@ -26,6 +26,7 @@ class Bus:
         - ipbus: IPBus (sync reset)
         - sbi: Simple Bus Interface (sync reset)
         - avalon: Avalon-MM (sync reset)
+        - wishbone: Wishbone B4 classic (sync reset)
 
     Attributes:
         bus_type: Bus standard identifier (one of supported_bus).
@@ -76,6 +77,13 @@ class Bus:
             "comp_library": None,
             "byte_addressable": True,
             "endpoint_suffix": "avalon_endpoint",
+        },
+        "wishbone": {
+            "short_name": "wishbone",
+            "bus_reset": "sync",
+            "comp_library": None,
+            "byte_addressable": True,
+            "endpoint_suffix": "wishbone_endpoint",
         },
     }
     default_comp_library = "work"
