@@ -103,6 +103,19 @@ class GeneratorFactory:
         return generator.generate_ipb_endpoint_vhdl(module)
 
     @staticmethod
+    def generate_sbi_endpoint_vhdl(module: "Module") -> str:
+        """Generate the SBI endpoint wrapper VHDL for a module.
+
+        Args:
+            module: Module instance to generate the SBI endpoint for.
+
+        Returns:
+            VHDL entity/architecture bridging SBI to the local bus regfile.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_sbi_endpoint_vhdl(module)
+
+    @staticmethod
     def generate_module_top_vhdl(module: "Module") -> str:
         """Generate the thin top-level wrapper VHDL for a module.
 
@@ -143,3 +156,17 @@ class GeneratorFactory:
         """
         generator = GeneratorFactory.create_module_generator()
         return generator.generate_localbus_ipbus_testbench_vhdl(module)
+
+    @staticmethod
+    def generate_localbus_sbi_testbench_vhdl(module: "Module") -> str:
+        """Generate the UVVM SBI testbench for a module's local-bus top wrapper.
+
+        Args:
+            module: Module instance to generate the testbench for.
+
+        Returns:
+            VHDL UVVM testbench that drives the top wrapper over the Bitvis SBI
+            VIP and self-checks the register-map access modes.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_localbus_sbi_testbench_vhdl(module)

@@ -181,6 +181,29 @@ jobs:
             /work/sim/scripts/run_sim.sh prototype_sbi
 
       # -----------------------------------------------------------------------
+      # 9b. Run the generated SBI endpoint (generated package + regfile +
+      #     endpoint) against the verified SBI endpoint testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated SBI endpoint simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_sbi_generated
+
+      # -----------------------------------------------------------------------
+      # 9c. Run the fully generated SBI stack including the generated testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated SBI testbench simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_sbi_tb_generated
+
+      # -----------------------------------------------------------------------
       # 10. Run the Avalon-MM wrapper prototype testbench
       # -----------------------------------------------------------------------
       - name: Run prototype Avalon-MM wrapper simulation
