@@ -23,12 +23,14 @@ _ENDPOINT_GENERATORS = {
     "ipbus": GeneratorFactory.generate_ipb_endpoint_vhdl,
     "sbi": GeneratorFactory.generate_sbi_endpoint_vhdl,
     "avalon": GeneratorFactory.generate_avalon_endpoint_vhdl,
+    "wishbone": GeneratorFactory.generate_wishbone_endpoint_vhdl,
 }
 _TESTBENCH_GENERATORS = {
     "axi": GeneratorFactory.generate_localbus_axi_testbench_vhdl,
     "ipbus": GeneratorFactory.generate_localbus_ipbus_testbench_vhdl,
     "sbi": GeneratorFactory.generate_localbus_sbi_testbench_vhdl,
     "avalon": GeneratorFactory.generate_localbus_avalon_testbench_vhdl,
+    "wishbone": GeneratorFactory.generate_localbus_wishbone_testbench_vhdl,
 }
 
 
