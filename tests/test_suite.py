@@ -173,6 +173,7 @@ class Test_Suite(unittest.TestCase):
         _, axi_mod, _, _ = _load_prototype("axi")
         _, ipbus_mod, _, _ = _load_prototype("ipbus")
         _, sbi_mod, _, _ = _load_prototype("sbi")
+        _, avalon_mod, _, _ = _load_prototype("avalon")
         hdl = "example/example_prototype/hdl"
         self._assert_matches(
             GeneratorFactory.generate_localbus_package_vhdl(axi_mod),
@@ -205,6 +206,11 @@ class Test_Suite(unittest.TestCase):
             "prototype sbi endpoint must match manual file",
         )
         self._assert_matches(
+            GeneratorFactory.generate_avalon_endpoint_vhdl(avalon_mod),
+            hdl + "/prototype_avalon_endpoint.vhd",
+            "prototype avalon endpoint must match manual file",
+        )
+        self._assert_matches(
             GeneratorFactory.generate_module_top_vhdl(axi_mod),
             hdl + "/prototype.vhd",
             "prototype axi top must match manual file",
@@ -219,12 +225,18 @@ class Test_Suite(unittest.TestCase):
             hdl + "/prototype_sbi.vhd",
             "prototype sbi top must match manual file",
         )
+        self._assert_matches(
+            GeneratorFactory.generate_module_top_vhdl(avalon_mod),
+            hdl + "/prototype_avalon.vhd",
+            "prototype avalon top must match manual file",
+        )
 
     def test_prototype_tb(self):
         self.logger.info("Testing prototype testbench generation...")
         _, axi_mod, _, _ = _load_prototype("axi")
         _, ipbus_mod, _, _ = _load_prototype("ipbus")
         _, sbi_mod, _, _ = _load_prototype("sbi")
+        _, avalon_mod, _, _ = _load_prototype("avalon")
         hdl = "example/example_prototype/hdl"
         self._assert_matches(
             GeneratorFactory.generate_localbus_axi_testbench_vhdl(axi_mod),
@@ -240,6 +252,11 @@ class Test_Suite(unittest.TestCase):
             GeneratorFactory.generate_localbus_sbi_testbench_vhdl(sbi_mod),
             hdl + "/prototype_sbi_tb.vhd",
             "prototype sbi testbench must match manual file",
+        )
+        self._assert_matches(
+            GeneratorFactory.generate_localbus_avalon_testbench_vhdl(avalon_mod),
+            hdl + "/prototype_avalon_tb.vhd",
+            "prototype avalon testbench must match manual file",
         )
 
     def test_prototype_hdr(self):
