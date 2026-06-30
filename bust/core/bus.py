@@ -27,6 +27,7 @@ class Bus:
         - sbi: Simple Bus Interface (sync reset)
         - avalon: Avalon-MM (sync reset)
         - wishbone: Wishbone B4 classic (sync reset)
+        - apb: AMBA APB (async active-low reset)
 
     Attributes:
         bus_type: Bus standard identifier (one of supported_bus).
@@ -84,6 +85,13 @@ class Bus:
             "comp_library": None,
             "byte_addressable": True,
             "endpoint_suffix": "wishbone_endpoint",
+        },
+        "apb": {
+            "short_name": "apb",
+            "bus_reset": "async",
+            "comp_library": None,
+            "byte_addressable": True,
+            "endpoint_suffix": "apb_endpoint",
         },
     }
     default_comp_library = "work"

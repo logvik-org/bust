@@ -143,6 +143,19 @@ class GeneratorFactory:
         return generator.generate_wishbone_endpoint_vhdl(module)
 
     @staticmethod
+    def generate_apb_endpoint_vhdl(module: "Module") -> str:
+        """Generate the APB endpoint wrapper VHDL for a module.
+
+        Args:
+            module: Module instance to generate the APB endpoint for.
+
+        Returns:
+            VHDL entity/architecture bridging AMBA APB to the local bus regfile.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_apb_endpoint_vhdl(module)
+
+    @staticmethod
     def generate_module_top_vhdl(module: "Module") -> str:
         """Generate the thin top-level wrapper VHDL for a module.
 
@@ -226,3 +239,18 @@ class GeneratorFactory:
         """
         generator = GeneratorFactory.create_module_generator()
         return generator.generate_localbus_wishbone_testbench_vhdl(module)
+
+    @staticmethod
+    def generate_localbus_apb_testbench_vhdl(module: "Module") -> str:
+        """Generate the APB testbench for a module's top wrapper.
+
+        Args:
+            module: Module instance to generate the testbench for.
+
+        Returns:
+            VHDL UVVM testbench that drives the top wrapper over an inlined
+            hand-written APB master BFM (UVVM ships no APB VIP) and self-checks
+            the register-map access modes.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_localbus_apb_testbench_vhdl(module)
