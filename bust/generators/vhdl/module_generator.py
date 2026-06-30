@@ -45,6 +45,10 @@ class ModuleGenerator:
         """Generate the Avalon-MM endpoint wrapper over the local-bus regfile."""
         return render_template("vhdl/module/avalon_endpoint.j2", {"module": module})
 
+    def generate_wishbone_endpoint_vhdl(self, module) -> str:
+        """Generate the Wishbone endpoint wrapper over the local-bus regfile."""
+        return render_template("vhdl/module/wishbone_endpoint.j2", {"module": module})
+
     def generate_module_top_vhdl(self, module) -> str:
         """Generate the thin top-level wrapper instantiating the bus endpoint."""
         return render_template(
@@ -69,6 +73,12 @@ class ModuleGenerator:
         """Generate the UVVM Avalon-MM testbench driving the module's top wrapper."""
         return render_template(
             "vhdl/testbench/localbus_avalon_tb.j2", {"module": module}
+        )
+
+    def generate_localbus_wishbone_testbench_vhdl(self, module) -> str:
+        """Generate the Wishbone testbench (inlined master BFM) for the top wrapper."""
+        return render_template(
+            "vhdl/testbench/localbus_wishbone_tb.j2", {"module": module}
         )
 
 
