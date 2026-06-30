@@ -152,7 +152,7 @@ begin
       variable v_got_err : boolean;
     begin
       bus_read(addr, v_data, v_got_err);
-      check_value(v_got_err, false, error, msg & " (terminated on ack)", C_SCOPE);
+      check_value(v_got_err, false, error, msg & " (terminated without error)", C_SCOPE);
       check_value(v_data, data, error, msg, C_SCOPE);
     end procedure;
     variable v_reg9_field0_swmod : natural;
