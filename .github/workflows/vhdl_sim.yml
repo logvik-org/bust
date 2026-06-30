@@ -283,3 +283,27 @@ jobs:
             -e WORK_ROOT=/work \
             bust-sim:ci \
             /work/sim/scripts/run_sim.sh prototype_apb
+
+      # -----------------------------------------------------------------------
+      # 12b. Run the generated APB endpoint (generated package + regfile +
+      #      endpoint) against the verified APB endpoint testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated APB endpoint simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_apb_generated
+
+      # -----------------------------------------------------------------------
+      # 12c. Run the fully generated APB stack including the generated testbench
+      #      (inlined hand-written master BFM).
+      # -----------------------------------------------------------------------
+      - name: Run generated APB testbench simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_apb_tb_generated
