@@ -29,7 +29,7 @@ dev = ["pytest", "pytest-cov", "pylint", "mypy", "pydocstyle"]
 bust = "bust.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/grottviq/bust"
+Homepage = "https://github.com/logvik-org/bust"
 
 [tool.coverage.run]
 source = ["bust"]
