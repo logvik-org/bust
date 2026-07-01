@@ -51,7 +51,7 @@ regression. CI installs them and runs `test_doc`. Do not treat the local
 | R1 | Backlog reconciliation (triage every open issue to 1.0 / deferred) | release | in progress | this document |
 | R2 | Doc finalization: normalize org refs to `logvik-org`, fix README badge + "dev branch" link, pyproject `Homepage` (`grottviq` -> `logvik-org`) | docs | done | badge, dev-branch/clone URLs, `Homepage`, sim GHCR cache namespace all on `logvik-org`; vip_ipbus dependency left alone |
 | R3 | Decide CONTRIBUTING.md / CODE_OF_CONDUCT.md: add them or drop README links | docs | done | added minimal CONTRIBUTING.md + Contributor Covenant v2.1 CODE_OF_CONDUCT.md |
-| R4 | License resolution (#90): LICENSE/README/pyproject say MIT; #90 proposes Polyform Noncommercial. Generated files carry no header, so no golden churn; touches LICENSE, README, pyproject, and stray "All rights reserved" strings (enums.py, filters.py) | legal/scope | **discussing with human** | blocks tag |
+| R4 | License resolved (#90): switched MIT -> Apache License 2.0 (PR #190, merged). LICENSE + NOTICE + README + pyproject classifier + CLAUDE.md + source headers updated | legal/scope | done | no golden churn (generated files carry no header) |
 | R5 | Bus scope DECIDED: ship all six prototyped buses. All merged: AXI4-Lite + IPBus, plus SBI (#13), Avalon-MM (#75), Wishbone (#1), APB. Each = endpoint generator template + generated TB + goldens + sim wiring, one PR per bus | scope | done | all six endpoints, TBs, goldens, and sim wiring merged |
 | R6 | Independent adversarial review of the shared foundation (regfile/access-mode generation, schema/validation/legacy) before building the new buses | verify | done | foundation sound; 3 defects fixed, 2 minor deferred (below) |
 | R7 | Sim verification | verify | done, via CI | no Docker locally; `vhdl_sim.yml` runs nvc on every `example/**/*.vhd` + `hdl/**/*.vhd` per PR; all six buses simulate |
@@ -98,8 +98,8 @@ regression. CI installs them and runs `test_doc`. Do not treat the local
 - **#125** dependency mgmt + security scanning, **#126** perf regression testing —
   priority-low infra, post-v1.
 
-### Decision-gated (see Open decisions)
-- **#90** License change — R4.
+### Resolved by a release decision
+- **#90** License change — RESOLVED: adopted Apache License 2.0 (PR #190 merged). Close as part of 1.0.0.
 
 ## Foundation review (R6) outcome
 
@@ -136,9 +136,11 @@ Deferred (tracked, not release-blocking):
   merged in 1.0.0: AXI4-Lite, IPBus, SBI, Avalon-MM, Wishbone, APB. CLAUDE.md and
   README "Bus support" text updated to match.
 - **Verification (RESOLVED 2026-06-28).** Independent adversarial review + sim.
-  Review of the foundation is in progress; sim runs in CI (no local Docker).
-- **License (OPEN, discussing).** MIT today vs Polyform Noncommercial 1.0 (#90).
-  Pros/cons under discussion with the maintainer; gates the tag.
+  Foundation review completed (3 defects fixed); every bus is simulated in CI per
+  PR (no local Docker).
+- **License (RESOLVED 2026-06-28).** Adopted Apache License 2.0 (#90, PR #190
+  merged). MIT (status quo) and Polyform Noncommercial 1.0 were considered; the
+  maintainer chose Apache 2.0 for permissive adoption plus an explicit patent grant.
 - **Roadmap home (RESOLVED).** This doc is the source of truth; mirror into a
   pinned GitHub tracking issue once scope is frozen.
 
