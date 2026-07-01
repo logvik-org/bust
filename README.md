@@ -1,4 +1,4 @@
-![Workflow status](https://github.com/olagrottvik/bust/actions/workflows/python_tests.yml/badge.svg)
+![Workflow status](https://github.com/logvik-org/bust/actions/workflows/python_tests.yml/badge.svg)
 
 # bust bus tool
 
@@ -16,6 +16,10 @@ bust currently supports these bus standards:
 
 - [AXI4-lite](https://en.wikipedia.org/wiki/Advanced_eXtensible_Interface#AXI4-Lite)
 - [IPBus](https://ipbus.web.cern.ch/ipbus/)
+- [SBI](https://github.com/UVVM/UVVM) (Simple Bus Interface, as used by UVVM)
+- [Avalon-MM](https://www.intel.com/content/www/us/en/docs/programmable/683091/current/introduction-to-the-interface-specifications.html)
+- [Wishbone](https://wishbone-interconnect.readthedocs.io/)
+- [APB](https://developer.arm.com/documentation/ihi0024/latest/) (AMBA APB)
 
 ## Requirements
 
@@ -59,9 +63,9 @@ See the example files for how you point to the specific folders.
 
 ## Latest Development Version (Bleeding Edge)
 
-The latest development version can be found in the [dev branch](https://github.com/olagrottvik/bust/tree/dev) on GitHub. Clone the repo and check out the branch.
+The latest development version can be found in the [dev branch](https://github.com/logvik-org/bust/tree/dev) on GitHub. Clone the repo and check out the branch.
 
-`git clone https://github.com/olagrottvik/bust.git`
+`git clone https://github.com/logvik-org/bust.git`
 
 `cd bust`
 
@@ -75,7 +79,7 @@ The latest development version can be found in the [dev branch](https://github.c
 
 ## Release Notes
 
-Release notes can be found on the [Releases page](https://github.com/olagrottvik/bust/releases).
+Release notes can be found on the [Releases page](https://github.com/logvik-org/bust/releases).
 
 
 ## Contributing

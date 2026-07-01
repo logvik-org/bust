@@ -4,26 +4,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What bust is
 
-`bust` is an open-source bus tool: a command-line utility that generates VHDL, C/C++/Python headers, LaTeX/PDF documentation, and UVVM-based testbenches from a simple JSON register-map description. It currently supports **AXI4-Lite** (`axi`) and **IPBus** (`ipbus`). The generated VHDL hides all register handling behind VHDL records so the rest of a design references registers by name and access mode.
+`bust` is an open-source bus tool: a command-line utility that generates VHDL, C/C++/Python headers, LaTeX/PDF documentation, and UVVM-based testbenches from a simple JSON register-map description. It supports **AXI4-Lite** (`axi`), **IPBus** (`ipbus`), **SBI** (`sbi`), **Avalon-MM** (`avalon`), **Wishbone** (`wishbone`), and **APB** (`apb`). The generated VHDL hides all register handling behind VHDL records so the rest of a design references registers by name and access mode.
 
-Maintained by Ola Grøttvik. Apache 2.0 licensed, hosted at https://github.com/grottviq/bust. Target runtimes: Python 3.9, 3.10, 3.11 (3.9 is the mypy baseline). Python 2.7 is not supported.
+Maintained by Ola Grøttvik. Apache 2.0 licensed, hosted at https://github.com/logvik-org/bust. Target runtimes: Python 3.9, 3.10, 3.11 (3.9 is the mypy baseline). Python 2.7 is not supported.
 
 ## Architecture
 
-`bust` is built around a **local bus abstraction**. Every supported single-beat protocol (AXI4-Lite, IPBus, and future Wishbone/custom buses) is a thin **endpoint** wrapper around one small internal local-bus interface, so the register-map logic stays protocol-agnostic. The generated VHDL stack per module is:
+`bust` is built around a **local bus abstraction**. Every supported single-beat protocol (AXI4-Lite, IPBus, SBI, Avalon-MM, Wishbone, APB, and future custom buses) is a thin **endpoint** wrapper around one small internal local-bus interface, so the register-map logic stays protocol-agnostic. The generated VHDL stack per module is:
 
 ```
 localbus_pkg            local-bus records (t_lb_m2s / t_lb_s2m), sized from the module
 <module>_regfile_pkg    storage / to_hw / from_hw record families, address-decode helpers
 <module>_regfile        storage, access-mode behaviour, hardware updates, read mux, response
-<module>_<bus>_endpoint protocol bridge (axi_endpoint / ipb_endpoint) over the local bus
+<module>_<bus>_endpoint protocol bridge (one per bus: axi/ipb/sbi/avalon/wishbone/apb_endpoint) over the local bus
 <module>                thin, fixed top wrapper instantiating the endpoint
-<module>_tb             self-checking UVVM testbench over the stock VIP (AXI-Lite / vip_ipbus)
+<module>_tb             self-checking UVVM testbench over the stock VIP (AXI-Lite / vip_ipbus / SBI / Avalon-MM / Wishbone / APB)
 ```
 
 The hardware side references each field by name through `to_hw`/`from_hw` records. The access-mode system (full spec below) is richer than a read-only/read-write `mode`: separate software (`sw`) and hardware (`hw`) access, software side effects (onread/onwrite/singlepulse), hardware modifiers (we/wel/hwset/hwclr/swmod/swacc), and enumerated field types that generate VHDL enums.
 
-This was built in order: (1) design the HDL for every access-mode combination, (2) verify with UVVM testbenches, (3) implement the Python/Jinja2 generator to match the verified HDL, (4) update headers and documentation. All four are complete for AXI4-Lite and IPBus, and the legacy per-protocol "PIF" generation path has been fully removed: local-bus generation is the only path and is always on. When changing generated HDL, keep the generated testbench in lockstep.
+This was built in order: (1) design the HDL for every access-mode combination, (2) verify with UVVM testbenches, (3) implement the Python/Jinja2 generator to match the verified HDL, (4) update headers and documentation. All four are complete for every supported bus (AXI4-Lite, IPBus, SBI, Avalon-MM, Wishbone, APB), and the legacy per-protocol "PIF" generation path has been fully removed: local-bus generation is the only path and is always on. When changing generated HDL, keep the generated testbench in lockstep.
 
 The hand-written, simulation-verified reference HDL still lives in `hdl/prototype/` (local-bus package, `prototype` regfile, local-bus BFM, and self-checking testbenches); the design rationale is in `docs/refactor/local-bus-hdl.md`. These are reference HDL, not generator output, so they are not in the golden-file suite, but the generator is checked structurally and by simulation against them. Run with `cd sim && make sim-prototype`.
 
@@ -121,8 +121,8 @@ JSON schema note: design the schema to accommodate a future `addrmap` hierarchy 
 
 ## Bus support
 
-- **Current (bust 1.0)**: AXI4-Lite, IPBus.
-- **Planned**: Wishbone, custom buses via Jinja2 templates. All current and future single-beat protocols use the local bus abstraction internally.
+- **Current (bust 1.0)**: AXI4-Lite, IPBus, SBI, Avalon-MM, Wishbone, APB.
+- **Planned**: further custom buses via Jinja2 templates. All current and future single-beat protocols use the local bus abstraction internally.
 
 ## Commands
 
