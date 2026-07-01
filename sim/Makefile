@@ -39,7 +39,7 @@ GTKWAVE_RUN := docker run --rm \
     -v "$(WAVES_DIR):/waves:ro" \
     $(GTKWAVE_IMAGE)
 
-.PHONY: help build rebuild sim-ipbus sim-axi sim-prototype sim-prototype-generated sim-prototype-axi sim-prototype-axi-generated sim-prototype-tb-generated sim-prototype-ipbus sim-prototype-ipbus-generated sim-prototype-ipbus-tb-generated sim-prototype-sbi sim-prototype-sbi-generated sim-prototype-sbi-tb-generated sim-prototype-avalon sim-prototype-avalon-generated sim-prototype-avalon-tb-generated sim-prototype-wishbone sim-prototype-wishbone-generated sim-prototype-wishbone-tb-generated sim-prototype-apb wave-ipbus wave-axi wave-prototype wave-prototype-generated wave-prototype-axi wave-prototype-ipbus wave-prototype-sbi wave-prototype-avalon wave-prototype-wishbone wave-prototype-apb gtkwave clean
+.PHONY: help build rebuild sim-ipbus sim-axi sim-prototype sim-prototype-generated sim-prototype-axi sim-prototype-axi-generated sim-prototype-tb-generated sim-prototype-ipbus sim-prototype-ipbus-generated sim-prototype-ipbus-tb-generated sim-prototype-sbi sim-prototype-sbi-generated sim-prototype-sbi-tb-generated sim-prototype-avalon sim-prototype-avalon-generated sim-prototype-avalon-tb-generated sim-prototype-wishbone sim-prototype-wishbone-generated sim-prototype-wishbone-tb-generated sim-prototype-apb sim-prototype-apb-generated sim-prototype-apb-tb-generated wave-ipbus wave-axi wave-prototype wave-prototype-generated wave-prototype-axi wave-prototype-ipbus wave-prototype-sbi wave-prototype-avalon wave-prototype-wishbone wave-prototype-apb gtkwave clean
 
 # Default target
 help:
@@ -68,6 +68,8 @@ help:
 	@echo "  make sim-prototype-wishbone-generated  Run that testbench against the generated Wishbone stack"
 	@echo "  make sim-prototype-wishbone-tb-generated  Run the fully generated Wishbone stack incl. generated testbench"
 	@echo "  make sim-prototype-apb  Run the APB wrapper testbench"
+	@echo "  make sim-prototype-apb-generated  Run that testbench against the generated APB stack"
+	@echo "  make sim-prototype-apb-tb-generated  Run the fully generated APB stack incl. generated testbench"
 	@echo "  make wave-ipbus     Run example_ipbus + capture FST + open GTKWave"
 	@echo "  make wave-axi       Run example_axi  + capture FST + open GTKWave"
 	@echo "  make wave-prototype Run prototype    + capture FST + open GTKWave"
@@ -158,6 +160,12 @@ sim-prototype-wishbone-tb-generated: _require-image
 
 sim-prototype-apb: _require-image
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_apb
+
+sim-prototype-apb-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_apb_generated
+
+sim-prototype-apb-tb-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_apb_tb_generated
 
 # ---------------------------------------------------------------------------
 # Waveform targets
