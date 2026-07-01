@@ -10,9 +10,9 @@ bust targets Python 3.9, 3.10, and 3.11 (3.9 is the mypy baseline).
 ```bash
 git clone https://github.com/logvik-org/bust.git
 cd bust
-pip install -r requirements.txt   # deps plus dev tools (pytest, mypy, sphinx)
-# or an editable install with dev extras:
-pip install -e ".[dev]"
+pip install -r requirements.txt   # pinned deps + dev tools (pytest, mypy, sphinx) matching CI
+pip install -e .                   # editable install so the `bust` CLI runs from your checkout
+pip install pre-commit             # formatting/lint hooks (black, flake8) run via pre-commit
 ```
 
 ## Before you open a PR
@@ -20,10 +20,9 @@ pip install -e ".[dev]"
 Run the same checks CI runs, from the repository root:
 
 ```bash
-mypy bust                                        # type-check; must be clean
-pytest                                           # full test suite
-python -m black bust tests                       # format (excludes example/)
-pre-commit run --all-files                        # trailing-ws, eof, tabs, crlf, black, flake8
+mypy bust                          # type-check; must be clean
+pytest                             # full test suite
+pre-commit run --all-files         # black, flake8, trailing-ws, eof, tabs, crlf
 ```
 
 CI runs `mypy bust` then `pytest` across Python 3.9/3.10/3.11. Both must be green.
