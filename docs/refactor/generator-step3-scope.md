@@ -1,5 +1,7 @@
 # Step 3 scope: generator for the local-bus HDL
 
+*Historical design record from the local-bus refactor; kept for provenance. See `roadmap-1.0.md` for current status.*
+
 Status: scoping. Step 1 (prototype HDL) and step 2 (UVVM verification) are merged
 on `refactor/local-bus`. This document scopes the work to make the Python/Jinja2
 generator emit that verified architecture. No generator code is changed yet.

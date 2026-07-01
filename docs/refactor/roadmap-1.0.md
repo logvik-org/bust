@@ -19,10 +19,11 @@ imply. Verified state:
   `OnRead`, `OnWrite`, modifiers (`we`/`wel`/`hwset`/`hwclr`/`swmod`/`swacc`),
   `singlepulse`, `enums`, register-level defaults with per-field override, and a
   legacy-schema compatibility layer (`bust/core/legacy_schema.py`).
-- Generator emits the verified architecture for AXI4-Lite and IPBus; legacy PIF
-  generators, templates, and CLI flags retired.
+- Generator emits the verified architecture for all six buses (AXI4-Lite, IPBus,
+  SBI, Avalon-MM, Wishbone, APB); legacy PIF generators, templates, and CLI flags
+  retired.
 - Access modes expressed in generated headers (C/C++/Python/IPBus-XML) and LaTeX.
-- Generated UVVM testbenches cover the access-mode matrix for both buses.
+- Generated UVVM testbenches cover the access-mode matrix for all six buses.
 - Goldens regenerated for `example_axi`, `example_ipbus`, and the full-coverage
   `example_prototype`.
 - CI: `mypy bust` clean; `pytest` green (107 passed, 1 skipped; `test_doc`
@@ -30,7 +31,11 @@ imply. Verified state:
   generated regfile package, and the generated AXI/IPBus endpoints **and**
   testbenches end-to-end (plus SBI/Avalon/Wishbone/APB prototypes).
 
-Consequence: 1.0.0 is now a **finishing/release** effort, not feature work.
+Consequence: 1.0.0 is now a **finishing/release** effort, not feature work. With
+all six buses merged and doc finalization done, the only remaining 1.0.0 steps are
+the version bump (`1.0.0-dev` -> `1.0.0` via bumpversion, R9), the
+integration -> `master` merge (R10), and the `1.0.0` tag. All three are pending
+human approval.
 
 ## Environment note
 
@@ -44,13 +49,13 @@ regression. CI installs them and runs `test_doc`. Do not treat the local
 | # | Item | Type | Status | Notes |
 |---|------|------|--------|-------|
 | R1 | Backlog reconciliation (triage every open issue to 1.0 / deferred) | release | in progress | this document |
-| R2 | Doc finalization: normalize org refs to `logvik-org`, fix README badge + "dev branch" link, pyproject `Homepage` (`grottviq` -> `logvik-org`) | docs | todo | no issue yet |
-| R3 | Decide CONTRIBUTING.md / CODE_OF_CONDUCT.md: add them or drop README links | docs | todo | files referenced but absent |
+| R2 | Doc finalization: normalize org refs to `logvik-org`, fix README badge + "dev branch" link, pyproject `Homepage` (`grottviq` -> `logvik-org`) | docs | done | badge, dev-branch/clone URLs, `Homepage`, sim GHCR cache namespace all on `logvik-org`; vip_ipbus dependency left alone |
+| R3 | Decide CONTRIBUTING.md / CODE_OF_CONDUCT.md: add them or drop README links | docs | done | added minimal CONTRIBUTING.md + Contributor Covenant v2.1 CODE_OF_CONDUCT.md |
 | R4 | License resolution (#90): LICENSE/README/pyproject say MIT; #90 proposes Polyform Noncommercial. Generated files carry no header, so no golden churn; touches LICENSE, README, pyproject, and stray "All rights reserved" strings (enums.py, filters.py) | legal/scope | **discussing with human** | blocks tag |
-| R5 | Bus scope DECIDED: ship all six prototyped buses. AXI4-Lite + IPBus done; add SBI (#13), Avalon-MM (#75), Wishbone (#1), APB. Each = endpoint generator template + generated TB + goldens + sim wiring, one PR per bus | scope | decided, todo | generator is bus-agnostic |
+| R5 | Bus scope DECIDED: ship all six prototyped buses. All merged: AXI4-Lite + IPBus, plus SBI (#13), Avalon-MM (#75), Wishbone (#1), APB. Each = endpoint generator template + generated TB + goldens + sim wiring, one PR per bus | scope | done | all six endpoints, TBs, goldens, and sim wiring merged |
 | R6 | Independent adversarial review of the shared foundation (regfile/access-mode generation, schema/validation/legacy) before building the new buses | verify | done | foundation sound; 3 defects fixed, 2 minor deferred (below) |
-| R7 | Sim verification | verify | via CI | no Docker locally; `vhdl_sim.yml` runs nvc on every `example/**/*.vhd` + `hdl/**/*.vhd` per PR |
-| R8 | Mark design docs historical; ensure no stale "in progress / not yet" language remains user-facing | docs | todo | `local-bus-hdl.md`/`step3-scope.md` read as live plans |
+| R7 | Sim verification | verify | done, via CI | no Docker locally; `vhdl_sim.yml` runs nvc on every `example/**/*.vhd` + `hdl/**/*.vhd` per PR; all six buses simulate |
+| R8 | Mark design docs historical; ensure no stale "in progress / not yet" language remains user-facing | docs | done | `local-bus-hdl.md`/`generator-step3-scope.md` carry a historical-record note pointing here |
 | R9 | Version finalize `1.0.0-dev` -> `1.0.0` via bumpversion; update doc-test pin + `.tex` goldens | release | todo (last) | after all output frozen |
 | R10 | Un-draft + merge PR #164 to `master` (merge method), tag `1.0.0`, draft release notes | release | **needs human** | requires approval |
 
@@ -71,11 +76,11 @@ regression. CI installs them and runs `test_doc`. Do not treat the local
 - **#76** Refactor codebase (partial) — Jinja2, f-strings, `core/generators/...`
   layout done; confirm remaining sub-boxes before closing or keep open scoped.
 
-### Promoted to 1.0.0 (decided: ship every prototyped bus)
-- **#1** Wishbone, **#13** SBI, **#75** Avalon-MM, and APB (no issue yet — open one).
-  Endpoint + testbench are verified hand-written prototypes; the generator is
-  bus-agnostic, so each is endpoint-template + generated-TB + goldens + sim wiring.
-  Sequenced after the foundation review (R6). One PR per bus.
+### Shipped in 1.0.0 (all six prototyped buses merged)
+- **#1** Wishbone, **#13** SBI, **#75** Avalon-MM, and APB are all merged, alongside
+  AXI4-Lite and IPBus. Each landed as endpoint-template + generated-TB + goldens +
+  sim wiring, one PR per bus, sequenced after the foundation review (R6). Close the
+  issues as part of 1.0.0.
 
 ### Deferred to post-v1 (out of scope, with reason)
 - **#98** SystemRDL "beyond" features (counters, interrupts, FIFO/LIFO, array regs,
@@ -95,7 +100,6 @@ regression. CI installs them and runs `test_doc`. Do not treat the local
 
 ### Decision-gated (see Open decisions)
 - **#90** License change — R4.
-- **#1** Wishbone bus support — R5.
 
 ## Foundation review (R6) outcome
 
@@ -128,9 +132,9 @@ Deferred (tracked, not release-blocking):
 
 ## Decisions log
 
-- **Bus scope (RESOLVED 2026-06-28).** Ship every prototyped bus in 1.0.0:
-  AXI4-Lite, IPBus, SBI, Avalon-MM, Wishbone, APB. the design notes/README "Bus support"
-  text must be updated to match when the buses land.
+- **Bus scope (RESOLVED 2026-06-28; SHIPPED).** All six prototyped buses are
+  merged in 1.0.0: AXI4-Lite, IPBus, SBI, Avalon-MM, Wishbone, APB. the design notes and
+  README "Bus support" text updated to match.
 - **Verification (RESOLVED 2026-06-28).** Independent adversarial review + sim.
   Review of the foundation is in progress; sim runs in CI (no local Docker).
 - **License (OPEN, discussing).** MIT today vs Polyform Noncommercial 1.0 (#90).
