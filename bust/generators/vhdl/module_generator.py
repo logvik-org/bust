@@ -49,6 +49,10 @@ class ModuleGenerator:
         """Generate the Wishbone endpoint wrapper over the local-bus regfile."""
         return render_template("vhdl/module/wishbone_endpoint.j2", {"module": module})
 
+    def generate_apb_endpoint_vhdl(self, module) -> str:
+        """Generate the APB endpoint wrapper over the local-bus regfile."""
+        return render_template("vhdl/module/apb_endpoint.j2", {"module": module})
+
     def generate_module_top_vhdl(self, module) -> str:
         """Generate the thin top-level wrapper instantiating the bus endpoint."""
         return render_template(
@@ -80,6 +84,10 @@ class ModuleGenerator:
         return render_template(
             "vhdl/testbench/localbus_wishbone_tb.j2", {"module": module}
         )
+
+    def generate_localbus_apb_testbench_vhdl(self, module) -> str:
+        """Generate the APB testbench (inlined master BFM) for the top wrapper."""
+        return render_template("vhdl/testbench/localbus_apb_tb.j2", {"module": module})
 
 
 # Backward compatibility aliases

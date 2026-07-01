@@ -24,6 +24,7 @@ _ENDPOINT_GENERATORS = {
     "sbi": GeneratorFactory.generate_sbi_endpoint_vhdl,
     "avalon": GeneratorFactory.generate_avalon_endpoint_vhdl,
     "wishbone": GeneratorFactory.generate_wishbone_endpoint_vhdl,
+    "apb": GeneratorFactory.generate_apb_endpoint_vhdl,
 }
 _TESTBENCH_GENERATORS = {
     "axi": GeneratorFactory.generate_localbus_axi_testbench_vhdl,
@@ -31,6 +32,7 @@ _TESTBENCH_GENERATORS = {
     "sbi": GeneratorFactory.generate_localbus_sbi_testbench_vhdl,
     "avalon": GeneratorFactory.generate_localbus_avalon_testbench_vhdl,
     "wishbone": GeneratorFactory.generate_localbus_wishbone_testbench_vhdl,
+    "apb": GeneratorFactory.generate_localbus_apb_testbench_vhdl,
 }
 
 
