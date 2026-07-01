@@ -26,10 +26,9 @@ imply. Verified state:
 - Generated UVVM testbenches cover the access-mode matrix for all six buses.
 - Goldens regenerated for `example_axi`, `example_ipbus`, and the full-coverage
   `example_prototype`.
-- CI: `mypy bust` clean; `pytest` green (107 passed, 1 skipped; `test_doc`
-  requires `pylatexenc`, run in CI); `vhdl_sim.yml` simulates the prototype, the
-  generated regfile package, and the generated AXI/IPBus endpoints **and**
-  testbenches end-to-end (plus SBI/Avalon/Wishbone/APB prototypes).
+- CI: `mypy bust` clean; `pytest` green (`test_doc` requires `pylatexenc`, run in
+  CI); `vhdl_sim.yml` simulates the prototype, the generated regfile package, and
+  the generated endpoints **and** testbenches for all six buses end-to-end.
 
 Consequence: 1.0.0 is now a **finishing/release** effort, not feature work. With
 all six buses merged and doc finalization done, the only remaining 1.0.0 steps are
