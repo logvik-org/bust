@@ -175,6 +175,7 @@ class Test_Suite(unittest.TestCase):
         _, sbi_mod, _, _ = _load_prototype("sbi")
         _, avalon_mod, _, _ = _load_prototype("avalon")
         _, wishbone_mod, _, _ = _load_prototype("wishbone")
+        _, apb_mod, _, _ = _load_prototype("apb")
         hdl = "example/example_prototype/hdl"
         self._assert_matches(
             GeneratorFactory.generate_localbus_package_vhdl(axi_mod),
@@ -217,6 +218,11 @@ class Test_Suite(unittest.TestCase):
             "prototype wishbone endpoint must match manual file",
         )
         self._assert_matches(
+            GeneratorFactory.generate_apb_endpoint_vhdl(apb_mod),
+            hdl + "/prototype_apb_endpoint.vhd",
+            "prototype apb endpoint must match manual file",
+        )
+        self._assert_matches(
             GeneratorFactory.generate_module_top_vhdl(axi_mod),
             hdl + "/prototype.vhd",
             "prototype axi top must match manual file",
@@ -241,6 +247,11 @@ class Test_Suite(unittest.TestCase):
             hdl + "/prototype_wishbone.vhd",
             "prototype wishbone top must match manual file",
         )
+        self._assert_matches(
+            GeneratorFactory.generate_module_top_vhdl(apb_mod),
+            hdl + "/prototype_apb.vhd",
+            "prototype apb top must match manual file",
+        )
 
     def test_prototype_tb(self):
         self.logger.info("Testing prototype testbench generation...")
@@ -249,6 +260,7 @@ class Test_Suite(unittest.TestCase):
         _, sbi_mod, _, _ = _load_prototype("sbi")
         _, avalon_mod, _, _ = _load_prototype("avalon")
         _, wishbone_mod, _, _ = _load_prototype("wishbone")
+        _, apb_mod, _, _ = _load_prototype("apb")
         hdl = "example/example_prototype/hdl"
         self._assert_matches(
             GeneratorFactory.generate_localbus_axi_testbench_vhdl(axi_mod),
@@ -274,6 +286,11 @@ class Test_Suite(unittest.TestCase):
             GeneratorFactory.generate_localbus_wishbone_testbench_vhdl(wishbone_mod),
             hdl + "/prototype_wishbone_tb.vhd",
             "prototype wishbone testbench must match manual file",
+        )
+        self._assert_matches(
+            GeneratorFactory.generate_localbus_apb_testbench_vhdl(apb_mod),
+            hdl + "/prototype_apb_tb.vhd",
+            "prototype apb testbench must match manual file",
         )
 
     def test_prototype_hdr(self):
