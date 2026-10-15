@@ -1,0 +1,306 @@
+# Command line
+
+bust reads one JSON register map and writes the VHDL, the testbench, the
+headers and the documentation for it. This page lists the options, where the
+files go, and what bust does when they already exist.
+
+## Usage
+
+`bust --help` starts with the usage lines:
+
+```text
+Usage:
+  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i]] | [-a] | [-c | -e]]
+  bust --version
+  bust -h | --help
+```
+
+`FILE` is the JSON register map, described in
+[Register map format](register-map-format.md). The usage line also says which
+options go together:
+
+- `-o` combines with everything else, but only a run that generates files
+  uses it.
+- `-f` (or `-F`), one of `-d` and `-p`, and `-i` combine with each other. They
+  control a normal run that generates files.
+- `-a`, `-c` and `-e` each do something other than generate files, so they
+  stand alone.
+
+Any other combination, such as `-d -p` or `-a -f`, makes bust print the usage
+and exit with status 1.
+
+## Options
+
+| Option         | Effect                                                                                                                                                                  |
+|----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `-o DIR`       | Write the output under `DIR`. This overrides `proj_dir` in the JSON file and the location of the JSON file. See [Output directory](#output-directory).                   |
+| `-f`           | Overwrite existing files without asking. See [Existing files](#existing-files).                                                                                         |
+| `-F`           | The same as `-f`.                                                                                                                                                       |
+| `-d`           | Do not write the documentation, neither the `.tex` file nor the PDF.                                                                                                    |
+| `-p`           | Write the `.tex` file, but do not run `pdflatex` to make the PDF.                                                                                                       |
+| `-i`           | Do not write the headers: the `.h`, `.hpp` and `.py` files, and for IPBus the `.xml` address table.                                                                     |
+| `-a`           | Give every register a new address and save the JSON file. Generates nothing. See [Renumber addresses](#renumber-addresses).                                             |
+| `-c`           | Create `FILE` with the interactive editor. See [Interactive editor](#interactive-editor).                                                                               |
+| `-e`           | Open `FILE` in the interactive editor.                                                                                                                                  |
+| `--version`    | Print `bust` and the version number, then exit.                                                                                                                         |
+| `-h`, `--help` | Print the usage and a short description of each option, then exit.                                                                                                      |
+
+Every run that generates files writes the VHDL files and the testbench. No
+option turns them off. [Headers and documentation](headers-and-docs.md)
+describes the headers, the address table and the documentation.
+
+## Output directory
+
+bust picks the directory to write into from the first of these that is set:
+
+1. `-o DIR` on the command line.
+2. `proj_dir` in the `settings` section of the JSON file. A relative
+   `proj_dir` is relative to the directory you run bust from, not to the JSON
+   file. It may start with `~`.
+3. The directory that holds the JSON file.
+
+When `mod_subdir` in the `settings` section is `true`, which is the default,
+bust adds a directory named after the module (the `name` in the `module`
+section). When it is `false`, bust writes straight into the directory above.
+[Register map format](register-map-format.md) describes the `settings`
+section.
+
+Inside that directory, bust writes four directories. This is the output of
+`bust example_ipbus.json -o out` for the IPBus example from the repository,
+with `pdflatex` installed:
+
+```text
+out/
+└── example_ipbus/
+    ├── doc/
+    │   ├── example_ipbus.aux
+    │   ├── example_ipbus.log
+    │   ├── example_ipbus.pdf
+    │   └── example_ipbus.tex
+    ├── hdl/
+    │   ├── example_ipbus.vhd
+    │   ├── example_ipbus_ipb_endpoint.vhd
+    │   ├── example_ipbus_localbus_pkg.vhd
+    │   ├── example_ipbus_regfile.vhd
+    │   └── example_ipbus_regfile_pkg.vhd
+    ├── header/
+    │   ├── example_ipbus.h
+    │   ├── example_ipbus.hpp
+    │   ├── example_ipbus.py
+    │   └── example_ipbus.xml
+    └── tb/
+        └── example_ipbus_tb.vhd
+```
+
+| Directory | Files                                                                                                     | Described in                                       |
+|-----------|-----------------------------------------------------------------------------------------------------------|----------------------------------------------------|
+| `hdl/`    | `<module>_localbus_pkg.vhd`, `<module>_regfile_pkg.vhd`, `<module>_regfile.vhd`, the endpoint, `<module>.vhd` | [Generated HDL](generated-hdl.md)                  |
+| `tb/`     | `<module>_tb.vhd`                                                                                         | [Testbenches](testbenches.md)                      |
+| `header/` | `<module>.h`, `<module>.hpp`, `<module>.py`, and `<module>.xml` for IPBus                                 | [Headers and documentation](headers-and-docs.md)   |
+| `doc/`    | `<module>.tex`, `<module>.pdf`, and the `.aux` and `.log` files from `pdflatex`                           | [Headers and documentation](headers-and-docs.md)   |
+
+The endpoint file is named after the bus:
+
+| Bus type   | Endpoint file                     |
+|------------|-----------------------------------|
+| `axi`      | `<module>_axi_endpoint.vhd`       |
+| `ipbus`    | `<module>_ipb_endpoint.vhd`       |
+| `sbi`      | `<module>_sbi_endpoint.vhd`       |
+| `avalon`   | `<module>_avalon_endpoint.vhd`    |
+| `wishbone` | `<module>_wishbone_endpoint.vhd`  |
+| `apb`      | `<module>_apb_endpoint.vhd`       |
+
+bust creates all four directories whenever it generates files, so `-d` leaves
+an empty `doc/` and `-i` an empty `header/`.
+
+## Existing files
+
+### Without `-f`
+
+For each file that already exists, bust asks before it replaces it:
+
+```text
+Do you want to overwrite out/example_ipbus/hdl/example_ipbus_localbus_pkg.vhd? (y/N):
+```
+
+Answer `y` to replace the file. Any other answer keeps it, and bust prints
+`Did not write` and the path, then goes on with the next file. The generated
+files refer to each other, so keep them from the same run.
+
+bust reads the answers from standard input. When there is nothing to read, for
+example in a script or a CI job, it stops at the first question and exits with
+status 1:
+
+```text
+Do you want to overwrite out/example_ipbus/hdl/example_ipbus_localbus_pkg.vhd? (y/N):ERROR: Could not generate local-bus VHDL files
+An error occurred during output generation...
+EOFError: EOF when reading a line
+```
+
+Use `-f` in scripts.
+
+### With `-f`
+
+bust replaces every file without asking. That includes `<module>.vhd`, the
+top-level wrapper, so keep your own logic in your own files and connect it
+through the `to_hw` and `from_hw` records. [Generated HDL](generated-hdl.md)
+shows how.
+
+### Top-level files from bust 0.14
+
+In bust 0.14, `<module>.vhd` held your own logic between `-- User ... Start`
+and `-- User ... End` comments. Before bust writes anything, it checks whether
+`hdl/<module>.vhd` still has those comments. If it has, bust refuses to replace
+it, with or without `-f`, and exits with status 1 without writing any file:
+
+```text
+Parsing file: example_axi.json...
+Project path: /path/to/out
+An error occurred during output generation...
+LegacyTopLevelFile: Refusing to overwrite out/example_axi/hdl/example_axi.vhd: it has the '-- User ... Start/End' sections of a bust 0.14 top level, so it may hold your own logic. In bust 1.0 example_axi.vhd is a fixed wrapper that bust regenerates, and hardware logic connects through the to_hw/from_hw records outside the generated files. Move your logic out of this file, then delete or rename it to proceed. No files were written.
+```
+
+[Upgrading from 0.14](upgrading.md) explains how to move that logic out.
+
+## Renumber addresses
+
+`-a` reads `FILE`, gives every register a new address, and writes the result
+back to `FILE`. It generates no other output.
+
+```bash
+bust timer.json -a
+```
+
+bust numbers the registers in the order they appear, starting at 0 and one data
+word apart: 4 bytes apart for a byte-addressed bus with 32-bit data, and 1 apart
+for IPBus, which addresses words. Addresses you wrote yourself are replaced.
+
+bust then writes the whole file again, with 4-space indentation. Every register
+gets an `address`, and the defaults bust used are written out, such as `type`,
+`reset` and `description`. Keys that bust does not use are dropped. These
+registers:
+
+```json
+"register": [
+  { "name": "ctrl", "sw": "rw", "hw": "r", "type": "vector", "width": 8, "address": "0x10" },
+  { "name": "status", "sw": "ro", "hw": "w" },
+  { "name": "irq", "sw": "rw", "hw": "r", "type": "fields", "address": "0x4",
+    "fields": [ { "name": "done", "type": "bit", "onwrite": "woclr", "hwset": true } ] }
+]
+```
+
+become:
+
+```json
+"register": [
+    {
+        "name": "ctrl",
+        "sw": "rw",
+        "hw": "r",
+        "type": "vector",
+        "address": "0x0",
+        "width": 8,
+        "reset": "0x0",
+        "description": ""
+    },
+    {
+        "name": "status",
+        "sw": "ro",
+        "hw": "w",
+        "type": "default",
+        "address": "0x4",
+        "reset": "0x0",
+        "description": ""
+    },
+    {
+        "name": "irq",
+        "sw": "rw",
+        "hw": "r",
+        "type": "fields",
+        "address": "0x8",
+        "fields": [
+            {
+                "name": "done",
+                "type": "bit",
+                "onwrite": "woclr",
+                "hwset": true
+            }
+        ],
+        "description": ""
+    }
+]
+```
+
+The `settings`, `bus` and `module` sections get the same treatment. Commit or
+copy the file first if you want to compare.
+
+## Interactive editor
+
+`-c` and `-e` open a menu-based editor in the terminal. It needs an interactive
+terminal.
+
+`bust FILE -c` starts a new register map. It asks for the bus type, the module
+name and a description, then opens the menu. `bust FILE -e` loads `FILE` and
+opens the same menu. The menu has these entries:
+
+| Entry            | What it does                                                         |
+|------------------|----------------------------------------------------------------------|
+| Edit name        | Rename the module.                                                   |
+| List registers   | Show the registers in a table, and the fields of one register.       |
+| Add new register | Ask for the name, description, mode, fields, type, address and reset. |
+| Remove register  | Delete a register.                                                   |
+| Update addresses | Renumber the addresses, as `-a` does.                                |
+| Save JSON        | Write the register map to `FILE`, asking before it replaces a file.  |
+| Exit             | Leave the editor. Changes you did not save are lost.                 |
+
+The line under the title shows the module name, the address and data width,
+and whether there are unsaved changes. A new module from `-c` has 32-bit
+addresses and data.
+
+The editor writes registers with the `mode` key (`rw`, `ro` or `pulse`) and a
+register type. It does not know the `sw` and `hw` keys or the other
+[access modes](access-modes.md), so add those in a text editor.
+
+## Messages and debug.log
+
+bust prints its progress and its errors on standard error. A run that writes
+every file prints:
+
+```text
+Parsing file: example_axi.json...
+Project path: /path/to/out
+Generating local-bus VHDL files...
+Generating Module Include Files...
+Generating Module Documentation...
+Generating Documentation PDF...
+```
+
+When `pdflatex` is not on your `PATH`, the last line is followed by
+`ERROR: PDF Generation Failed`. bust still exits with status 0, since every
+other file was written. [Headers and documentation](headers-and-docs.md)
+describes the PDF step.
+
+An error in the register map is printed as a message that names the problem,
+and bust exits with status 1. For example:
+
+```text
+When specifying address for register reg1, address 0x0 is already assigned to other register
+```
+
+```text
+Bus type is not valid: pci
+```
+
+Each run that reads a JSON file also writes `debug.log` in the directory you
+run bust from, replacing the one from the previous run. It holds the same
+messages with a timestamp, a line for each file written, and the full Python
+traceback of any error. Look there when a message is not enough, and attach it
+when you report a problem. `--version`, `--help` and a usage error do not write
+it.
+
+## Exit codes
+
+| Code | Meaning                                                                                                                                                                                                                      |
+|------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0    | Success. Also when you answered no to an overwrite question, when the PDF could not be made, and for `--version` and `--help`.                                                                                               |
+| 1    | Any error: invalid command-line arguments, a JSON file that is missing or not valid JSON, a register map that fails validation, a 0.14 top-level file in the way, or a file that could not be written, including an overwrite question with no input. |
