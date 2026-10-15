@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `bust` is an open-source bus tool: a command-line utility that generates VHDL, C/C++/Python headers, LaTeX/PDF documentation, and UVVM-based testbenches from a simple JSON register-map description. It supports **AXI4-Lite** (`axi`), **IPBus** (`ipbus`), **SBI** (`sbi`), **Avalon-MM** (`avalon`), **Wishbone** (`wishbone`), and **APB** (`apb`). The generated VHDL hides all register handling behind VHDL records so the rest of a design references registers by name and access mode.
 
-Maintained by Ola Grøttvik. Apache 2.0 licensed, hosted at https://github.com/logvik-org/bust. Target runtimes: Python 3.9 to 3.14 (3.9 is the mypy baseline). Python 2.7 is not supported.
+Maintained by Ola Groettvik. Apache 2.0 licensed, hosted at https://github.com/logvik-org/bust. Target runtimes: Python 3.9 to 3.14 (3.9 is the mypy baseline). Python 2.7 is not supported.
 
 ## Architecture
 
@@ -142,7 +142,7 @@ black bust tests                       # format (excludes example/)
 pre-commit run --all-files             # trailing-ws, eof, tabs, crlf, black, flake8
 ```
 
-CI (`.github/workflows/python_tests.yml`) runs `mypy bust` then `pytest` across Python 3.9 to 3.14, plus an experimental 3.15 pre-release leg that may fail. It then builds the sdist and wheel, runs `twine check`, installs the wheel into a fresh venv and runs `scripts/smoke-test.sh` against it. All of it must be green. `vhdl_sim.yml` runs the VHDL simulations (see below) and `pre-commit.yml` runs the pre-commit hooks on pull requests. Publishing a GitHub Release runs `release.yml`, which reruns `python_tests.yml` and `vhdl_sim.yml` and then publishes to TestPyPI and PyPI (see "Releasing" in `CONTRIBUTING.md`). Every action in `.github/workflows/` is pinned to a commit SHA with a `# vX.Y.Z` comment.
+CI (`.github/workflows/python_tests.yml`) runs `mypy bust` then `pytest` across Python 3.9 to 3.14, plus an experimental 3.15 pre-release leg that may fail. It then builds the sdist and wheel, runs `twine check`, installs the wheel into a fresh venv and runs `scripts/smoke-test.sh` against it. All of it must be green. `vhdl_sim.yml` runs the VHDL simulations (see below) and `pre-commit.yml` runs the pre-commit hooks on pull requests. Publishing a GitHub Release runs `release.yml`, which reruns `python_tests.yml` and `vhdl_sim.yml` and then publishes to TestPyPI and PyPI (see "Releasing" below). Every action in `.github/workflows/` is pinned to a commit SHA with a `# vX.Y.Z` comment.
 
 ## Generation pipeline
 
@@ -192,11 +192,20 @@ make wave-axi                 # simulate + capture FST + open GTKWave
 
 ## Conventions
 
-- **Versioning**: managed by `bumpversion` (config in `.bumpversion.cfg`). The version should be kept in sync between `pyproject.toml` and `bust/_version.py` (`__VERSION__`), so use bumpversion to update both. Do not edit version strings by hand. Versions follow PEP 440: `X.Y.Z.devN` during development, `X.Y.ZaN`/`bN`/`rcN` for pre-releases and `X.Y.Z` for final releases, and `bump2version num`, `release` and `patch` move between them (see CONTRIBUTING.md). bumpversion commits but does not tag (`tag = False`): the GitHub Release creates the `v<version>` tag, and `release.yml` fails unless the tag equals `v` + `__VERSION__`.
+- **Versioning**: the version lives only in `bust/_version.py` (`__VERSION__`). `pyproject.toml` reads it from there, so changing the version is a one-line edit. Versions follow PEP 440: `X.Y.Z.devN` during development, `X.Y.ZaN`/`bN`/`rcN` for pre-releases and `X.Y.Z` for final releases.
 - **Changelog**: `CHANGELOG.md` follows Keep a Changelog. Add user-facing changes under `## [Unreleased]`.
 - **mypy**: configured in `pyproject.toml` with most warnings on but untyped-def enforcement off. Keep `mypy bust` clean.
 - **Docstrings**: Google convention (pydocstyle), ignoring D100/D104/D107; test files are exempt.
 - **black** formats everything except `example/` (generator output, not hand-written).
+
+## Releasing
+
+1. On the branch you release from (`master` for a final release), move the `Unreleased` entries in `CHANGELOG.md` under a new `## [<version>] - <date>` heading, update the compare links at the bottom, set `__VERSION__` in `bust/_version.py`, and push.
+2. The maintainer publishes a GitHub Release on that commit with the tag `v<version>`, exactly `v` + `__VERSION__` (for example `v1.0.0rc1`), and ticks "Set as a pre-release" for an `a`, `b` or `rc` version. pip installs a pre-release only when asked (`pip install --pre bust`), so regular users keep the latest final release.
+
+Publishing the release starts `release.yml`, which stops at the first failing job: `python_tests.yml` and `vhdl_sim.yml`, then the build (after checking the tag against `__VERSION__`) and `twine check`, the upload to TestPyPI, a download of the wheel from TestPyPI that must match the one just built, an install with dependencies from PyPI and `scripts/smoke-test.sh`, and finally the upload of the same files to PyPI. Uploads use PyPI Trusted Publishing through the `testpypi` and `pypi` GitHub environments, so no tokens are stored.
+
+If a job fails for a reason outside the code, re-run the failed jobs. TestPyPI skips files it already has. If the code needs a fix and the release failed before the TestPyPI upload, delete the release and its tag, fix, and publish again. Once a version is on TestPyPI, a fix needs a new version, because neither index accepts the same file name twice.
 
 ---
 
