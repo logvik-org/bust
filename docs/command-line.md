@@ -10,7 +10,7 @@ files go, and what bust does when they already exist.
 
 ```text
 Usage:
-  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i]] | [-a] | [-c | -e]]
+  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i]] | [-a [-F | -f]] | [-c | -e]]
   bust --version
   bust -h | --help
 ```
@@ -23,10 +23,11 @@ options go together:
   uses it.
 - `-f` (or `-F`), one of `-d` and `-p`, and `-i` combine with each other. They
   control a normal run that generates files.
-- `-a`, `-c` and `-e` each do something other than generate files, so they
-  stand alone.
+- `-a` saves the JSON file instead of generating files. It takes `-f` (or `-F`)
+  to save without asking.
+- `-c` and `-e` open the editor, so they stand alone.
 
-Any other combination, such as `-d -p` or `-a -f`, makes bust print the usage
+Any other combination, such as `-d -p` or `-c -f`, makes bust print the usage
 and exit with status 1.
 
 ## Options
@@ -39,7 +40,7 @@ and exit with status 1.
 | `-d`           | Do not write the documentation, neither the `.tex` file nor the PDF.                                                                                                    |
 | `-p`           | Write the `.tex` file, but do not run `pdflatex` to make the PDF.                                                                                                       |
 | `-i`           | Do not write the headers: the `.h`, `.hpp` and `.py` files, and for IPBus the `.xml` address table.                                                                     |
-| `-a`           | Give every register a new address and save the JSON file. Generates nothing. See [Renumber addresses](#renumber-addresses).                                             |
+| `-a`           | Give every register a new address and save the JSON file. Generates nothing. With `-f`, saves without asking. See [Renumber addresses](#renumber-addresses).          |
 | `-c`           | Create `FILE` with the interactive editor. See [Interactive editor](#interactive-editor).                                                                               |
 | `-e`           | Open `FILE` in the interactive editor.                                                                                                                                  |
 | `--version`    | Print `bust` and the version number, then exit.                                                                                                                         |
@@ -127,14 +128,13 @@ Answer `y` to replace the file. Any other answer keeps it, and bust prints
 `Did not write` and the path, then goes on with the next file. The generated
 files refer to each other, so keep them from the same run.
 
-bust reads the answers from standard input. When there is nothing to read, for
-example in a script or a CI job, it stops at the first question and exits with
-status 1:
+bust asks only when standard input is a terminal. In a script or a CI job, it
+stops at the first existing file instead and exits with status 1:
 
 ```text
-Do you want to overwrite out/example_ipbus/hdl/example_ipbus_localbus_pkg.vhd? (y/N):ERROR: Could not generate local-bus VHDL files
+ERROR: Could not generate local-bus VHDL files
 An error occurred during output generation...
-EOFError: EOF when reading a line
+FileExistsError: out/example_ipbus/hdl/example_ipbus_localbus_pkg.vhd already exists and there is no terminal to ask whether to overwrite it. Run bust with -f to overwrite it.
 ```
 
 Use `-f` in scripts.
@@ -165,10 +165,12 @@ LegacyTopLevelFile: Refusing to overwrite out/example_axi/hdl/example_axi.vhd: i
 ## Renumber addresses
 
 `-a` reads `FILE`, gives every register a new address, and writes the result
-back to `FILE`. It generates no other output.
+back to `FILE`. It generates no other output. It asks before it replaces
+`FILE`, or, without a terminal, stops as described in
+[Existing files](#existing-files). Add `-f` to save without asking:
 
 ```bash
-bust timer.json -a
+bust timer.json -a -f
 ```
 
 bust numbers the registers in the order they appear, starting at 0 and one data
@@ -177,8 +179,9 @@ for IPBus, which addresses words. Addresses you wrote yourself are replaced.
 
 bust then writes the whole file again, with 4-space indentation. Every register
 gets an `address`, and the defaults bust used are written out, such as `type`,
-`reset` and `description`. Keys that bust does not use are dropped. These
-registers:
+`reset` and `description`. Keys that bust does not know are dropped, after the
+warning described in [Register map format](register-map-format.md#keys-bust-does-not-know).
+These registers:
 
 ```json
 "register": [
@@ -231,13 +234,15 @@ become:
 ]
 ```
 
-The `settings`, `bus` and `module` sections get the same treatment. Commit or
-copy the file first if you want to compare.
+The `settings`, `bus` and `module` sections get the same treatment. The bust
+0.14 keys that bust accepts and ignores, such as `comp_library`, are kept as
+they are. Commit or copy the file first if you want to compare.
 
 ## Interactive editor
 
 `-c` and `-e` open a menu-based editor in the terminal. It needs an interactive
-terminal.
+terminal. Without one, bust stops with
+`The editor (-c, -e) needs an interactive terminal.` and exits with status 1.
 
 `bust FILE -c` starts a new register map. It asks for the bus type, the module
 name and a description, then opens the menu. `bust FILE -e` loads `FILE` and
@@ -275,10 +280,16 @@ Generating Module Documentation...
 Generating Documentation PDF...
 ```
 
-When `pdflatex` is not on your `PATH`, the last line is followed by
-`ERROR: PDF Generation Failed`. bust still exits with status 0, since every
-other file was written. [Headers and documentation](headers-and-docs.md)
-describes the PDF step.
+When `pdflatex` is not on your `PATH`, the last line is followed by:
+
+```text
+Could not run pdflatex ([Errno 2] No such file or directory: 'pdflatex'). Use -p to skip the PDF.
+```
+
+When `pdflatex` runs but reports errors, bust prints
+`pdflatex reported errors. See <doc dir>/<module>.log`. In both cases bust
+still exits with status 0, since every other file was written.
+[Headers and documentation](headers-and-docs.md) describes the PDF step.
 
 An error in the register map is printed as a message that names the problem,
 and bust exits with status 1. For example:
@@ -303,4 +314,4 @@ it.
 | Code | Meaning                                                                                                                                                                                                                      |
 |------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 0    | Success. Also when you answered no to an overwrite question, when the PDF could not be made, and for `--version` and `--help`.                                                                                               |
-| 1    | Any error: invalid command-line arguments, a JSON file that is missing or not valid JSON, a register map that fails validation, a 0.14 top-level file in the way, or a file that could not be written, including an overwrite question with no input. |
+| 1    | Any error: invalid command-line arguments, a JSON file that is missing or not valid JSON, a register map that fails validation, a 0.14 top-level file in the way, a file that could not be written (including an existing file with no terminal to ask), or the editor without a terminal. |

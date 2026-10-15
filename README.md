@@ -50,7 +50,7 @@ A minimal register map with one control register:
 
 ```json
 {
-  "bus": { "type": "axi", "addr_width": 32, "data_width": 32, "comp_library": "work" },
+  "bus": { "type": "axi", "addr_width": 32, "data_width": 32 },
   "module": {
     "name": "blinky",
     "version": "1.0",
