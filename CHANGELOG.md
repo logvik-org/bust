@@ -23,8 +23,31 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   `vip_ipbus_rel_path` and the bus keys `comp_library` and `reset` have no
   effect in 1.0. bust no longer logs messages about them, and `bust -a` keeps
   them as they are instead of adding or dropping them.
+- bust warns about each key it does not read, so a misspelt key such as
+  `onwrit` no longer goes unnoticed.
+- bust rejects register maps that produced VHDL that does not compile, or a
+  register software could not reach: two registers, or two fields of one
+  register, whose names differ only in case, a register with the name of its
+  module, a `fields` register with no fields, an address that is not a multiple
+  of the data width in bytes on a byte-addressed bus, and a `data_width` that is
+  not a whole number of bytes.
+- A register with a `fields` list is a `fields` register even without
+  `"type": "fields"`. Before, its fields were dropped without a warning. A
+  `fields` list on a register of another type is an error.
+- `true`/`false` keys such as `swmod` or `hwset` must be JSON booleans. A quoted
+  `"false"` used to switch the option on.
+- The editor (`-c`, `-e`) stops with an error when there is no terminal instead
+  of exiting with status 0 without saving.
+- bust reports when `pdflatex` fails or finds errors in the documentation.
 
 ### Fixed
+- `bust FILE` without `-o` failed when `FILE` was in the working directory.
+- The IPBus address table was malformed when a description contained `&`, `<`
+  or a quote. Descriptions are now escaped, and the file is declared and
+  written as UTF-8.
+- The C and C++ headers used the same include guard, so a file that included
+  both lost the second.
+- A register with an empty description produced LaTeX errors.
 - `bust -a` exited with status 0 when it could not save the file.
 - Names that are VHDL keywords in upper or mixed case, such as an enumerated
   value called `ON`, were accepted and produced VHDL that does not compile. They
