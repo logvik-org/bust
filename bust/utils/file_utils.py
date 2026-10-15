@@ -66,7 +66,7 @@ def write_string_to_file(
 
     logger.debug(f"Writing string to {joined}")
 
-    with open(joined, "w") as strfile:
+    with open(joined, "w", encoding="utf-8") as strfile:
         strfile.write(string)
     return True
 

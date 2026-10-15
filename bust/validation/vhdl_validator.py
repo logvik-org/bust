@@ -5,9 +5,12 @@ the VHDL language standard (IEEE 1076). It checks for reserved keywords,
 naming conventions, and uniqueness within a namespace.
 """
 
+import logging
 import re
 
-from bust.utils.formatting import is_mixed, NL
+from bust.utils.formatting import is_mixed
+
+logger = logging.getLogger(__name__)
 
 
 def get_identifier(msg, ls=None):
@@ -271,23 +274,16 @@ def is_valid_VHDL(string):
         )
     if not is_only_alpfanum_(string):
         raise InvalidVHDLIdentifier(
-            string
-            + f" - identifiers may only contain {NL}{NL}- alphabetic letters "
-            + f"('A' to 'Z' and 'a' to 'z'), {NL}- decimal digits ('0' to '9') "
-            + f"{NL}- the underline character ('_')"
+            string + " - identifiers may only contain letters, digits and underscores."
         )
     if len(string) > 16:
-        print(
-            f"{NL}Warning - "
-            + string
-            + " - identifier should probably not be longer than 16 characters."
+        logger.warning(
+            string + " - identifier should probably not be longer than 16 characters."
         )
     if is_mixed(string):
-        print(
-            f"{NL}Warning - "
-            + string
-            + " - identifier should probably not contain a mix of uppercase"
-            + " and lowercase letters."
+        logger.warning(
+            string + " - identifier should probably not contain a mix of uppercase"
+            " and lowercase letters."
         )
     return True
 
@@ -305,7 +301,8 @@ def is_unique(string, ls):
     Raises:
         NonUniqueIdentifer: If identifier already exists in the list.
     """
-    if string in ls:
+    # VHDL is case-insensitive, so "a" and "A" name the same thing.
+    if string.lower() in (name.lower() for name in ls):
         raise NonUniqueIdentifer(
             string + " - identifier is already used in the same namespace."
         )
@@ -325,8 +322,7 @@ class InvalidVHDLIdentifier(Exception):
         Args:
             msg: Description of the validation error.
         """
-        s = f"{NL}Error in parsing identifier: {msg}"
-        super().__init__(s)
+        super().__init__(f"Invalid identifier: {msg}")
 
 
 class NonUniqueIdentifer(Exception):
@@ -342,5 +338,4 @@ class NonUniqueIdentifer(Exception):
         Args:
             msg: Description of the uniqueness violation.
         """
-        s = f"{NL}Error in parsing identifier: {msg}"
-        super().__init__(s)
+        super().__init__(f"Invalid identifier: {msg}")

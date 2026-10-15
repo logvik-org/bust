@@ -8,7 +8,12 @@ import pytest
 
 from bust.core.module import Module
 from bust.core.enums import RegisterMode
-from bust.exceptions import InvalidAddress, InvalidRegister, InvalidRegisterFormat
+from bust.exceptions import (
+    FormatError,
+    InvalidAddress,
+    InvalidRegister,
+    InvalidRegisterFormat,
+)
 from bust.validation.vhdl_validator import InvalidVHDLIdentifier
 
 
@@ -53,11 +58,26 @@ class TestAddressAssignment:
             )
 
     def test_out_of_range_address_rejected(self):
-        with pytest.raises(RuntimeError):
+        with pytest.raises(FormatError, match="does not fit in addr_width 4"):
             make_module(
                 [{"name": "R0", "mode": "rw", "address": "0x100"}],
                 bus=stub_bus(addr_width=4),
             )
+
+    def test_unaligned_address_rejected(self):
+        with pytest.raises(FormatError, match="not a multiple of 4"):
+            make_module([{"name": "R0", "mode": "rw", "address": "0x2"}])
+
+    def test_word_addressed_bus_takes_any_address(self):
+        mod = make_module(
+            [{"name": "R0", "mode": "rw", "address": "0x3"}],
+            bus=stub_bus(bus_type="ipbus"),
+        )
+        assert mod.addresses == [3]
+
+    def test_numeric_address_rejected_with_a_hint(self):
+        with pytest.raises(FormatError, match='hex string such as "0x10"'):
+            make_module([{"name": "R0", "mode": "rw", "address": 16}])
 
     def test_update_addresses_reassigns_sequentially(self):
         mod = make_module(regs("R0", "R1"))
@@ -105,3 +125,47 @@ class TestModuleValidation:
     def test_mode_enum_resolved(self):
         mod = make_module([{"name": "R0", "mode": "pulse"}])
         assert mod.registers[0].mode is RegisterMode.PULSE
+
+
+def fields_register(name="R0", fields=None, **keys):
+    fields = [{"name": "f", "type": "bit"}] if fields is None else fields
+    return {"name": name, "sw": "rw", "hw": "r", "fields": fields, **keys}
+
+
+class TestRegisterMapValidation:
+    def test_fields_imply_type_fields(self):
+        mod = make_module([fields_register()])
+        assert [f.name for f in mod.registers[0].fields] == ["f"]
+
+    def test_fields_on_another_type_rejected(self):
+        with pytest.raises(InvalidRegister, match="has fields but type 'vector'"):
+            make_module([fields_register(type="vector")])
+
+    def test_empty_fields_rejected(self):
+        with pytest.raises(InvalidRegister, match="has no fields"):
+            make_module([fields_register(fields=[])])
+
+    def test_register_names_differing_in_case_rejected(self):
+        with pytest.raises(InvalidRegister, match="already used"):
+            make_module(regs("ctrl", "CTRL"))
+
+    def test_field_names_differing_in_case_rejected(self):
+        fields = [{"name": "f", "type": "bit"}, {"name": "F", "type": "bit"}]
+        with pytest.raises(InvalidRegister, match="already used"):
+            make_module([fields_register(fields=fields)])
+
+    def test_register_named_like_the_module_rejected(self):
+        with pytest.raises(InvalidRegister, match="name of its module"):
+            make_module(regs("TestMod"))
+
+    def test_quoted_flag_rejected(self):
+        fields = [{"name": "f", "type": "bit", "swmod": "false"}]
+        with pytest.raises(InvalidRegister, match="must be true or false"):
+            make_module([fields_register(fields=fields)])
+
+    def test_null_flag_is_false(self):
+        fields = [{"name": "f", "type": "bit", "swmod": None}]
+        assert (
+            make_module([fields_register(fields=fields)]).registers[0].fields[0].swmod
+            is False
+        )

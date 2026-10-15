@@ -12,6 +12,7 @@ from collections import OrderedDict
 from typing import Any, Dict
 
 from bust.exceptions import FormatError, InvalidBusType
+from bust.validation.config_validator import warn_unknown_keys
 
 
 class Bus:
@@ -109,6 +110,9 @@ class Bus:
         """
         if bus["type"] not in Bus.BUS_CONFIG:
             raise InvalidBusType(bus["type"])
+        warn_unknown_keys(
+            bus, ("type", "addr_width", "data_width", *Bus.IGNORED_KEYS), "bus"
+        )
         self.bus_type = bus["type"]
         config = Bus.BUS_CONFIG[self.bus_type]
 
@@ -123,6 +127,11 @@ class Bus:
                 f"Bus type {self.bus_type} carries {max_addr_width}-bit addresses, "
                 f"so addr_width must be at most {max_addr_width} "
                 f"(got {self.addr_width})"
+            )
+
+        if self.data_width <= 0 or self.data_width % 8:
+            raise FormatError(
+                f"data_width must be a whole number of bytes (got {self.data_width})"
             )
 
         fixed_data_width = config["fixed_data_width"]
