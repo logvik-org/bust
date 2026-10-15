@@ -1,7 +1,8 @@
 # Getting started
 
 This page installs bust, describes a small timer module in JSON, generates its
-VHDL, headers and testbench, and connects the result to a design.
+VHDL, headers and testbench, and connects the result to a design. The same
+timer is used on the other pages of this documentation.
 
 ## Install
 
@@ -15,76 +16,39 @@ bust --version
 ## Describe your registers
 
 A register map is one JSON file with a `bus` section and a `module` section.
-This one describes a timer with four registers:
+Save this one as `timer.json`:
 
 ```json
 {
   "bus": {
     "type": "axi",
     "addr_width": 32,
-    "data_width": 32,
-    "comp_library": "work"
+    "data_width": 32
   },
   "module": {
     "name": "timer",
-    "version": "1.0",
-    "description": "A timer with a control, a period, a status and an event register.",
     "register": [
       {
-        "name": "ctrl",
-        "sw": "rw",
-        "hw": "r",
-        "type": "fields",
-        "description": "Timer control.",
+        "name": "ctrl", "sw": "rw", "hw": "r", "type": "fields",
         "fields": [
-          { "name": "enable", "type": "bit", "description": "Count while 1." },
-          {
-            "name": "mode",
-            "type": "vector",
-            "width": 2,
-            "description": "What happens when the counter reaches the period.",
-            "enums": [
-              { "name": "ONESHOT", "value": 0 },
-              { "name": "PERIODIC", "value": 1 }
-            ]
-          }
+          {"name": "enable", "type": "bit"},
+          {"name": "mode", "type": "vector", "width": 2,
+           "enums": [{"name": "ONESHOT", "value": 0}, {"name": "PERIODIC", "value": 1}]},
+          {"name": "start", "type": "bit", "singlepulse": true}
+        ]
+      },
+      {"name": "load", "sw": "rw", "hw": "r", "type": "default", "swmod": true},
+      {
+        "name": "status", "sw": "ro", "hw": "w", "type": "fields",
+        "fields": [
+          {"name": "count", "type": "vector", "width": 16, "we": true},
+          {"name": "running", "type": "bit"}
         ]
       },
       {
-        "name": "period",
-        "sw": "rw",
-        "hw": "r",
-        "type": "fields",
-        "description": "Number of clock cycles per period.",
+        "name": "irq", "sw": "rw", "hw": "r", "type": "fields",
         "fields": [
-          { "name": "cycles", "type": "vector", "width": 16, "reset": "0x3e8" }
-        ]
-      },
-      {
-        "name": "status",
-        "sw": "ro",
-        "hw": "w",
-        "type": "fields",
-        "description": "Timer state, written by hardware.",
-        "fields": [
-          { "name": "count", "type": "vector", "width": 16 },
-          { "name": "running", "type": "bit" }
-        ]
-      },
-      {
-        "name": "event",
-        "sw": "rw",
-        "hw": "r",
-        "type": "fields",
-        "description": "Sticky event flags.",
-        "fields": [
-          {
-            "name": "expired",
-            "type": "bit",
-            "hwset": true,
-            "onwrite": "woclr",
-            "description": "Set by hardware when the period ends. Write 1 to clear."
-          }
+          {"name": "expired", "type": "bit", "hwset": true, "onwrite": "woclr"}
         ]
       }
     ]
@@ -95,10 +59,14 @@ This one describes a timer with four registers:
 Each register says what software can do with it (`sw`) and what hardware can do
 with it (`hw`):
 
-- `ctrl` and `period` are written by software and read by hardware. The `mode`
-  field has named values, so bust generates a VHDL enumeration type for it.
-- `status` is read-only for software and written by hardware.
-- `event.expired` is a sticky flag. Hardware sets it with `hwset`, and software
+- `ctrl` is written by software and read by hardware. `mode` has named values,
+  so bust generates a VHDL enumeration type for it. `start` is a
+  `singlepulse` field: a software write shows to hardware for one clock cycle.
+- `load` is a full-width register. `swmod` gives hardware a one-cycle strobe
+  each time software writes it.
+- `status` is read-only for software and written by hardware. `count` takes
+  the hardware value only while its write enable `we` is high.
+- `irq.expired` is a sticky flag. Hardware sets it with `hwset`, and software
   clears it by writing 1 (`onwrite: woclr`).
 
 The registers have no addresses, so bust places them one after another from
@@ -147,19 +115,18 @@ library:
 5. `timer.vhd`
 
 `timer` is the entity you instantiate. Next to the AXI4-Lite ports it has two
-record ports, `to_hw` and `from_hw`, that carry every field by name. These are
-the records bust generated for the timer:
+record ports, `to_hw` and `from_hw`, that carry every field by name:
 
 ```vhdl
 type t_timer_to_hw is record
-  ctrl   : t_ctrl_to_hw;     -- enable : std_logic, mode : t_ctrl_mode
-  period : t_period_to_hw;   -- cycles : std_logic_vector(15 downto 0)
-  event  : t_event_to_hw;    -- expired : std_logic
+  ctrl : t_ctrl_to_hw;     -- enable, mode (t_ctrl_mode), start
+  load : t_load_to_hw;     -- load.value, load.swmod
+  irq  : t_irq_to_hw;      -- expired
 end record;
 
 type t_timer_from_hw is record
-  status : t_status_from_hw; -- count : std_logic_vector(15 downto 0), running : std_logic
-  event  : t_event_from_hw;  -- expired.set : std_logic
+  status : t_status_from_hw;  -- count.value, count.we, running
+  irq    : t_irq_from_hw;     -- expired.set
 end record;
 ```
 
@@ -171,30 +138,32 @@ use work.timer_regfile_pkg.all;
 signal timer_to_hw   : t_timer_to_hw;
 signal timer_from_hw : t_timer_from_hw;
 
-i_timer_regs : entity work.timer
+i_timer : entity work.timer
   generic map (
-    G_BASE_ADDRESS => x"4000_0000")
+    G_BASE_ADDRESS => x"4000_1000")
   port map (
     clk      => clk,
     areset_n => areset_n,
-    awaddr   => s_axi_awaddr,
+    awaddr   => awaddr,
     -- ... the other AXI4-Lite signals ...
     to_hw    => timer_to_hw,
     from_hw  => timer_from_hw);
 
--- Your timer logic reads the control fields by name ...
-count_enable <= timer_to_hw.ctrl.enable;
-is_periodic  <= timer_to_hw.ctrl.mode = PERIODIC;
+-- Your logic reads the control fields by name ...
+run      <= timer_to_hw.ctrl.enable;
+periodic <= timer_to_hw.ctrl.mode = PERIODIC;
 
 -- ... and drives the status fields and the event flag.
-timer_from_hw.status.count       <= std_logic_vector(counter);
-timer_from_hw.status.running     <= count_enable;
-timer_from_hw.event.expired.set  <= period_done;
+timer_from_hw.status.count.value <= std_logic_vector(count);
+timer_from_hw.status.count.we    <= run;
+timer_from_hw.status.running     <= '1' when count /= 0 else '0';
+timer_from_hw.irq.expired.set    <= '1' when count = 1 else '0';
 ```
 
 The base address is a generic, so the same module can sit at different
-addresses in different designs. [Generated HDL](generated-hdl.md) describes the
-files and records in detail, and [Buses](buses.md) covers the ports of each bus.
+addresses in different designs. [Generated HDL](generated-hdl.md) shows the
+complete timer logic and describes the files and records in detail, and
+[Buses](buses.md) covers the ports of each bus.
 
 ## Use the headers
 
@@ -219,10 +188,11 @@ IPBus outputs.
 
 ## Run the testbench
 
-`timer_tb.vhd` is a self-checking UVVM testbench that resets the module and
-checks every register through the bus. It needs UVVM and the bus VIP compiled
-into their libraries. [Testbenches](testbenches.md) describes what it checks and
-how to run it.
+`timer_tb.vhd` is a self-checking UVVM testbench. It drives the module through
+the bus and through `from_hw`, and checks the registers it can classify, such
+as the read-write, `onwrite` and strobe registers. It needs UVVM and the bus
+VIP compiled into their libraries. [Testbenches](testbenches.md) describes what
+it checks and how to run it.
 
 ## Change the register map
 
