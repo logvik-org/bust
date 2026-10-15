@@ -41,6 +41,9 @@
 #                   emitted package, regfile, and APB endpoint
 #   prototype_apb_tb_generated  The fully generated APB stack incl. the generated
 #                   testbench (inlined hand-written master BFM)
+#   access_matrix_tb_generated  The fully generated AXI stack and UVVM testbench
+#                   for example/example_access_matrix (one register per
+#                   access-mode combination class)
 #
 # Optional flags:
 #   --wave          Generate a waveform file (FST) for GTKWave debugging.
@@ -471,9 +474,23 @@ case "${TARGET}" in
         )
         TOP_ENTITY="prototype_tb"
         ;;
+    access_matrix_tb_generated)
+        # The fully generated AXI stack (its own localbus_pkg, regfile, endpoint,
+        # top) AND UVVM testbench for the access-mode combination example, so
+        # mixed and less common access-mode combinations compile and self-check.
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_access_matrix/hdl/localbus_pkg.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_regfile.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_axi_endpoint.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_tb.vhd"
+        )
+        TOP_ENTITY="access_matrix_tb"
+        ;;
     *)
         echo "ERROR: Unknown target '${TARGET}'." >&2
-        echo "Supported targets: example_ipbus, example_axi, prototype, prototype_generated, prototype_axi, prototype_axi_generated, prototype_tb_generated, prototype_ipbus, prototype_ipbus_generated, prototype_ipbus_tb_generated, prototype_sbi, prototype_sbi_generated, prototype_sbi_tb_generated, prototype_avalon, prototype_avalon_generated, prototype_avalon_tb_generated, prototype_wishbone, prototype_wishbone_generated, prototype_wishbone_tb_generated, prototype_apb, prototype_apb_generated, prototype_apb_tb_generated" >&2
+        echo "Supported targets: example_ipbus, example_axi, prototype, prototype_generated, prototype_axi, prototype_axi_generated, prototype_tb_generated, prototype_ipbus, prototype_ipbus_generated, prototype_ipbus_tb_generated, prototype_sbi, prototype_sbi_generated, prototype_sbi_tb_generated, prototype_avalon, prototype_avalon_generated, prototype_avalon_tb_generated, prototype_wishbone, prototype_wishbone_generated, prototype_wishbone_tb_generated, prototype_apb, prototype_apb_generated, prototype_apb_tb_generated, access_matrix_tb_generated" >&2
         exit 1
         ;;
 esac
