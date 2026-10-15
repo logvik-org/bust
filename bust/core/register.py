@@ -27,6 +27,21 @@ from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
 from bust.validation.config_validator import ConfigWrapper
 from bust.core.enums import RegisterMode, RegisterType, SwAccess, HwAccess
 
+# Register-level access summarised from its fields, keyed by
+# (any field readable, any field writable).
+_SW_BY_READ_WRITE = {
+    (True, True): SwAccess.RW,
+    (True, False): SwAccess.RO,
+    (False, True): SwAccess.WO,
+    (False, False): SwAccess.NA,
+}
+_HW_BY_READ_WRITE = {
+    (True, True): HwAccess.RW,
+    (True, False): HwAccess.R,
+    (False, True): HwAccess.W,
+    (False, False): HwAccess.NA,
+}
+
 
 class Register:
     """Represents a memory-mapped register in a bus slave module.
@@ -131,8 +146,6 @@ class Register:
         # registers are translated onto sw/hw here (see legacy_schema). Fields
         # are constructed below, so this must precede _init_fields.
         self.access_defaults = register_access_defaults(reg)
-        self.sw = SwAccess.from_string(self.access_defaults.get("sw", "rw"))
-        self.hw = HwAccess.from_string(self.access_defaults.get("hw", "r"))
 
         # Assign width
         if self.type == RegisterType.DEFAULT:
@@ -340,6 +353,26 @@ class Register:
         raise ValueError(
             "Only default, vector and bit registers can extract reset value directly"
         )
+
+    @property
+    def sw(self) -> SwAccess:
+        """Effective software access: readable if any field is, writable if any is.
+
+        Taken from the fields, not the register-level default, because fields can
+        override that default or carry the only access keys in the register.
+        """
+        fields = self.effective_fields
+        return _SW_BY_READ_WRITE[
+            (any(f.sw_readable for f in fields), any(f.sw_writable for f in fields))
+        ]
+
+    @property
+    def hw(self) -> HwAccess:
+        """Effective hardware access: readable if any field is, writable if any is."""
+        fields = self.effective_fields
+        return _HW_BY_READ_WRITE[
+            (any(f.hw_readable for f in fields), any(f.hw_writable for f in fields))
+        ]
 
     @property
     def stored_fields(self) -> List[Field]:

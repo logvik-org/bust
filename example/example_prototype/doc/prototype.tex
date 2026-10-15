@@ -59,7 +59,7 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
       \hline
       3 & reg3 & RW/NA & \texttt{0x0000000C} & FIELDS & 8 & \texttt{0x0} \\
       \hline
-      4 & reg4 & RW/R & \texttt{0x00000010} & FIELDS & 9 & \texttt{0x0} \\
+      4 & reg4 & RW/RW & \texttt{0x00000010} & FIELDS & 9 & \texttt{0x0} \\
       \hline
       5 & reg5 & RW/R & \texttt{0x00000014} & FIELDS & 8 & \texttt{0x0} \\
       \hline
@@ -127,7 +127,7 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
   \end{reglist}\end{regdesc}
 \end{register}
 
-\begin{register}{H}{reg4 - RW/R}{0x00000010}  \par Hardware write-enable and hardware set/clear. \regnewline
+\begin{register}{H}{reg4 - RW/RW}{0x00000010}  \par Hardware write-enable and hardware set/clear. \regnewline
   \label{reg4}
   \regfield{unused}{23}{9}{-}
   \regfield{field1}{1}{8}{0}
