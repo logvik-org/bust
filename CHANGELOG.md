@@ -49,8 +49,22 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   and `NOTICE`.
 - JSON that uses the old `mode` keyword is still accepted and translated to
   `sw` and `hw` access.
+- A `singlepulse` field returns to its reset value one clock after a software
+  write, not to 0, so a pulse field with a non-zero reset idles at that value.
+  A 0.14 `pulse` register becomes a `singlepulse` field and so still returns to
+  its reset value as in 0.14, but after one cycle (see `pulse_cycles` under
+  Removed).
+- When a hardware update (`hwclr`, `hwset`, or a `we`/`wel` write) and a
+  software read side effect (`onread: rclr` or `rset`) hit a field in the same
+  clock, the hardware update wins, as it already did over a software write. A
+  `hwset` that coincides with an `rclr` read is no longer lost.
 - The top-level `<module>` VHDL file is a fixed wrapper that bust regenerates,
   so `-f` overwrites it like any other file. `-F` is kept as an alias of `-f`.
+  In 0.14 that file held user logic between `-- User ... Start/End` markers
+  and `-f` left it alone. bust now stops with an error, before writing
+  anything, instead of overwriting a top-level file that still has those
+  markers. Move that logic into your own design, where it connects through the
+  `to_hw`/`from_hw` records, then delete or rename the old file.
 - The supported buses are described in one data-driven registry table, so
   adding a single-beat bus takes a new table entry plus its endpoint and
   testbench templates.
@@ -68,8 +82,22 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   path.
 - The generated ModelSim/QuestaSim TCL simulation scripts. Choosing a simulator
   and flow is left to the user.
+- Multi-cycle pulses and IPBus stalls from 0.14. The 1.0 register file drives a
+  pulse for one cycle and answers every access in one cycle, so `pulse_cycles`
+  other than 1 and `stall_cycles` other than 0 are rejected with an error
+  naming the register, instead of being dropped while the LaTeX documentation
+  and the IPBus address table still printed them. Remove both keys from 0.14
+  JSON. `pulse_cycles: 1` and `stall_cycles: 0` are accepted and have no
+  effect.
 
 ### Fixed
+- An enumerated field with no `reset` and no literal of value 0 resets to its
+  first literal in hardware, but the C/C++/Python headers and the LaTeX
+  documentation reported a reset of 0. They now report the reset hardware uses.
+- The IPBus address table gives each field node its own permission. A
+  read-only field in a read-write register was writable through uHAL.
+- The interactive editor (`-c`, `-e`) failed to add a register when its address
+  was entered by hand.
 - `python -m build` and `pip install -e .` failed on the reworked source tree,
   because setuptools also took the new `hdl/` and `sim/` directories for
   packages. The wheel also left out the Jinja2 templates, without which an
