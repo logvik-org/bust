@@ -14,7 +14,7 @@ use work.example_ipbus_regfile_pkg.all;
 
 entity example_ipbus_regfile is
   generic (
-    G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
+    G_BASE_ADDRESS       : unsigned(15 downto 0) := 16x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
     -- Reset polarity. The regfile normalizes internally so the rest of the
     -- logic is polarity-agnostic.
