@@ -1,0 +1,524 @@
+#ifndef ACCESS_MATRIX_H
+#define ACCESS_MATRIX_H
+
+#include <cstdint>
+#include <string>
+
+namespace ACCESS_MATRIX
+{
+/* Register: plain */
+const std::string PLAIN_SW = "rw";
+const std::string PLAIN_HW = "r";
+const uint32_t PLAIN_WIDTH = 8;
+const uint32_t PLAIN_OFFSET = 0x0;
+const uint32_t PLAIN_RESET = 0x0;
+
+/* Field: flag */
+const uint32_t PLAIN_FLAG_OFFSET = 0;
+const uint32_t PLAIN_FLAG_WIDTH = 1;
+const uint32_t PLAIN_FLAG_RESET = 0x0;
+const uint32_t PLAIN_FLAG_MASK = 0x1;
+const std::string PLAIN_FLAG_SW = "rw";
+const std::string PLAIN_FLAG_HW = "r";
+
+/* Field: level */
+const uint32_t PLAIN_LEVEL_OFFSET = 1;
+const uint32_t PLAIN_LEVEL_WIDTH = 3;
+const uint32_t PLAIN_LEVEL_RESET = 0x0;
+const uint32_t PLAIN_LEVEL_MASK = 0xe;
+const std::string PLAIN_LEVEL_SW = "rw";
+const std::string PLAIN_LEVEL_HW = "r";
+
+/* Field: scratch */
+const uint32_t PLAIN_SCRATCH_OFFSET = 4;
+const uint32_t PLAIN_SCRATCH_WIDTH = 4;
+const uint32_t PLAIN_SCRATCH_RESET = 0x0;
+const uint32_t PLAIN_SCRATCH_MASK = 0xf0;
+const std::string PLAIN_SCRATCH_SW = "rw";
+const std::string PLAIN_SCRATCH_HW = "na";
+
+/* Register: status */
+const std::string STATUS_SW = "ro";
+const std::string STATUS_HW = "w";
+const uint32_t STATUS_WIDTH = 6;
+const uint32_t STATUS_OFFSET = 0x4;
+const uint32_t STATUS_RESET = 0x0;
+
+/* Field: busy */
+const uint32_t STATUS_BUSY_OFFSET = 0;
+const uint32_t STATUS_BUSY_WIDTH = 1;
+const uint32_t STATUS_BUSY_RESET = 0x0;
+const uint32_t STATUS_BUSY_MASK = 0x1;
+const std::string STATUS_BUSY_SW = "ro";
+const std::string STATUS_BUSY_HW = "w";
+
+/* Field: count */
+const uint32_t STATUS_COUNT_OFFSET = 1;
+const uint32_t STATUS_COUNT_WIDTH = 4;
+const uint32_t STATUS_COUNT_RESET = 0x0;
+const uint32_t STATUS_COUNT_MASK = 0x1e;
+const std::string STATUS_COUNT_SW = "ro";
+const std::string STATUS_COUNT_HW = "w";
+
+/* Field: fault */
+const uint32_t STATUS_FAULT_OFFSET = 5;
+const uint32_t STATUS_FAULT_WIDTH = 1;
+const uint32_t STATUS_FAULT_RESET = 0x0;
+const uint32_t STATUS_FAULT_MASK = 0x20;
+const std::string STATUS_FAULT_SW = "ro";
+const std::string STATUS_FAULT_HW = "w";
+
+/* Register: command */
+const std::string COMMAND_SW = "wo";
+const std::string COMMAND_HW = "r";
+const uint32_t COMMAND_WIDTH = 4;
+const uint32_t COMMAND_OFFSET = 0x8;
+const uint32_t COMMAND_RESET = 0x0;
+
+/* Field: opcode */
+const uint32_t COMMAND_OPCODE_OFFSET = 0;
+const uint32_t COMMAND_OPCODE_WIDTH = 4;
+const uint32_t COMMAND_OPCODE_RESET = 0x0;
+const uint32_t COMMAND_OPCODE_MASK = 0xf;
+const std::string COMMAND_OPCODE_SW = "wo";
+const std::string COMMAND_OPCODE_HW = "r";
+
+/* Register: identity */
+const std::string IDENTITY_SW = "ro";
+const std::string IDENTITY_HW = "r";
+const uint32_t IDENTITY_WIDTH = 10;
+const uint32_t IDENTITY_OFFSET = 0xc;
+const uint32_t IDENTITY_RESET = 0x1a5;
+
+/* Field: id */
+const uint32_t IDENTITY_ID_OFFSET = 0;
+const uint32_t IDENTITY_ID_WIDTH = 8;
+const uint32_t IDENTITY_ID_RESET = 0xA5;
+const uint32_t IDENTITY_ID_MASK = 0xff;
+const std::string IDENTITY_ID_SW = "ro";
+const std::string IDENTITY_ID_HW = "r";
+
+/* Field: pwr_default */
+const uint32_t IDENTITY_PWR_DEFAULT_OFFSET = 8;
+const uint32_t IDENTITY_PWR_DEFAULT_WIDTH = 1;
+const uint32_t IDENTITY_PWR_DEFAULT_RESET = 0x1;
+const uint32_t IDENTITY_PWR_DEFAULT_MASK = 0x100;
+const std::string IDENTITY_PWR_DEFAULT_SW = "ro";
+const std::string IDENTITY_PWR_DEFAULT_HW = "r";
+const uint32_t IDENTITY_PWR_DEFAULT_PWR_OFF = 0;
+const uint32_t IDENTITY_PWR_DEFAULT_PWR_ON = 1;
+
+/* Field: pwr_spare */
+const uint32_t IDENTITY_PWR_SPARE_OFFSET = 9;
+const uint32_t IDENTITY_PWR_SPARE_WIDTH = 1;
+const uint32_t IDENTITY_PWR_SPARE_RESET = 0x0;
+const uint32_t IDENTITY_PWR_SPARE_MASK = 0x200;
+const std::string IDENTITY_PWR_SPARE_SW = "ro";
+const std::string IDENTITY_PWR_SPARE_HW = "r";
+const uint32_t IDENTITY_PWR_SPARE_PWR_OFF = 0;
+const uint32_t IDENTITY_PWR_SPARE_PWR_ON = 1;
+
+/* Register: hw_modify */
+const std::string HW_MODIFY_SW = "rw";
+const std::string HW_MODIFY_HW = "rw";
+const uint32_t HW_MODIFY_WIDTH = 5;
+const uint32_t HW_MODIFY_OFFSET = 0x10;
+const uint32_t HW_MODIFY_RESET = 0x0;
+
+/* Field: override */
+const uint32_t HW_MODIFY_OVERRIDE_OFFSET = 0;
+const uint32_t HW_MODIFY_OVERRIDE_WIDTH = 4;
+const uint32_t HW_MODIFY_OVERRIDE_RESET = 0x0;
+const uint32_t HW_MODIFY_OVERRIDE_MASK = 0xf;
+const std::string HW_MODIFY_OVERRIDE_SW = "rw";
+const std::string HW_MODIFY_OVERRIDE_HW = "rw";
+
+/* Field: sticky */
+const uint32_t HW_MODIFY_STICKY_OFFSET = 4;
+const uint32_t HW_MODIFY_STICKY_WIDTH = 1;
+const uint32_t HW_MODIFY_STICKY_RESET = 0x0;
+const uint32_t HW_MODIFY_STICKY_MASK = 0x10;
+const std::string HW_MODIFY_STICKY_SW = "rw";
+const std::string HW_MODIFY_STICKY_HW = "r";
+
+/* Register: hw_set_clear */
+const std::string HW_SET_CLEAR_SW = "rw";
+const std::string HW_SET_CLEAR_HW = "rw";
+const uint32_t HW_SET_CLEAR_WIDTH = 5;
+const uint32_t HW_SET_CLEAR_OFFSET = 0x14;
+const uint32_t HW_SET_CLEAR_RESET = 0x0;
+
+/* Field: set_only */
+const uint32_t HW_SET_CLEAR_SET_ONLY_OFFSET = 0;
+const uint32_t HW_SET_CLEAR_SET_ONLY_WIDTH = 4;
+const uint32_t HW_SET_CLEAR_SET_ONLY_RESET = 0x0;
+const uint32_t HW_SET_CLEAR_SET_ONLY_MASK = 0xf;
+const std::string HW_SET_CLEAR_SET_ONLY_SW = "ro";
+const std::string HW_SET_CLEAR_SET_ONLY_HW = "w";
+
+/* Field: clr_only */
+const uint32_t HW_SET_CLEAR_CLR_ONLY_OFFSET = 4;
+const uint32_t HW_SET_CLEAR_CLR_ONLY_WIDTH = 1;
+const uint32_t HW_SET_CLEAR_CLR_ONLY_RESET = 0x0;
+const uint32_t HW_SET_CLEAR_CLR_ONLY_MASK = 0x10;
+const std::string HW_SET_CLEAR_CLR_ONLY_SW = "rw";
+const std::string HW_SET_CLEAR_CLR_ONLY_HW = "rw";
+
+/* Register: read_effects */
+const std::string READ_EFFECTS_SW = "rw";
+const std::string READ_EFFECTS_HW = "r";
+const uint32_t READ_EFFECTS_WIDTH = 8;
+const uint32_t READ_EFFECTS_OFFSET = 0x18;
+const uint32_t READ_EFFECTS_RESET = 0x0;
+
+/* Field: clear_on_read */
+const uint32_t READ_EFFECTS_CLEAR_ON_READ_OFFSET = 0;
+const uint32_t READ_EFFECTS_CLEAR_ON_READ_WIDTH = 4;
+const uint32_t READ_EFFECTS_CLEAR_ON_READ_RESET = 0x0;
+const uint32_t READ_EFFECTS_CLEAR_ON_READ_MASK = 0xf;
+const std::string READ_EFFECTS_CLEAR_ON_READ_SW = "rw";
+const std::string READ_EFFECTS_CLEAR_ON_READ_HW = "r";
+const std::string READ_EFFECTS_CLEAR_ON_READ_ONREAD = "rclr";
+
+/* Field: set_on_read */
+const uint32_t READ_EFFECTS_SET_ON_READ_OFFSET = 4;
+const uint32_t READ_EFFECTS_SET_ON_READ_WIDTH = 4;
+const uint32_t READ_EFFECTS_SET_ON_READ_RESET = 0x0;
+const uint32_t READ_EFFECTS_SET_ON_READ_MASK = 0xf0;
+const std::string READ_EFFECTS_SET_ON_READ_SW = "rw";
+const std::string READ_EFFECTS_SET_ON_READ_HW = "r";
+const std::string READ_EFFECTS_SET_ON_READ_ONREAD = "rset";
+
+/* Register: write_effects */
+const std::string WRITE_EFFECTS_SW = "rw";
+const std::string WRITE_EFFECTS_HW = "r";
+const uint32_t WRITE_EFFECTS_WIDTH = 13;
+const uint32_t WRITE_EFFECTS_OFFSET = 0x1c;
+const uint32_t WRITE_EFFECTS_RESET = 0xf0;
+
+/* Field: set_bits */
+const uint32_t WRITE_EFFECTS_SET_BITS_OFFSET = 0;
+const uint32_t WRITE_EFFECTS_SET_BITS_WIDTH = 4;
+const uint32_t WRITE_EFFECTS_SET_BITS_RESET = 0x0;
+const uint32_t WRITE_EFFECTS_SET_BITS_MASK = 0xf;
+const std::string WRITE_EFFECTS_SET_BITS_SW = "rw";
+const std::string WRITE_EFFECTS_SET_BITS_HW = "r";
+const std::string WRITE_EFFECTS_SET_BITS_ONWRITE = "woset";
+
+/* Field: clear_bits */
+const uint32_t WRITE_EFFECTS_CLEAR_BITS_OFFSET = 4;
+const uint32_t WRITE_EFFECTS_CLEAR_BITS_WIDTH = 4;
+const uint32_t WRITE_EFFECTS_CLEAR_BITS_RESET = 0xF;
+const uint32_t WRITE_EFFECTS_CLEAR_BITS_MASK = 0xf0;
+const std::string WRITE_EFFECTS_CLEAR_BITS_SW = "rw";
+const std::string WRITE_EFFECTS_CLEAR_BITS_HW = "r";
+const std::string WRITE_EFFECTS_CLEAR_BITS_ONWRITE = "woclr";
+
+/* Field: toggle_on_zero */
+const uint32_t WRITE_EFFECTS_TOGGLE_ON_ZERO_OFFSET = 8;
+const uint32_t WRITE_EFFECTS_TOGGLE_ON_ZERO_WIDTH = 4;
+const uint32_t WRITE_EFFECTS_TOGGLE_ON_ZERO_RESET = 0x0;
+const uint32_t WRITE_EFFECTS_TOGGLE_ON_ZERO_MASK = 0xf00;
+const std::string WRITE_EFFECTS_TOGGLE_ON_ZERO_SW = "rw";
+const std::string WRITE_EFFECTS_TOGGLE_ON_ZERO_HW = "r";
+const std::string WRITE_EFFECTS_TOGGLE_ON_ZERO_ONWRITE = "wzt";
+
+/* Field: set_all */
+const uint32_t WRITE_EFFECTS_SET_ALL_OFFSET = 12;
+const uint32_t WRITE_EFFECTS_SET_ALL_WIDTH = 1;
+const uint32_t WRITE_EFFECTS_SET_ALL_RESET = 0x0;
+const uint32_t WRITE_EFFECTS_SET_ALL_MASK = 0x1000;
+const std::string WRITE_EFFECTS_SET_ALL_SW = "rw";
+const std::string WRITE_EFFECTS_SET_ALL_HW = "r";
+const std::string WRITE_EFFECTS_SET_ALL_ONWRITE = "wset";
+
+/* Register: pulses */
+const std::string PULSES_SW = "rw";
+const std::string PULSES_HW = "r";
+const uint32_t PULSES_WIDTH = 5;
+const uint32_t PULSES_OFFSET = 0x20;
+const uint32_t PULSES_RESET = 0x0;
+
+/* Field: go */
+const uint32_t PULSES_GO_OFFSET = 0;
+const uint32_t PULSES_GO_WIDTH = 1;
+const uint32_t PULSES_GO_RESET = 0x0;
+const uint32_t PULSES_GO_MASK = 0x1;
+const std::string PULSES_GO_SW = "rw";
+const std::string PULSES_GO_HW = "r";
+const bool PULSES_GO_SINGLEPULSE = true;
+
+/* Field: kick */
+const uint32_t PULSES_KICK_OFFSET = 1;
+const uint32_t PULSES_KICK_WIDTH = 4;
+const uint32_t PULSES_KICK_RESET = 0x0;
+const uint32_t PULSES_KICK_MASK = 0x1e;
+const std::string PULSES_KICK_SW = "rw";
+const std::string PULSES_KICK_HW = "r";
+const bool PULSES_KICK_SINGLEPULSE = true;
+
+/* Register: strobes */
+const std::string STROBES_SW = "rw";
+const std::string STROBES_HW = "r";
+const uint32_t STROBES_WIDTH = 8;
+const uint32_t STROBES_OFFSET = 0x24;
+const uint32_t STROBES_RESET = 0x0;
+
+/* Field: modified */
+const uint32_t STROBES_MODIFIED_OFFSET = 0;
+const uint32_t STROBES_MODIFIED_WIDTH = 4;
+const uint32_t STROBES_MODIFIED_RESET = 0x0;
+const uint32_t STROBES_MODIFIED_MASK = 0xf;
+const std::string STROBES_MODIFIED_SW = "rw";
+const std::string STROBES_MODIFIED_HW = "r";
+
+/* Field: accessed */
+const uint32_t STROBES_ACCESSED_OFFSET = 4;
+const uint32_t STROBES_ACCESSED_WIDTH = 4;
+const uint32_t STROBES_ACCESSED_RESET = 0x0;
+const uint32_t STROBES_ACCESSED_MASK = 0xf0;
+const std::string STROBES_ACCESSED_SW = "rw";
+const std::string STROBES_ACCESSED_HW = "r";
+
+/* Register: enum_vector */
+const std::string ENUM_VECTOR_SW = "rw";
+const std::string ENUM_VECTOR_HW = "r";
+const uint32_t ENUM_VECTOR_WIDTH = 2;
+const uint32_t ENUM_VECTOR_OFFSET = 0x28;
+const uint32_t ENUM_VECTOR_RESET = 0x0;
+
+/* Field: mode */
+const uint32_t ENUM_VECTOR_MODE_OFFSET = 0;
+const uint32_t ENUM_VECTOR_MODE_WIDTH = 2;
+const uint32_t ENUM_VECTOR_MODE_RESET = 0x0;
+const uint32_t ENUM_VECTOR_MODE_MASK = 0x3;
+const std::string ENUM_VECTOR_MODE_SW = "rw";
+const std::string ENUM_VECTOR_MODE_HW = "r";
+const uint32_t ENUM_VECTOR_MODE_MODE_SLOW = 0;
+const uint32_t ENUM_VECTOR_MODE_MODE_FAST = 3;
+
+/* Register: enum_bit */
+const std::string ENUM_BIT_SW = "rw";
+const std::string ENUM_BIT_HW = "r";
+const uint32_t ENUM_BIT_WIDTH = 1;
+const uint32_t ENUM_BIT_OFFSET = 0x2c;
+const uint32_t ENUM_BIT_RESET = 0x0;
+
+/* Field: power */
+const uint32_t ENUM_BIT_POWER_OFFSET = 0;
+const uint32_t ENUM_BIT_POWER_WIDTH = 1;
+const uint32_t ENUM_BIT_POWER_RESET = 0x0;
+const uint32_t ENUM_BIT_POWER_MASK = 0x1;
+const std::string ENUM_BIT_POWER_SW = "rw";
+const std::string ENUM_BIT_POWER_HW = "r";
+const uint32_t ENUM_BIT_POWER_PWR_OFF = 0;
+const uint32_t ENUM_BIT_POWER_PWR_ON = 1;
+
+/* Register: enum_hw */
+const std::string ENUM_HW_SW = "ro";
+const std::string ENUM_HW_HW = "rw";
+const uint32_t ENUM_HW_WIDTH = 3;
+const uint32_t ENUM_HW_OFFSET = 0x30;
+const uint32_t ENUM_HW_RESET = 0x2;
+
+/* Field: state */
+const uint32_t ENUM_HW_STATE_OFFSET = 0;
+const uint32_t ENUM_HW_STATE_WIDTH = 2;
+const uint32_t ENUM_HW_STATE_RESET = 0x2;
+const uint32_t ENUM_HW_STATE_MASK = 0x3;
+const std::string ENUM_HW_STATE_SW = "ro";
+const std::string ENUM_HW_STATE_HW = "w";
+const uint32_t ENUM_HW_STATE_ST_RESET = 0;
+const uint32_t ENUM_HW_STATE_ST_RUN = 1;
+const uint32_t ENUM_HW_STATE_ST_HALT = 2;
+
+/* Field: supply */
+const uint32_t ENUM_HW_SUPPLY_OFFSET = 2;
+const uint32_t ENUM_HW_SUPPLY_WIDTH = 1;
+const uint32_t ENUM_HW_SUPPLY_RESET = 0x0;
+const uint32_t ENUM_HW_SUPPLY_MASK = 0x4;
+const std::string ENUM_HW_SUPPLY_SW = "ro";
+const std::string ENUM_HW_SUPPLY_HW = "rw";
+const uint32_t ENUM_HW_SUPPLY_PWR_OFF = 0;
+const uint32_t ENUM_HW_SUPPLY_PWR_ON = 1;
+
+/* Register: enum_swacc */
+const std::string ENUM_SWACC_SW = "rw";
+const std::string ENUM_SWACC_HW = "r";
+const uint32_t ENUM_SWACC_WIDTH = 2;
+const uint32_t ENUM_SWACC_OFFSET = 0x34;
+const uint32_t ENUM_SWACC_RESET = 0x0;
+
+/* Field: phase */
+const uint32_t ENUM_SWACC_PHASE_OFFSET = 0;
+const uint32_t ENUM_SWACC_PHASE_WIDTH = 2;
+const uint32_t ENUM_SWACC_PHASE_RESET = 0x0;
+const uint32_t ENUM_SWACC_PHASE_MASK = 0x3;
+const std::string ENUM_SWACC_PHASE_SW = "rw";
+const std::string ENUM_SWACC_PHASE_HW = "r";
+const uint32_t ENUM_SWACC_PHASE_PH_IDLE = 0;
+const uint32_t ENUM_SWACC_PHASE_PH_ARM = 1;
+const uint32_t ENUM_SWACC_PHASE_PH_FIRE = 2;
+
+/* Register: mixed_swacc */
+const std::string MIXED_SWACC_SW = "rw";
+const std::string MIXED_SWACC_HW = "r";
+const uint32_t MIXED_SWACC_WIDTH = 19;
+const uint32_t MIXED_SWACC_OFFSET = 0x38;
+const uint32_t MIXED_SWACC_RESET = 0x40900;
+
+/* Field: clear_bits */
+const uint32_t MIXED_SWACC_CLEAR_BITS_OFFSET = 0;
+const uint32_t MIXED_SWACC_CLEAR_BITS_WIDTH = 4;
+const uint32_t MIXED_SWACC_CLEAR_BITS_RESET = 0x0;
+const uint32_t MIXED_SWACC_CLEAR_BITS_MASK = 0xf;
+const std::string MIXED_SWACC_CLEAR_BITS_SW = "rw";
+const std::string MIXED_SWACC_CLEAR_BITS_HW = "r";
+const std::string MIXED_SWACC_CLEAR_BITS_ONWRITE = "woclr";
+
+/* Field: toggle_bits */
+const uint32_t MIXED_SWACC_TOGGLE_BITS_OFFSET = 4;
+const uint32_t MIXED_SWACC_TOGGLE_BITS_WIDTH = 4;
+const uint32_t MIXED_SWACC_TOGGLE_BITS_RESET = 0x0;
+const uint32_t MIXED_SWACC_TOGGLE_BITS_MASK = 0xf0;
+const std::string MIXED_SWACC_TOGGLE_BITS_SW = "rw";
+const std::string MIXED_SWACC_TOGGLE_BITS_HW = "r";
+const std::string MIXED_SWACC_TOGGLE_BITS_ONWRITE = "wot";
+
+/* Field: fixed */
+const uint32_t MIXED_SWACC_FIXED_OFFSET = 8;
+const uint32_t MIXED_SWACC_FIXED_WIDTH = 4;
+const uint32_t MIXED_SWACC_FIXED_RESET = 0x9;
+const uint32_t MIXED_SWACC_FIXED_MASK = 0xf00;
+const std::string MIXED_SWACC_FIXED_SW = "ro";
+const std::string MIXED_SWACC_FIXED_HW = "r";
+
+/* Field: arg */
+const uint32_t MIXED_SWACC_ARG_OFFSET = 12;
+const uint32_t MIXED_SWACC_ARG_WIDTH = 4;
+const uint32_t MIXED_SWACC_ARG_RESET = 0x0;
+const uint32_t MIXED_SWACC_ARG_MASK = 0xf000;
+const std::string MIXED_SWACC_ARG_SW = "wo";
+const std::string MIXED_SWACC_ARG_HW = "r";
+
+/* Field: go */
+const uint32_t MIXED_SWACC_GO_OFFSET = 16;
+const uint32_t MIXED_SWACC_GO_WIDTH = 1;
+const uint32_t MIXED_SWACC_GO_RESET = 0x0;
+const uint32_t MIXED_SWACC_GO_MASK = 0x10000;
+const std::string MIXED_SWACC_GO_SW = "rw";
+const std::string MIXED_SWACC_GO_HW = "r";
+const bool MIXED_SWACC_GO_SINGLEPULSE = true;
+
+/* Field: power */
+const uint32_t MIXED_SWACC_POWER_OFFSET = 17;
+const uint32_t MIXED_SWACC_POWER_WIDTH = 1;
+const uint32_t MIXED_SWACC_POWER_RESET = 0x0;
+const uint32_t MIXED_SWACC_POWER_MASK = 0x20000;
+const std::string MIXED_SWACC_POWER_SW = "rw";
+const std::string MIXED_SWACC_POWER_HW = "r";
+const uint32_t MIXED_SWACC_POWER_PWR_OFF = 0;
+const uint32_t MIXED_SWACC_POWER_PWR_ON = 1;
+
+/* Field: power_fixed */
+const uint32_t MIXED_SWACC_POWER_FIXED_OFFSET = 18;
+const uint32_t MIXED_SWACC_POWER_FIXED_WIDTH = 1;
+const uint32_t MIXED_SWACC_POWER_FIXED_RESET = 0x1;
+const uint32_t MIXED_SWACC_POWER_FIXED_MASK = 0x40000;
+const std::string MIXED_SWACC_POWER_FIXED_SW = "ro";
+const std::string MIXED_SWACC_POWER_FIXED_HW = "r";
+const uint32_t MIXED_SWACC_POWER_FIXED_PWR_OFF = 0;
+const uint32_t MIXED_SWACC_POWER_FIXED_PWR_ON = 1;
+
+/* Register: mixed_history */
+const std::string MIXED_HISTORY_SW = "rw";
+const std::string MIXED_HISTORY_HW = "r";
+const uint32_t MIXED_HISTORY_WIDTH = 16;
+const uint32_t MIXED_HISTORY_OFFSET = 0x3c;
+const uint32_t MIXED_HISTORY_RESET = 0xf00;
+
+/* Field: toggle */
+const uint32_t MIXED_HISTORY_TOGGLE_OFFSET = 0;
+const uint32_t MIXED_HISTORY_TOGGLE_WIDTH = 4;
+const uint32_t MIXED_HISTORY_TOGGLE_RESET = 0x0;
+const uint32_t MIXED_HISTORY_TOGGLE_MASK = 0xf;
+const std::string MIXED_HISTORY_TOGGLE_SW = "rw";
+const std::string MIXED_HISTORY_TOGGLE_HW = "r";
+const std::string MIXED_HISTORY_TOGGLE_ONWRITE = "wot";
+
+/* Field: set_on_zero */
+const uint32_t MIXED_HISTORY_SET_ON_ZERO_OFFSET = 4;
+const uint32_t MIXED_HISTORY_SET_ON_ZERO_WIDTH = 4;
+const uint32_t MIXED_HISTORY_SET_ON_ZERO_RESET = 0x0;
+const uint32_t MIXED_HISTORY_SET_ON_ZERO_MASK = 0xf0;
+const std::string MIXED_HISTORY_SET_ON_ZERO_SW = "rw";
+const std::string MIXED_HISTORY_SET_ON_ZERO_HW = "r";
+const std::string MIXED_HISTORY_SET_ON_ZERO_ONWRITE = "wzs";
+
+/* Field: clear_on_zero */
+const uint32_t MIXED_HISTORY_CLEAR_ON_ZERO_OFFSET = 8;
+const uint32_t MIXED_HISTORY_CLEAR_ON_ZERO_WIDTH = 4;
+const uint32_t MIXED_HISTORY_CLEAR_ON_ZERO_RESET = 0xF;
+const uint32_t MIXED_HISTORY_CLEAR_ON_ZERO_MASK = 0xf00;
+const std::string MIXED_HISTORY_CLEAR_ON_ZERO_SW = "rw";
+const std::string MIXED_HISTORY_CLEAR_ON_ZERO_HW = "r";
+const std::string MIXED_HISTORY_CLEAR_ON_ZERO_ONWRITE = "wzc";
+
+/* Field: toggle_on_zero */
+const uint32_t MIXED_HISTORY_TOGGLE_ON_ZERO_OFFSET = 12;
+const uint32_t MIXED_HISTORY_TOGGLE_ON_ZERO_WIDTH = 4;
+const uint32_t MIXED_HISTORY_TOGGLE_ON_ZERO_RESET = 0x0;
+const uint32_t MIXED_HISTORY_TOGGLE_ON_ZERO_MASK = 0xf000;
+const std::string MIXED_HISTORY_TOGGLE_ON_ZERO_SW = "rw";
+const std::string MIXED_HISTORY_TOGGLE_ON_ZERO_HW = "r";
+const std::string MIXED_HISTORY_TOGGLE_ON_ZERO_ONWRITE = "wzt";
+
+/* Register: hw_status_swacc */
+const std::string HW_STATUS_SWACC_SW = "ro";
+const std::string HW_STATUS_SWACC_HW = "rw";
+const uint32_t HW_STATUS_SWACC_WIDTH = 8;
+const uint32_t HW_STATUS_SWACC_OFFSET = 0x40;
+const uint32_t HW_STATUS_SWACC_RESET = 0x0;
+
+/* Field: level */
+const uint32_t HW_STATUS_SWACC_LEVEL_OFFSET = 0;
+const uint32_t HW_STATUS_SWACC_LEVEL_WIDTH = 4;
+const uint32_t HW_STATUS_SWACC_LEVEL_RESET = 0x0;
+const uint32_t HW_STATUS_SWACC_LEVEL_MASK = 0xf;
+const std::string HW_STATUS_SWACC_LEVEL_SW = "ro";
+const std::string HW_STATUS_SWACC_LEVEL_HW = "rw";
+
+/* Field: latched */
+const uint32_t HW_STATUS_SWACC_LATCHED_OFFSET = 4;
+const uint32_t HW_STATUS_SWACC_LATCHED_WIDTH = 4;
+const uint32_t HW_STATUS_SWACC_LATCHED_RESET = 0x0;
+const uint32_t HW_STATUS_SWACC_LATCHED_MASK = 0xf0;
+const std::string HW_STATUS_SWACC_LATCHED_SW = "ro";
+const std::string HW_STATUS_SWACC_LATCHED_HW = "rw";
+
+/* Register: hw_only */
+const std::string HW_ONLY_SW = "rw";
+const std::string HW_ONLY_HW = "rw";
+const uint32_t HW_ONLY_WIDTH = 5;
+const uint32_t HW_ONLY_OFFSET = 0x44;
+const uint32_t HW_ONLY_RESET = 0x0;
+
+/* Field: shadow */
+const uint32_t HW_ONLY_SHADOW_OFFSET = 0;
+const uint32_t HW_ONLY_SHADOW_WIDTH = 4;
+const uint32_t HW_ONLY_SHADOW_RESET = 0x0;
+const uint32_t HW_ONLY_SHADOW_MASK = 0xf;
+const std::string HW_ONLY_SHADOW_SW = "na";
+const std::string HW_ONLY_SHADOW_HW = "rw";
+
+/* Field: enable */
+const uint32_t HW_ONLY_ENABLE_OFFSET = 4;
+const uint32_t HW_ONLY_ENABLE_WIDTH = 1;
+const uint32_t HW_ONLY_ENABLE_RESET = 0x0;
+const uint32_t HW_ONLY_ENABLE_MASK = 0x10;
+const std::string HW_ONLY_ENABLE_SW = "rw";
+const std::string HW_ONLY_ENABLE_HW = "r";
+
+};
+
+#endif
