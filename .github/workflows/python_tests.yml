@@ -16,10 +16,16 @@ jobs:
   test:
 
     runs-on: ubuntu-latest
+    # Experimental (pre-release) Python versions may fail without failing CI.
+    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        include:
+          # Bleeding edge: test the next Python while it is still in pre-release.
+          - python-version: "3.15"
+            experimental: true
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -27,6 +33,7 @@ jobs:
       uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
       with:
         python-version: ${{ matrix.python-version }}
+        allow-prereleases: true
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
