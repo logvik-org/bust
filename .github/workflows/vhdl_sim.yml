@@ -16,6 +16,8 @@ on:
       - "hdl/**/*.vhd"
   # Allow manual triggering from the Actions tab
   workflow_dispatch:
+  # Called by release.yml, where the path filters above do not apply
+  workflow_call:
 
 permissions:
   contents: read
@@ -48,6 +50,9 @@ jobs:
       # expensive compilation step only re-runs when the Dockerfile or compile
       # script changes. Unlike a GHCR registry cache this needs no extra
       # permissions and works on pull requests from forks.
+      #
+      # A release (release.yml) only reads the cache. It runs on a tag, and
+      # cache entries written from a tag can be restored by that tag alone.
       # -----------------------------------------------------------------------
       - name: Build simulation image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc  # v7.4.0
@@ -57,7 +62,7 @@ jobs:
           push: false
           tags: bust-sim:ci
           cache-from: type=gha
-          cache-to:   type=gha,mode=max
+          cache-to:   ${{ github.event_name != 'release' && 'type=gha,mode=max' || '' }}
 
       # -----------------------------------------------------------------------
       # 4. Run the IPBus testbench
