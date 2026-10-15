@@ -48,6 +48,7 @@ architecture rtl of access_matrix_regfile is
   signal swacc_mixed_swacc_clear_bits : std_logic;
   signal swacc_mixed_history_toggle : std_logic;
   signal swacc_hw_status_swacc_level : std_logic;
+  signal swacc_irq_status_pending : std_logic;
 
 begin
 
@@ -64,6 +65,8 @@ begin
   -- writes, hardware updates, and onread side effects all live here. Each
   -- multi-source field uses an if/elsif chain so the precedence reads
   -- top-to-bottom: hwclr > hwset > hardware we/wel write > software write.
+  -- A register's onread effects are assigned before its hardware updates, so
+  -- hwclr, hwset or a we/wel write in the same cycle as a read wins over them.
   p_write : process (clk) is
     variable sel        : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
     variable sw_write   : boolean;     -- a fresh, in-window software write
@@ -125,6 +128,12 @@ begin
         regs.hw_set_clear.clr_only <= '0';
       elsif sw_write and sel_is(sel, C_ADDR_HW_SET_CLEAR) then
         regs.hw_set_clear.clr_only <= lb_m2s.wdata(4);
+      end if;
+
+      -- read_effects onread effects, applied when the software read is serviced.
+      if rd_service and sel_is(sel, C_ADDR_READ_EFFECTS) then
+        regs.read_effects.clear_on_read <= (others => '0');
+        regs.read_effects.set_on_read <= (others => '1');
       end if;
 
       if sw_write and sel_is(sel, C_ADDR_READ_EFFECTS) then
@@ -194,10 +203,13 @@ begin
         regs.hw_only.enable <= lb_m2s.wdata(4);
       end if;
 
-      -- read_effects onread effects, applied when the software read is serviced.
-      if rd_service and sel_is(sel, C_ADDR_READ_EFFECTS) then
-        regs.read_effects.clear_on_read <= (others => '0');
-        regs.read_effects.set_on_read <= (others => '1');
+      -- irq_status onread effects, applied when the software read is serviced.
+      if rd_service and sel_is(sel, C_ADDR_IRQ_STATUS) then
+        regs.irq_status.pending <= '0';
+      end if;
+
+      if from_hw.irq_status.pending.set = '1' then
+        regs.irq_status.pending <= '1';
       end if;
 
       -- hw_set_clear software-access strobes (swmod on write, swacc on any access).
@@ -256,6 +268,14 @@ begin
         swacc_hw_status_swacc_level <= '1';
       end if;
 
+      -- irq_status software-access strobes (swmod on write, swacc on any access).
+      swacc_irq_status_pending <= '0';
+      if sw_write and sel_is(sel, C_ADDR_IRQ_STATUS) then
+        swacc_irq_status_pending <= '1';
+      elsif rd_service and sel_is(sel, C_ADDR_IRQ_STATUS) then
+        swacc_irq_status_pending <= '1';
+      end if;
+
       -- Write response: ack any mapped register, err an unmapped/out-of-range
       -- address.
       if lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' then
@@ -279,6 +299,7 @@ begin
         swacc_mixed_swacc_clear_bits <= '0';
         swacc_mixed_history_toggle <= '0';
         swacc_hw_status_swacc_level <= '0';
+        swacc_irq_status_pending <= '0';
       end if;
     end if;
   end process p_write;
@@ -374,6 +395,9 @@ begin
         elsif sel_is(sel, C_ADDR_HW_ONLY) then
           rdata(4) <= regs.hw_only.enable;
           rd_ack <= '1';
+        elsif sel_is(sel, C_ADDR_IRQ_STATUS) then
+          rdata(0) <= regs.irq_status.pending;
+          rd_ack <= '1';
         else
           rd_err <= '1';
         end if;
@@ -405,6 +429,7 @@ begin
   to_hw.mixed_history <= (toggle => (value => regs.mixed_history.toggle, swacc => swacc_mixed_history_toggle), set_on_zero => regs.mixed_history.set_on_zero, clear_on_zero => regs.mixed_history.clear_on_zero, toggle_on_zero => regs.mixed_history.toggle_on_zero);
   to_hw.hw_status_swacc <= (level => (value => regs.hw_status_swacc.level, swacc => swacc_hw_status_swacc_level), latched => regs.hw_status_swacc.latched);
   to_hw.hw_only <= (shadow => regs.hw_only.shadow, enable => regs.hw_only.enable);
+  to_hw.irq_status <= (pending => (value => regs.irq_status.pending, swacc => swacc_irq_status_pending));
 
   lb_s2m.rdata <= rdata;
   lb_s2m.ack   <= wr_ack or rd_ack;

@@ -8,6 +8,8 @@ import json
 import os
 import re
 
+import pytest
+
 from bust.core.bus import Bus
 from bust.core.module import Module
 from bust.generators.factory import GeneratorFactory
@@ -647,3 +649,71 @@ def test_write_only_singlepulse_with_nonzero_reset_still_reads_back_zero():
         singlepulse=True,
     )
     assert module.registers[0].reads_back_zero
+
+
+def _p_write(module):
+    regfile = GeneratorFactory.generate_regfile_vhdl(module)
+    return regfile[regfile.index("p_write : process") : regfile.index("end process")]
+
+
+def test_hardware_updates_override_onread_effects_in_the_same_cycle():
+    """In p_write the last assignment wins, so each register's onread effects
+    must come before its hwclr/hwset/we chain: a hardware set in the cycle of a
+    read clear is then kept, not lost."""
+    module = _fields_module(
+        {"name": "f", "type": "bit", "hwset": True, "hwclr": True, "onread": "rclr"},
+        {
+            "name": "g",
+            "type": "vector",
+            "width": 4,
+            "hw": "rw",
+            "we": True,
+            "onread": "rset",
+        },
+        sw="rw",
+        hw="r",
+    )
+    p_write = _p_write(module)
+    onread = p_write.index("if rd_service and sel_is(sel, C_ADDR_R) then")
+    assert onread < p_write.index("if from_hw.r.f.clr = '1' then")
+    assert onread < p_write.index("if from_hw.r.g.we = '1' then")
+    assert p_write.count("rd_service and sel_is(sel, C_ADDR_R)") == 1
+
+
+def test_sticky_flag_testbench_checks_hwset_against_the_read_clear():
+    """With hwset held through a read, the value sampled with the swacc strobe
+    is what the colliding cycle left: set, with hardware taking precedence."""
+    module = _fields_module(
+        {
+            "name": "pending",
+            "type": "bit",
+            "hwset": True,
+            "onread": "rclr",
+            "swacc": True,
+        },
+        sw="ro",
+        hw="r",
+    )
+    assert module.registers[0].is_hwset_read_clear_register
+    tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
+    assert "r_pending_at_swacc <= to_hw.r.pending.value;" in tb
+    sequence = tb[tb.index("hwset beats a read clear") :]
+    assert sequence.index("from_hw.r.pending.set <= '1';") < sequence.index(
+        'bus_check(f_addr(C_ADDR_R), 32x"00000001", "r read while hwset is held");'
+    )
+    assert "check_value(r_pending_at_swacc, '1', error," in sequence
+    assert 'bus_check(f_addr(C_ADDR_R), 32x"0", "r cleared by a read' in sequence
+
+
+@pytest.mark.parametrize(
+    "change",
+    [{"swacc": False}, {"onread": "rset"}, {"hw": "rw", "we": True}],
+    ids=["no-swacc", "rset", "hw-write"],
+)
+def test_sticky_flag_check_needs_hwset_rclr_swacc_and_no_hw_write(change):
+    field = dict(
+        {"name": "f", "type": "bit", "hwset": True, "onread": "rclr", "swacc": True},
+        **change,
+    )
+    module = _fields_module(field, sw="ro", hw="r")
+    assert not module.registers[0].is_hwset_read_clear_register

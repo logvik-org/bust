@@ -39,7 +39,8 @@ architecture tb of access_matrix_tb is
     hw_set_clear => (set_only => (value => (others => '0'), set => '0'), clr_only => (value => '0', clr => '0')),
     enum_hw => (state => ST_HALT, supply => (value => PWR_OFF, we => '0')),
     hw_status_swacc => (level => (others => '0'), latched => (value => (others => '0'), we => '0')),
-    hw_only => (shadow => (others => '0')));
+    hw_only => (shadow => (others => '0')),
+    irq_status => (pending => (set => '0')));
 
   constant C_DATA_W : natural := 32;
   constant C_ADDR_W : natural := 32;
@@ -73,6 +74,8 @@ architecture tb of access_matrix_tb is
   signal mixed_swacc_go_sp_value : std_logic := '0';
   signal mixed_history_toggle_swacc_count : natural := 0;
   signal hw_status_swacc_level_swacc_count : natural := 0;
+  signal irq_status_pending_swacc_count : natural := 0;
+  signal irq_status_pending_at_swacc : std_logic := '0';
 
 begin
 
@@ -141,6 +144,10 @@ begin
       if to_hw.hw_status_swacc.level.swacc = '1' then
         hw_status_swacc_level_swacc_count <= hw_status_swacc_level_swacc_count + 1;
       end if;
+      if to_hw.irq_status.pending.swacc = '1' then
+        irq_status_pending_swacc_count <= irq_status_pending_swacc_count + 1;
+        irq_status_pending_at_swacc <= to_hw.irq_status.pending.value;
+      end if;
     end if;
   end process p_strobe_monitor;
 
@@ -172,6 +179,7 @@ begin
     variable v_mixed_swacc_go_sp : natural;
     variable v_mixed_history_toggle_swacc : natural;
     variable v_hw_status_swacc_level_swacc : natural;
+    variable v_irq_status_pending_swacc : natural;
 
   begin
     axilite_bfm_config.clock_period <= C_CLK_PERIOD;
@@ -342,6 +350,27 @@ begin
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(hw_status_swacc_level_swacc_count - v_hw_status_swacc_level_swacc, 2, error, "hw_status_swacc.level swacc pulses per access (write + read)", C_SCOPE);
+
+    log(ID_LOG_HDR, "irq_status: software-access strobe pulses", C_SCOPE);
+    v_irq_status_pending_swacc := irq_status_pending_swacc_count;
+    bus_write(f_addr(C_ADDR_IRQ_STATUS), 32x"00000001", "write irq_status");
+    bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"00000000", "read irq_status");
+    wait until rising_edge(clk);
+    wait until rising_edge(clk);
+    check_value(irq_status_pending_swacc_count - v_irq_status_pending_swacc, 2, error, "irq_status.pending swacc pulses per access (write + read)", C_SCOPE);
+
+    -- hwset is held through the read, so it meets the read clear in the same
+    -- cycle. The value sampled with the swacc strobe shows which one won.
+    log(ID_LOG_HDR, "irq_status: hwset beats a read clear in the same cycle", C_SCOPE);
+    wait until falling_edge(clk);
+    from_hw.irq_status.pending.set <= '1';
+    wait until falling_edge(clk);
+    bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"00000001", "irq_status read while hwset is held");
+    wait until falling_edge(clk);
+    from_hw.irq_status.pending.set <= '0';
+    check_value(irq_status_pending_at_swacc, '1', error, "irq_status.pending still set in the cycle after the read clear", C_SCOPE);
+    bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"00000001", "irq_status still set after that read");
+    bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"0", "irq_status cleared by a read without hwset");
 
     wait for 10*C_CLK_PERIOD;
     report_alert_counters(FINAL);

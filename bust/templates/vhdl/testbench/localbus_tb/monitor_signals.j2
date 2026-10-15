@@ -9,6 +9,9 @@
 {% endfor %}
 {% for f in reg.swacc_fields %}
   signal {{ reg.name }}_{{ f.name }}_swacc_count : natural := 0;
+{% if reg.is_hwset_read_clear_register %}
+  signal {{ reg.name }}_{{ f.name }}_at_swacc : {{ f.type_vhdl }} := {{ f.reset_val_vhdl }};
+{% endif %}
 {% endfor %}
 {% for f in reg.singlepulse_fields %}
   signal {{ reg.name }}_{{ f.name }}_sp_count : natural := 0;
