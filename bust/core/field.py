@@ -317,15 +317,24 @@ class Field:
 
         Returns:
             OrderedDict with field configuration, including only non-default
-            values for width, reset, and description.
+            values for width, reset, and description. Access-mode properties
+            and position are included only where the field set them itself, so
+            inherited register defaults stay inherited.
         """
         dic = OrderedDict()
         dic["name"] = self.name
         dic["type"] = self.type.value
         if self.type == FieldType.VECTOR:
             dic["width"] = self.width
+        if self._config.is_set("position"):
+            dic["position"] = self.pos_low
         if self.reset != "0x0":
             dic["reset"] = self.reset
+        for key in INHERITABLE_ACCESS:
+            if self._config.is_set(key):
+                dic[key] = self._config.get(key)
+        if self.enums:
+            dic["enums"] = [enum._asdict() for enum in self.enums]
         if self.description != "":
             dic["description"] = self.description
         return dic
