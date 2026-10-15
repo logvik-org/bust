@@ -158,7 +158,7 @@ json_parser(file) -> Settings -> Bus -> Module(json, bus, settings)
 
 ## Package layout
 
-The package uses a layered structure. **The flat top-level modules in `bust/` (e.g. `bust/bus.py`, `bust/module.py`, `bust/header.py`, `bust/utils.py`, `bust/generator_factory.py`) are backward-compatibility shims** that only re-export from the new locations. Write and import new code from the real homes below. Only touch a shim to keep its re-export list in sync.
+The package uses a layered structure:
 
 - **`bust/core/`**: domain model, no generation logic. `Bus`, `Module`, `Register`, `Field`, and `enums` (`RegisterMode`, `RegisterType`, `SwAccess`, `HwAccess`, `OnRead`, `OnWrite`). `Module` owns the register list, address assignment (`update_addresses`), and validation. `Register`/`Field` carry the access-mode model and the per-register/field helpers the templates render from.
 - **`bust/generators/`**: all code emission.

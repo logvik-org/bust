@@ -13,9 +13,9 @@ from bust.core.bus import Bus
 from bust.core.field import INHERITABLE_ACCESS
 from bust.core.module import Module
 from bust.generation import _ENDPOINT_GENERATORS, _TESTBENCH_GENERATORS
-from bust.generators.documentation_generator import Documentation
+from bust.generators.documentation_generator import DocumentationGenerator
 from bust.generators.factory import GeneratorFactory
-from bust.generators.header_generator import Header
+from bust.generators.header_generator import HeaderGenerator
 from bust.settings import Settings
 from bust.utils.json_utils import json_parser
 
@@ -51,7 +51,7 @@ def _save_and_reload(json_file):
 
 def _generated_artifacts(module):
     bus_type = module.bus.bus_type
-    header = Header(module)
+    header = HeaderGenerator(module)
     artifacts = {
         "localbus_pkg": GeneratorFactory.generate_localbus_package_vhdl(module),
         "regfile_pkg": GeneratorFactory.generate_regfile_package_vhdl(module),
@@ -107,9 +107,9 @@ def test_saved_json_regenerates_identical_doc(example):
     pytest.importorskip("pylatexenc")
     saved_module, _, reloaded = _save_and_reload(_example_path(example))
 
-    assert Documentation(reloaded).generate_tex_documentation(
+    assert DocumentationGenerator(reloaded).generate_tex_documentation(
         "1.0.0-dev"
-    ) == Documentation(saved_module).generate_tex_documentation("1.0.0-dev")
+    ) == DocumentationGenerator(saved_module).generate_tex_documentation("1.0.0-dev")
 
 
 @pytest.mark.parametrize("example", _EXAMPLES)
