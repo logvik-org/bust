@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `bust` is an open-source bus tool: a command-line utility that generates VHDL, C/C++/Python headers, LaTeX/PDF documentation, and UVVM-based testbenches from a simple JSON register-map description. It supports **AXI4-Lite** (`axi`), **IPBus** (`ipbus`), **SBI** (`sbi`), **Avalon-MM** (`avalon`), **Wishbone** (`wishbone`), and **APB** (`apb`). The generated VHDL hides all register handling behind VHDL records so the rest of a design references registers by name and access mode.
 
-Maintained by Ola Grøttvik. Apache 2.0 licensed, hosted at https://github.com/logvik-org/bust. Target runtimes: Python 3.9, 3.10, 3.11 (3.9 is the mypy baseline). Python 2.7 is not supported.
+Maintained by Ola Grøttvik. Apache 2.0 licensed, hosted at https://github.com/logvik-org/bust. Target runtimes: Python 3.9 to 3.14 (3.9 is the mypy baseline). Python 2.7 is not supported.
 
 ## Architecture
 
@@ -18,7 +18,7 @@ localbus_pkg            local-bus records (t_lb_m2s / t_lb_s2m), sized from the 
 <module>_regfile        storage, access-mode behaviour, hardware updates, read mux, response
 <module>_<bus>_endpoint protocol bridge (one per bus: axi/ipb/sbi/avalon/wishbone/apb_endpoint) over the local bus
 <module>                thin, fixed top wrapper instantiating the endpoint
-<module>_tb             self-checking UVVM testbench over the stock VIP (AXI-Lite / vip_ipbus / SBI / Avalon-MM / Wishbone / APB)
+<module>_tb             self-checking UVVM testbench over a stock VIP (AXI-Lite / vip_ipbus / SBI / Avalon-MM), or an inlined hand-written master BFM (Wishbone / APB)
 ```
 
 The hardware side references each field by name through `to_hw`/`from_hw` records. The access-mode system (full spec below) is richer than a read-only/read-write `mode`: separate software (`sw`) and hardware (`hw`) access, software side effects (onread/onwrite/singlepulse), hardware modifiers (we/wel/hwset/hwclr/swmod/swacc), and enumerated field types that generate VHDL enums.
@@ -140,7 +140,7 @@ black bust tests                       # format (excludes example/)
 pre-commit run --all-files             # trailing-ws, eof, tabs, crlf, black, flake8
 ```
 
-CI (`.github/workflows/python_tests.yml`) runs `mypy bust` then `pytest` across Python 3.9/3.10/3.11. Both must be green.
+CI (`.github/workflows/python_tests.yml`) runs `mypy bust` then `pytest` across Python 3.9 to 3.14, plus an experimental 3.15 pre-release leg that may fail. It then builds the sdist and wheel, runs `twine check`, installs the wheel into a fresh venv and runs `scripts/smoke-test.sh` against it. All of it must be green. `vhdl_sim.yml` runs the VHDL simulations (see below) and `pre-commit.yml` runs the pre-commit hooks on pull requests. Publishing a GitHub Release runs `release.yml`, which reruns `python_tests.yml` and `vhdl_sim.yml` and then publishes to TestPyPI and PyPI (see "Releasing" in `CONTRIBUTING.md`). Every action in `.github/workflows/` is pinned to a commit SHA with a `# vX.Y.Z` comment.
 
 ## Generation pipeline
 
@@ -160,7 +160,7 @@ The package uses a layered structure. **The flat top-level modules in `bust/` (e
 
 - **`bust/core/`**: domain model, no generation logic. `Bus`, `Module`, `Register`, `Field`, and `enums` (`RegisterMode`, `RegisterType`, `SwAccess`, `HwAccess`, `OnRead`, `OnWrite`). `Module` owns the register list, address assignment (`update_addresses`), and validation. `Register`/`Field` carry the access-mode model and the per-register/field helpers the templates render from.
 - **`bust/generators/`**: all code emission.
-  - `factory.py` `GeneratorFactory` is the seam that decouples `core` domain objects from generator implementations. **Domain classes never import generators; everything goes through this factory.** Call its static methods (`generate_localbus_package_vhdl`, `generate_regfile_package_vhdl`, `generate_regfile_vhdl`, `generate_axi_endpoint_vhdl`, `generate_ipb_endpoint_vhdl`, `generate_module_top_vhdl`, `generate_localbus_axi_testbench_vhdl`, `generate_localbus_ipbus_testbench_vhdl`) rather than instantiating generators directly.
+  - `factory.py` `GeneratorFactory` is the seam that decouples `core` domain objects from generator implementations. **Domain classes never import generators; everything goes through this factory.** Call its static methods (`generate_localbus_package_vhdl`, `generate_regfile_package_vhdl`, `generate_regfile_vhdl`, `generate_module_top_vhdl`, and per bus a `generate_<short>_endpoint_vhdl` and a `generate_localbus_<bus>_testbench_vhdl`) rather than instantiating generators directly. Endpoints use the bus short name and testbenches the bus type, which differ only for IPBus: `generate_ipb_endpoint_vhdl` but `generate_localbus_ipbus_testbench_vhdl`. The others are `axi`, `sbi`, `avalon`, `wishbone` and `apb` in both.
   - `vhdl/module_generator.py` is the (stateless) VHDL emitter for the local-bus stack and testbenches.
   - `header_generator.py` (C/C++/Python/IPBus-XML), `documentation_generator.py` (LaTeX).
 - **`bust/validation/`**: `config_validator.py` (`ConfigWrapper`, JSON key validation) and `vhdl_validator.py` (`is_valid_VHDL`).
@@ -186,11 +186,12 @@ make sim-ipbus                # run example_ipbus testbench
 make wave-axi                 # simulate + capture FST + open GTKWave
 ```
 
-`sim/README.md` documents the library layering, the `nvc --relaxed` flag gotcha, and how to add a new testbench target (`run_sim.sh` + `sim/Makefile` + `.github/workflows/vhdl_sim.yml`). The sim CI (`vhdl_sim.yml`) triggers only on changes under `sim/**`, `example/**/*.vhd`, or `hdl/**/*.vhd`.
+`sim/README.md` documents the library layering, the `nvc --relaxed` flag gotcha, and how to add a new testbench target (`run_sim.sh` + `sim/Makefile` + `.github/workflows/vhdl_sim.yml`). On pushes and pull requests the sim CI (`vhdl_sim.yml`) triggers only on changes under `sim/**`, `example/**/*.vhd`, or `hdl/**/*.vhd`. It can also be run by hand, and `release.yml` runs it for every release regardless of paths.
 
 ## Conventions
 
-- **Versioning**: managed by `bumpversion` (config in `.bumpversion.cfg`). The version should be kept in sync between `pyproject.toml` and `bust/_version.py` (`__VERSION__`); use bumpversion to update both. Do not edit version strings by hand.
+- **Versioning**: managed by `bumpversion` (config in `.bumpversion.cfg`). The version should be kept in sync between `pyproject.toml` and `bust/_version.py` (`__VERSION__`), so use bumpversion to update both. Do not edit version strings by hand. bumpversion commits but does not tag (`tag = False`): the GitHub Release creates the `v<version>` tag, and `release.yml` fails unless the tag equals `v` + `__VERSION__`.
+- **Changelog**: `CHANGELOG.md` follows Keep a Changelog. Add user-facing changes under `## [Unreleased]`.
 - **mypy**: configured in `pyproject.toml` with most warnings on but untyped-def enforcement off. Keep `mypy bust` clean.
 - **Docstrings**: Google convention (pydocstyle), ignoring D100/D104/D107; test files are exempt.
 - **black** formats everything except `example/` (generator output, not hand-written).
