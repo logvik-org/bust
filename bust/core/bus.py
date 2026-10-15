@@ -22,12 +22,12 @@ class Bus:
     provides methods for generating bus-specific VHDL code.
 
     Supported bus types:
-        - axi: AXI4-Lite (async reset)
-        - ipbus: IPBus (sync reset)
-        - sbi: Simple Bus Interface (sync reset)
-        - avalon: Avalon-MM (sync reset)
-        - wishbone: Wishbone B4 classic (sync reset)
-        - apb: AMBA APB (async active-low reset)
+        - axi: AXI4-Lite
+        - ipbus: IPBus
+        - sbi: Simple Bus Interface
+        - avalon: Avalon-MM
+        - wishbone: Wishbone B4 classic
+        - apb: AMBA APB
 
     Attributes:
         bus_type: Bus standard identifier (one of supported_bus).
