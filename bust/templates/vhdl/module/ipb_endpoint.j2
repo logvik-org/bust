@@ -6,8 +6,10 @@
 -- transaction (wen for write, ren for read) and the regfile's response
 -- (ack/err/rdata) is forwarded straight back. No FSM and no register stage of its
 -- own: the regfile's single registered cycle is the whole latency, and its
--- response guard provides transaction separation. The address is forwarded
--- unchanged; IPBus's sync active-high reset passes straight to the regfile.
+-- response guard provides transaction separation. The 32-bit IPBus address is
+-- sliced to the local-bus width. The regfile selects the register and checks
+-- G_BASE_ADDRESS within that width, so any bits above it are decoded upstream.
+-- IPBus's sync active-high reset passes straight to the regfile.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -59,7 +61,7 @@ begin
       to_hw   => to_hw{% endif %}{% if module.from_hw_registers %},
       from_hw => from_hw{% endif %});
 
-  m2s.address <= ipb_in.ipb_addr;
+  m2s.address <= ipb_in.ipb_addr({{ module.addr_width - 1 }} downto 0);
   m2s.wdata   <= ipb_in.ipb_wdata;
   m2s.wen     <= ipb_in.ipb_strobe and ipb_in.ipb_write;
   m2s.ren     <= ipb_in.ipb_strobe and not ipb_in.ipb_write;
