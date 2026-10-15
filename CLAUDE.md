@@ -129,8 +129,7 @@ JSON schema note: design the schema to accommodate a future `addrmap` hierarchy 
 ## Commands
 
 ```bash
-pip install -r requirements.txt        # install deps (includes dev tools: pytest, mypy, sphinx)
-pip install -e ".[dev]"                # editable install with dev extras
+pip install -e ".[dev]"                # editable install with test and release tools
 
 python -m bust example/example_axi.json -o /tmp/out   # run the generator
 bust --version                               # console-script entry point
@@ -139,7 +138,7 @@ pytest                                 # run the full test suite
 pytest tests/test_suite.py::Test_Suite::test_localbus_hdl   # run a single test
 mypy bust                              # type-check (CI runs this; must pass)
 black bust tests                       # format (excludes example/)
-pre-commit run --all-files             # trailing-ws, eof, tabs, crlf, black, flake8
+pre-commit run --all-files             # trailing-ws, eof, tabs, crlf, black
 ```
 
 CI (`.github/workflows/python_tests.yml`) runs `mypy bust` then `pytest` across Python 3.9 to 3.14, plus an experimental 3.15 pre-release leg that may fail. It then builds the sdist and wheel, runs `twine check`, installs the wheel into a fresh venv and runs `scripts/smoke-test.sh` against it. All of it must be green. `vhdl_sim.yml` runs the VHDL simulations (see below) and `pre-commit.yml` runs the pre-commit hooks on pull requests. Publishing a GitHub Release runs `release.yml`, which reruns `python_tests.yml` and `vhdl_sim.yml` and then publishes to TestPyPI and PyPI (see "Releasing" below). Every action in `.github/workflows/` is pinned to a commit SHA with a `# vX.Y.Z` comment.
