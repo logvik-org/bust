@@ -92,7 +92,7 @@ const std::string REG3_FIELD0_HW = "na";
 
 /* Register: reg4 */
 const std::string REG4_SW = "rw";
-const std::string REG4_HW = "r";
+const std::string REG4_HW = "rw";
 const uint32_t REG4_WIDTH = 9;
 const uint32_t REG4_OFFSET = 0x10;
 const uint32_t REG4_RESET = 0x0;
