@@ -457,13 +457,14 @@ class Register:
 
     @property
     def reads_back_zero(self) -> bool:
-        """True when a software read returns 0 after a write (write-only or singlepulse)."""
+        """True when a software read returns 0 after a write: write-only fields,
+        and singlepulse fields that return to a reset value of 0."""
         fields = self.effective_fields
         return (
             bool(fields)
             and any(f.sw_writable for f in fields)
             and all(
-                (f.singlepulse or not f.sw_readable)
+                (not f.sw_readable or (f.singlepulse and f.reset_state == 0))
                 and f.onread is None
                 and f.onwrite is None
                 and not f.is_enum
@@ -711,13 +712,24 @@ class Register:
             return alternating
         return f.reset_state
 
+    @staticmethod
+    def _strobe_write(f: Field) -> int:
+        """Field-local value the strobe test writes: every bit set, except that a
+        singlepulse field gets the inverse of its reset so its pulse is visible."""
+        return f.pulse_test_value if f.singlepulse else (1 << int(f.width)) - 1
+
+    @property
+    def strobe_write_value_vhdl(self) -> str:
+        """Data-width literal the strobe test writes (see _strobe_write)."""
+        return self._data_width_literal(self._register_value(self._strobe_write))
+
     @property
     def strobe_readback_value_vhdl(self) -> str:
-        """Data-width literal the strobe test reads back after its self-test write.
+        """Data-width literal the strobe test reads back after its write.
 
         Each field starts from what the earlier self-tests left in it and takes the
-        write (every field bit set) through its own write predictor, so onwrite
-        effects, enum decoding, singlepulse self-clear and read-only fields in the
+        write through its own write predictor, so onwrite effects, enum decoding,
+        a singlepulse returning to its reset value and read-only fields in the
         same register are all accounted for. A field hardware writes every cycle
         shows its from_hw input again by the time of the read.
         """
@@ -728,7 +740,7 @@ class Register:
             before = self._value_before_strobe_test(f)
             if f.hw_writes_continuously:
                 return before
-            return f.written_result((1 << int(f.width)) - 1, before)
+            return f.written_result(self._strobe_write(f), before)
 
         return self._data_width_literal(self._register_value(readback))
 

@@ -15,7 +15,7 @@
       end if;
 {% endfor %}
 {% for f in reg.singlepulse_fields %}
-      if to_hw.{{ reg.name }}.{{ f.name }}{{ ".value" if f.to_hw_is_record else "" }} /= {{ f.value_literal(0) }} then
+      if to_hw.{{ reg.name }}.{{ f.name }}{{ ".value" if f.to_hw_is_record else "" }} /= {{ f.value_literal(f.reset_state) }} then
         {{ reg.name }}_{{ f.name }}_sp_count <= {{ reg.name }}_{{ f.name }}_sp_count + 1;
         {{ reg.name }}_{{ f.name }}_sp_value <= to_hw.{{ reg.name }}.{{ f.name }}{{ ".value" if f.to_hw_is_record else "" }};
       end if;

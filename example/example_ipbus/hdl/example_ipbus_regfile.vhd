@@ -108,17 +108,17 @@ begin
       regs.reg8.field2 <= from_hw.reg8.field2;
       regs.reg8.field3 <= from_hw.reg8.field3;
 
-      regs.reg9.reg9 <= '0';
+      regs.reg9.reg9 <= '1';
       if sw_write and sel_is(sel, C_ADDR_REG9) then
         regs.reg9.reg9 <= lb_m2s.wdata(0);
       end if;
 
-      regs.reg10.reg10 <= (others => '0');
+      regs.reg10.reg10 <= 4X"A";
       if sw_write and sel_is(sel, C_ADDR_REG10) then
         regs.reg10.reg10 <= lb_m2s.wdata(3 downto 0);
       end if;
 
-      regs.reg11.field0 <= (others => '0');
+      regs.reg11.field0 <= 15X"3";
       regs.reg11.field1 <= '0';
       if sw_write and sel_is(sel, C_ADDR_REG11) then
         regs.reg11.field0 <= lb_m2s.wdata(14 downto 0);
