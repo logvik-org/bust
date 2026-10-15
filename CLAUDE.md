@@ -129,8 +129,7 @@ JSON schema note: design the schema to accommodate a future `addrmap` hierarchy 
 ## Commands
 
 ```bash
-pip install -r requirements.txt        # install deps (includes dev tools: pytest, mypy, sphinx)
-pip install -e ".[dev]"                # editable install with dev extras
+pip install -e ".[dev]"                # editable install with test and release tools
 
 python -m bust example/example_axi.json -o /tmp/out   # run the generator
 bust --version                               # console-script entry point
@@ -139,7 +138,7 @@ pytest                                 # run the full test suite
 pytest tests/test_suite.py::Test_Suite::test_localbus_hdl   # run a single test
 mypy bust                              # type-check (CI runs this; must pass)
 black bust tests                       # format (excludes example/)
-pre-commit run --all-files             # trailing-ws, eof, tabs, crlf, black, flake8
+pre-commit run --all-files             # trailing-ws, eof, tabs, crlf, black
 ```
 
 CI (`.github/workflows/python_tests.yml`) runs `mypy bust` then `pytest` across Python 3.9 to 3.14, plus an experimental 3.15 pre-release leg that may fail. It then builds the sdist and wheel, runs `twine check`, installs the wheel into a fresh venv and runs `scripts/smoke-test.sh` against it. All of it must be green. `vhdl_sim.yml` runs the VHDL simulations (see below) and `pre-commit.yml` runs the pre-commit hooks on pull requests. Publishing a GitHub Release runs `release.yml`, which reruns `python_tests.yml` and `vhdl_sim.yml` and then publishes to TestPyPI and PyPI (see "Releasing" below). Every action in `.github/workflows/` is pinned to a commit SHA with a `# vX.Y.Z` comment.
@@ -158,7 +157,7 @@ json_parser(file) -> Settings -> Bus -> Module(json, bus, settings)
 
 ## Package layout
 
-The package uses a layered structure. **The flat top-level modules in `bust/` (e.g. `bust/bus.py`, `bust/module.py`, `bust/header.py`, `bust/utils.py`, `bust/generator_factory.py`) are backward-compatibility shims** that only re-export from the new locations. Write and import new code from the real homes below. Only touch a shim to keep its re-export list in sync.
+The package uses a layered structure:
 
 - **`bust/core/`**: domain model, no generation logic. `Bus`, `Module`, `Register`, `Field`, and `enums` (`RegisterMode`, `RegisterType`, `SwAccess`, `HwAccess`, `OnRead`, `OnWrite`). `Module` owns the register list, address assignment (`update_addresses`), and validation. `Register`/`Field` carry the access-mode model and the per-register/field helpers the templates render from.
 - **`bust/generators/`**: all code emission.
@@ -175,7 +174,7 @@ The package uses a layered structure. **The flat top-level modules in `bust/` (e
 
 `tests/test_suite.py` is **not** unit-style. It regenerates output from `example/example_axi.json` and `example/example_ipbus.json` and asserts byte-for-byte equality against the committed reference files under `example/example_axi/` and `example/example_ipbus/` (subdirs `hdl/`, `tb/`, `header/`, `doc/`). `tests/test_regfile_package.py` does the same for the new-format `example/example_prototype.json` (which exercises every access mode) plus structural checks against the hand-written prototype.
 
-Consequence: **any change to a generator or template that alters output will fail the suite until you regenerate and commit the corresponding `example/.../` reference files** (for all affected examples: axi, ipbus, and prototype). Treat the example output trees as fixtures that must be updated alongside generator/template changes. The doc test pins the version string, so keep generated reference docs consistent with it. `test_doc` needs `pylatexenc` (the `utf8tolatex` filter); where it is unavailable it is skipped/expected-to-fail and runs in CI instead.
+Consequence: **any change to a generator or template that alters output will fail the suite until you regenerate and commit the corresponding `example/.../` reference files**. `BUST_UPDATE_GOLDENS=1 pytest tests/test_suite.py` rewrites every golden from the current generator. Review the diff before committing it. Treat the example output trees as fixtures that must be updated alongside generator/template changes. The doc test pins the version string, so keep generated reference docs consistent with it. `test_doc` needs `pylatexenc` (the `utf8tolatex` filter); where it is unavailable it is skipped/expected-to-fail and runs in CI instead.
 
 ## VHDL simulation (`sim/`)
 

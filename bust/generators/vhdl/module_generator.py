@@ -88,8 +88,3 @@ class ModuleGenerator:
     def generate_localbus_apb_testbench_vhdl(self, module) -> str:
         """Generate the APB testbench (inlined master BFM) for the top wrapper."""
         return render_template("vhdl/testbench/localbus_apb_tb.j2", {"module": module})
-
-
-# Backward compatibility aliases
-ModuleVhdlGenerator = ModuleGenerator
-ModuleVHDLGen = ModuleGenerator

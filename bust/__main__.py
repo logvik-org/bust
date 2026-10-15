@@ -33,8 +33,8 @@ from bust.utils.json_utils import json_parser
 from bust.utils.file_utils import write_string_to_file
 from bust.core.module import Module
 from bust.core.bus import Bus
-from bust.generators.header_generator import Header
-from bust.generators.documentation_generator import Documentation
+from bust.generators.header_generator import HeaderGenerator
+from bust.generators.documentation_generator import DocumentationGenerator
 from bust.settings import Settings
 from bust.generation import generate_output
 from bust.exceptions import (
@@ -100,8 +100,8 @@ def main():
                 settings = Settings(json_file, json_dict["settings"])
                 bus = Bus(json_dict["bus"])
                 module = Module(json_dict["module"], bus, settings)
-                header = Header(module)
-                documentation = Documentation(module)
+                header = HeaderGenerator(module)
+                documentation = DocumentationGenerator(module)
 
             except (
                 FormatError,
