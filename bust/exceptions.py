@@ -32,21 +32,19 @@ class InvalidAddress(RuntimeError):
 
 
 class InvalidRegister(RuntimeError):
-    """Raised when register configuration has missing or invalid keys.
+    """Raised when a register definition in the JSON configuration is invalid."""
 
-    This exception indicates that a register definition in the JSON
-    configuration is missing required keys or has invalid values.
-    """
-
-    def __init__(self, reg):
+    def __init__(self, reg, cause):
         """Initialize InvalidRegister exception.
 
         Args:
             reg: Register configuration dictionary.
+            cause: The error that made the register invalid.
         """
         name = reg.get("name", "<unknown>")
-        msg = f"Could not parse register {name}. Lacking or misspelt JSON keys?\n{reg}"
-        super().__init__(msg)
+        # str() of a KeyError quotes its message.
+        reason = cause.args[0] if isinstance(cause, KeyError) and cause.args else cause
+        super().__init__(f"Could not parse register {name}: {reason}")
 
 
 class InvalidBusType(RuntimeError):

@@ -22,7 +22,7 @@ use work.example_ipbus_regfile_pkg.all;
 
 entity example_ipbus_ipb_endpoint is
   generic (
-    G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
+    G_BASE_ADDRESS       : unsigned(15 downto 0) := 16x"0";
     G_CHECK_BASE_ADDRESS : boolean := true
   );
   port (
@@ -55,7 +55,7 @@ begin
       to_hw   => to_hw,
       from_hw => from_hw);
 
-  m2s.address <= ipb_in.ipb_addr(31 downto 0);
+  m2s.address <= ipb_in.ipb_addr(15 downto 0);
   m2s.wdata   <= ipb_in.ipb_wdata;
   m2s.wen     <= ipb_in.ipb_strobe and ipb_in.ipb_write;
   m2s.ren     <= ipb_in.ipb_strobe and not ipb_in.ipb_write;
