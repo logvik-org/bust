@@ -11,7 +11,7 @@ reset type, and component library references.
 from collections import OrderedDict
 from typing import Any, Dict
 
-from bust.exceptions import InvalidBusType
+from bust.exceptions import FormatError, InvalidBusType
 
 
 class Bus:
@@ -41,7 +41,8 @@ class Bus:
 
     Class Attributes:
         BUS_CONFIG: Per-bus-type configuration (short name, reset convention,
-            forced component library, byte addressing, endpoint file suffix).
+            forced component library, byte addressing, endpoint file suffix,
+            widest supported addr_width).
         supported_bus: Supported bus type strings (the BUS_CONFIG keys).
         default_comp_library: Default VHDL library ("work") used when no library
             is forced by the bus or supplied in the JSON.
@@ -50,6 +51,7 @@ class Bus:
     # One row per supported bus. Adding a single-beat bus is a new entry here
     # plus its endpoint/testbench templates, not edits scattered across methods.
     # comp_library None means "use the JSON value, else default_comp_library".
+    # max_addr_width None means the protocol's address port follows addr_width.
     BUS_CONFIG: Dict[str, Dict[str, Any]] = {
         "axi": {
             "short_name": "axi",
@@ -57,6 +59,7 @@ class Bus:
             "comp_library": None,
             "byte_addressable": True,
             "endpoint_suffix": "axi_endpoint",
+            "max_addr_width": None,
         },
         "ipbus": {
             "short_name": "ipb",
@@ -64,6 +67,8 @@ class Bus:
             "comp_library": "ipbus",
             "byte_addressable": False,
             "endpoint_suffix": "ipb_endpoint",
+            # ipb_addr is a fixed 32-bit port that the endpoint slices to addr_width.
+            "max_addr_width": 32,
         },
         "sbi": {
             "short_name": "sbi",
@@ -71,6 +76,7 @@ class Bus:
             "comp_library": None,
             "byte_addressable": True,
             "endpoint_suffix": "sbi_endpoint",
+            "max_addr_width": None,
         },
         "avalon": {
             "short_name": "avalon",
@@ -78,6 +84,7 @@ class Bus:
             "comp_library": None,
             "byte_addressable": True,
             "endpoint_suffix": "avalon_endpoint",
+            "max_addr_width": None,
         },
         "wishbone": {
             "short_name": "wishbone",
@@ -85,6 +92,7 @@ class Bus:
             "comp_library": None,
             "byte_addressable": True,
             "endpoint_suffix": "wishbone_endpoint",
+            "max_addr_width": None,
         },
         "apb": {
             "short_name": "apb",
@@ -92,6 +100,7 @@ class Bus:
             "comp_library": None,
             "byte_addressable": True,
             "endpoint_suffix": "apb_endpoint",
+            "max_addr_width": None,
         },
     }
     default_comp_library = "work"
@@ -109,6 +118,7 @@ class Bus:
 
         Raises:
             InvalidBusType: If bus type is not in supported_bus list.
+            FormatError: If addr_width exceeds what the bus protocol carries.
         """
         if bus["type"] not in Bus.BUS_CONFIG:
             raise InvalidBusType(bus["type"])
@@ -121,6 +131,14 @@ class Bus:
         self.bus_reset = config["bus_reset"]
         self.byte_addressable = config["byte_addressable"]
         self.endpoint_suffix = config["endpoint_suffix"]
+
+        max_addr_width = config["max_addr_width"]
+        if max_addr_width is not None and self.addr_width > max_addr_width:
+            raise FormatError(
+                f"Bus type {self.bus_type} carries {max_addr_width}-bit addresses, "
+                f"so addr_width must be at most {max_addr_width} "
+                f"(got {self.addr_width})"
+            )
 
         forced_library = config["comp_library"]
         if forced_library is not None:

@@ -87,8 +87,11 @@ The local bus carries a **byte address** so the regfile decode stays
 protocol-agnostic: each wrapper forwards the incoming address unchanged and the
 regfile slices the module window from it (low bits select the register, upper
 bits check the base), exactly as the legacy AXI and IPBus PIFs did. No wrapper shifts
-or rewrites the address. This is an internal-bus convention only, not a
-restriction on the register map.
+or rewrites the address. IPBus is the one port of fixed width: `ipb_addr` is
+always 32 bits, so the generated IPBus endpoint slices it to the module's
+`addr_width` (higher bits are decoded upstream) and an `addr_width` above 32 is
+rejected. This is an internal-bus convention only, not a restriction on the
+register map.
 
 bust must support whatever addressing scheme the register map declares, with
 **byte-addressing and word-addressing** being the two common cases, and the
