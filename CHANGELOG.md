@@ -12,9 +12,11 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 ### Added
 - A local-bus architecture: every bus is a thin endpoint over one
   protocol-agnostic local bus and register file, so the register-map logic is
-  the same for all of them. Each module is generated as `localbus_pkg`,
-  `<module>_regfile_pkg`, `<module>_regfile`, `<module>_<bus>_endpoint` and a
-  fixed `<module>` top wrapper.
+  the same for all of them. Each module is generated as
+  `<module>_localbus_pkg`, `<module>_regfile_pkg`, `<module>_regfile`,
+  `<module>_<bus>_endpoint` and a fixed `<module>` top wrapper. The local-bus
+  package is sized from and named after its module, so modules with different
+  address or data widths can be compiled into the same VHDL library.
 - SBI, Avalon-MM, Wishbone (B4 classic) and APB, alongside AXI4-Lite and IPBus.
 - A self-checking UVVM testbench generated for every bus. CI simulates each of
   them with nvc.

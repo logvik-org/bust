@@ -336,3 +336,11 @@ jobs:
             -e WORK_ROOT=/work \
             bust-sim:ci \
             /work/sim/scripts/run_sim.sh access_matrix_tb_generated
+
+      - name: Run two generated modules in one library
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh multi_module_generated

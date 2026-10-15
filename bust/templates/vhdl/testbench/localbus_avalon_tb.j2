@@ -18,7 +18,7 @@ context uvvm_util.uvvm_util_context;
 library bitvis_vip_avalon_mm;
 use bitvis_vip_avalon_mm.avalon_mm_bfm_pkg.all;
 
-use work.localbus_pkg.all;
+use work.{{ module.name }}_localbus_pkg.all;
 use work.{{ module.name }}_regfile_pkg.all;
 
 entity {{ module.name }}_tb is

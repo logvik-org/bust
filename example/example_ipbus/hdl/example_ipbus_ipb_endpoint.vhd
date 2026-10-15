@@ -17,7 +17,7 @@ use ieee.numeric_std.all;
 library ipbus;
 use ipbus.ipbus.all;
 
-use work.localbus_pkg.all;
+use work.example_ipbus_localbus_pkg.all;
 use work.example_ipbus_regfile_pkg.all;
 
 entity example_ipbus_ipb_endpoint is
