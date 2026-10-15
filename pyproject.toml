@@ -31,6 +31,14 @@ bust = "bust.__main__:main"
 [project.urls]
 Homepage = "https://github.com/logvik-org/bust"
 
+# The repository root also holds hdl/ and sim/, which flat-layout discovery
+# would otherwise pick up as packages.
+[tool.setuptools.packages.find]
+include = ["bust", "bust.*"]
+
+[tool.setuptools.package-data]
+bust = ["templates/**/*.j2"]
+
 [tool.coverage.run]
 source = ["bust"]
 omit = [
