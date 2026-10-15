@@ -15,7 +15,7 @@ Filters defined:
 - get_vhdl_type: Returns the correct VHDL type based on register properties.
 - get_reset_value: Returns the formatted VHDL reset value for registers.
 
-Copyright (c) 2025 Grottviq
+Copyright (c) 2025 Ola Groettvik
 Licensed under the Apache License, Version 2.0. See the LICENSE file for details.
 """
 
