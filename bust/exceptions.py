@@ -123,23 +123,6 @@ class UndefinedRegisterType(RuntimeError):
         super().__init__(msg)
 
 
-class UndefinedFieldType(RuntimeError):
-    """Raised when field type is not recognized.
-
-    This exception is raised when parsing a field with an unsupported
-    or misspelled type value.
-    """
-
-    def __init__(self, type):
-        """Initialize UndefinedFieldType exception.
-
-        Args:
-            type: The unrecognized field type string.
-        """
-        msg = "Could not parse field type: " + type
-        super().__init__(msg)
-
-
 class InvalidRegisterFormat(RuntimeError):
     """Raised when register configuration has a format error.
 
