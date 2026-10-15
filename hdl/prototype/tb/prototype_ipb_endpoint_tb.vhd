@@ -17,7 +17,7 @@ context uvvm_util.uvvm_util_context;
 library vip_ipbus;
 use vip_ipbus.ipbus_bfm_pkg.all;
 
-use work.localbus_pkg.all;
+use work.prototype_localbus_pkg.all;
 use work.prototype_regfile_pkg.all;
 
 entity prototype_ipb_endpoint_tb is

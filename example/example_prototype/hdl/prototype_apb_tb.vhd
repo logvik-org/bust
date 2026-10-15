@@ -15,7 +15,7 @@ use ieee.numeric_std.all;
 library uvvm_util;
 context uvvm_util.uvvm_util_context;
 
-use work.localbus_pkg.all;
+use work.prototype_localbus_pkg.all;
 use work.prototype_regfile_pkg.all;
 
 entity prototype_tb is

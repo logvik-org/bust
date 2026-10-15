@@ -80,7 +80,7 @@ class Test_Suite(unittest.TestCase):
                 base = "example/example_{0}/hdl/example_{0}".format(t)
                 self._assert_matches(
                     GeneratorFactory.generate_localbus_package_vhdl(mod),
-                    "example/example_{0}/hdl/localbus_pkg.vhd".format(t),
+                    base + "_localbus_pkg.vhd",
                     "local-bus package must match manual file",
                 )
                 self._assert_matches(
@@ -186,7 +186,7 @@ class Test_Suite(unittest.TestCase):
         hdl = "example/example_prototype/hdl"
         self._assert_matches(
             GeneratorFactory.generate_localbus_package_vhdl(axi_mod),
-            hdl + "/localbus_pkg.vhd",
+            hdl + "/prototype_localbus_pkg.vhd",
             "prototype local-bus package must match manual file",
         )
         self._assert_matches(
@@ -323,7 +323,10 @@ class Test_Suite(unittest.TestCase):
         mod, _ = _load_access_matrix()
         hdl = "example/example_access_matrix/hdl"
         for generated, name in (
-            (GeneratorFactory.generate_localbus_package_vhdl(mod), "localbus_pkg.vhd"),
+            (
+                GeneratorFactory.generate_localbus_package_vhdl(mod),
+                "access_matrix_localbus_pkg.vhd",
+            ),
             (
                 GeneratorFactory.generate_regfile_package_vhdl(mod),
                 "access_matrix_regfile_pkg.vhd",
