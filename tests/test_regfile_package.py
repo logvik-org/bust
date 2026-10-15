@@ -84,7 +84,7 @@ def _structural_lines(text):
 def test_localbus_package_matches_golden():
     generated = GeneratorFactory.generate_localbus_package_vhdl(_build_module())
     golden = os.path.join(
-        _REPO_ROOT, "example", "example_prototype", "hdl", "localbus_pkg.vhd"
+        _REPO_ROOT, "example", "example_prototype", "hdl", "prototype_localbus_pkg.vhd"
     )
     with open(golden) as fp:
         assert generated == fp.read()
@@ -429,7 +429,7 @@ def _generate_only_localbus(out_dir, gen_localbus):
 
 
 _LOCALBUS_FILES = (
-    "localbus_pkg.vhd",
+    "example_axi_localbus_pkg.vhd",
     "example_axi_regfile_pkg.vhd",
     "example_axi_regfile.vhd",
     "example_axi_axi_endpoint.vhd",

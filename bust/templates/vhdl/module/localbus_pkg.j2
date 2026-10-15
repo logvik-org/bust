@@ -18,7 +18,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-package localbus_pkg is
+package {{ module.name }}_localbus_pkg is
 
   constant C_LB_ADDR_WIDTH : natural := {{ module.addr_width }};
   constant C_LB_DATA_WIDTH : natural := {{ module.data_width }};
@@ -47,4 +47,4 @@ package localbus_pkg is
     ack   => '0',
     err   => '0');
 
-end package localbus_pkg;
+end package {{ module.name }}_localbus_pkg;

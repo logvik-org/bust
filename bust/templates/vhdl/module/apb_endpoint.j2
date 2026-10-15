@@ -20,7 +20,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.localbus_pkg.all;
+use work.{{ module.name }}_localbus_pkg.all;
 use work.{{ module.name }}_regfile_pkg.all;
 
 entity {{ module.name }}_apb_endpoint is
