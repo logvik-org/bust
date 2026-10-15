@@ -96,7 +96,7 @@
 {% endfor %}
     bus_write(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "write {{ reg.name }}");
 {% if reg.swacc_fields %}
-    bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ (module.data_width ~ 'x"0"') if reg.reads_back_zero else reg.selftest_value_vhdl }}, "read {{ reg.name }}");
+    bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.strobe_readback_value_vhdl }}, "read {{ reg.name }}");
 {% endif %}
     wait until rising_edge(clk);
     wait until rising_edge(clk);

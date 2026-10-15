@@ -678,6 +678,60 @@ class Register:
             for f in fields
         )
 
+    def _hw_input_during_selftest(self, f: Field) -> int:
+        """from_hw value the generated testbench holds on a hardware-written field.
+
+        The hardware-driven status test leaves its stimulus applied; otherwise the
+        input sits at its declared default (localbus_tb/hw_signals.j2): zero, or the
+        reset literal for an enum.
+        """
+        if self.is_hw_driven_readback:
+            return self._alternating_bits(f.width)
+        return f.reset_state if f.is_enum else 0
+
+    def _value_before_strobe_test(self, f: Field) -> int:
+        """Field-local value the earlier self-tests leave in `f`.
+
+        The earlier test categories are mutually exclusive, and the hardware-modify
+        one never covers a strobe register, so at most one has written this
+        register; otherwise the field still holds its reset value.
+        """
+        alternating = self._alternating_bits(f.width)
+        if f.hw_writes_continuously:
+            return self._hw_input_during_selftest(f)
+        if self.is_simple_readback:
+            return (1 << int(f.width)) - 1
+        if self.is_enum_readback:
+            return max(e.value for e in f.enums)
+        if self.is_onwrite_readback:
+            return f.written_result(alternating)
+        if self.is_onread_readback:
+            return f.read_result(alternating)
+        if self.is_hw_driven_readback:
+            return alternating
+        return f.reset_state
+
+    @property
+    def strobe_readback_value_vhdl(self) -> str:
+        """Data-width literal the strobe test reads back after its self-test write.
+
+        Each field starts from what the earlier self-tests left in it and takes the
+        write (every field bit set) through its own write predictor, so onwrite
+        effects, enum decoding, singlepulse self-clear and read-only fields in the
+        same register are all accounted for. A field hardware writes every cycle
+        shows its from_hw input again by the time of the read.
+        """
+
+        def readback(f: Field) -> int:
+            if not f.sw_readable:
+                return 0
+            before = self._value_before_strobe_test(f)
+            if f.hw_writes_continuously:
+                return before
+            return f.written_result((1 << int(f.width)) - 1, before)
+
+        return self._data_width_literal(self._register_value(readback))
+
     def _compose(self, state: Dict[str, int]) -> int:
         """Pack a per-field value map into a full register value."""
         value = 0
