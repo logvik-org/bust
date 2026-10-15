@@ -88,7 +88,7 @@
 
 /* Register: reg4 */
 #define REG4_SW "rw"
-#define REG4_HW "r"
+#define REG4_HW "rw"
 #define REG4_WIDTH 9
 #define REG4_OFFSET 0x10
 #define REG4_RESET 0x0

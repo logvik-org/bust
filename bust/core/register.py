@@ -10,6 +10,7 @@ can optionally contain multiple named bitfields.
 """
 
 import logging
+from collections import OrderedDict
 from typing import Any, Dict, List, Optional, cast
 
 from bust.exceptions import (
@@ -25,6 +26,21 @@ from bust.utils.formatting import indent_string
 from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
 from bust.validation.config_validator import ConfigWrapper
 from bust.core.enums import RegisterMode, RegisterType, SwAccess, HwAccess
+
+# Register-level access summarised from its fields, keyed by
+# (any field readable, any field writable).
+_SW_BY_READ_WRITE = {
+    (True, True): SwAccess.RW,
+    (True, False): SwAccess.RO,
+    (False, True): SwAccess.WO,
+    (False, False): SwAccess.NA,
+}
+_HW_BY_READ_WRITE = {
+    (True, True): HwAccess.RW,
+    (True, False): HwAccess.R,
+    (False, True): HwAccess.W,
+    (False, False): HwAccess.NA,
+}
 
 
 class Register:
@@ -104,9 +120,10 @@ class Register:
 
         self.description: str = self._config.get("description")
         self.mode = RegisterMode.from_string(self._config.get("mode"))
+        self.uses_new_schema = uses_new_schema(reg)
         # The legacy `mode` and the bust 1.0 `sw`/`hw` keys are two ways to say the
         # same thing; honoring one and silently dropping the other hides intent.
-        if self._config.is_set("mode") and uses_new_schema(reg):
+        if self._config.is_set("mode") and self.uses_new_schema:
             raise InvalidRegisterFormat(
                 f"Register {self.name} sets the legacy 'mode' key together with "
                 "bust 1.0 access-mode keys (sw/hw/...); use one schema, not both"
@@ -129,8 +146,6 @@ class Register:
         # registers are translated onto sw/hw here (see legacy_schema). Fields
         # are constructed below, so this must precede _init_fields.
         self.access_defaults = register_access_defaults(reg)
-        self.sw = SwAccess.from_string(self.access_defaults.get("sw", "rw"))
-        self.hw = HwAccess.from_string(self.access_defaults.get("hw", "r"))
 
         # Assign width
         if self.type == RegisterType.DEFAULT:
@@ -219,6 +234,41 @@ class Register:
                     "Reset value does not match register: " + self.name
                 )
 
+    def to_json(self, include_address: bool = False) -> OrderedDict:
+        """Export the register configuration in the schema it was authored in.
+
+        A legacy register keeps its `mode`. A bust 1.0 register keeps its
+        register-level access defaults, and each field keeps only the properties
+        it set itself, so re-parsing reproduces the same inheritance.
+
+        Args:
+            include_address: Whether to include the register's address.
+
+        Returns:
+            OrderedDict accepted by Register.__init__.
+        """
+        dic: OrderedDict = OrderedDict()
+        dic["name"] = self.name
+        if self._config.is_set("mode"):
+            dic["mode"] = self.mode.value
+            if self.mode == RegisterMode.PULSE:
+                dic["pulse_cycles"] = self.pulse_cycles
+        elif self.uses_new_schema:
+            dic.update(self.access_defaults)
+        dic["type"] = self.type.value
+        if include_address:
+            dic["address"] = hex(self.address)
+        if self.type == RegisterType.VECTOR:
+            dic["width"] = self.width
+        if self.type != RegisterType.FIELDS:
+            dic["reset"] = self.reset
+        if self.stall:
+            dic["stall_cycles"] = self.stall_cycles
+        if self.type == RegisterType.FIELDS:
+            dic["fields"] = [field.return_dic() for field in self.fields]
+        dic["description"] = self.description
+        return dic
+
     def __str__(self) -> str:
         string = "Name: " + self.name + "\n"
         string += "Address: " + hex(self.address) + "\n"
@@ -303,6 +353,26 @@ class Register:
         raise ValueError(
             "Only default, vector and bit registers can extract reset value directly"
         )
+
+    @property
+    def sw(self) -> SwAccess:
+        """Effective software access: readable if any field is, writable if any is.
+
+        Taken from the fields, not the register-level default, because fields can
+        override that default or carry the only access keys in the register.
+        """
+        fields = self.effective_fields
+        return _SW_BY_READ_WRITE[
+            (any(f.sw_readable for f in fields), any(f.sw_writable for f in fields))
+        ]
+
+    @property
+    def hw(self) -> HwAccess:
+        """Effective hardware access: readable if any field is, writable if any is."""
+        fields = self.effective_fields
+        return _HW_BY_READ_WRITE[
+            (any(f.hw_readable for f in fields), any(f.hw_writable for f in fields))
+        ]
 
     @property
     def stored_fields(self) -> List[Field]:
