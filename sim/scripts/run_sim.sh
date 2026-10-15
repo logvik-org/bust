@@ -44,6 +44,9 @@
 #   access_matrix_tb_generated  The fully generated AXI stack and UVVM testbench
 #                   for example/example_access_matrix (one register per
 #                   access-mode combination class)
+#   multi_module_generated  example_axi and example_access_matrix analysed into
+#                   one work library, then example_axi's testbench is run, so
+#                   two generated modules can share a library
 #
 # Optional flags:
 #   --wave          Generate a waveform file (FST) for GTKWave debugging.
@@ -489,9 +492,29 @@ case "${TARGET}" in
         )
         TOP_ENTITY="access_matrix_tb"
         ;;
+    multi_module_generated)
+        # Two generated modules in one work library. Each emits its own
+        # <module>_localbus_pkg, so analysing the second stack must leave the
+        # first one's units valid. example_axi's testbench is run last.
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi_localbus_pkg.vhd"
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi_regfile.vhd"
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi_axi_endpoint.vhd"
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi.vhd"
+            "${WORK_ROOT}/example/example_axi/tb/example_axi_tb.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_localbus_pkg.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_regfile.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_axi_endpoint.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_tb.vhd"
+        )
+        TOP_ENTITY="example_axi_tb"
+        ;;
     *)
         echo "ERROR: Unknown target '${TARGET}'." >&2
-        echo "Supported targets: example_ipbus, example_axi, prototype, prototype_generated, prototype_axi, prototype_axi_generated, prototype_tb_generated, prototype_ipbus, prototype_ipbus_generated, prototype_ipbus_tb_generated, prototype_sbi, prototype_sbi_generated, prototype_sbi_tb_generated, prototype_avalon, prototype_avalon_generated, prototype_avalon_tb_generated, prototype_wishbone, prototype_wishbone_generated, prototype_wishbone_tb_generated, prototype_apb, prototype_apb_generated, prototype_apb_tb_generated, access_matrix_tb_generated" >&2
+        echo "Supported targets: example_ipbus, example_axi, prototype, prototype_generated, prototype_axi, prototype_axi_generated, prototype_tb_generated, prototype_ipbus, prototype_ipbus_generated, prototype_ipbus_tb_generated, prototype_sbi, prototype_sbi_generated, prototype_sbi_tb_generated, prototype_avalon, prototype_avalon_generated, prototype_avalon_tb_generated, prototype_wishbone, prototype_wishbone_generated, prototype_wishbone_tb_generated, prototype_apb, prototype_apb_generated, prototype_apb_tb_generated, access_matrix_tb_generated, multi_module_generated" >&2
         exit 1
         ;;
 esac
