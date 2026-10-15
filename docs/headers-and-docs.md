@@ -1,0 +1,296 @@
+# Headers and documentation
+
+Next to the VHDL, bust writes headers that give software the addresses and bit
+positions of the registers, an address table for IPBus, and a LaTeX document
+of the register map. This page describes what each file holds and how to use
+it.
+
+## Files
+
+bust writes the headers to `header/` and the documentation to `doc/`, in the
+output directory of the module described in
+[Command line](command-line.md#output-directory).
+
+| File           | Content                                     | Written                                          |
+|----------------|---------------------------------------------|--------------------------------------------------|
+| `<module>.h`   | C header with `#define` constants            | Unless you give `-i`                             |
+| `<module>.hpp` | C++ header with constants in a namespace     | Unless you give `-i`                             |
+| `<module>.py`  | Python module with constants in a class      | Unless you give `-i`                             |
+| `<module>.xml` | IPBus address table for uHAL                 | For the `ipbus` bus type, unless you give `-i`   |
+| `<module>.tex` | LaTeX source of the documentation            | Unless you give `-d`                             |
+| `<module>.pdf` | The documentation as PDF                     | Unless you give `-d` or `-p`. Needs `pdflatex`.  |
+
+## Constant names
+
+The C, C++ and Python headers define the same constants. Each name starts with
+the register name in upper case, followed by the field name for a field
+property:
+
+| Constant                     | Value                                                                                                                                                  |
+|------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `<REG>_OFFSET`               | Address of the register, relative to the base address of the module, in hex. The unit is the address unit of the bus: bytes, or 32-bit words for IPBus. |
+| `<REG>_WIDTH`                | Number of bits the register uses, up to and including its highest field bit.                                                                           |
+| `<REG>_RESET`                | Reset value of the whole register.                                                                                                                     |
+| `<REG>_SW`, `<REG>_HW`       | Software and hardware access, as a string such as `"rw"` or `"r"`. For a register with fields, `rw` means that some field can be read and some field can be written. |
+| `<REG>_<FIELD>_OFFSET`       | Lowest bit of the field.                                                                                                                               |
+| `<REG>_<FIELD>_WIDTH`        | Number of bits in the field.                                                                                                                           |
+| `<REG>_<FIELD>_RESET`        | Reset value of the field.                                                                                                                              |
+| `<REG>_<FIELD>_MASK`         | The bits of the field, in their place in the register.                                                                                                 |
+| `<REG>_<FIELD>_SW`, `_HW`    | Software and hardware access of the field.                                                                                                             |
+| `<REG>_<FIELD>_ONREAD`       | `"rclr"` or `"rset"`. Only for a field with `onread`.                                                                                                  |
+| `<REG>_<FIELD>_ONWRITE`      | The `onwrite` keyword, such as `"woclr"`. Only for a field with `onwrite`.                                                                             |
+| `<REG>_<FIELD>_SINGLEPULSE`  | `1` in C, `true` in C++ and `True` in Python. Only for a `singlepulse` field.                                                                         |
+| `<REG>_<FIELD>_<VALUE>`      | One constant for each value of an enumerated field.                                                                                                    |
+
+A register without fields has no field constants. Its `ONREAD`, `ONWRITE` and
+`SINGLEPULSE` constants are named after the register alone, as in
+`REG9_SINGLEPULSE` in the AXI4-Lite example of the repository.
+
+`_OFFSET` is an address for a register and a bit position for a field. The
+hardware modifiers (`we`, `wel`, `hwset`, `hwclr`, `swmod`, `swacc`) only
+concern the hardware side, so the headers leave them out.
+[Access modes](access-modes.md) describes the access keywords.
+
+The examples below come from `prototype.h`, `prototype.hpp` and `prototype.py`
+of the prototype example in the repository, trimmed to one register. In that
+module, `reg11` has one enumerated field, `field0`, with the values `STATE0` to
+`STATE3`.
+
+### C
+
+The C header holds only comments and `#define` lines, with an include guard
+named after the module:
+
+```c
+#ifndef PROTOTYPE_H
+#define PROTOTYPE_H
+
+/* Register: reg11 */
+#define REG11_SW "rw"
+#define REG11_HW "r"
+#define REG11_WIDTH 2
+#define REG11_OFFSET 0x2c
+#define REG11_RESET 0x0
+
+/* Field: field0 */
+#define REG11_FIELD0_OFFSET 0
+#define REG11_FIELD0_WIDTH 2
+#define REG11_FIELD0_RESET 0x0
+#define REG11_FIELD0_MASK 0x3
+#define REG11_FIELD0_SW "rw"
+#define REG11_FIELD0_HW "r"
+#define REG11_FIELD0_STATE0 0
+#define REG11_FIELD0_STATE1 1
+#define REG11_FIELD0_STATE2 2
+#define REG11_FIELD0_STATE3 3
+
+#endif
+```
+
+Add `<REG>_OFFSET` to the base address of the module to get the address of a
+register. Use `_MASK` and `_OFFSET` of a field to read or change it:
+
+```c
+#include <stdint.h>
+#include "prototype.h"
+
+uint32_t value = read32(PROTOTYPE_BASE + REG11_OFFSET);
+uint32_t state = (value & REG11_FIELD0_MASK) >> REG11_FIELD0_OFFSET;
+
+if (state == REG11_FIELD0_STATE0) {
+    value = (value & ~REG11_FIELD0_MASK) | (REG11_FIELD0_STATE2 << REG11_FIELD0_OFFSET);
+    write32(PROTOTYPE_BASE + REG11_OFFSET, value);
+}
+```
+
+`read32`, `write32` and `PROTOTYPE_BASE` stand for whatever your platform uses.
+
+The C names do not include the module name. If two modules have a register of
+the same name, include their headers in different source files.
+
+### C++
+
+The C++ header has the same constants as `const` values in a namespace named
+after the module, in upper case. Numbers are `uint32_t` and access strings are
+`std::string`:
+
+```cpp
+#ifndef PROTOTYPE_H
+#define PROTOTYPE_H
+
+#include <cstdint>
+#include <string>
+
+namespace PROTOTYPE
+{
+/* Register: reg11 */
+const std::string REG11_SW = "rw";
+const std::string REG11_HW = "r";
+const uint32_t REG11_WIDTH = 2;
+const uint32_t REG11_OFFSET = 0x2c;
+const uint32_t REG11_RESET = 0x0;
+
+/* Field: field0 */
+const uint32_t REG11_FIELD0_OFFSET = 0;
+const uint32_t REG11_FIELD0_WIDTH = 2;
+const uint32_t REG11_FIELD0_RESET = 0x0;
+const uint32_t REG11_FIELD0_MASK = 0x3;
+const std::string REG11_FIELD0_SW = "rw";
+const std::string REG11_FIELD0_HW = "r";
+const uint32_t REG11_FIELD0_STATE0 = 0;
+const uint32_t REG11_FIELD0_STATE1 = 1;
+const uint32_t REG11_FIELD0_STATE2 = 2;
+const uint32_t REG11_FIELD0_STATE3 = 3;
+};
+
+#endif
+```
+
+Refer to them as `PROTOTYPE::REG11_OFFSET`. The C and the C++ header use the
+same include guard, `PROTOTYPE_H`, so include only one of them in a source
+file.
+
+### Python
+
+The Python module has the constants as attributes of a class named
+`<MODULE>_H`:
+
+```python
+class PROTOTYPE_H:
+    """Register: reg11"""
+    REG11_SW = "rw"
+    REG11_HW = "r"
+    REG11_WIDTH = 2
+    REG11_OFFSET = 0x2c
+    REG11_RESET = 0x0
+
+    """ Field: field0 """
+    REG11_FIELD0_OFFSET = 0
+    REG11_FIELD0_WIDTH = 2
+    REG11_FIELD0_RESET = 0x0
+    REG11_FIELD0_MASK = 0x3
+    REG11_FIELD0_SW = "rw"
+    REG11_FIELD0_HW = "r"
+    REG11_FIELD0_STATE0 = 0
+    REG11_FIELD0_STATE1 = 1
+    REG11_FIELD0_STATE2 = 2
+    REG11_FIELD0_STATE3 = 3
+```
+
+Import the class and use it as a namespace:
+
+```python
+from prototype import PROTOTYPE_H as regs
+
+value = read32(base + regs.REG11_OFFSET)
+state = (value & regs.REG11_FIELD0_MASK) >> regs.REG11_FIELD0_OFFSET
+```
+
+## IPBus address table
+
+For a module with the `ipbus` bus type, bust also writes `header/<module>.xml`,
+an address table for the IPBus software library
+[uHAL](https://github.com/ipbus/ipbus-software).
+It has one top-level node named after the module, one node for each register,
+and one child node for each field. This excerpt comes from `example_ipbus.xml`
+in the repository:
+
+```xml
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<node id="example_ipbus">
+    <node id="reg6" address="0x00000018" permission="r" description="Default RO register" parameters="reset=0x0"/>
+    <node id="reg7" address="0x0000001C" permission="rw" description="RW register that have multiple fields" parameters="reset=0xad7">
+        <node id="field0" mask="0x1" permission="rw" description="std_logic that resets to 0x1" parameters="reset=0x1"/>
+        <node id="field1" mask="0x1e" permission="rw" description="std_logic_vector[3:0] that resets to 0xb is not a valid reset value" parameters="reset=0xb"/>
+        <node id="field2" mask="0x20" permission="rw" description="std_logic that resets to 0x1" parameters="reset=0x0"/>
+        <node id="field3" mask="0x1fffc0" permission="rw" description="std_logic_vector[14:0] that resets to 0x2b" parameters="reset=0x2b"/>
+    </node>
+</node>
+```
+
+| Attribute     | On             | Value                                                                                   |
+|---------------|----------------|-----------------------------------------------------------------------------------------|
+| `id`          | Register, field | The name from the JSON file.                                                           |
+| `address`     | Register        | The address of the register in 32-bit words, relative to the module.                   |
+| `mask`        | Field           | The bits of the field in the register, as `<REG>_<FIELD>_MASK` in the headers.         |
+| `permission`  | Register, field | `rw`, `r` or `w`, from the software access. See below.                                 |
+| `description` | Register, field | The description from the JSON file.                                                    |
+| `parameters`  | Register, field | `reset=` and the reset value.                                                          |
+
+The permission comes from the software access:
+
+| Software access | `permission` |
+|-----------------|--------------|
+| `rw`            | `rw`         |
+| `ro`            | `r`          |
+| `wo`            | `w`          |
+| `na`            | No node      |
+
+Each field gets the permission of its own `sw`, so a read-only field in a
+read-write register is read-only through uHAL. A register gets the permission
+of the summary its fields give, the same value as `<REG>_SW` in the headers.
+Registers and fields that software cannot access get no node, since uHAL cannot
+reach them.
+
+The addresses start at 0 for the module. To place the module in your system,
+refer to the file from your top-level address table, at the base address of the
+module:
+
+```xml
+<node id="example_ipbus" module="file://example_ipbus.xml" address="0x00001000"/>
+```
+
+## Documentation
+
+`doc/<module>.tex` is a LaTeX document of the register map. It contains:
+
+- A title with the module name, the `version` of the module, and the date and
+  time the PDF was built. Each page has `Generated by bust` and the bust
+  version at the top.
+- The `description` of the module.
+- **Register List**, a table of every register with its number, name, software
+  and hardware access, address, type, width and reset value.
+- **Registers**, a section for each register with its description and a
+  diagram of its bits, with the field names, bit positions and reset values.
+  The bits above the highest field are marked unused. A register with fields
+  also gets a list of them, with the description, `sw` and `hw` of each field,
+  and its `onread`, `onwrite`, `singlepulse` and enumeration values where it
+  has them.
+
+This is the section for `reg11` from `prototype.tex`:
+
+```latex
+\begin{register}{H}{reg11 - RW/R}{0x0000002C}  \par Enumerated field. \regnewline
+  \label{reg11}
+  \regfield{unused}{30}{2}{-}
+  \regfield{field0}{2}{0}{{0x0}}
+\reglabel{Reset}\regnewline
+  \begin{regdesc}\begin{reglist}[field0]
+    \item [field0]  (sw: rw, hw: r; values: STATE0=0, STATE1=1, STATE2=2, STATE3=3)
+  \end{reglist}\end{regdesc}
+\end{register}
+```
+
+### The PDF
+
+After writing the `.tex` file, bust runs `pdflatex` once to make the PDF:
+
+```bash
+pdflatex --interaction=batchmode --output-directory=<doc dir> <doc dir>/<module>.tex
+```
+
+`pdflatex` must be on your `PATH`, with the LaTeX packages the document uses:
+`fancyhdr`, `datetime`, `geometry`, `register`, `enumitem`, `calc`, `tabularx`
+and `listings`. On Debian and Ubuntu, the packages `texlive-latex-base`,
+`texlive-latex-recommended` and `texlive-latex-extra` provide them.
+`pdflatex` writes `<module>.pdf` to `doc/`, together with its `<module>.aux`
+and `<module>.log` files.
+
+If bust cannot find `pdflatex`, it prints `ERROR: PDF Generation Failed` and
+carries on. The other files are written and bust exits with status 0. bust
+runs `pdflatex` in batch mode and does not show its output, so if the PDF looks
+wrong or is missing, read `doc/<module>.log`.
+
+To build the PDF in your own flow instead, give `-p`. bust then writes the
+`.tex` file but does not run `pdflatex`. Give `-d` to skip the documentation
+altogether.
