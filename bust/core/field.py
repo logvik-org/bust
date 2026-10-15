@@ -133,6 +133,12 @@ class Field:
 
         self._init_access_modes(field)
 
+        # Hardware resets an unset enumerated field to the literal that 0 decodes
+        # to, which is the first literal when none has value 0. Headers and docs
+        # read `reset`, so it must name that value too.
+        if self.is_enum and not self._config.is_set("reset"):
+            self.reset = hex(self.reset_state)
+
     def _init_access_modes(self, field: Dict) -> None:
         """Resolve access modes, side effects, modifiers, and enums.
 
@@ -279,7 +285,7 @@ class Field:
             parsed.append(EnumValue(name, value))
         # An explicit reset on an enumerated field is only meaningful as one of
         # the named states; otherwise the generated reset silently falls back to
-        # the first literal. A default reset (unset) is left alone for back-compat.
+        # the first literal. An unset reset is resolved in __init__ instead.
         if self._config.is_set("reset") and int(self.reset, 16) not in seen_values:
             raise InvalidFieldFormat(
                 f"Reset value {self.reset} of enumerated field {self.name} in reg "
@@ -363,8 +369,9 @@ class Field:
             dic["width"] = self.width
         if self._config.is_set("position"):
             dic["position"] = self.pos_low
-        if self.reset != "0x0":
-            dic["reset"] = self.reset
+        # The authored reset, so an enum's resolved reset is not written back.
+        if self._config.get("reset") != "0x0":
+            dic["reset"] = self._config.get("reset")
         for key in INHERITABLE_ACCESS:
             if self._config.is_set(key):
                 dic[key] = self._config.get(key)
