@@ -86,7 +86,7 @@ class PROTOTYPE_H:
 
     """Register: reg4"""
     REG4_SW = "rw"
-    REG4_HW = "r"
+    REG4_HW = "rw"
     REG4_WIDTH = 9
     REG4_OFFSET = 0x10
     REG4_RESET = 0x0

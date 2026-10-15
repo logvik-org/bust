@@ -264,7 +264,7 @@ class TestRegisterInheritance:
 
     def test_legacy_ro_register_fields_inherit(self):
         reg = self._fields_reg({"mode": "ro"})
-        assert reg.sw is SwAccess.RO and reg.hw is HwAccess.W
+        assert reg.access_defaults == {"sw": "ro", "hw": "w"}
         assert reg.fields[0].sw is SwAccess.RO
         assert reg.fields[0].hw is HwAccess.W
         # field override still wins
@@ -285,6 +285,55 @@ class TestRegisterInheritance:
         reg = self._fields_reg({"hw": "w", "we": True})
         assert reg.fields[0].we is True
         assert reg.fields[0].hw is HwAccess.W
+
+
+class TestRegisterEffectiveAccess:
+    """Register-level sw/hw summarise the fields' effective access, not the
+    register-level default the fields may override."""
+
+    @staticmethod
+    def _reg(fields, **defaults):
+        cfg = {"name": "r", "type": "fields", "fields": fields}
+        cfg.update(defaults)
+        return Register(cfg, 0, "mod", 32)
+
+    def test_all_ro_fields_without_register_default(self):
+        reg = self._reg(
+            [
+                {"name": "a", "type": "bit", "sw": "ro", "hw": "w"},
+                {"name": "b", "type": "bit", "sw": "ro", "hw": "w"},
+            ]
+        )
+        assert reg.sw is SwAccess.RO
+        assert reg.hw is HwAccess.W
+
+    def test_mixed_fields_combine(self):
+        reg = self._reg(
+            [
+                {"name": "a", "type": "bit", "sw": "ro", "hw": "w"},
+                {"name": "b", "type": "bit", "sw": "wo", "hw": "r"},
+            ]
+        )
+        assert reg.sw is SwAccess.RW
+        assert reg.hw is HwAccess.RW
+
+    def test_field_override_widens_register_default(self):
+        reg = self._reg([{"name": "a", "type": "bit", "hw": "rw"}], sw="rw", hw="r")
+        assert reg.hw is HwAccess.RW
+
+    def test_write_only(self):
+        reg = self._reg([{"name": "a", "type": "bit"}], sw="wo", hw="r")
+        assert reg.sw is SwAccess.WO
+
+    def test_no_software_access(self):
+        reg = self._reg([{"name": "a", "type": "bit"}], sw="na", hw="w")
+        assert reg.sw is SwAccess.NA
+        assert reg.hw is HwAccess.W
+
+    def test_no_hardware_access(self):
+        reg = Register({"name": "r", "sw": "rw", "hw": "na"}, 0, "mod", 32)
+        assert reg.sw is SwAccess.RW
+        assert reg.hw is HwAccess.NA
 
 
 class TestAccessModeValidation:
