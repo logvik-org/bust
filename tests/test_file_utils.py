@@ -3,6 +3,7 @@
 import os
 import tempfile
 import unittest
+from unittest import mock
 
 from bust.interaction import AutomatedInteractionHandler
 from bust.utils.file_utils import write_string_to_file
@@ -34,6 +35,16 @@ class TestWriteStringToFile(unittest.TestCase):
         self.assertTrue(result)
         with open(path) as f:
             self.assertEqual(f.read(), "updated")
+
+    def test_existing_file_without_terminal_raises(self):
+        path = os.path.join(self.tmpdir, "out.txt")
+        with open(path, "w") as f:
+            f.write("original")
+        with mock.patch("sys.stdin.isatty", return_value=False):
+            with self.assertRaises(FileExistsError):
+                write_string_to_file("updated", "out.txt", self.tmpdir)
+        with open(path) as f:
+            self.assertEqual(f.read(), "original")
 
     def test_handler_denies_overwrite(self):
         path = os.path.join(self.tmpdir, "out.txt")
