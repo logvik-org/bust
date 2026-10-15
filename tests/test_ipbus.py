@@ -1,6 +1,6 @@
 """IPBus-specific output: the uHAL address table publishes each register's
-effective software access, and the headers/docs use the same register-level
-access."""
+effective software access (the headers/docs use the same register-level access),
+and the endpoint fits the fixed 32-bit IPBus address to the module's addr_width."""
 
 import xml.etree.ElementTree as ET
 
@@ -8,7 +8,9 @@ import pytest
 
 from bust.core.bus import Bus
 from bust.core.module import Module
+from bust.exceptions import FormatError
 from bust.generators.documentation_generator import Documentation
+from bust.generators.factory import GeneratorFactory
 from bust.generators.header_generator import Header
 
 _ACCESS_REGISTERS = [
@@ -91,3 +93,25 @@ def test_doc_uses_effective_register_access():
     tex = Documentation(_ipbus_module(_ACCESS_REGISTERS)).generate_tex_documentation()
     assert "{status - RO/W}" in tex
     assert "{mixed - RW/RW}" in tex
+
+
+def test_endpoint_slices_ipbus_address_to_module_width():
+    module = _ipbus_module([{"name": "r", "type": "default"}], addr_width=16)
+
+    endpoint = GeneratorFactory.generate_ipb_endpoint_vhdl(module)
+    assert "m2s.address <= ipb_in.ipb_addr(15 downto 0);" in endpoint
+    assert "G_BASE_ADDRESS       : unsigned(15 downto 0)" in endpoint
+    # The sliced address is what the local bus carries and the base check sees.
+    localbus_pkg = GeneratorFactory.generate_localbus_package_vhdl(module)
+    assert "C_LB_ADDR_WIDTH : natural := 16;" in localbus_pkg
+    regfile_pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
+    assert "return addr(15 downto C_MODULE_ADDR_WIDTH)" in regfile_pkg
+
+
+def test_ipbus_addr_width_above_32_rejected():
+    with pytest.raises(FormatError, match="at most 32"):
+        Bus({"type": "ipbus", "addr_width": 33, "data_width": 32})
+
+
+def test_addr_width_limit_is_ipbus_only():
+    assert Bus({"type": "axi", "addr_width": 64, "data_width": 32}).addr_width == 64
