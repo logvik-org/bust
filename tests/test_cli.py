@@ -134,3 +134,12 @@ def test_unknown_key_is_reported(tmp_path):
 
     assert code == 0, output
     assert "Unknown key 'onwrit' in field enable of register ctrl is ignored" in output
+
+
+def test_editor_without_terminal_fails(tmp_path):
+    path = _write_register_map(tmp_path)
+
+    code, output = _run_bust(tmp_path, str(path), "-e")
+
+    assert code == 1
+    assert "needs an interactive terminal" in output
