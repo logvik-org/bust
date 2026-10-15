@@ -64,8 +64,13 @@ See the example files for how you point to the specific folders.
 
 ## Latest Development Version (Bleeding Edge)
 
-To run bust from a clone of the repository, see the development setup in
-[CONTRIBUTING.md](CONTRIBUTING.md).
+To run bust from a clone of the repository:
+
+```bash
+git clone https://github.com/logvik-org/bust.git
+cd bust
+pip install -e ".[dev]"
+```
 
 
 ## Release Notes
@@ -73,9 +78,9 @@ To run bust from a clone of the repository, see the development setup in
 Release notes are in [CHANGELOG.md](CHANGELOG.md), and each release is on the [Releases page](https://github.com/logvik-org/bust/releases).
 
 
-## Contributing
+## Feedback
 
-If you have ideas on how to improve the project, please review [CONTRIBUTING.md](CONTRIBUTING.md) for details. Note that we also have a [Code of Conduct](CODE_OF_CONDUCT.md).
+Report bugs and ideas as [GitHub issues](https://github.com/logvik-org/bust/issues).
 
 
 ## License
