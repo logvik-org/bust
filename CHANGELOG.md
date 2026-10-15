@@ -10,6 +10,12 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+## [1.0.0rc1] - 2026-10-15
+
+Release candidate for bust 1.0.0. Install it with `pip install --pre bust` or
+`pip install bust==1.0.0rc1`. The documentation is now at
+[bust.readthedocs.io](https://bust.readthedocs.io).
+
 ### Changed
 - The `settings` section of the JSON file is optional.
 - `bust -a -f` saves the JSON file without asking first.
@@ -161,5 +167,6 @@ First pre-release of bust 1.0.0, for testing. Install it with
   packages. The wheel also left out the Jinja2 templates, without which an
   installed bust cannot generate anything.
 
-[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0a0...HEAD
+[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0rc1...HEAD
+[1.0.0rc1]: https://github.com/logvik-org/bust/compare/v1.0.0a0...v1.0.0rc1
 [1.0.0a0]: https://github.com/logvik-org/bust/compare/0d2a394f4710dd007be031b2b05c1bce4f35d56b...v1.0.0a0
