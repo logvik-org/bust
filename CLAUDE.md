@@ -192,7 +192,7 @@ make wave-axi                 # simulate + capture FST + open GTKWave
 
 ## Conventions
 
-- **Versioning**: managed by `bumpversion` (config in `.bumpversion.cfg`). The version should be kept in sync between `pyproject.toml` and `bust/_version.py` (`__VERSION__`), so use bumpversion to update both. Do not edit version strings by hand. bumpversion commits but does not tag (`tag = False`): the GitHub Release creates the `v<version>` tag, and `release.yml` fails unless the tag equals `v` + `__VERSION__`.
+- **Versioning**: managed by `bumpversion` (config in `.bumpversion.cfg`). The version should be kept in sync between `pyproject.toml` and `bust/_version.py` (`__VERSION__`), so use bumpversion to update both. Do not edit version strings by hand. Versions follow PEP 440: `X.Y.Z.devN` during development, `X.Y.ZaN`/`bN`/`rcN` for pre-releases and `X.Y.Z` for final releases, and `bump2version num`, `release` and `patch` move between them (see CONTRIBUTING.md). bumpversion commits but does not tag (`tag = False`): the GitHub Release creates the `v<version>` tag, and `release.yml` fails unless the tag equals `v` + `__VERSION__`.
 - **Changelog**: `CHANGELOG.md` follows Keep a Changelog. Add user-facing changes under `## [Unreleased]`.
 - **mypy**: configured in `pyproject.toml` with most warnings on but untyped-def enforcement off. Keep `mypy bust` clean.
 - **Docstrings**: Google convention (pydocstyle), ignoring D100/D104/D107; test files are exempt.

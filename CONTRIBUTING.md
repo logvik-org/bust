@@ -64,18 +64,39 @@ Apache License, Version 2.0 that covers the project. Please also review the
 
 ## Releasing (maintainers)
 
-1. On `master`, move the `Unreleased` entries in `CHANGELOG.md` under a new
-   `## [<version>] - <date>` heading, update the compare links at the bottom,
-   and commit.
-2. Bump the version with bumpversion, for example `bump2version release`. It
-   updates `pyproject.toml`, `bust/_version.py` and `.bumpversion.cfg` and
-   commits, but does not tag. `1.0.0-dev` becomes `1.0.0`. Push both commits.
+### Version numbers
+
+Versions follow [PEP 440](https://peps.python.org/pep-0440/), so the tag,
+`bust --version` and PyPI all show the same string:
+
+- `X.Y.Z.devN`: development between releases.
+- `X.Y.ZaN`, `X.Y.ZbN`, `X.Y.ZrcN`: alpha, beta and release-candidate
+  pre-releases.
+- `X.Y.Z`: a final release.
+
+bumpversion moves between them and keeps `pyproject.toml`, `bust/_version.py`
+and `.bumpversion.cfg` in sync:
+
+- `bump2version num`: the next pre-release or development number (`1.0.0a0`
+  to `1.0.0a1`).
+- `bump2version release`: the next stage, from `a` to `b` to `rc` to final
+  (`1.0.0rc0` to `1.0.0`).
+- `bump2version patch` (or `minor`, `major`): the next development version
+  after a final release (`1.0.0` to `1.0.1.dev0`).
+
+### Steps
+
+1. On the branch you release from (`master` for a final release), move the
+   `Unreleased` entries in `CHANGELOG.md` under a new `## [<version>] - <date>`
+   heading, update the compare links at the bottom, and commit.
+2. Bump the version with bumpversion as above. It commits but does not tag.
+   Push both commits.
 3. Publish a **GitHub Release** on that commit with a new tag `v<version>`,
    where `<version>` is exactly `__VERSION__` from `bust/_version.py` (for
-   example `v1.0.0`).
-
-Afterwards, `bump2version patch` starts the next development version (for
-example `1.0.1-dev`).
+   example `v1.0.0a0`). For an `a`, `b` or `rc` version, tick **Set as a
+   pre-release**. pip installs a pre-release only when asked
+   (`pip install --pre bust` or `pip install bust==<version>`), so regular users
+   keep getting the latest final release.
 
 Publishing the release starts `.github/workflows/release.yml`, which runs these
 jobs in order and stops at the first failure:

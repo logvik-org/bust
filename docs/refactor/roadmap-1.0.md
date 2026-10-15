@@ -5,7 +5,8 @@ GitHub issue backlog each session. Source of truth for what ships in 1.0.0, what
 is deferred (with reason), and the open decisions that gate the release.
 
 Integration branch: `claude/lucid-ritchie-f86qnt` (release vehicle is the draft
-tracking PR #164 into `master`). Current version: `1.0.0-dev`.
+tracking PR #164 into `master`). Current version: `1.0.0a0`, the first 1.0.0
+pre-release, published for selected testers before the final release.
 
 ## Where the work actually stands
 
@@ -33,7 +34,8 @@ imply. Verified state:
 
 Consequence: 1.0.0 is now a **finishing/release** effort, not feature work. With
 all six buses merged and doc finalization done, the only remaining 1.0.0 steps are
-the version bump (`1.0.0-dev` -> `1.0.0` via bumpversion, R9), the
+the `1.0.0a0` pre-release for selected testers and the final version bump
+(`bump2version release` from the last pre-release to `1.0.0`, R9), the
 integration -> `master` merge (R10), and the `1.0.0` tag. All three are pending
 human approval.
 
@@ -56,7 +58,7 @@ regression. CI installs them and runs `test_doc`. Do not treat the local
 | R6 | Independent adversarial review of the shared foundation (regfile/access-mode generation, schema/validation/legacy) before building the new buses | verify | done | foundation sound; 3 defects fixed, 2 minor deferred (below) |
 | R7 | Sim verification | verify | done, via CI | no Docker locally; `vhdl_sim.yml` runs nvc on every `example/**/*.vhd` + `hdl/**/*.vhd` per PR; all six buses simulate |
 | R8 | Mark design docs historical; ensure no stale "in progress / not yet" language remains user-facing | docs | done | `local-bus-hdl.md`/`generator-step3-scope.md` carry a historical-record note pointing here |
-| R9 | Version finalize `1.0.0-dev` -> `1.0.0` via bumpversion; update doc-test pin + `.tex` goldens | release | todo (last) | after all output frozen |
+| R9 | Versioning switched to PEP 440 and set to `1.0.0a0` for a tester pre-release; further `a`/`b`/`rc` pre-releases as feedback requires, then `bump2version release` to `1.0.0` | release | in progress | the maintainer publishes each pre-release as a GitHub pre-release |
 | R10 | Un-draft + merge PR #164 to `master` (merge method), tag `1.0.0`, draft release notes | release | **needs human** | requires approval |
 
 ## Backlog triage (34 open issues)
