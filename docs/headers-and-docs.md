@@ -115,8 +115,8 @@ after the module, in upper case. Numbers are `uint32_t` and access strings are
 `std::string`:
 
 ```cpp
-#ifndef PROTOTYPE_H
-#define PROTOTYPE_H
+#ifndef PROTOTYPE_HPP
+#define PROTOTYPE_HPP
 
 #include <cstdint>
 #include <string>
@@ -146,9 +146,7 @@ const uint32_t REG11_FIELD0_STATE3 = 3;
 #endif
 ```
 
-Refer to them as `PROTOTYPE::REG11_OFFSET`. The C and the C++ header use the
-same include guard, `PROTOTYPE_H`, so include only one of them in a source
-file.
+Refer to them as `PROTOTYPE::REG11_OFFSET`.
 
 ### Python
 
@@ -196,7 +194,7 @@ and one child node for each field. This excerpt comes from `example_ipbus.xml`
 in the repository:
 
 ```xml
-<?xml version="1.0" encoding="ISO-8859-1"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <node id="example_ipbus">
     <node id="reg6" address="0x00000018" permission="r" description="Default RO register" parameters="reset=0x0"/>
     <node id="reg7" address="0x0000001C" permission="rw" description="RW register that have multiple fields" parameters="reset=0xad7">
@@ -214,7 +212,7 @@ in the repository:
 | `address`     | Register        | The address of the register in 32-bit words, relative to the module.                   |
 | `mask`        | Field           | The bits of the field in the register, as `<REG>_<FIELD>_MASK` in the headers.         |
 | `permission`  | Register, field | `rw`, `r` or `w`, from the software access. See below.                                 |
-| `description` | Register, field | The description from the JSON file.                                                    |
+| `description` | Register, field | The description from the JSON file, with `&`, `<`, `>` and quotes escaped.             |
 | `parameters`  | Register, field | `reset=` and the reset value.                                                          |
 
 The permission comes from the software access:
@@ -286,10 +284,11 @@ and `listings`. On Debian and Ubuntu, the packages `texlive-latex-base`,
 `pdflatex` writes `<module>.pdf` to `doc/`, together with its `<module>.aux`
 and `<module>.log` files.
 
-If bust cannot find `pdflatex`, it prints `ERROR: PDF Generation Failed` and
-carries on. The other files are written and bust exits with status 0. bust
-runs `pdflatex` in batch mode and does not show its output, so if the PDF looks
-wrong or is missing, read `doc/<module>.log`.
+bust runs `pdflatex` in batch mode and does not show its output. When
+`pdflatex` reports errors, bust prints `pdflatex reported errors. See
+<doc dir>/<module>.log`. When it cannot run `pdflatex` at all, it prints
+`Could not run pdflatex (...). Use -p to skip the PDF.` In both cases it
+carries on: the other files are written and bust exits with status 0.
 
 To build the PDF in your own flow instead, give `-p`. bust then writes the
 `.tex` file but does not run `pdflatex`. Give `-d` to skip the documentation
