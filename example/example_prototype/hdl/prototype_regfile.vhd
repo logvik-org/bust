@@ -58,6 +58,8 @@ begin
   -- writes, hardware updates, and onread side effects all live here. Each
   -- multi-source field uses an if/elsif chain so the precedence reads
   -- top-to-bottom: hwclr > hwset > hardware we/wel write > software write.
+  -- A register's onread effects are assigned before its hardware updates, so
+  -- hwclr, hwset or a we/wel write in the same cycle as a read wins over them.
   p_write : process (clk) is
     variable sel        : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
     variable sw_write   : boolean;     -- a fresh, in-window software write
@@ -112,6 +114,12 @@ begin
         regs.reg4.field1 <= lb_m2s.wdata(8);
       end if;
 
+      -- reg5 onread effects, applied when the software read is serviced.
+      if rd_service and sel_is(sel, C_ADDR_REG5) then
+        regs.reg5.field0 <= (others => '0');
+        regs.reg5.field1 <= (others => '1');
+      end if;
+
       if sw_write and sel_is(sel, C_ADDR_REG5) then
         regs.reg5.field0 <= lb_m2s.wdata(3 downto 0);
         regs.reg5.field1 <= lb_m2s.wdata(7 downto 4);
@@ -146,12 +154,6 @@ begin
 
       if sw_write and sel_is(sel, C_ADDR_REG11) then
         regs.reg11.field0 <= to_reg11_field0(lb_m2s.wdata(1 downto 0));
-      end if;
-
-      -- reg5 onread effects, applied when the software read is serviced.
-      if rd_service and sel_is(sel, C_ADDR_REG5) then
-        regs.reg5.field0 <= (others => '0');
-        regs.reg5.field1 <= (others => '1');
       end if;
 
       -- reg9 software-access strobes (swmod on write, swacc on any access).

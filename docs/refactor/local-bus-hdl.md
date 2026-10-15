@@ -185,6 +185,11 @@ field, so it reads top to bottom:
 | 3            | hardware `we`/`wel`| the field's write enable asserted  |
 | 4 (lowest)   | software write     | a bus write hits the field         |
 
+An `onread` side effect ranks with the software write. The generated regfile
+assigns a register's onread effects before its hardware updates, so a `hwset`
+in the same cycle as an `rclr` read leaves the field set instead of losing the
+event.
+
 ## Software side effects (onread / onwrite)
 
 A field may transform itself on a software access instead of just storing the
@@ -226,13 +231,14 @@ These surface software activity to hardware as single-cycle strobes:
 | ------------- | --------------------------- | ------------------------------------- |
 | `swmod`       | `to_hw.<reg>.<field>.swmod` | software modifies the field (a write) |
 | `swacc`       | `to_hw.<reg>.<field>.swacc` | software reads or writes the field    |
-| `singlepulse` | `to_hw.<reg>.<field>` value | the value itself, one cycle after a write, then self-cleared |
+| `singlepulse` | `to_hw.<reg>.<field>` value | the value itself, one cycle after a write, then back at its reset value |
 
 `swmod`/`swacc` ride alongside the field value in the hardware-side record, so a
 field with a pulse becomes a small record (`value` + strobe), just as a
 hardware-input field pairs its value with `we`/`wel`. A `singlepulse` field
-needs no extra strobe: its storage default-clears every cycle, so a software
-write surfaces as a one-cycle pulse on the value and then self-clears.
+needs no extra strobe: its storage returns to its reset value every cycle, so a
+software write surfaces as a one-cycle pulse on the value and then the field is
+back at its reset value.
 
 ## Enumerated values
 
