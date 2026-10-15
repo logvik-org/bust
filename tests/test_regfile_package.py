@@ -443,7 +443,7 @@ def test_empty_module_is_mapped_returns_false():
     assert "return ;" not in out
 
 
-_ON_OFF = [{"name": "OFF", "value": 0}, {"name": "ON", "value": 1}]
+_ON_OFF = [{"name": "DISABLED", "value": 0}, {"name": "ENABLED", "value": 1}]
 
 
 def _fields_module(*fields, **defaults):
@@ -474,7 +474,7 @@ def test_bit_enum_encodes_as_one_element_vector():
     regfile = GeneratorFactory.generate_regfile_vhdl(module)
     assert "function to_r_f(s : std_logic_vector(0 downto 0)) return t_r_f;" in pkg
     assert "variable slv : std_logic_vector(0 downto 0);" in pkg
-    assert 'when "1" => return ON;' in pkg
+    assert 'when "1" => return ENABLED;' in pkg
     assert "regs.r.f <= to_r_f(lb_m2s.wdata(1 downto 1));" in regfile
     assert "rdata(1 downto 1) <= to_slv(regs.r.f);" in regfile
 
@@ -488,7 +488,7 @@ def test_hw_written_enum_testbench_default_is_its_reset_literal():
         hw="w",
     )
     tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
-    assert "r => (a => C, b => (value => OFF, we => '0')));" in tb
+    assert "r => (a => C, b => (value => DISABLED, we => '0')));" in tb
 
 
 def test_constant_enum_read_is_type_qualified():
@@ -501,9 +501,9 @@ def test_constant_enum_read_is_type_qualified():
         hw="r",
     )
     out = GeneratorFactory.generate_regfile_vhdl(module)
-    assert "rdata(0 downto 0) <= to_slv(t_r_a'(ON));" in out
-    assert "rdata(1 downto 1) <= to_slv(t_r_b'(OFF));" in out
-    assert "to_hw.r <= (a => t_r_a'(ON), b => t_r_b'(OFF));" in out
+    assert "rdata(0 downto 0) <= to_slv(t_r_a'(ENABLED));" in out
+    assert "rdata(1 downto 1) <= to_slv(t_r_b'(DISABLED));" in out
+    assert "to_hw.r <= (a => t_r_a'(ENABLED), b => t_r_b'(DISABLED));" in out
 
 
 def _strobe_read(module):
@@ -546,7 +546,7 @@ def test_strobe_read_of_mixed_register():
         sw="rw",
         hw="r",
     )
-    # acc=0xF, fixed=0x9, arg unreadable, go self-cleared, mode decodes 1 to ON.
+    # acc=0xF, fixed=0x9, arg unreadable, go self-cleared, mode decodes 1 to ENABLED.
     assert _strobe_read(module) == '32x"0000209F"'
 
 
