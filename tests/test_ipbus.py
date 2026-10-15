@@ -115,3 +115,12 @@ def test_ipbus_addr_width_above_32_rejected():
 
 def test_addr_width_limit_is_ipbus_only():
     assert Bus({"type": "axi", "addr_width": 64, "data_width": 32}).addr_width == 64
+
+
+def test_ipbus_data_width_other_than_32_rejected():
+    with pytest.raises(FormatError, match="data_width must be 32"):
+        Bus({"type": "ipbus", "addr_width": 32, "data_width": 16})
+
+
+def test_data_width_constraint_is_ipbus_only():
+    assert Bus({"type": "axi", "addr_width": 32, "data_width": 64}).data_width == 64
