@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <node id="{{ module.name }}">
 {# Software cannot reach a register or field without sw access, so uHAL gets no node for it. #}
+{% set uhal_permission = {'rw': 'rw', 'ro': 'r', 'wo': 'w'} %}
 {% for reg in module.registers if reg.sw.value != "na" %}
-    <node id="{{ reg.name }}" address="0x{{ "%08X" | format(reg.address) }}" permission="{{ {'rw': 'rw', 'ro': 'r', 'wo': 'w'}[reg.sw.value] }}" description="{{ reg.description }}" parameters="reset={{ reg.reset }}"{% if reg.type != reg_type_fields %}/{% endif %}>
+    <node id="{{ reg.name }}" address="0x{{ "%08X" | format(reg.address) }}" permission="{{ uhal_permission[reg.sw.value] }}" description="{{ reg.description }}" parameters="reset={{ reg.reset }}"{% if reg.type != reg_type_fields %}/{% endif %}>
 {% if reg.type == reg_type_fields %}
 {% for field in reg.fields if field.sw.value != "na" %}
-        <node id="{{ field.name }}" mask="{{ "0x%x" | format(field.mask) }}" description="{{ field.description }}" parameters="reset={{ field.reset }}"/>
+        <node id="{{ field.name }}" mask="{{ "0x%x" | format(field.mask) }}" permission="{{ uhal_permission[field.sw.value] }}" description="{{ field.description }}" parameters="reset={{ field.reset }}"/>
 {% endfor %}
     </node>
 {% endif %}
