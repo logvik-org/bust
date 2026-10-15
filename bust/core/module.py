@@ -99,10 +99,6 @@ class Module:
         self.data_width = bus.data_width
 
         for reg in mod["register"]:
-            if "stall_cycles" in reg and bus.bus_type != "ipbus":
-                raise NotImplementedError(
-                    "Stall cycles has not been implemented for other buses than IPBus..."
-                )
             self.add_register(reg)
 
     def add_register(self, reg: Dict) -> None:
@@ -298,17 +294,6 @@ class Module:
             Number of registers with PULSE mode.
         """
         return sum(1 for reg in self.registers if reg.mode == RegisterMode.PULSE)
-
-    def has_stall_regs(self) -> bool:
-        """Check if any register uses stall cycles.
-
-        Returns:
-            True if at least one register has stall enabled.
-        """
-        if len([reg for reg in self.registers if reg.stall]) > 0:
-            return True
-        else:
-            return False
 
     def __str__(self) -> str:
         string = "Name: " + self.name + "\n"
