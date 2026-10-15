@@ -8,21 +8,21 @@
     <node id="reg5" address="0x00000014" permission="rw" description="Default RW register that resets to 0xFFFFFFFF" parameters="reset=0xffffffff"/>
     <node id="reg6" address="0x00000018" permission="r" description="Default RO register" parameters="reset=0x0"/>
     <node id="reg7" address="0x0000001C" permission="rw" description="RW register that have multiple fields" parameters="reset=0xad7">
-        <node id="field0" mask="0x1" description="std_logic that resets to 0x1" parameters="reset=0x1"/>
-        <node id="field1" mask="0x1e" description="std_logic_vector[3:0] that resets to 0xb is not a valid reset value" parameters="reset=0xb"/>
-        <node id="field2" mask="0x20" description="std_logic that resets to 0x1" parameters="reset=0x0"/>
-        <node id="field3" mask="0x1fffc0" description="std_logic_vector[14:0] that resets to 0x2b" parameters="reset=0x2b"/>
+        <node id="field0" mask="0x1" permission="rw" description="std_logic that resets to 0x1" parameters="reset=0x1"/>
+        <node id="field1" mask="0x1e" permission="rw" description="std_logic_vector[3:0] that resets to 0xb is not a valid reset value" parameters="reset=0xb"/>
+        <node id="field2" mask="0x20" permission="rw" description="std_logic that resets to 0x1" parameters="reset=0x0"/>
+        <node id="field3" mask="0x1fffc0" permission="rw" description="std_logic_vector[14:0] that resets to 0x2b" parameters="reset=0x2b"/>
     </node>
     <node id="reg8" address="0x00000020" permission="r" description="RO register with multiple types of fields" parameters="reset=0x0">
-        <node id="field0" mask="0x1" description="std_logic field" parameters="reset=0x0"/>
-        <node id="field1" mask="0xffffe" description="std_logic_vector[18:0] field" parameters="reset=0x0"/>
-        <node id="field2" mask="0x100000" description="std_logic field" parameters="reset=0x0"/>
-        <node id="field3" mask="0xe00000" description="std_logic_vector[2:0] field" parameters="reset=0x0"/>
+        <node id="field0" mask="0x1" permission="r" description="std_logic field" parameters="reset=0x0"/>
+        <node id="field1" mask="0xffffe" permission="r" description="std_logic_vector[18:0] field" parameters="reset=0x0"/>
+        <node id="field2" mask="0x100000" permission="r" description="std_logic field" parameters="reset=0x0"/>
+        <node id="field3" mask="0xe00000" permission="r" description="std_logic_vector[2:0] field" parameters="reset=0x0"/>
     </node>
     <node id="reg9" address="0x00000024" permission="w" description="PULSE std_logic register that resets to 0x1" parameters="reset=0x1"/>
     <node id="reg10" address="0x00000028" permission="w" description="PULSE std_logic_vector[3:0] register that resets to 0xA" parameters="reset=0xa"/>
     <node id="reg11" address="0x0000002C" permission="w" description="PULSE register with two fields" parameters="reset=0x3">
-        <node id="field0" mask="0x7fff" description="std_logic_vector[14:0] field that resets to 0x3" parameters="reset=0x3"/>
-        <node id="field1" mask="0x8000" description="std_logic field that resets to 0x0" parameters="reset=0x0"/>
+        <node id="field0" mask="0x7fff" permission="w" description="std_logic_vector[14:0] field that resets to 0x3" parameters="reset=0x3"/>
+        <node id="field1" mask="0x8000" permission="w" description="std_logic field that resets to 0x0" parameters="reset=0x0"/>
     </node>
 </node>

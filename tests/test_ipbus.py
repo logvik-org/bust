@@ -1,6 +1,7 @@
-"""IPBus-specific output: the uHAL address table publishes each register's
-effective software access (the headers/docs use the same register-level access),
-and the endpoint fits the fixed 32-bit IPBus address to the module's addr_width."""
+"""IPBus-specific output: the uHAL address table publishes each register's and
+each field's effective software access (the headers/docs use the same
+register-level access), and the endpoint fits the fixed 32-bit IPBus address to
+the module's addr_width."""
 
 import xml.etree.ElementTree as ET
 
@@ -67,6 +68,24 @@ def test_addr_table_permission_follows_field_access():
         "mixed": "rw",
         "cmd": "w",
         "partial": "rw",
+    }
+
+
+def test_addr_table_field_permission_follows_its_own_access():
+    """uHAL checks a field node's own permission, so an ro field inside an rw
+    register must not inherit the register's write permission."""
+    nodes = _addr_table_nodes()
+    permissions = {
+        (name, field.get("id")): field.get("permission")
+        for name, node in nodes.items()
+        for field in node
+    }
+    assert permissions == {
+        ("status", "busy"): "r",
+        ("status", "level"): "r",
+        ("mixed", "flag"): "r",
+        ("mixed", "go"): "w",
+        ("partial", "visible"): "rw",
     }
 
 
