@@ -29,17 +29,22 @@ bust does NOT support python 2.7 and neither should you!
 
 ## Getting Started
 
-Install the latest relase by using pip:
+Install the latest release by using pip:
 
 `pip install bust`
 
+pip skips pre-releases (alpha, beta and release candidates) unless you ask for
+them. To try the newest pre-release:
+
+`pip install --pre bust`
+
 ### Usage
 
-`bust.py FILE [-o DIR]`
+`bust FILE [-o DIR]`
 
-`bust.py --version`
+`bust --version`
 
-`bust.py -h | --help`
+`bust -h | --help`
 
 ## Examples
 
@@ -59,18 +64,8 @@ See the example files for how you point to the specific folders.
 
 ## Latest Development Version (Bleeding Edge)
 
-The latest development version can be found in the [dev branch](https://github.com/logvik-org/bust/tree/dev) on GitHub. Clone the repo and check out the branch.
-
-`git clone https://github.com/logvik-org/bust.git`
-
-`cd bust`
-
-`git checkout dev`
-
-`pip install -r requirements.txt`
-
-`python -m bust`
-
+To run bust from a clone of the repository, see the development setup in
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 
 ## Release Notes
