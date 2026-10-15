@@ -1,20 +1,9 @@
-"""bust - Bus Utility for Simplified VHDL.
+"""bust - a register-map generator for VHDL.
 
-bust is a Python tool for creating and modifying VHDL bus slave modules.
-It generates complete VHDL code including register interfaces, testbenches,
-documentation, and language-specific header files from simple JSON configuration.
-
-Supported bus standards:
-    - AXI4-Lite
-    - IPBus
-
-Main components:
-    - Module: Bus slave module definition
-    - Register: Individual register configuration
-    - Field: Bitfield within a register
-    - Bus: Bus interface configuration
-    - Header: Language header file generation
-    - Documentation: LaTeX documentation generation
+bust reads a JSON register map and generates a VHDL register file with a bus
+endpoint, a self-checking UVVM testbench, C/C++/Python headers, an IPBus
+address table and LaTeX documentation. Supported buses: AXI4-Lite, IPBus, SBI,
+Avalon-MM, Wishbone and APB.
 
 Package structure:
     - core: Domain models (Module, Bus, Register, Field, Enums)
@@ -24,7 +13,6 @@ Package structure:
     - jinja_utils: Jinja2 template utilities
 """
 
-# Import core domain classes for convenience
 from bust.core import (
     Module,
     Bus,
@@ -34,20 +22,13 @@ from bust.core import (
     RegisterType,
     FieldType,
 )
-
-# Import generator classes
 from bust.generators import (
     HeaderGenerator,
     DocumentationGenerator,
     GeneratorFactory,
 )
 
-# Backward compatibility aliases
-Header = HeaderGenerator
-Documentation = DocumentationGenerator
-
 __all__ = [
-    # Core domain classes
     "Module",
     "Bus",
     "Register",
@@ -55,11 +36,7 @@ __all__ = [
     "RegisterMode",
     "RegisterType",
     "FieldType",
-    # Generator classes
     "HeaderGenerator",
     "DocumentationGenerator",
     "GeneratorFactory",
-    # Backward compatibility
-    "Header",
-    "Documentation",
 ]

@@ -722,7 +722,7 @@ def test_sticky_flag_check_needs_hwset_rclr_swacc_and_no_hw_write(change):
 def test_enum_without_a_zero_literal_reports_the_reset_hardware_uses():
     """Without a reset or a literal of value 0, hardware resets to the first
     literal. Headers, docs and the register reset must say the same."""
-    from bust.generators.header_generator import Header
+    from bust.generators.header_generator import HeaderGenerator
 
     states = [{"name": "LOW", "value": 1}, {"name": "HIGH", "value": 2}]
     module = _fields_module(
@@ -738,15 +738,15 @@ def test_enum_without_a_zero_literal_reports_the_reset_hardware_uses():
 
     pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
     assert "r => (lo => (others => '0'), mode => LOW));" in pkg
-    header = Header(module)
+    header = HeaderGenerator(module)
     assert "#define R_RESET 0x10" in header.generate_c_header()
     assert "#define R_MODE_RESET 0x1" in header.generate_c_header()
     assert "const uint32_t R_MODE_RESET = 0x1;" in header.generate_cpp_header()
     assert "R_MODE_RESET = 0x1" in header.generate_python_header()
 
     pytest.importorskip("pylatexenc")
-    from bust.generators.documentation_generator import Documentation
+    from bust.generators.documentation_generator import DocumentationGenerator
 
-    tex = Documentation(module).generate_tex_documentation()
+    tex = DocumentationGenerator(module).generate_tex_documentation()
     assert "\\regfield{mode}{2}{4}{{0x1}}" in tex
     assert "& \\texttt{0x10} \\\\" in tex

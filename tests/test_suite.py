@@ -4,8 +4,8 @@ from bust.utils.json_utils import json_parser
 from bust.core.module import Module
 from bust.core.bus import Bus
 from bust.settings import Settings
-from bust.generators.documentation_generator import Documentation
-from bust.generators.header_generator import Header
+from bust.generators.documentation_generator import DocumentationGenerator
+from bust.generators.header_generator import HeaderGenerator
 from bust.generators.factory import GeneratorFactory
 
 
@@ -24,8 +24,8 @@ class BusHolder:
         sett = Settings(json_file, json["settings"])
         bus = Bus(json["bus"])
         mod = Module(json["module"], bus, sett)
-        doc = Documentation(mod)
-        hdr = Header(mod)
+        doc = DocumentationGenerator(mod)
+        hdr = HeaderGenerator(mod)
         return sett, bus, mod, doc, hdr
 
     def __repr__(self):
@@ -41,14 +41,14 @@ def _load_prototype(bus_type):
     json = json_parser("example/example_prototype.json")
     bus = Bus(dict(json["bus"], type=bus_type))
     mod = Module(json["module"], bus, settings=None)
-    return bus, mod, Documentation(mod), Header(mod)
+    return bus, mod, DocumentationGenerator(mod), HeaderGenerator(mod)
 
 
 def _load_access_matrix():
     """The access-mode combination example, one register per combination class."""
     json = json_parser("example/example_access_matrix.json")
     mod = Module(json["module"], Bus(json["bus"]), settings=None)
-    return mod, Header(mod)
+    return mod, HeaderGenerator(mod)
 
 
 class Test_Suite(unittest.TestCase):

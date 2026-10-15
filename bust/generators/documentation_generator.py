@@ -64,7 +64,3 @@ class DocumentationGenerator:
             LaTeX document source code as string.
         """
         return self._render_template("latex/documentation.j2", test_version)
-
-
-# Backward compatibility alias
-Documentation = DocumentationGenerator

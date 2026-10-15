@@ -81,7 +81,3 @@ class HeaderGenerator:
             register names to addresses for IPBus access.
         """
         return self._render_template("ipbus/addr_table.j2")
-
-
-# Backward compatibility alias
-Header = HeaderGenerator
