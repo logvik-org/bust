@@ -94,7 +94,7 @@
 {% for f in reg.singlepulse_fields %}
     v_{{ reg.name }}_{{ f.name }}_sp := {{ reg.name }}_{{ f.name }}_sp_count;
 {% endfor %}
-    bus_write(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "write {{ reg.name }}");
+    bus_write(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.strobe_write_value_vhdl }}, "write {{ reg.name }}");
 {% if reg.swacc_fields %}
     bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.strobe_readback_value_vhdl }}, "read {{ reg.name }}");
 {% endif %}
@@ -107,7 +107,7 @@
     check_value({{ reg.name }}_{{ f.name }}_swacc_count - v_{{ reg.name }}_{{ f.name }}_swacc, 2, error, "{{ reg.name }}.{{ f.name }} swacc pulses per access (write + read)", C_SCOPE);
 {% endfor %}
 {% for f in reg.singlepulse_fields %}
-    check_value({{ reg.name }}_{{ f.name }}_sp_count - v_{{ reg.name }}_{{ f.name }}_sp, 1, error, "{{ reg.name }}.{{ f.name }} singlepulse high exactly one cycle", C_SCOPE);
-    check_value({{ reg.name }}_{{ f.name }}_sp_value, {{ f.all_ones_literal }}, error, "{{ reg.name }}.{{ f.name }} hw saw the pulse value", C_SCOPE);
+    check_value({{ reg.name }}_{{ f.name }}_sp_count - v_{{ reg.name }}_{{ f.name }}_sp, 1, error, "{{ reg.name }}.{{ f.name }} singlepulse lasts exactly one cycle", C_SCOPE);
+    check_value({{ reg.name }}_{{ f.name }}_sp_value, {{ f.value_literal(f.pulse_test_value) }}, error, "{{ reg.name }}.{{ f.name }} hw saw the pulse value", C_SCOPE);
 {% endfor %}
 {% endfor %}

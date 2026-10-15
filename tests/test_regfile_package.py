@@ -203,7 +203,7 @@ def test_axi_and_ipbus_testbenches_share_the_test_body():
     for marker in (
         'bus_check(f_addr(C_ADDR_REG7), 32x"00000A5A", "reg7 applies onwrite effects");',
         'bus_check(f_addr(C_ADDR_REG4), 32x"0000000A", "reg4 reflects hwclr");',
-        "reg10.field0 singlepulse high exactly one cycle",
+        "reg10.field0 singlepulse lasts exactly one cycle",
     ):
         assert marker in axi
         assert marker in ipbus
@@ -584,3 +584,66 @@ def test_strobe_read_of_hw_written_field_returns_the_hw_input():
     )
     assert module.registers[0].is_hw_driven_readback
     assert _strobe_read(module) == '32x"00000005"'
+
+
+def test_singlepulse_returns_to_its_reset_value():
+    module = _fields_module(
+        {"name": "go", "type": "vector", "width": 4, "reset": "0xa"},
+        sw="wo",
+        hw="r",
+        singlepulse=True,
+    )
+    regfile = GeneratorFactory.generate_regfile_vhdl(module)
+    assert 'regs.r.go <= 4X"A";' in regfile
+    assert "regs.r.go <= (others => '0');" not in regfile
+
+
+def test_singlepulse_testbench_detects_the_pulse_against_the_reset_value():
+    """The monitor counts cycles away from the reset value, and the strobe test
+    writes the inverse of the reset so every bit of the pulse is visible."""
+    module = _fields_module(
+        {"name": "go", "type": "vector", "width": 4, "reset": "0xa"},
+        {"name": "arm", "type": "bit", "reset": "0x1"},
+        sw="wo",
+        hw="r",
+        singlepulse=True,
+    )
+    tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
+    assert 'signal r_go_sp_value : std_logic_vector(3 downto 0) := 4X"A";' in tb
+    assert 'if to_hw.r.go /= 4x"A" then' in tb
+    assert "if to_hw.r.arm /= '1' then" in tb
+    # go=0x5 (inverse of 0xA) in bits 3:0, arm=0 (inverse of 1) in bit 4.
+    assert 'bus_write(f_addr(C_ADDR_R), 32x"00000005", "write r");' in tb
+    assert 'check_value(r_go_sp_value, 4x"5", error,' in tb
+    assert "check_value(r_arm_sp_value, '0', error," in tb
+
+
+def test_readable_singlepulse_reads_back_its_reset_value():
+    module = _fields_module(
+        {"name": "acc", "type": "vector", "width": 4, "swacc": True},
+        {
+            "name": "go",
+            "type": "vector",
+            "width": 4,
+            "reset": "0xa",
+            "singlepulse": True,
+        },
+        sw="rw",
+        hw="r",
+    )
+    reg = module.registers[0]
+    assert reg.fields[1].written_result(0x5) == 0xA
+    assert not reg.reads_back_zero
+    # acc=0xF, go back at its reset 0xA after the pulse of 0x5.
+    assert reg.strobe_write_value_vhdl == '32x"0000005F"'
+    assert _strobe_read(module) == '32x"000000AF"'
+
+
+def test_write_only_singlepulse_with_nonzero_reset_still_reads_back_zero():
+    module = _fields_module(
+        {"name": "go", "type": "vector", "width": 4, "reset": "0xa"},
+        sw="wo",
+        hw="r",
+        singlepulse=True,
+    )
+    assert module.registers[0].reads_back_zero

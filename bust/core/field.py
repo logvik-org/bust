@@ -526,10 +526,11 @@ class Field:
 
         `written` is the field-local write data, `stored` the value before the
         write (the reset value when omitted). A field software cannot write keeps
-        `stored`, a singlepulse field has already self-cleared, an enumerated field
-        holds the decoded literal, and the onwrite effect combines `stored` with
-        the write; a field with no effect simply stores the written bits. Mirrors
-        the regfile's sw_action for value prediction in generated testbenches.
+        `stored`, a singlepulse field has already returned to its reset value, an
+        enumerated field holds the decoded literal, and the onwrite effect
+        combines `stored` with the write; a field with no effect simply stores
+        the written bits. Mirrors the regfile's sw_action for value prediction in
+        generated testbenches.
         """
         if stored is None:
             stored = self.reset_state
@@ -538,7 +539,7 @@ class Field:
         if not self.sw_writable:
             return stored
         if self.singlepulse:
-            return 0
+            return self.reset_state
         if self.is_enum:
             return self.decoded_value(w)
         if self.onwrite is None:
@@ -569,6 +570,12 @@ class Field:
         """Field-local value after reset (the decoded literal's value for an enum)."""
         reset = int(self.reset, 16)
         return self.decoded_value(reset) if self.is_enum else reset
+
+    @property
+    def pulse_test_value(self) -> int:
+        """Field-local write value whose pulse differs from the reset value in
+        every bit, so a testbench sees a singlepulse whatever its reset is."""
+        return ~self.reset_state & ((1 << int(self.width)) - 1)
 
     def read_result(self, stored: int) -> int:
         """Field-local value after a software read, accounting for the onread effect."""
