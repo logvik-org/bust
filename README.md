@@ -23,11 +23,7 @@ bust currently supports these bus standards:
 
 ## Requirements
 
-bust is developed in an environment with python 3.9.18 but should work with the following versions:
-
-- python 3.9
-- python 3.10
-- python 3.11
+bust is tested on python 3.9, 3.10, 3.11, 3.12, 3.13 and 3.14.
 
 bust does NOT support python 2.7 and neither should you!
 
@@ -79,7 +75,7 @@ The latest development version can be found in the [dev branch](https://github.c
 
 ## Release Notes
 
-Release notes can be found on the [Releases page](https://github.com/logvik-org/bust/releases).
+Release notes are in [CHANGELOG.md](CHANGELOG.md), and each release is on the [Releases page](https://github.com/logvik-org/bust/releases).
 
 
 ## Contributing
