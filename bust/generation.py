@@ -11,6 +11,7 @@ import os
 import logging
 import subprocess
 
+from bust.exceptions import LegacyTopLevelFile
 from bust.generators.factory import GeneratorFactory
 from bust.utils.file_utils import write_string_to_file
 
@@ -35,6 +36,22 @@ _TESTBENCH_GENERATORS = {
     "apb": GeneratorFactory.generate_localbus_apb_testbench_vhdl,
 }
 
+# Comment lines bust 0.14 wrapped around the user-edited regions of the top level.
+_LEGACY_USER_MARKERS = frozenset(
+    f"-- User {region} {edge}"
+    for region in ("Libraries", "Generics", "Ports", "Architecture", "Logic")
+    for edge in ("Start", "End")
+)
+
+
+def _refuse_to_replace_legacy_top(top_path):
+    """Raise LegacyTopLevelFile if `top_path` is a 0.14 top that may hold user logic."""
+    if not os.path.isfile(top_path):
+        return
+    with open(top_path) as top:
+        if any(line.strip() in _LEGACY_USER_MARKERS for line in top):
+            raise LegacyTopLevelFile(top_path)
+
 
 def generate_output(settings, bus, module, header, documentation, gen_settings):
     """Generate all output files for a bus slave module.
@@ -57,6 +74,8 @@ def generate_output(settings, bus, module, header, documentation, gen_settings):
             - gen_pdf: Generate PDF from LaTeX
 
     Raises:
+        LegacyTopLevelFile: If the top-level VHDL file to regenerate is a bust
+            0.14 top with user-edited regions. Checked before anything is written.
         Exception: If file generation fails.
     """
 
@@ -72,6 +91,9 @@ def generate_output(settings, bus, module, header, documentation, gen_settings):
     mod_tb = os.path.join(mod_dir, settings.tb_dir)
     mod_doc = os.path.join(mod_dir, settings.doc_dir)
     mod_header = os.path.join(mod_dir, settings.header_dir)
+
+    if gen_settings.get("gen_localbus"):
+        _refuse_to_replace_legacy_top(os.path.join(mod_hdl, f"{module.name}.vhd"))
 
     logger.debug("Creating all output directories")
     try:
