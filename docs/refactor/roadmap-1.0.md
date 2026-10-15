@@ -13,8 +13,9 @@ The local-bus refactor is **complete and merged on the integration branch**, wel
 beyond what the older design docs (`local-bus-hdl.md`, `generator-step3-scope.md`)
 imply. Verified state:
 
-- Local-bus HDL architecture (`localbus_pkg`, `<mod>_regfile_pkg`, `<mod>_regfile`,
-  per-bus endpoints, thin top) designed (step 1) and UVVM-verified (step 2).
+- Local-bus HDL architecture (`<mod>_localbus_pkg`, `<mod>_regfile_pkg`,
+  `<mod>_regfile`, per-bus endpoints, thin top) designed (step 1) and UVVM-verified
+  (step 2).
 - Full bust 1.0 access-mode system in the domain model: `SwAccess`, `HwAccess`,
   `OnRead`, `OnWrite`, modifiers (`we`/`wel`/`hwset`/`hwclr`/`swmod`/`swacc`),
   `singlepulse`, `enums`, register-level defaults with per-field override, and a

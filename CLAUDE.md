@@ -13,7 +13,7 @@ Maintained by Ola Grøttvik. Apache 2.0 licensed, hosted at https://github.com/l
 `bust` is built around a **local bus abstraction**. Every supported single-beat protocol (AXI4-Lite, IPBus, SBI, Avalon-MM, Wishbone, APB, and future custom buses) is a thin **endpoint** wrapper around one small internal local-bus interface, so the register-map logic stays protocol-agnostic. The generated VHDL stack per module is:
 
 ```
-localbus_pkg            local-bus records (t_lb_m2s / t_lb_s2m), sized from the module
+<module>_localbus_pkg   local-bus records (t_lb_m2s / t_lb_s2m), sized from the module (named per module so modules of different widths can share a library)
 <module>_regfile_pkg    storage / to_hw / from_hw record families, address-decode helpers
 <module>_regfile        storage, access-mode behaviour, hardware updates, read mux, response
 <module>_<bus>_endpoint protocol bridge (one per bus: axi/ipb/sbi/avalon/wishbone/apb_endpoint) over the local bus
