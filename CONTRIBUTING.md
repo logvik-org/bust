@@ -69,11 +69,10 @@ Apache License, Version 2.0 that covers the project. Please also review the
    and commit.
 2. Bump the version with bumpversion, for example `bump2version release`. It
    updates `pyproject.toml`, `bust/_version.py` and `.bumpversion.cfg` and
-   commits, but does not tag. The configured formats drop a zero patch number,
-   so `1.0.0-dev` becomes `1.0`, as `0.14` was. Push both commits.
+   commits, but does not tag. `1.0.0-dev` becomes `1.0.0`. Push both commits.
 3. Publish a **GitHub Release** on that commit with a new tag `v<version>`,
    where `<version>` is exactly `__VERSION__` from `bust/_version.py` (for
-   example `v1.0`).
+   example `v1.0.0`).
 
 Afterwards, `bump2version patch` starts the next development version (for
 example `1.0.1-dev`).
