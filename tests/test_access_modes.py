@@ -361,7 +361,7 @@ class TestRegisterEffectiveAccess:
         assert reg.hw is HwAccess.NA
 
 
-_ON_OFF = [{"name": "OFF", "value": 0}, {"name": "ON", "value": 1}]
+_ON_OFF = [{"name": "DISABLED", "value": 0}, {"name": "ENABLED", "value": 1}]
 
 
 class TestAccessModeValidation:
