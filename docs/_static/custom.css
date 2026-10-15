@@ -1,0 +1,5 @@
+/* Pygments styles set their own block background, which ignores the theme palette. */
+body .highlight,
+body .highlight pre {
+  background: var(--color-code-background);
+}
