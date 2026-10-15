@@ -41,7 +41,7 @@ Libraries are split into two layers:
 |-------|---------------|-----|----------|
 | **nvc system libs** | `/root/.nvc/lib/` | `nvc --install uvvm` at image build | UVVM util, UVVM VVC framework, bitvis_vip_scoreboard, bitvis_vip_axilite, and all other UVVM VIPs |
 | **Project-specific libs** | `/opt/nvc-libs/` (`NVC_LIBPATH`) | `compile_libs.sh` at image build | `ipbus` (from ipbus-firmware v1.16) and `vip_ipbus` (BFM only) |
-| **Per-run libs** | `$TMPDIR/bust/` | `run_sim.sh` pre-compile hook | `bust` lib, e.g. `axi_pkg.vhd` for AXI targets |
+| **Per-target sources** | the target's work library | `run_sim.sh` pre-compile hook | helper packages a target needs first, e.g. the prototype local-bus package and BFM |
 
 ### compile_libs.sh
 
@@ -67,8 +67,8 @@ nvc --relaxed --std=08 --work=... -a ipbus_bfm_pkg.vhd
 
 Runs for each simulation target.  Steps:
 
-1. **Pre-compile** (optional per-target hook) — compiles any auxiliary library
-   needed by the DUT or TB (e.g. `axi_pkg.vhd` into library `bust`).
+1. **Pre-compile** (optional per-target hook): compiles helper packages the DUT
+   or TB needs first (e.g. the prototype local-bus BFM).
 2. **Analyse** — compiles each source file in `COMPILE_ORDER` into the work library.
 3. **Elaborate** — links the design.
 4. **Run** — executes the simulation, capturing output to a log file.
@@ -222,9 +222,10 @@ The workflow is defined in [`.github/workflows/vhdl_sim.yml`](../.github/workflo
 
 | Event | Condition |
 |-------|-----------|
-| Push | branches `master` or `dev`; paths `sim/**` or `example/**/*.vhd` |
+| Push | branches `master` or `dev`; paths `sim/**`, `example/**/*.vhd`, `hdl/**/*.vhd` or the workflow file |
 | Pull request | any branch; same paths |
 | Manual | `workflow_dispatch` |
+| Release | `release.yml` calls it for every release |
 
 ### Docker layer caching
 
@@ -245,8 +246,7 @@ the GHCR namespace.
 2. Set up Docker Buildx
 3. Log in to GHCR
 4. Build (or restore from cache) the simulation image as `bust-sim:ci`
-5. Run `example_ipbus` testbench
-6. Run `example_axi` testbench
+5. Run every simulation target, one step each (the list is in the workflow)
 
 ---
 
@@ -262,11 +262,14 @@ the GHCR namespace.
            :
        }
        COMPILE_ORDER=(
-           "${WORK_ROOT}/example/example_newbus/hdl/example_newbus_pif_pkg.vhd"
-           "${WORK_ROOT}/example/example_newbus/hdl/example_newbus_nb_pif.vhd"
-           "${WORK_ROOT}/example/example_newbus/tb/example_newbus_nb_pif_tb.vhd"
+           "${WORK_ROOT}/example/example_newbus/hdl/example_newbus_localbus_pkg.vhd"
+           "${WORK_ROOT}/example/example_newbus/hdl/example_newbus_regfile_pkg.vhd"
+           "${WORK_ROOT}/example/example_newbus/hdl/example_newbus_regfile.vhd"
+           "${WORK_ROOT}/example/example_newbus/hdl/example_newbus_newbus_endpoint.vhd"
+           "${WORK_ROOT}/example/example_newbus/hdl/example_newbus.vhd"
+           "${WORK_ROOT}/example/example_newbus/tb/example_newbus_tb.vhd"
        )
-       TOP_ENTITY="example_newbus_nb_pif_tb"
+       TOP_ENTITY="example_newbus_tb"
        ;;
    ```
 
@@ -314,11 +317,12 @@ example_ipbus_tb
     ├── uvvm_util          (nvc system: nvc --install uvvm)
     ├── vip_ipbus          (/opt/nvc-libs: compile_libs.sh)
     │    └── ipbus         (/opt/nvc-libs: compile_libs.sh)
-    └── work (example_ipbus_pif_pkg, example_ipbus_ipb_pif)
+    └── work (example_ipbus_localbus_pkg, _regfile_pkg, _regfile,
+              _ipb_endpoint, example_ipbus)
 
 example_axi_tb
     ├── uvvm_util          (nvc system: nvc --install uvvm)
     ├── bitvis_vip_axilite (nvc system: nvc --install uvvm)
-    ├── bust (axi_pkg)     ($TMPDIR/bust: run_sim.sh pre_compile)
-    └── work (example_axi_pif_pkg, example_axi_axi_pif)
+    └── work (example_axi_localbus_pkg, _regfile_pkg, _regfile,
+              _axi_endpoint, example_axi)
 ```
