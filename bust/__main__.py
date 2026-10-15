@@ -2,7 +2,7 @@
 """bust register tool.
 
 Usage:
-  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i]] | [-a] | [-c | -e]]
+  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i]] | [-a [-F | -f]] | [-c | -e]]
   bust --version
   bust -h | --help
 
@@ -13,7 +13,7 @@ Options:
   -d             Do not generate documentation (neither LaTeX nor PDF)
   -p             Do not generate PDF from LaTeX
   -i             Do not generate the include header files (.h, .hpp & .py)
-  -a             Update register addresses and save JSON file
+  -a             Update register addresses and save JSON file (with -f, without asking)
   -e             Edit the JSON file
   -c             Create a new JSON file
   -h --help      HELP!
@@ -150,11 +150,10 @@ def main():
                 module.update_addresses()
                 json = module.to_json(True)
                 try:
-                    write_string_to_file(json, json_file, ".")
+                    write_string_to_file(json, json_file, ".", bool(gs["force_ow"]))
                 except Exception as e:
-                    print("Saving failed...")
-                    print(e)
-                    return
+                    logger.error(f"Saving {json_file} failed: {e}")
+                    exit(1)
             else:
                 try:
                     generate_output(settings, bus, module, header, documentation, gs)

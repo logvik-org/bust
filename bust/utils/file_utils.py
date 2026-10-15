@@ -5,6 +5,7 @@ reading and updating VHDL source files, and user interaction utilities.
 """
 
 import os
+import sys
 import logging
 from typing import Any, List, Optional
 
@@ -49,6 +50,11 @@ def write_string_to_file(
     # Check if file exist
     if os.path.isfile(joined):
         if not force_overwrite:
+            if interaction_handler is None and not sys.stdin.isatty():
+                raise FileExistsError(
+                    f"{joined} already exists and there is no terminal to ask "
+                    "whether to overwrite it. Run bust with -f to overwrite it."
+                )
             handler: InteractionHandler = (
                 interaction_handler
                 if interaction_handler is not None
