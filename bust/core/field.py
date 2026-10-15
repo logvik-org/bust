@@ -486,29 +486,54 @@ class Field:
         }
         return combine[self.onwrite]
 
-    def written_result(self, written: int) -> int:
-        """Field-local stored value after one software write of `written` from reset.
+    def written_result(self, written: int, stored: Optional[int] = None) -> int:
+        """Field-local value a later software read sees after one software write.
 
-        Accounts for the field's onwrite effect; a field with no effect simply
-        stores the written bits. Mirrors `onwrite_rhs` for value prediction in
-        generated self-checking testbenches.
+        `written` is the field-local write data, `stored` the value before the
+        write (the reset value when omitted). A field software cannot write keeps
+        `stored`, a singlepulse field has already self-cleared, an enumerated field
+        holds the decoded literal, and the onwrite effect combines `stored` with
+        the write; a field with no effect simply stores the written bits. Mirrors
+        the regfile's sw_action for value prediction in generated testbenches.
         """
+        if stored is None:
+            stored = self.reset_state
         mask = (1 << int(self.width)) - 1
         w = written & mask
+        if not self.sw_writable:
+            return stored
+        if self.singlepulse:
+            return 0
+        if self.is_enum:
+            return self.decoded_value(w)
         if self.onwrite is None:
             return w
-        reset = int(self.reset, 16)
         effect = {
-            OnWrite.WOSET: reset | w,
-            OnWrite.WOCLR: reset & ~w & mask,
-            OnWrite.WOT: reset ^ w,
-            OnWrite.WZS: reset | (~w & mask),
-            OnWrite.WZC: reset & w,
-            OnWrite.WZT: reset ^ (~w & mask),
+            OnWrite.WOSET: stored | w,
+            OnWrite.WOCLR: stored & ~w & mask,
+            OnWrite.WOT: stored ^ w,
+            OnWrite.WZS: stored | (~w & mask),
+            OnWrite.WZC: stored & w,
+            OnWrite.WZT: stored ^ (~w & mask),
             OnWrite.WCLR: 0,
             OnWrite.WSET: mask,
         }
         return effect[self.onwrite]
+
+    def _decoded_enum(self, bits: int) -> EnumValue:
+        """Literal the generated decode yields for `bits`: the matching one, else
+        the first (its `when others` arm)."""
+        return next((e for e in self.enums if e.value == bits), self.enums[0])
+
+    def decoded_value(self, bits: int) -> int:
+        """Encoded value an enumerated field holds after decoding `bits`."""
+        return self._decoded_enum(bits).value
+
+    @property
+    def reset_state(self) -> int:
+        """Field-local value after reset (the decoded literal's value for an enum)."""
+        reset = int(self.reset, 16)
+        return self.decoded_value(reset) if self.is_enum else reset
 
     def read_result(self, stored: int) -> int:
         """Field-local value after a software read, accounting for the onread effect."""
@@ -551,10 +576,7 @@ class Field:
         """Reset literal in the field's value type (the enum literal when enumerated)."""
         if not self.is_enum:
             return self.reset_val_vhdl
-        target = int(self.reset, 16)
-        return next(
-            (e.name for e in self.enums if e.value == target), self.enums[0].name
-        )
+        return self._decoded_enum(int(self.reset, 16)).name
 
     @property
     def to_hw_is_record(self) -> bool:
