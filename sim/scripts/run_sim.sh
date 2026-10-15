@@ -6,8 +6,8 @@
 #   /work/sim/scripts/run_sim.sh <testbench_target> [--wave[=FILE]]
 #
 # Supported targets:
-#   example_ipbus   Run example/example_ipbus/tb/example_ipbus_ipb_pif_tb.vhd
-#   example_axi     Run example/example_axi/tb/example_axi_axi_pif_tb.vhd
+#   example_ipbus   Run example/example_ipbus/tb/example_ipbus_tb.vhd
+#   example_axi     Run example/example_axi/tb/example_axi_tb.vhd
 #   prototype       Run hdl/prototype/tb/prototype_regfile_tb.vhd (UVVM BFM)
 #   prototype_generated  As 'prototype', but compiling the generator's emitted
 #                   package (example/example_prototype) instead of the hand-written one
@@ -90,7 +90,7 @@ WORK_PATH="${SIM_WORK_DIR}/${WORK_LIB}"
 
 # NVC_OPTS targets the project work library.
 # SIM_WORK_DIR is added to the library search path so that any extra lib
-# compiled by pre_compile() (e.g. 'bust' for axi_pkg) is visible during
+# compiled by pre_compile() into another library is visible during
 # both analysis and elaboration.
 NVC_OPTS="--std=08 --work=${WORK_LIB}:${WORK_PATH} -L ${SIM_WORK_DIR}"
 
@@ -111,8 +111,8 @@ echo ""
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # Target-specific pre-compile hook (optional).
-# Used to compile shared libs that are NOT in NVC_LIBPATH (e.g. axi_pkg into
-# the 'bust' library).  Called before the main COMPILE_ORDER loop.
+# Used to compile helper packages a target needs before its COMPILE_ORDER (e.g.
+# the prototype local-bus BFM).  Called before the main COMPILE_ORDER loop.
 # Override per-target below.
 # ---------------------------------------------------------------------------
 pre_compile() { :; }  # default: no-op
