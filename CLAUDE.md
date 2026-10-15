@@ -25,7 +25,7 @@ The hardware side references each field by name through `to_hw`/`from_hw` record
 
 This was built in order: (1) design the HDL for every access-mode combination, (2) verify with UVVM testbenches, (3) implement the Python/Jinja2 generator to match the verified HDL, (4) update headers and documentation. All four are complete for every supported bus (AXI4-Lite, IPBus, SBI, Avalon-MM, Wishbone, APB), and the legacy per-protocol "PIF" generation path has been fully removed: local-bus generation is the only path and is always on. When changing generated HDL, keep the generated testbench in lockstep.
 
-The hand-written, simulation-verified reference HDL still lives in `hdl/prototype/` (local-bus package, `prototype` regfile, local-bus BFM, and self-checking testbenches); the design rationale is in `docs/refactor/local-bus-hdl.md`. These are reference HDL, not generator output, so they are not in the golden-file suite, but the generator is checked structurally and by simulation against them. Run with `cd sim && make sim-prototype`.
+The hand-written, simulation-verified reference HDL still lives in `hdl/prototype/` (local-bus package, `prototype` regfile, local-bus BFM, and self-checking testbenches); the design rationale is in `docs/generated-hdl.md`. These are reference HDL, not generator output, so they are not in the golden-file suite, but the generator is checked structurally and by simulation against them. Run with `cd sim && make sim-prototype`.
 
 ## Architecture decisions
 
