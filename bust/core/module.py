@@ -11,7 +11,7 @@ import json
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Dict, List, cast
 
-from bust.core.enums import RegisterMode, RegisterType
+from bust.core.enums import RegisterMode
 from bust.exceptions import InvalidAddress, InvalidRegister
 from bust.core.register import Register
 from bust.utils.formatting import indent_string
@@ -323,6 +323,9 @@ class Module:
     def to_json(self, include_address: bool = False) -> str:
         """Export complete module configuration as JSON string.
 
+        Every register is written in the schema it was authored in (see
+        Register.to_json), so parsing the output rebuilds an identical module.
+
         Args:
             include_address: Whether to include explicit address values in output
                 (default: False).
@@ -342,42 +345,10 @@ class Module:
         mod["description"] = self.description
         if self.git_hash is not None:
             mod["git_hash"] = self.git_hash
+        if self._config.is_set("byte_addressable"):
+            mod["byte_addressable"] = self.byte_addressable
 
-        mod["register"] = []
-
-        for _, reg in enumerate(self.registers):
-            reg_dic = OrderedDict()
-
-            reg_dic["name"] = reg.name
-            reg_dic["mode"] = reg.mode.value
-            if reg.mode == RegisterMode.PULSE:
-                reg_dic["pulse_cycles"] = reg.pulse_cycles
-            reg_dic["type"] = reg.type.value
-
-            if include_address:
-                reg_dic["address"] = str(hex(reg.address))
-
-            if (
-                reg.type != RegisterType.DEFAULT
-                and reg.type != RegisterType.FIELDS
-                and reg.type != RegisterType.BIT
-            ):
-                reg_dic["width"] = reg.width
-
-            if reg.type != RegisterType.FIELDS:
-                reg_dic["reset"] = reg.reset
-
-            if reg.stall is True:
-                reg_dic["stall_cycles"] = reg.stall_cycles
-
-            if reg.type == RegisterType.FIELDS and len(reg.fields) > 0:
-                reg_dic["fields"] = []
-                for field in reg.fields:
-                    reg_dic["fields"].append(field.return_dic())
-
-            reg_dic["description"] = reg.description
-
-            mod["register"].append(reg_dic)
+        mod["register"] = [reg.to_json(include_address) for reg in self.registers]
 
         dic["module"] = mod
 
