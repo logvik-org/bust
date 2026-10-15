@@ -27,7 +27,7 @@ from bust.core.legacy_schema import (
 from bust.utils.formatting import indent_string
 from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
 from bust.validation.config_validator import ConfigWrapper
-from bust.core.enums import RegisterMode, RegisterType, SwAccess, HwAccess
+from bust.core.enums import OnRead, RegisterMode, RegisterType, SwAccess, HwAccess
 
 # Register-level access summarised from its fields, keyed by
 # (any field readable, any field writable).
@@ -668,6 +668,21 @@ class Register:
             and not f.wel
             and (f.we if f.hw_writable else True)
             for f in fields
+        )
+
+    @property
+    def is_hwset_read_clear_register(self) -> bool:
+        """Single sticky field (hwset, onread rclr, swacc) with no hardware value
+        write. Its swacc strobe is high in the cycle after a read clear, so a
+        testbench holding hwset through a read can sample there whether the set
+        or the clear won that cycle, without knowing the bus timing."""
+        fields = self.effective_fields
+        return (
+            len(fields) == 1
+            and fields[0].hwset
+            and fields[0].onread is OnRead.RCLR
+            and fields[0].swacc
+            and not fields[0].hw_writable
         )
 
     def _hw_input_during_selftest(self, f: Field) -> int:

@@ -32,6 +32,20 @@
       regs.{{ reg.name }}.{{ f.name }} <= from_hw.{{ reg.name }}.{{ f.name }}{{ ".value" if f.from_hw_is_record else "" }};
 {% endif %}
 {% endfor %}
+{% set onread_fields = reg.effective_fields | selectattr('onread') | list %}
+{% set later = namespace(writes=False) %}
+{% for f in reg.stored_fields if f.sw_writable or f.we or f.wel or f.hwset or f.hwclr %}{% set later.writes = True %}{% endfor %}
+{% if onread_fields %}
+      -- {{ reg.name }} onread effects, applied when the software read is serviced.
+      if rd_service and sel_is(sel, C_ADDR_{{ reg.name | upper }}) then
+{% for f in onread_fields %}
+        regs.{{ reg.name }}.{{ f.name }} <= {{ f.ones_literal if f.onread.value == 'rset' else f.zeros_literal }};
+{% endfor %}
+      end if;
+{% if later.writes %}
+
+{% endif %}
+{% endif %}
 {% for f in reg.stored_fields if (f.we or f.wel or f.hwset or f.hwclr) %}
 {{ field_chain(reg, f) }}
 {% endfor %}
@@ -123,6 +137,8 @@ begin
   -- writes, hardware updates, and onread side effects all live here. Each
   -- multi-source field uses an if/elsif chain so the precedence reads
   -- top-to-bottom: hwclr > hwset > hardware we/wel write > software write.
+  -- A register's onread effects are assigned before its hardware updates, so
+  -- hwclr, hwset or a we/wel write in the same cycle as a read wins over them.
   p_write : process (clk) is
     variable sel        : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
     variable sw_write   : boolean;     -- a fresh, in-window software write
@@ -144,18 +160,6 @@ begin
 {% for reg in module.registers if reg.stored_fields %}
 {{ register_write(reg) }}
 
-{% endfor %}
-{% for reg in module.registers %}
-{% set onread_fields = reg.effective_fields | selectattr('onread') | list %}
-{% if onread_fields %}
-      -- {{ reg.name }} onread effects, applied when the software read is serviced.
-      if rd_service and sel_is(sel, C_ADDR_{{ reg.name | upper }}) then
-{% for f in onread_fields %}
-        regs.{{ reg.name }}.{{ f.name }} <= {{ f.ones_literal if f.onread.value == 'rset' else f.zeros_literal }};
-{% endfor %}
-      end if;
-
-{% endif %}
 {% endfor %}
 {% for reg in module.registers %}
 {% set swmod_fields = reg.effective_fields | selectattr('swmod') | list %}

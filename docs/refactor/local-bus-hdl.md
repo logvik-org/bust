@@ -185,6 +185,11 @@ field, so it reads top to bottom:
 | 3            | hardware `we`/`wel`| the field's write enable asserted  |
 | 4 (lowest)   | software write     | a bus write hits the field         |
 
+An `onread` side effect ranks with the software write. The generated regfile
+assigns a register's onread effects before its hardware updates, so a `hwset`
+in the same cycle as an `rclr` read leaves the field set instead of losing the
+event.
+
 ## Software side effects (onread / onwrite)
 
 A field may transform itself on a software access instead of just storing the

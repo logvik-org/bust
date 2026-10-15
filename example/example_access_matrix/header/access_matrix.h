@@ -515,4 +515,20 @@
 #define HW_ONLY_ENABLE_SW "rw"
 #define HW_ONLY_ENABLE_HW "r"
 
+/* Register: irq_status */
+#define IRQ_STATUS_SW "ro"
+#define IRQ_STATUS_HW "r"
+#define IRQ_STATUS_WIDTH 1
+#define IRQ_STATUS_OFFSET 0x48
+#define IRQ_STATUS_RESET 0x0
+
+/* Field: pending */
+#define IRQ_STATUS_PENDING_OFFSET 0
+#define IRQ_STATUS_PENDING_WIDTH 1
+#define IRQ_STATUS_PENDING_RESET 0x0
+#define IRQ_STATUS_PENDING_MASK 0x1
+#define IRQ_STATUS_PENDING_SW "ro"
+#define IRQ_STATUS_PENDING_HW "r"
+#define IRQ_STATUS_PENDING_ONREAD "rclr"
+
 #endif

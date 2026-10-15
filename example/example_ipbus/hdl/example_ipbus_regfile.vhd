@@ -56,6 +56,8 @@ begin
   -- writes, hardware updates, and onread side effects all live here. Each
   -- multi-source field uses an if/elsif chain so the precedence reads
   -- top-to-bottom: hwclr > hwset > hardware we/wel write > software write.
+  -- A register's onread effects are assigned before its hardware updates, so
+  -- hwclr, hwset or a we/wel write in the same cycle as a read wins over them.
   p_write : process (clk) is
     variable sel        : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
     variable sw_write   : boolean;     -- a fresh, in-window software write

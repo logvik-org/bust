@@ -12,6 +12,9 @@
 {% for f in reg.swacc_fields %}
       if to_hw.{{ reg.name }}.{{ f.name }}.swacc = '1' then
         {{ reg.name }}_{{ f.name }}_swacc_count <= {{ reg.name }}_{{ f.name }}_swacc_count + 1;
+{% if reg.is_hwset_read_clear_register %}
+        {{ reg.name }}_{{ f.name }}_at_swacc <= to_hw.{{ reg.name }}.{{ f.name }}.value;
+{% endif %}
       end if;
 {% endfor %}
 {% for f in reg.singlepulse_fields %}
