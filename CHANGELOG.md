@@ -47,6 +47,11 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 - The supported buses are described in one data-driven registry table, so
   adding a single-beat bus takes a new table entry plus its endpoint and
   testbench templates.
+- IPBus modules must use a `data_width` of 32 and an `addr_width` of at most
+  32. Other values are rejected with an error instead of generating VHDL that
+  does not compile.
+- The IPBus address table lists only registers and fields that software can
+  reach, with permissions taken from the fields' effective access.
 - bumpversion no longer creates the version tag. The GitHub Release does.
 
 ### Removed
