@@ -2,9 +2,9 @@
 """bust register tool.
 
 Usage:
-  bust.py FILE [-o DIR] [[[-F | -f] [-d | -p] [-i]] | [-a] | [-c | -e]]
-  bust.py --version
-  bust.py -h | --help
+  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i]] | [-a] | [-c | -e]]
+  bust --version
+  bust -h | --help
 
 Options:
   -o DIR         Specify output directory. Overrides settings (either JSON dir, or specified project dir in JSON)
