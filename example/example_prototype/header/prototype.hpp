@@ -1,5 +1,5 @@
-#ifndef PROTOTYPE_H
-#define PROTOTYPE_H
+#ifndef PROTOTYPE_HPP
+#define PROTOTYPE_HPP
 
 #include <cstdint>
 #include <string>
