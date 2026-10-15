@@ -56,8 +56,9 @@ architecture tb of access_matrix_tb is
     return unsigned(C_BASE) + unsigned(reg);
   end function;
 
-  -- Strobe monitors: count the cycles each swmod/swacc/singlepulse output is
-  -- high, so single-cycle pulses are verifiable without cycle-accurate sampling.
+  -- Strobe monitors: count the cycles each swmod/swacc output is high and each
+  -- singlepulse output differs from its reset value, so single-cycle pulses are
+  -- verifiable without cycle-accurate sampling.
   signal hw_set_clear_clr_only_swacc_count : natural := 0;
   signal pulses_kick_swmod_count : natural := 0;
   signal pulses_go_sp_count : natural := 0;
@@ -292,9 +293,9 @@ begin
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(pulses_kick_swmod_count - v_pulses_kick_swmod, 1, error, "pulses.kick swmod pulses once per write", C_SCOPE);
-    check_value(pulses_go_sp_count - v_pulses_go_sp, 1, error, "pulses.go singlepulse high exactly one cycle", C_SCOPE);
+    check_value(pulses_go_sp_count - v_pulses_go_sp, 1, error, "pulses.go singlepulse lasts exactly one cycle", C_SCOPE);
     check_value(pulses_go_sp_value, '1', error, "pulses.go hw saw the pulse value", C_SCOPE);
-    check_value(pulses_kick_sp_count - v_pulses_kick_sp, 1, error, "pulses.kick singlepulse high exactly one cycle", C_SCOPE);
+    check_value(pulses_kick_sp_count - v_pulses_kick_sp, 1, error, "pulses.kick singlepulse lasts exactly one cycle", C_SCOPE);
     check_value(pulses_kick_sp_value, 4x"F", error, "pulses.kick hw saw the pulse value", C_SCOPE);
 
     log(ID_LOG_HDR, "strobes: software-access strobe pulses", C_SCOPE);
@@ -323,7 +324,7 @@ begin
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(mixed_swacc_clear_bits_swacc_count - v_mixed_swacc_clear_bits_swacc, 2, error, "mixed_swacc.clear_bits swacc pulses per access (write + read)", C_SCOPE);
-    check_value(mixed_swacc_go_sp_count - v_mixed_swacc_go_sp, 1, error, "mixed_swacc.go singlepulse high exactly one cycle", C_SCOPE);
+    check_value(mixed_swacc_go_sp_count - v_mixed_swacc_go_sp, 1, error, "mixed_swacc.go singlepulse lasts exactly one cycle", C_SCOPE);
     check_value(mixed_swacc_go_sp_value, '1', error, "mixed_swacc.go hw saw the pulse value", C_SCOPE);
 
     log(ID_LOG_HDR, "mixed_history: software-access strobe pulses", C_SCOPE);

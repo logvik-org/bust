@@ -27,7 +27,7 @@
 {% macro register_write(reg) -%}
 {% for f in reg.stored_fields %}
 {% if f.singlepulse %}
-      regs.{{ reg.name }}.{{ f.name }} <= {{ f.zeros_literal }};
+      regs.{{ reg.name }}.{{ f.name }} <= {{ f.reset_value_vhdl }};
 {% elif f.hw_writes_continuously %}
       regs.{{ reg.name }}.{{ f.name }} <= from_hw.{{ reg.name }}.{{ f.name }}{{ ".value" if f.from_hw_is_record else "" }};
 {% endif %}
