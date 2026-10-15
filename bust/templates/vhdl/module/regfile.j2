@@ -58,7 +58,7 @@
       end if;
 {% endif %}
 {%- endmacro -%}
-{# A constant enum is qualified because enum literal names (e.g. ON/OFF) may be
+{# A constant enum is qualified because enum literal names (e.g. IDLE/BUSY) may be
    shared by several enum types, which would make to_slv(<literal>) ambiguous. #}
 {% macro field_value(reg, f) -%}
 {%- if f.holds_state -%}regs.{{ reg.name }}.{{ f.name }}{%- elif f.is_enum -%}{{ f.enum_type_name }}'({{ f.reset_value_vhdl }}){%- else -%}{{ f.reset_value_vhdl }}{%- endif -%}
@@ -130,7 +130,7 @@ begin
   -- aligned to that window.
   assert (not G_CHECK_BASE_ADDRESS)
       or (G_BASE_ADDRESS(C_MODULE_ADDR_WIDTH-1 downto 0) = 0)
-    report "G_BASE_ADDRESS must be aligned to 2**C_MODULE_ADDR_WIDTH bytes"
+    report "G_BASE_ADDRESS must be a multiple of 2**C_MODULE_ADDR_WIDTH"
     severity failure;
 
   -- Register storage and write response. Single driver of `regs`: software

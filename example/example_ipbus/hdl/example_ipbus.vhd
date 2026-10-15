@@ -14,7 +14,7 @@ use work.example_ipbus_regfile_pkg.all;
 
 entity example_ipbus is
   generic (
-    G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
+    G_BASE_ADDRESS       : unsigned(15 downto 0) := 16x"0";
     G_CHECK_BASE_ADDRESS : boolean := true
   );
   port (

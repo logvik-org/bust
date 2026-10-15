@@ -1,6 +1,6 @@
 -- Generated UVVM testbench for the prototype module (Avalon-MM).
 -- Drives the prototype top entity with the stock Bitvis Avalon-MM VIP and
--- self-checks every register whose behaviour the prototype exercises: plain
+-- self-checks every register of the module, by kind: plain
 -- read-write, enumerated, write-only/singlepulse (reads back 0), onread/onwrite
 -- software side effects, software-readonly registers driven from from_hw
 -- (we/wel), the hardware we override / hwset / hwclr modifiers, the to_hw values
