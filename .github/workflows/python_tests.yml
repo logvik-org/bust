@@ -13,6 +13,13 @@ on:
 permissions:
   contents: read
 
+# The group is named literally because in a workflow that release.yml calls,
+# github.workflow is the caller's name. vhdl_sim.yml would then share the group,
+# and the two would cancel each other.
+concurrency:
+  group: python-tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
 
