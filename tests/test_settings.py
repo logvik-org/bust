@@ -1,6 +1,9 @@
 """Settings and bus keys: what bust uses, and what it keeps but ignores."""
 
+import pytest
+
 from bust.core.bus import Bus
+from bust.exceptions import FormatError
 from bust.settings import Settings
 
 
@@ -31,3 +34,8 @@ def test_ignored_bus_keys_are_written_back_and_none_added():
 
     assert Bus(plain).to_json() == plain
     assert Bus(old).to_json() == old
+
+
+def test_data_width_must_be_whole_bytes():
+    with pytest.raises(FormatError, match="whole number of bytes"):
+        Bus({"type": "axi", "addr_width": 32, "data_width": 12})
