@@ -8,6 +8,8 @@ import os
 from collections import OrderedDict
 from typing import Optional
 
+from bust.validation.config_validator import warn_unknown_keys
+
 
 class Settings:
     """Output settings of a register map.
@@ -45,6 +47,9 @@ class Settings:
                 has none.
         """
         settings = settings or {}
+        warn_unknown_keys(
+            settings, ("proj_dir", "mod_subdir", *self.IGNORED_KEYS), "settings"
+        )
         self.json_path = json_path or ""
         json_dir, self.json_name = os.path.split(self.json_path)
 
