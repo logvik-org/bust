@@ -54,14 +54,15 @@ architecture tb of example_axi_tb is
     return unsigned(C_BASE) + unsigned(reg);
   end function;
 
-  -- Strobe monitors: count the cycles each swmod/swacc/singlepulse output is
-  -- high, so single-cycle pulses are verifiable without cycle-accurate sampling.
+  -- Strobe monitors: count the cycles each swmod/swacc output is high and each
+  -- singlepulse output differs from its reset value, so single-cycle pulses are
+  -- verifiable without cycle-accurate sampling.
   signal reg9_reg9_sp_count : natural := 0;
-  signal reg9_reg9_sp_value : std_logic := '0';
+  signal reg9_reg9_sp_value : std_logic := '1';
   signal reg10_reg10_sp_count : natural := 0;
-  signal reg10_reg10_sp_value : std_logic_vector(3 downto 0) := (others => '0');
+  signal reg10_reg10_sp_value : std_logic_vector(3 downto 0) := 4X"A";
   signal reg11_field0_sp_count : natural := 0;
-  signal reg11_field0_sp_value : std_logic_vector(14 downto 0) := (others => '0');
+  signal reg11_field0_sp_value : std_logic_vector(14 downto 0) := 15X"3";
   signal reg11_field1_sp_count : natural := 0;
   signal reg11_field1_sp_value : std_logic := '0';
 
@@ -96,15 +97,15 @@ begin
   p_strobe_monitor : process (clk) is
   begin
     if rising_edge(clk) then
-      if to_hw.reg9.reg9 /= '0' then
+      if to_hw.reg9.reg9 /= '1' then
         reg9_reg9_sp_count <= reg9_reg9_sp_count + 1;
         reg9_reg9_sp_value <= to_hw.reg9.reg9;
       end if;
-      if to_hw.reg10.reg10 /= 4x"0" then
+      if to_hw.reg10.reg10 /= 4x"A" then
         reg10_reg10_sp_count <= reg10_reg10_sp_count + 1;
         reg10_reg10_sp_value <= to_hw.reg10.reg10;
       end if;
-      if to_hw.reg11.field0 /= 15x"0000" then
+      if to_hw.reg11.field0 /= 15x"0003" then
         reg11_field0_sp_count <= reg11_field0_sp_count + 1;
         reg11_field0_sp_value <= to_hw.reg11.field0;
       end if;
@@ -214,29 +215,29 @@ begin
 
     log(ID_LOG_HDR, "reg9: software-access strobe pulses", C_SCOPE);
     v_reg9_reg9_sp := reg9_reg9_sp_count;
-    bus_write(f_addr(C_ADDR_REG9), 32x"00000001", "write reg9");
+    bus_write(f_addr(C_ADDR_REG9), 32x"00000000", "write reg9");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
-    check_value(reg9_reg9_sp_count - v_reg9_reg9_sp, 1, error, "reg9.reg9 singlepulse high exactly one cycle", C_SCOPE);
-    check_value(reg9_reg9_sp_value, '1', error, "reg9.reg9 hw saw the pulse value", C_SCOPE);
+    check_value(reg9_reg9_sp_count - v_reg9_reg9_sp, 1, error, "reg9.reg9 singlepulse lasts exactly one cycle", C_SCOPE);
+    check_value(reg9_reg9_sp_value, '0', error, "reg9.reg9 hw saw the pulse value", C_SCOPE);
 
     log(ID_LOG_HDR, "reg10: software-access strobe pulses", C_SCOPE);
     v_reg10_reg10_sp := reg10_reg10_sp_count;
-    bus_write(f_addr(C_ADDR_REG10), 32x"0000000F", "write reg10");
+    bus_write(f_addr(C_ADDR_REG10), 32x"00000005", "write reg10");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
-    check_value(reg10_reg10_sp_count - v_reg10_reg10_sp, 1, error, "reg10.reg10 singlepulse high exactly one cycle", C_SCOPE);
-    check_value(reg10_reg10_sp_value, 4x"F", error, "reg10.reg10 hw saw the pulse value", C_SCOPE);
+    check_value(reg10_reg10_sp_count - v_reg10_reg10_sp, 1, error, "reg10.reg10 singlepulse lasts exactly one cycle", C_SCOPE);
+    check_value(reg10_reg10_sp_value, 4x"5", error, "reg10.reg10 hw saw the pulse value", C_SCOPE);
 
     log(ID_LOG_HDR, "reg11: software-access strobe pulses", C_SCOPE);
     v_reg11_field0_sp := reg11_field0_sp_count;
     v_reg11_field1_sp := reg11_field1_sp_count;
-    bus_write(f_addr(C_ADDR_REG11), 32x"0000FFFF", "write reg11");
+    bus_write(f_addr(C_ADDR_REG11), 32x"0000FFFC", "write reg11");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
-    check_value(reg11_field0_sp_count - v_reg11_field0_sp, 1, error, "reg11.field0 singlepulse high exactly one cycle", C_SCOPE);
-    check_value(reg11_field0_sp_value, 15x"7FFF", error, "reg11.field0 hw saw the pulse value", C_SCOPE);
-    check_value(reg11_field1_sp_count - v_reg11_field1_sp, 1, error, "reg11.field1 singlepulse high exactly one cycle", C_SCOPE);
+    check_value(reg11_field0_sp_count - v_reg11_field0_sp, 1, error, "reg11.field0 singlepulse lasts exactly one cycle", C_SCOPE);
+    check_value(reg11_field0_sp_value, 15x"7FFC", error, "reg11.field0 hw saw the pulse value", C_SCOPE);
+    check_value(reg11_field1_sp_count - v_reg11_field1_sp, 1, error, "reg11.field1 singlepulse lasts exactly one cycle", C_SCOPE);
     check_value(reg11_field1_sp_value, '1', error, "reg11.field1 hw saw the pulse value", C_SCOPE);
 
     wait for 10*C_CLK_PERIOD;

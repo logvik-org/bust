@@ -51,8 +51,9 @@ architecture tb of prototype_tb is
     return unsigned(C_BASE) + unsigned(reg);
   end function;
 
-  -- Strobe monitors: count the cycles each swmod/swacc/singlepulse output is
-  -- high, so single-cycle pulses are verifiable without cycle-accurate sampling.
+  -- Strobe monitors: count the cycles each swmod/swacc output is high and each
+  -- singlepulse output differs from its reset value, so single-cycle pulses are
+  -- verifiable without cycle-accurate sampling.
   signal reg9_field0_swmod_count : natural := 0;
   signal reg9_field1_swacc_count : natural := 0;
   signal reg10_field0_sp_count : natural := 0;
@@ -230,7 +231,7 @@ begin
     bus_write(f_addr(C_ADDR_REG10), 32x"0000000F", "write reg10");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
-    check_value(reg10_field0_sp_count - v_reg10_field0_sp, 1, error, "reg10.field0 singlepulse high exactly one cycle", C_SCOPE);
+    check_value(reg10_field0_sp_count - v_reg10_field0_sp, 1, error, "reg10.field0 singlepulse lasts exactly one cycle", C_SCOPE);
     check_value(reg10_field0_sp_value, 4x"F", error, "reg10.field0 hw saw the pulse value", C_SCOPE);
 
     wait for 10*C_CLK_PERIOD;

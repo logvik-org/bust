@@ -5,6 +5,8 @@ for error handling during configuration parsing, register validation, and
 VHDL generation.
 """
 
+import os
+
 
 class FormatError(Exception):
     """Raised when input JSON configuration has incorrect format."""
@@ -172,18 +174,25 @@ class InvalidFieldFormat(RuntimeError):
         super().__init__(msg)
 
 
-class InvalidStallValue(RuntimeError):
-    """Raised when stall_cycles value is out of valid range.
+class LegacyTopLevelFile(RuntimeError):
+    """Raised instead of overwriting a top-level VHDL file from bust 0.14.
 
-    Stall cycles must be either 0 (disabled) or between 2 and 255
-    (inclusive) for IPBus registers.
+    bust 0.14 kept user logic in the top-level file between marker comments,
+    while bust 1.0 regenerates that file as a fixed wrapper.
     """
 
-    def __init__(self, val):
-        """Initialize InvalidStallValue exception.
+    def __init__(self, path):
+        """Initialize LegacyTopLevelFile exception.
 
         Args:
-            val: The invalid stall cycles value.
+            path: The existing top-level file that carries the 0.14 markers.
         """
-        msg = "Invalid stall value: {}. Must be between 2 and 255.".format(val)
+        msg = (
+            f"Refusing to overwrite {path}: it has the '-- User ... Start/End' "
+            "sections of a bust 0.14 top level, so it may hold your own logic. "
+            f"In bust 1.0 {os.path.basename(path)} is a fixed wrapper that bust "
+            "regenerates, and hardware logic connects through the to_hw/from_hw "
+            "records outside the generated files. Move your logic out of this "
+            "file, then delete or rename it to proceed. No files were written."
+        )
         super().__init__(msg)

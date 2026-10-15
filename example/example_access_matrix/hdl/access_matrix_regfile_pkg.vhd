@@ -34,6 +34,7 @@ package access_matrix_regfile_pkg is
   constant C_ADDR_MIXED_HISTORY : std_logic_vector(31 downto 0) := 32x"3C";
   constant C_ADDR_HW_STATUS_SWACC : std_logic_vector(31 downto 0) := 32x"40";
   constant C_ADDR_HW_ONLY : std_logic_vector(31 downto 0) := 32x"44";
+  constant C_ADDR_IRQ_STATUS : std_logic_vector(31 downto 0) := 32x"48";
 
   -- Register-select width. base_match compares the bits above this width, so the
   -- base address must be aligned to this register window.
@@ -168,6 +169,9 @@ package access_matrix_regfile_pkg is
     shadow : std_logic_vector(3 downto 0);
     enable : std_logic;
   end record;
+  type t_irq_status_regs is record
+    pending : std_logic;
+  end record;
 
   -- Whole-module storage: the regfile keeps this as a single signal.
   type t_access_matrix_regs is record
@@ -188,6 +192,7 @@ package access_matrix_regfile_pkg is
     mixed_history : t_mixed_history_regs;
     hw_status_swacc : t_hw_status_swacc_regs;
     hw_only : t_hw_only_regs;
+    irq_status : t_irq_status_regs;
   end record;
 
   constant C_ACCESS_MATRIX_REGS_RESET : t_access_matrix_regs := (
@@ -207,7 +212,8 @@ package access_matrix_regfile_pkg is
     mixed_swacc => (clear_bits => (others => '0'), toggle_bits => (others => '0'), arg => (others => '0'), go => '0', power => PWR_OFF),
     mixed_history => (toggle => (others => '0'), set_on_zero => (others => '0'), clear_on_zero => 4X"F", toggle_on_zero => (others => '0')),
     hw_status_swacc => (level => (others => '0'), latched => (others => '0')),
-    hw_only => (shadow => (others => '0'), enable => '0'));
+    hw_only => (shadow => (others => '0'), enable => '0'),
+    irq_status => (pending => '0'));
 
   -- regfile -> hardware: only fields the hardware can read (hw r / rw). Fields
   -- with a software-access pulse (swmod/swacc) pair the value with the strobe.
@@ -323,6 +329,14 @@ package access_matrix_regfile_pkg is
     shadow : std_logic_vector(3 downto 0);
     enable : std_logic;
   end record;
+  type t_irq_status_pending_out is record
+    value : std_logic;
+    swacc : std_logic;
+  end record;
+
+  type t_irq_status_to_hw is record
+    pending : t_irq_status_pending_out;
+  end record;
 
   -- Whole-module regfile -> hardware bundle.
   type t_access_matrix_to_hw is record
@@ -343,6 +357,7 @@ package access_matrix_regfile_pkg is
     mixed_history : t_mixed_history_to_hw;
     hw_status_swacc : t_hw_status_swacc_to_hw;
     hw_only : t_hw_only_to_hw;
+    irq_status : t_irq_status_to_hw;
   end record;
 
   -- hardware -> regfile: per-field input records pairing each value with the
@@ -412,6 +427,13 @@ package access_matrix_regfile_pkg is
   type t_hw_only_from_hw is record
     shadow : std_logic_vector(3 downto 0);
   end record;
+  type t_irq_status_pending_in is record
+    set : std_logic;
+  end record;
+
+  type t_irq_status_from_hw is record
+    pending : t_irq_status_pending_in;
+  end record;
 
   -- Whole-module hardware -> regfile bundle.
   type t_access_matrix_from_hw is record
@@ -421,6 +443,7 @@ package access_matrix_regfile_pkg is
     enum_hw : t_enum_hw_from_hw;
     hw_status_swacc : t_hw_status_swacc_from_hw;
     hw_only : t_hw_only_from_hw;
+    irq_status : t_irq_status_from_hw;
   end record;
 
   function base_match(addr  : std_logic_vector(31 downto 0);
@@ -456,7 +479,7 @@ package body access_matrix_regfile_pkg is
 
   function is_mapped(sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
   begin
-    return sel_is(sel, C_ADDR_PLAIN) or sel_is(sel, C_ADDR_STATUS) or sel_is(sel, C_ADDR_COMMAND) or sel_is(sel, C_ADDR_IDENTITY) or sel_is(sel, C_ADDR_HW_MODIFY) or sel_is(sel, C_ADDR_HW_SET_CLEAR) or sel_is(sel, C_ADDR_READ_EFFECTS) or sel_is(sel, C_ADDR_WRITE_EFFECTS) or sel_is(sel, C_ADDR_PULSES) or sel_is(sel, C_ADDR_STROBES) or sel_is(sel, C_ADDR_ENUM_VECTOR) or sel_is(sel, C_ADDR_ENUM_BIT) or sel_is(sel, C_ADDR_ENUM_HW) or sel_is(sel, C_ADDR_ENUM_SWACC) or sel_is(sel, C_ADDR_MIXED_SWACC) or sel_is(sel, C_ADDR_MIXED_HISTORY) or sel_is(sel, C_ADDR_HW_STATUS_SWACC) or sel_is(sel, C_ADDR_HW_ONLY);
+    return sel_is(sel, C_ADDR_PLAIN) or sel_is(sel, C_ADDR_STATUS) or sel_is(sel, C_ADDR_COMMAND) or sel_is(sel, C_ADDR_IDENTITY) or sel_is(sel, C_ADDR_HW_MODIFY) or sel_is(sel, C_ADDR_HW_SET_CLEAR) or sel_is(sel, C_ADDR_READ_EFFECTS) or sel_is(sel, C_ADDR_WRITE_EFFECTS) or sel_is(sel, C_ADDR_PULSES) or sel_is(sel, C_ADDR_STROBES) or sel_is(sel, C_ADDR_ENUM_VECTOR) or sel_is(sel, C_ADDR_ENUM_BIT) or sel_is(sel, C_ADDR_ENUM_HW) or sel_is(sel, C_ADDR_ENUM_SWACC) or sel_is(sel, C_ADDR_MIXED_SWACC) or sel_is(sel, C_ADDR_MIXED_HISTORY) or sel_is(sel, C_ADDR_HW_STATUS_SWACC) or sel_is(sel, C_ADDR_HW_ONLY) or sel_is(sel, C_ADDR_IRQ_STATUS);
   end function;
 
   -- case over the literals so the encoding follows each enum's declared value,
