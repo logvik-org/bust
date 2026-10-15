@@ -10,6 +10,12 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Removed
+- The 0.14 module paths such as `bust.module`, `bust.register` and
+  `bust.header`, which 1.0.0a0 kept as aliases. The code now lives in the
+  `bust.core`, `bust.generators` and `bust.validation` packages. bust is a
+  command-line tool, and its Python modules are not a supported API.
+
 ## [1.0.0a0] - 2026-10-15
 
 First pre-release of bust 1.0.0, for testing. Install it with
