@@ -1,5 +1,6 @@
+{# An enum has no all-zeros literal, so its idle input is the reset literal. #}
 {% macro fhw_default(m, f) -%}
-{%- if m == 'value' -%}{{ f.zeros_literal }}{%- elif m == 'wel' -%}'1'{%- else -%}'0'{%- endif -%}
+{%- if m == 'value' -%}{{ f.reset_value_vhdl if f.is_enum else f.zeros_literal }}{%- elif m == 'wel' -%}'1'{%- else -%}'0'{%- endif -%}
 {%- endmacro -%}
 {% if module.to_hw_registers %}
 
@@ -8,7 +9,7 @@
 {% if module.from_hw_registers %}
   signal from_hw  : t_{{ module.name }}_from_hw := (
 {% for reg in module.from_hw_registers %}
-    {{ reg.name }} => ({% for f in reg.from_hw_fields %}{{ f.name }} => {% if f.from_hw_is_record %}({% for m in f.from_hw_members %}{{ m }} => {{ fhw_default(m, f) }}{% if not loop.last %}, {% endif %}{% endfor %}){% else %}{{ f.zeros_literal }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}){% if not loop.last %},{% else %});{% endif %}
+    {{ reg.name }} => ({% for f in reg.from_hw_fields %}{{ f.name }} => {% if f.from_hw_is_record %}({% for m in f.from_hw_members %}{{ m }} => {{ fhw_default(m, f) }}{% if not loop.last %}, {% endif %}{% endfor %}){% else %}{{ fhw_default('value', f) }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}){% if not loop.last %},{% else %});{% endif %}
 
 {% endfor %}
 {% endif %}

@@ -457,3 +457,130 @@ def test_empty_module_is_mapped_returns_false():
     out = GeneratorFactory.generate_regfile_package_vhdl(module)
     assert "return false;" in out
     assert "return ;" not in out
+
+
+_ON_OFF = [{"name": "OFF", "value": 0}, {"name": "ON", "value": 1}]
+
+
+def _fields_module(*fields, **defaults):
+    """Module with one fields register `r`; `defaults` are its access defaults."""
+    reg = dict({"name": "r", "type": "fields", "fields": list(fields)}, **defaults)
+    return Module({"name": "m", "register": [reg]}, _axi_bus(), settings=None)
+
+
+def test_hwset_without_write_enable_takes_the_value_member():
+    """from_hw.<reg>.<field> is a record once hwset/hwclr add strobes, so the
+    every-cycle hardware write must read its value member."""
+    module = _fields_module(
+        {"name": "f", "type": "vector", "width": 4, "hwset": True}, sw="ro", hw="w"
+    )
+    out = GeneratorFactory.generate_regfile_vhdl(module)
+    assert "regs.r.f <= from_hw.r.f.value;" in out
+    assert "regs.r.f <= from_hw.r.f;" not in out
+
+
+def test_bit_enum_encodes_as_one_element_vector():
+    module = _fields_module(
+        {"name": "lo", "type": "bit"},
+        {"name": "f", "type": "bit", "enums": _ON_OFF},
+        sw="rw",
+        hw="r",
+    )
+    pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
+    regfile = GeneratorFactory.generate_regfile_vhdl(module)
+    assert "function to_r_f(s : std_logic_vector(0 downto 0)) return t_r_f;" in pkg
+    assert "variable slv : std_logic_vector(0 downto 0);" in pkg
+    assert 'when "1" => return ON;' in pkg
+    assert "regs.r.f <= to_r_f(lb_m2s.wdata(1 downto 1));" in regfile
+    assert "rdata(1 downto 1) <= to_slv(regs.r.f);" in regfile
+
+
+def test_hw_written_enum_testbench_default_is_its_reset_literal():
+    states = [{"name": n, "value": v} for n, v in (("A", 0), ("B", 1), ("C", 2))]
+    module = _fields_module(
+        {"name": "a", "type": "vector", "width": 2, "reset": "0x2", "enums": states},
+        {"name": "b", "type": "bit", "we": True, "enums": _ON_OFF},
+        sw="ro",
+        hw="w",
+    )
+    tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
+    assert "r => (a => C, b => (value => OFF, we => '0')));" in tb
+
+
+def test_constant_enum_read_is_type_qualified():
+    """Enum literal names may repeat across fields, so a constant's literal is
+    qualified to keep to_slv unambiguous."""
+    module = _fields_module(
+        {"name": "a", "type": "bit", "reset": "0x1", "enums": _ON_OFF},
+        {"name": "b", "type": "bit", "enums": _ON_OFF},
+        sw="ro",
+        hw="r",
+    )
+    out = GeneratorFactory.generate_regfile_vhdl(module)
+    assert "rdata(0 downto 0) <= to_slv(t_r_a'(ON));" in out
+    assert "rdata(1 downto 1) <= to_slv(t_r_b'(OFF));" in out
+    assert "to_hw.r <= (a => t_r_a'(ON), b => t_r_b'(OFF));" in out
+
+
+def _strobe_read(module):
+    reg = module.registers[0]
+    tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
+    expected = reg.strobe_readback_value_vhdl
+    assert f'bus_check(f_addr(C_ADDR_R), {expected}, "read r");' in tb
+    return expected
+
+
+def test_strobe_read_applies_write_effects():
+    """woclr: writing all ones clears the field, so the read returns 0."""
+    module = _fields_module(
+        {"name": "f", "type": "vector", "width": 4, "onwrite": "woclr", "swacc": True},
+        sw="rw",
+        hw="r",
+    )
+    assert _strobe_read(module) == '32x"00000000"'
+
+
+def test_strobe_read_continues_from_the_onwrite_test():
+    """The onwrite test runs first and leaves wot at 0x5; the strobe write of 0xF
+    then toggles it to 0xA, not to the 0xF a write from reset would give."""
+    module = _fields_module(
+        {"name": "f", "type": "vector", "width": 4, "onwrite": "wot", "swacc": True},
+        sw="rw",
+        hw="r",
+    )
+    assert module.registers[0].is_onwrite_readback
+    assert _strobe_read(module) == '32x"0000000A"'
+
+
+def test_strobe_read_of_mixed_register():
+    module = _fields_module(
+        {"name": "acc", "type": "vector", "width": 4, "swacc": True},
+        {"name": "fixed", "type": "vector", "width": 4, "sw": "ro", "reset": "0x9"},
+        {"name": "arg", "type": "vector", "width": 4, "sw": "wo"},
+        {"name": "go", "type": "bit", "singlepulse": True},
+        {"name": "mode", "type": "bit", "enums": _ON_OFF},
+        sw="rw",
+        hw="r",
+    )
+    # acc=0xF, fixed=0x9, arg unreadable, go self-cleared, mode decodes 1 to ON.
+    assert _strobe_read(module) == '32x"0000209F"'
+
+
+def test_strobe_read_decodes_an_undefined_enum_encoding_to_the_first_literal():
+    states = [{"name": n, "value": v} for n, v in (("A", 0), ("B", 1), ("C", 2))]
+    module = _fields_module(
+        {"name": "f", "type": "vector", "width": 2, "swacc": True, "enums": states},
+        sw="rw",
+        hw="r",
+    )
+    assert _strobe_read(module) == '32x"00000000"'
+
+
+def test_strobe_read_of_hw_written_field_returns_the_hw_input():
+    """The status test drives 0x5 and leaves it applied; a software write cannot
+    change a read-only field the hardware rewrites every cycle."""
+    module = _fields_module(
+        {"name": "f", "type": "vector", "width": 4, "swacc": True}, sw="ro", hw="rw"
+    )
+    assert module.registers[0].is_hw_driven_readback
+    assert _strobe_read(module) == '32x"00000005"'

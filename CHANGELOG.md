@@ -24,6 +24,11 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   `swacc`. Access set on a register is the default for its fields, which can
   override it.
 - Enumerated fields, generated as VHDL enumeration types.
+- Access-mode combinations the generator cannot render are rejected with an
+  error naming the register and field: an enumerated field with `onwrite`,
+  `onread`, `hwset`, `hwclr` or `singlepulse`; `swmod`, `swacc` or
+  `singlepulse` on a field hardware cannot read; and `singlepulse` together
+  with `onread` or on a field hardware writes every cycle.
 - The `G_BASE_ADDRESS` generic sets the base address when the module is
   instantiated, and `G_CHECK_BASE_ADDRESS => false` leaves address decoding to
   the instantiating design.
