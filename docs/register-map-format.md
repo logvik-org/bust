@@ -108,6 +108,7 @@ error it prints what is wrong and exits with status 1.
 | `addr_width` | integer | required | Width of the bus address in bits. |
 | `data_width` | integer | required | Width of the bus data in bits. No register can be wider. |
 | `comp_library` | string | none | Accepted so that bust 0.14 files still load. It has no effect. |
+| `reset` | string | none | Accepted so that bust 0.14 files still load. It has no effect. |
 
 | `type` | Protocol | An address selects |
 |---|---|---|
@@ -132,13 +133,10 @@ with an error such as:
 Bus type ipbus carries 32-bit data, so data_width must be 32 (got 16)
 ```
 
-bust does not limit the widths of the other buses. On a byte-addressed bus,
-use a `data_width` that is a multiple of 8, because bust places registers
-`data_width / 8` bytes apart. [Buses](buses.md) describes the ports and the
-timing of each protocol.
-
-`bust -a` also writes a `reset` key into `bus`, which names the reset style of
-the bus. bust ignores it when it reads the file.
+On every bus, `data_width` must be a whole number of bytes, because bust
+places registers `data_width / 8` bytes apart on a byte-addressed bus. bust
+does not limit the widths further. [Buses](buses.md) describes the ports and
+the timing of each protocol.
 
 ## Module
 
@@ -193,9 +191,9 @@ bust ignores a `width` on a `default` or `bit` register and prints a warning:
 User-specified width of default register does not match the expected width (32). Ignoring configured width.
 ```
 
-A register with fields needs `"type": "fields"` and at least one field.
-Without the `type`, bust treats the register as `default` and ignores its
-`fields` list.
+A register with a `fields` list is a `fields` register, so you can leave out
+`"type": "fields"`. It needs at least one field. A `fields` list on a register
+of another type stops bust.
 
 ### Addresses
 
@@ -227,10 +225,15 @@ addresses into the JSON file. It replaces addresses you set by hand. See
 `true` by `data_width / 8`. It only changes the addresses bust picks. The bus
 endpoint still compares the address exactly as the bus master drives it.
 
-bust does not check that an address is a multiple of `data_width / 8`. The
-generated register file compares the whole address, so software has to use the
-exact address of each register. An access to any other address, including a
-byte address inside a register, gets the bus's error response. See
+On a byte-addressed bus, an address must be a multiple of `data_width / 8`:
+
+```text
+Address 0x6 of register baud_div is not a multiple of 4, the data width in bytes
+```
+
+The generated register file compares the whole address, so software has to use
+the exact address of each register. An access to any other address, including
+a byte address inside a register, gets the bus's error response. See
 [Access modes](access-modes.md#unmapped-addresses).
 
 The base address of the module is not part of the register map. You set it
@@ -244,7 +247,7 @@ A JSON number is not accepted. The value must fit in the register's width,
 otherwise bust stops:
 
 ```text
-Failed to parse register baud_div: InvalidRegisterFormat: Invalid register format: Reset value does not match register: baud_div
+Could not parse register baud_div: Invalid register format: Reset value does not match register: baud_div
 ```
 
 Leave `reset` out of a `fields` register and give each field its own `reset`.
@@ -260,10 +263,11 @@ must follow the VHDL rules for basic identifiers:
 - not end with an underscore or contain two underscores in a row,
 - not be a VHDL reserved word, such as `signal`, `in` or `register`.
 
-A field named `in`, for example, stops bust:
+A field named `in`, for example, stops bust. Reserved words count in any case,
+so `IN` is rejected too:
 
 ```text
-Error in parsing identifier: in - identifier cannot be identical to VHDL keyword.
+Could not parse register ctrl: Invalid identifier: in - identifier cannot be identical to VHDL keyword.
 ```
 
 bust warns, but goes on, when a name is longer than 16 characters or mixes
@@ -272,8 +276,9 @@ constants, such as `CTRL_PARITY_MASK`.
 
 Register names must be unique in the module, field names in their register
 and enumeration names in their field. VHDL ignores case, so `ctrl` and `CTRL`
-are the same name. A register cannot have the same name as the module, because
-both would declare a type `t_<name>_regs`.
+are the same name, and bust stops when two names differ only in case. A
+register cannot have the same name as the module, because both would declare a
+type `t_<name>_regs`.
 
 ## Fields
 
@@ -308,14 +313,16 @@ lowest bit to the highest. In the example, `flush` sits at bit 8 and bits 4 to
 A `position` below the next free bit stops bust:
 
 ```text
-Failed to parse register ctrl: InvalidFieldFormat: Invalid field format: Field 'flush' in register 'ctrl': position 2 overlaps bits already in use (next free bit is 4).
+Could not parse register ctrl: Invalid field format: Field 'flush' in register 'ctrl': position 2 overlaps bits already in use (next free bit is 4).
 ```
 
 A `fields` register is as wide as its highest field bit plus one, 9 bits for
 `ctrl`. It cannot be wider than `data_width`:
 
 ```text
-Failed to parse register ctrl: ModuleDataBitsExceeded: Register width exceeded module data width by 1 in register ctrl
+Could not parse register ctrl: Register width exceeded module data width by 1 in register ctrl
+Module width: 32
+Register width: 33
 ```
 
 Bits that no field covers read as 0, and writes to them have no effect.
@@ -345,8 +352,8 @@ Each entry has two keys:
 - `value`: the encoding, a JSON integer. It must fit in the field's width and
   be unique in the field.
 
-bust reads no other keys from an entry, so an entry cannot have a
-description. The values need not be in order or contiguous, and not every
+bust reads no other keys from an entry and warns about any other key, such as
+a `description`. The values need not be in order or contiguous, and not every
 encoding needs a name. `parity` leaves 3 unnamed.
 
 Without a `reset`, an enumerated field resets to the entry with value 0. When
@@ -354,19 +361,19 @@ no entry has value 0, it resets to the first entry in the list. A `reset` must
 be the value of one of the entries:
 
 ```text
-Failed to parse register ctrl: InvalidFieldFormat: Invalid field format: Reset value 0x3 of enumerated field parity in reg ctrl matches no declared enum value
+Could not parse register ctrl: Invalid field format: Reset value 0x3 of enumerated field parity in reg ctrl matches no declared enum value
 ```
 
 The other checks give these errors:
 
 ```text
-Failed to parse register ctrl: InvalidFieldFormat: Invalid field format: Enum 'PAR_ODD' value 4 does not fit field parity (width 2) in reg ctrl
-Failed to parse register ctrl: InvalidFieldFormat: Invalid field format: Duplicate enum value 1 in field parity in reg ctrl
-Failed to parse register ctrl: InvalidFieldFormat: Invalid field format: Duplicate enum name 'PAR_EVEN' in field parity in reg ctrl
+Could not parse register ctrl: Invalid field format: Enum 'PAR_ODD' value 4 does not fit field parity (width 2) in reg ctrl
+Could not parse register ctrl: Invalid field format: Duplicate enum value 1 in field parity in reg ctrl
+Could not parse register ctrl: Invalid field format: Duplicate enum name 'PAR_EVEN' in field parity in reg ctrl
 ```
 
-`enums` belongs on a field. On a register without fields, bust ignores it, so
-give such a register `"type": "fields"` and one field.
+`enums` belongs on a field. On a register without fields, bust ignores it with
+a warning, so give such a register `"type": "fields"` and one field.
 [Access modes](access-modes.md#enumerated-fields) describes the generated type,
 how software writes are decoded, and which access keys an enumerated field
 cannot have.
@@ -390,11 +397,12 @@ register's fields. A key on the field wins over the same key on the register.
 [inheritance](access-modes.md#inheritance) works, and which combinations bust
 rejects.
 
-Give the boolean keys as JSON `true` or `false`, not as strings. A value that
-is not in the table stops bust and lists the valid ones:
+Give the boolean keys as JSON `true` or `false`. A string such as `"false"`
+stops bust. `null` counts as `false`. A value that is not in the table stops
+bust and lists the valid ones:
 
 ```text
-Failed to parse register ctrl: ValueError: Invalid SwAccess: 'rx'. Did you mean one of these? ['rw', 'ro', 'wo', 'na']
+Could not parse register ctrl: Invalid SwAccess: 'rx'. Did you mean one of these? ['rw', 'ro', 'wo', 'na']
 ```
 
 ## Settings
@@ -423,9 +431,14 @@ them.
 
 ## Keys bust does not know
 
-bust ignores keys it does not know. A misspelt key, such as `onwrit` instead of
-`onwrite`, is dropped without an error. If a field does not behave as you
-expect, check the spelling of its keys.
+bust warns about each key it does not read, and otherwise ignores it. A
+misspelt key such as `onwrit` gives:
+
+```text
+Unknown key 'onwrit' in field tx_en of register ctrl is ignored
+```
+
+`bust -a` does not write unknown keys back into the file.
 
 ## Files from bust 0.14
 
@@ -445,7 +458,7 @@ own access keys, but a register cannot have `mode` together with access keys
 of its own:
 
 ```text
-Failed to parse register baud_div: InvalidRegisterFormat: Invalid register format: Register baud_div sets the legacy 'mode' key together with bust 1.0 access-mode keys (sw/hw/...); use one schema, not both
+Could not parse register baud_div: Invalid register format: Register baud_div sets the legacy 'mode' key together with bust 1.0 access-mode keys (sw/hw/...); use one schema, not both
 ```
 
 In bust 1.0 a pulse lasts one clock cycle, and the register file has no
@@ -453,8 +466,8 @@ configurable stall. `pulse_cycles: 1` and `stall_cycles: 0` are accepted and
 have no effect. Other values stop bust:
 
 ```text
-Failed to parse register go: InvalidRegisterFormat: Invalid register format: Register 'go': pulse_cycles=2 is not supported in bust 1.0. A pulse register drives the written value for one clock cycle and then returns to its reset value. Remove pulse_cycles.
-Failed to parse register st: InvalidRegisterFormat: Invalid register format: Register 'st': stall_cycles is not supported in bust 1.0, because registers live in the generated register file and always answer in one cycle. Remove stall_cycles.
+Could not parse register go: Invalid register format: Register 'go': pulse_cycles=2 is not supported in bust 1.0. A pulse register drives the written value for one clock cycle and then returns to its reset value. Remove pulse_cycles.
+Could not parse register st: Invalid register format: Register 'st': stall_cycles is not supported in bust 1.0, because registers live in the generated register file and always answer in one cycle. Remove stall_cycles.
 ```
 
 The 0.14 settings `bus_subdir`, `coverage`, `uvvm_rel_path`, `ipbus_rel_path`

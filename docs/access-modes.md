@@ -266,7 +266,7 @@ field that does not override it. In this register, `rx_count` inherits
 ```
 
 ```text
-Failed to parse register irq: InvalidFieldFormat: Invalid field format: onwrite requires a software-writable field (sw rw or wo) (field rx_count in reg irq)
+Could not parse register irq: Invalid field format: onwrite requires a software-writable field (sw rw or wo) (field rx_count in reg irq)
 ```
 
 Give `rx_count` the key `"onwrite": null` to remove the inherited side effect.
@@ -409,12 +409,10 @@ bust stops when a field combines access keys that have no consistent meaning.
 It names the register and the field:
 
 ```text
-Failed to parse register ctrl: InvalidFieldFormat: Invalid field format: onread and singlepulse are mutually exclusive: the field self-clears, so rclr has no effect and rset fires a pulse on every read (field flush in reg ctrl)
-Could not parse register ctrl. Lacking or misspelt JSON keys?
+Could not parse register ctrl: Invalid field format: onread and singlepulse are mutually exclusive: the field self-clears, so rclr has no effect and rset fires a pulse on every read (field flush in reg ctrl)
 ```
 
-A third line repeats the register as bust read it. The reason after
-`Invalid field format:` is one of these:
+The reason after `Invalid field format:` is one of these:
 
 | Combination | Reason |
 |---|---|
