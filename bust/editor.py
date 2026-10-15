@@ -320,7 +320,7 @@ class Editor:
                 max_address = 2**self.mod.addr_width - 1
 
                 while True:
-                    reg["address"] = get_int(
+                    address = get_int(
                         "Address in hex: ",
                         16,
                         0x0,
@@ -332,25 +332,27 @@ class Editor:
                         0x0,
                     )
                     # Perform an extra check of address range, although redundant
-                    if self.mod.is_address_out_of_range(reg["address"]):
+                    if self.mod.is_address_out_of_range(address):
                         print("Address is out of range...")
                         continue
 
                     # Check if the address has not been taken
-                    if not self.mod.is_address_free(reg["address"]):
+                    if not self.mod.is_address_free(address):
                         print(
                             "The chosen address is already assigned to another register..."
                         )
                         continue
 
                     # Check whether the address is not byte-addressed, and give the user a choice to continue
-                    if not self.mod.is_address_byte_based(reg["address"]):
+                    if not self.mod.is_address_byte_based(address):
                         choice = input(
                             "The selected address is not byte-based. Continue? (y/N): "
                         )
                         if not choice.upper() == "Y":
                             continue
                     break
+                # The JSON schema, and so Module.add_register, takes a hex string.
+                reg["address"] = hex(address)
 
             if reg["type"] != "fields":
 

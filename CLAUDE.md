@@ -52,7 +52,7 @@ Generated VHDL uses records throughout (bus interfaces, hardware-side signals, r
 
 ## Access mode specification (bust 1.0)
 
-The access mode system bust 1.0 implements. ("legacy" refers to the old `mode`-based format; legacy JSON is still accepted and translated onto `sw`/`hw`, but the legacy generation path is gone.) All keywords are conceptually aligned with SystemRDL 2.0.
+The access mode system bust 1.0 implements. ("legacy" refers to the old `mode`-based format; legacy JSON is still accepted and translated onto `sw`/`hw`, but the legacy generation path is gone.) All keywords are conceptually aligned with SystemRDL 2.0. A legacy `pulse` register becomes `singlepulse`. The legacy `pulse_cycles` other than 1 and `stall_cycles` other than 0 cannot be represented and are rejected with an error (`bust/core/legacy_schema.py`).
 
 **Software access (`sw`)**: `rw` (read+write), `ro` (read only), `wo` (write only), `na` (no access).
 
@@ -70,7 +70,7 @@ The access mode system bust 1.0 implements. ("legacy" refers to the old `mode`-b
 | `onwrite: wzt` | Write 0 toggles bits |
 | `onwrite: wclr` | Write any value clears field |
 | `onwrite: wset` | Write any value sets field |
-| `singlepulse: true` | Field self-clears one clock after SW write; HW sees a single-cycle pulse |
+| `singlepulse: true` | Field returns to its reset value one clock after a SW write, so HW sees the written value for a single cycle |
 
 **Hardware access (`hw`)**: `r`, `w`, `rw`, `na`.
 
@@ -84,6 +84,8 @@ The access mode system bust 1.0 implements. ("legacy" refers to the old `mode`-b
 | `hwclr: true` | `<field>_clr` | Hardware can clear field to 0 |
 | `swmod: true` | `<field>_swmod` | Pulse when software modifies field |
 | `swacc: true` | `<field>_swacc` | Pulse when software accesses field |
+
+**Same-cycle precedence**: when several sources update a field in the same clock, the generated regfile applies one fixed order: `hwclr` > `hwset` > hardware write with `we`/`wel` > software write or `onread` side effect > hardware write without `we`/`wel` (which happens every cycle). Hardware therefore beats a read side effect as it beats a software write, so a `hwset` in the same clock as an `rclr` read leaves the field set and the event is not lost. This is the fixed default. The configurable `precedence` property stays deferred (see below).
 
 **Inheritance**: access modes set at register level act as defaults, overridable per field. Unspecified field properties inherit from the register default.
 
@@ -152,7 +154,7 @@ json_parser(file) -> Settings -> Bus -> Module(json, bus, settings)
                                           -> generate_output(...)  (bust/generation.py)
 ```
 
-`generate_output` creates the project directory tree (controlled by `Settings`) and writes every artifact: the local-bus VHDL stack and testbench, language headers, and documentation. The CLI flags (`-f/-F/-d/-p/-i/-a/-c/-e`) toggle artifacts and overwrite behaviour; local-bus generation is always on. The docopt usage string at the top of `__main__.py` is the source of truth for the interface.
+`generate_output` creates the project directory tree (controlled by `Settings`) and writes every artifact: the local-bus VHDL stack and testbench, language headers, and documentation. The CLI flags (`-f/-F/-d/-p/-i/-a/-c/-e`) toggle artifacts and overwrite behaviour; local-bus generation is always on. Before writing anything, `generate_output` refuses (non-zero exit) to replace a top-level `<module>.vhd` that still has the bust 0.14 `-- User ... Start/End` markers, since 0.14 kept user logic there. The docopt usage string at the top of `__main__.py` is the source of truth for the interface.
 
 ## Package layout
 

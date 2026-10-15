@@ -8,6 +8,8 @@ import json
 import os
 import re
 
+import pytest
+
 from bust.core.bus import Bus
 from bust.core.module import Module
 from bust.generators.factory import GeneratorFactory
@@ -203,7 +205,7 @@ def test_axi_and_ipbus_testbenches_share_the_test_body():
     for marker in (
         'bus_check(f_addr(C_ADDR_REG7), 32x"00000A5A", "reg7 applies onwrite effects");',
         'bus_check(f_addr(C_ADDR_REG4), 32x"0000000A", "reg4 reflects hwclr");',
-        "reg10.field0 singlepulse high exactly one cycle",
+        "reg10.field0 singlepulse lasts exactly one cycle",
     ):
         assert marker in axi
         assert marker in ipbus
@@ -584,3 +586,167 @@ def test_strobe_read_of_hw_written_field_returns_the_hw_input():
     )
     assert module.registers[0].is_hw_driven_readback
     assert _strobe_read(module) == '32x"00000005"'
+
+
+def test_singlepulse_returns_to_its_reset_value():
+    module = _fields_module(
+        {"name": "go", "type": "vector", "width": 4, "reset": "0xa"},
+        sw="wo",
+        hw="r",
+        singlepulse=True,
+    )
+    regfile = GeneratorFactory.generate_regfile_vhdl(module)
+    assert 'regs.r.go <= 4X"A";' in regfile
+    assert "regs.r.go <= (others => '0');" not in regfile
+
+
+def test_singlepulse_testbench_detects_the_pulse_against_the_reset_value():
+    """The monitor counts cycles away from the reset value, and the strobe test
+    writes the inverse of the reset so every bit of the pulse is visible."""
+    module = _fields_module(
+        {"name": "go", "type": "vector", "width": 4, "reset": "0xa"},
+        {"name": "arm", "type": "bit", "reset": "0x1"},
+        sw="wo",
+        hw="r",
+        singlepulse=True,
+    )
+    tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
+    assert 'signal r_go_sp_value : std_logic_vector(3 downto 0) := 4X"A";' in tb
+    assert 'if to_hw.r.go /= 4x"A" then' in tb
+    assert "if to_hw.r.arm /= '1' then" in tb
+    # go=0x5 (inverse of 0xA) in bits 3:0, arm=0 (inverse of 1) in bit 4.
+    assert 'bus_write(f_addr(C_ADDR_R), 32x"00000005", "write r");' in tb
+    assert 'check_value(r_go_sp_value, 4x"5", error,' in tb
+    assert "check_value(r_arm_sp_value, '0', error," in tb
+
+
+def test_readable_singlepulse_reads_back_its_reset_value():
+    module = _fields_module(
+        {"name": "acc", "type": "vector", "width": 4, "swacc": True},
+        {
+            "name": "go",
+            "type": "vector",
+            "width": 4,
+            "reset": "0xa",
+            "singlepulse": True,
+        },
+        sw="rw",
+        hw="r",
+    )
+    reg = module.registers[0]
+    assert reg.fields[1].written_result(0x5) == 0xA
+    assert not reg.reads_back_zero
+    # acc=0xF, go back at its reset 0xA after the pulse of 0x5.
+    assert reg.strobe_write_value_vhdl == '32x"0000005F"'
+    assert _strobe_read(module) == '32x"000000AF"'
+
+
+def test_write_only_singlepulse_with_nonzero_reset_still_reads_back_zero():
+    module = _fields_module(
+        {"name": "go", "type": "vector", "width": 4, "reset": "0xa"},
+        sw="wo",
+        hw="r",
+        singlepulse=True,
+    )
+    assert module.registers[0].reads_back_zero
+
+
+def _p_write(module):
+    regfile = GeneratorFactory.generate_regfile_vhdl(module)
+    return regfile[regfile.index("p_write : process") : regfile.index("end process")]
+
+
+def test_hardware_updates_override_onread_effects_in_the_same_cycle():
+    """In p_write the last assignment wins, so each register's onread effects
+    must come before its hwclr/hwset/we chain: a hardware set in the cycle of a
+    read clear is then kept, not lost."""
+    module = _fields_module(
+        {"name": "f", "type": "bit", "hwset": True, "hwclr": True, "onread": "rclr"},
+        {
+            "name": "g",
+            "type": "vector",
+            "width": 4,
+            "hw": "rw",
+            "we": True,
+            "onread": "rset",
+        },
+        sw="rw",
+        hw="r",
+    )
+    p_write = _p_write(module)
+    onread = p_write.index("if rd_service and sel_is(sel, C_ADDR_R) then")
+    assert onread < p_write.index("if from_hw.r.f.clr = '1' then")
+    assert onread < p_write.index("if from_hw.r.g.we = '1' then")
+    assert p_write.count("rd_service and sel_is(sel, C_ADDR_R)") == 1
+
+
+def test_sticky_flag_testbench_checks_hwset_against_the_read_clear():
+    """With hwset held through a read, the value sampled with the swacc strobe
+    is what the colliding cycle left: set, with hardware taking precedence."""
+    module = _fields_module(
+        {
+            "name": "pending",
+            "type": "bit",
+            "hwset": True,
+            "onread": "rclr",
+            "swacc": True,
+        },
+        sw="ro",
+        hw="r",
+    )
+    assert module.registers[0].is_hwset_read_clear_register
+    tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
+    assert "r_pending_at_swacc <= to_hw.r.pending.value;" in tb
+    sequence = tb[tb.index("hwset beats a read clear") :]
+    assert sequence.index("from_hw.r.pending.set <= '1';") < sequence.index(
+        'bus_check(f_addr(C_ADDR_R), 32x"00000001", "r read while hwset is held");'
+    )
+    assert "check_value(r_pending_at_swacc, '1', error," in sequence
+    assert 'bus_check(f_addr(C_ADDR_R), 32x"0", "r cleared by a read' in sequence
+
+
+@pytest.mark.parametrize(
+    "change",
+    [{"swacc": False}, {"onread": "rset"}, {"hw": "rw", "we": True}],
+    ids=["no-swacc", "rset", "hw-write"],
+)
+def test_sticky_flag_check_needs_hwset_rclr_swacc_and_no_hw_write(change):
+    field = dict(
+        {"name": "f", "type": "bit", "hwset": True, "onread": "rclr", "swacc": True},
+        **change,
+    )
+    module = _fields_module(field, sw="ro", hw="r")
+    assert not module.registers[0].is_hwset_read_clear_register
+
+
+def test_enum_without_a_zero_literal_reports_the_reset_hardware_uses():
+    """Without a reset or a literal of value 0, hardware resets to the first
+    literal. Headers, docs and the register reset must say the same."""
+    from bust.generators.header_generator import Header
+
+    states = [{"name": "LOW", "value": 1}, {"name": "HIGH", "value": 2}]
+    module = _fields_module(
+        {"name": "lo", "type": "vector", "width": 4},
+        {"name": "mode", "type": "vector", "width": 2, "enums": states},
+        sw="rw",
+        hw="r",
+    )
+    reg = module.registers[0]
+    assert reg.fields[1].reset == "0x1"
+    assert reg.reset == "0x10"
+    assert "reset" not in reg.fields[1].return_dic()
+
+    pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
+    assert "r => (lo => (others => '0'), mode => LOW));" in pkg
+    header = Header(module)
+    assert "#define R_RESET 0x10" in header.generate_c_header()
+    assert "#define R_MODE_RESET 0x1" in header.generate_c_header()
+    assert "const uint32_t R_MODE_RESET = 0x1;" in header.generate_cpp_header()
+    assert "R_MODE_RESET = 0x1" in header.generate_python_header()
+
+    pytest.importorskip("pylatexenc")
+    from bust.generators.documentation_generator import Documentation
+
+    tex = Documentation(module).generate_tex_documentation()
+    assert "\\regfield{mode}{2}{4}{{0x1}}" in tex
+    assert "& \\texttt{0x10} \\\\" in tex

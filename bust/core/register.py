@@ -2,8 +2,7 @@
 
 This module defines the Register class, which represents a memory-mapped
 register within a bus slave module. Registers can have various types
-(default, vector, bit, fields), access modes (RW, RO, PULSE), and optional
-features like stall cycles.
+(default, vector, bit, fields) and access modes (RW, RO, PULSE).
 
 Each register has a fixed address, configurable width, reset value, and
 can optionally contain multiple named bitfields.
@@ -17,15 +16,18 @@ from bust.exceptions import (
     ModuleDataBitsExceeded,
     UndefinedRegisterType,
     InvalidRegisterFormat,
-    InvalidStallValue,
     InvalidFieldFormat,
 )
 from bust.core.field import Field
-from bust.core.legacy_schema import register_access_defaults, uses_new_schema
+from bust.core.legacy_schema import (
+    register_access_defaults,
+    reject_unsupported_timing,
+    uses_new_schema,
+)
 from bust.utils.formatting import indent_string
 from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
 from bust.validation.config_validator import ConfigWrapper
-from bust.core.enums import RegisterMode, RegisterType, SwAccess, HwAccess
+from bust.core.enums import OnRead, RegisterMode, RegisterType, SwAccess, HwAccess
 
 # Register-level access summarised from its fields, keyed by
 # (any field readable, any field writable).
@@ -59,9 +61,6 @@ class Register:
         width: Data width in bits.
         reset: Reset value as hex string.
         description: Optional description of the register's purpose.
-        pulse_cycles: Duration of pulse signal for PULSE mode.
-        stall_cycles: Number of stall cycles (IPBus only, 2-255).
-        stall: True if stall_cycles > 0.
         fields: List of Field objects for FIELDS type registers.
         module_name: Name of parent module.
         module_data_width: Data width of parent module.
@@ -80,16 +79,16 @@ class Register:
                 - width: Bit width (default: module_data_width)
                 - reset: Reset value as hex string (default: "0x0")
                 - description: Register description (default: "")
-                - pulse_cycles: Pulse duration for PULSE mode (default: 1)
-                - stall_cycles: Stall cycles for IPBus (default: 0, range: 0 or 2-255)
+                - pulse_cycles: Legacy pulse duration, accepted only as 1
+                - stall_cycles: Legacy IPBus stall, accepted only as 0
                 - fields: List of field dictionaries for FIELDS type
             address: Memory address for this register.
             module_name: Name of the parent module.
             module_data_width: Data width of the parent module.
 
         Raises:
-            InvalidRegisterFormat: If reset value doesn't match width or is invalid.
-            InvalidStallValue: If stall_cycles is not 0 or between 2-255.
+            InvalidRegisterFormat: If reset value doesn't match width or is invalid,
+                or pulse_cycles/stall_cycles ask for timing bust 1.0 cannot honour.
             ModuleDataBitsExceeded: If register width exceeds module data width.
             UndefinedRegisterType: If register type is not supported.
             ValueError: If register name is not a valid VHDL identifier.
@@ -110,13 +109,12 @@ class Register:
                 "type": RegisterType.DEFAULT.value,
                 "width": module_data_width,
                 "reset": "0x0",
-                "pulse_cycles": 1,
-                "stall_cycles": 0,
             },
         )
 
         self.name = self._config.require("name")
         is_valid_VHDL(self.name)
+        reject_unsupported_timing(reg)
 
         self.description: str = self._config.get("description")
         self.mode = RegisterMode.from_string(self._config.get("mode"))
@@ -133,14 +131,6 @@ class Register:
             "width"
         )  # Width can be overridden depending on register type
         self.reset = self._config.get("reset")
-        self.pulse_cycles = self._config.get("pulse_cycles")
-        self.stall_cycles = self._config.get("stall_cycles")
-        self.stall = self.stall_cycles > 0
-
-        # If set, stall cycles must be between 2 and 255
-        if self.stall:
-            if self.stall_cycles < 2 or self.stall_cycles > 255:
-                raise InvalidStallValue(self.stall_cycles)
 
         # bust 1.0 access-mode defaults the register's fields inherit. Legacy `mode`
         # registers are translated onto sw/hw here (see legacy_schema). Fields
@@ -251,10 +241,11 @@ class Register:
         dic["name"] = self.name
         if self._config.is_set("mode"):
             dic["mode"] = self.mode.value
-            if self.mode == RegisterMode.PULSE:
-                dic["pulse_cycles"] = self.pulse_cycles
         elif self.uses_new_schema:
             dic.update(self.access_defaults)
+        # Only the no-op values (pulse_cycles 1, stall_cycles 0) get this far.
+        if self._config.is_set("pulse_cycles"):
+            dic["pulse_cycles"] = self._config.get("pulse_cycles")
         dic["type"] = self.type.value
         if include_address:
             dic["address"] = hex(self.address)
@@ -262,8 +253,8 @@ class Register:
             dic["width"] = self.width
         if self.type != RegisterType.FIELDS:
             dic["reset"] = self.reset
-        if self.stall:
-            dic["stall_cycles"] = self.stall_cycles
+        if self._config.is_set("stall_cycles"):
+            dic["stall_cycles"] = self._config.get("stall_cycles")
         if self.type == RegisterType.FIELDS:
             dic["fields"] = [field.return_dic() for field in self.fields]
         dic["description"] = self.description
@@ -457,13 +448,14 @@ class Register:
 
     @property
     def reads_back_zero(self) -> bool:
-        """True when a software read returns 0 after a write (write-only or singlepulse)."""
+        """True when a software read returns 0 after a write: write-only fields,
+        and singlepulse fields that return to a reset value of 0."""
         fields = self.effective_fields
         return (
             bool(fields)
             and any(f.sw_writable for f in fields)
             and all(
-                (f.singlepulse or not f.sw_readable)
+                (not f.sw_readable or (f.singlepulse and f.reset_state == 0))
                 and f.onread is None
                 and f.onwrite is None
                 and not f.is_enum
@@ -678,6 +670,21 @@ class Register:
             for f in fields
         )
 
+    @property
+    def is_hwset_read_clear_register(self) -> bool:
+        """Single sticky field (hwset, onread rclr, swacc) with no hardware value
+        write. Its swacc strobe is high in the cycle after a read clear, so a
+        testbench holding hwset through a read can sample there whether the set
+        or the clear won that cycle, without knowing the bus timing."""
+        fields = self.effective_fields
+        return (
+            len(fields) == 1
+            and fields[0].hwset
+            and fields[0].onread is OnRead.RCLR
+            and fields[0].swacc
+            and not fields[0].hw_writable
+        )
+
     def _hw_input_during_selftest(self, f: Field) -> int:
         """from_hw value the generated testbench holds on a hardware-written field.
 
@@ -711,13 +718,24 @@ class Register:
             return alternating
         return f.reset_state
 
+    @staticmethod
+    def _strobe_write(f: Field) -> int:
+        """Field-local value the strobe test writes: every bit set, except that a
+        singlepulse field gets the inverse of its reset so its pulse is visible."""
+        return f.pulse_test_value if f.singlepulse else (1 << int(f.width)) - 1
+
+    @property
+    def strobe_write_value_vhdl(self) -> str:
+        """Data-width literal the strobe test writes (see _strobe_write)."""
+        return self._data_width_literal(self._register_value(self._strobe_write))
+
     @property
     def strobe_readback_value_vhdl(self) -> str:
-        """Data-width literal the strobe test reads back after its self-test write.
+        """Data-width literal the strobe test reads back after its write.
 
         Each field starts from what the earlier self-tests left in it and takes the
-        write (every field bit set) through its own write predictor, so onwrite
-        effects, enum decoding, singlepulse self-clear and read-only fields in the
+        write through its own write predictor, so onwrite effects, enum decoding,
+        a singlepulse returning to its reset value and read-only fields in the
         same register are all accounted for. A field hardware writes every cycle
         shows its from_hw input again by the time of the read.
         """
@@ -728,7 +746,7 @@ class Register:
             before = self._value_before_strobe_test(f)
             if f.hw_writes_continuously:
                 return before
-            return f.written_result((1 << int(f.width)) - 1, before)
+            return f.written_result(self._strobe_write(f), before)
 
         return self._data_width_literal(self._register_value(readback))
 
@@ -920,22 +938,3 @@ class Register:
             return last_pos_high + 1
         else:
             return 0
-
-    def return_stall_string(self) -> str:
-        """Return stall indicator string for documentation.
-
-        Returns:
-            "/STALL" if stall is enabled, empty string otherwise.
-        """
-        if self.stall:
-            return "/STALL"
-        else:
-            return ""
-
-    def get_stall_cycles_str(self) -> str:
-        """Return stall cycles count adjusted for VHDL representation.
-
-        Returns:
-            String representation of stall_cycles - 2 (VHDL encoding offset).
-        """
-        return str(self.stall_cycles - 2)
