@@ -1,0 +1,110 @@
+-- Generated UVVM testbench for the {{ module.name }} module (SBI).
+-- Drives the {{ module.name }} top entity with the stock Bitvis SBI VIP and
+-- self-checks every register whose behaviour the prototype exercises: plain
+-- read-write, enumerated, write-only/singlepulse (reads back 0), onread/onwrite
+-- software side effects, software-readonly registers driven from from_hw
+-- (we/wel), the hardware we override / hwset / hwclr modifiers, the to_hw values
+-- the hardware sees, and the swmod/swacc/singlepulse to_hw strobe pulses (counted
+-- by a monitor process, since they are single-cycle).
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+library uvvm_util;
+context uvvm_util.uvvm_util_context;
+
+library bitvis_vip_sbi;
+use bitvis_vip_sbi.sbi_bfm_pkg.all;
+
+use work.{{ module.name }}_localbus_pkg.all;
+use work.{{ module.name }}_regfile_pkg.all;
+
+entity {{ module.name }}_tb is
+end entity {{ module.name }}_tb;
+
+architecture tb of {{ module.name }}_tb is
+
+  constant C_SCOPE      : string := C_TB_SCOPE_DEFAULT;
+  constant C_CLK_PERIOD : time   := 10 ns;
+
+  constant C_BASE : std_logic_vector({{ module.addr_width - 1 }} downto 0) := {{ module.addr_width }}x"0";
+
+  signal clk   : std_logic := '0';
+  signal reset : std_logic := '0';   -- active-high; gen_pulse asserts it
+{% include "vhdl/testbench/localbus_tb/hw_signals.j2" %}
+
+  constant C_DATA_W : natural := {{ module.data_width }};
+  constant C_ADDR_W : natural := {{ module.addr_width }};
+  signal sbi_if : t_sbi_if(addr(C_ADDR_W-1 downto 0),
+                           wdata(C_DATA_W-1 downto 0),
+                           rdata(C_DATA_W-1 downto 0))
+                  := init_sbi_if_signals(C_ADDR_W, C_DATA_W);
+  signal sbi_bfm_config : t_sbi_bfm_config := C_SBI_BFM_CONFIG_DEFAULT;
+
+  function f_addr(reg : std_logic_vector({{ module.addr_width - 1 }} downto 0)) return unsigned is
+  begin
+    return unsigned(C_BASE) + unsigned(reg);
+  end function;
+{% include "vhdl/testbench/localbus_tb/monitor_signals.j2" %}
+
+begin
+
+  clock_generator(clk, C_CLK_PERIOD);
+
+  DUT : entity work.{{ module.name }}
+    generic map (
+      G_BASE_ADDRESS       => unsigned(C_BASE),
+      G_CHECK_BASE_ADDRESS => true)
+    port map (
+      clk     => clk,
+      reset   => reset,
+      cs      => sbi_if.cs,
+      addr    => std_logic_vector(sbi_if.addr),
+      rena    => sbi_if.rena,
+      wena    => sbi_if.wena,
+      wdata   => sbi_if.wdata,
+      ready   => sbi_if.ready,
+      rdata   => sbi_if.rdata{% if module.to_hw_registers or module.from_hw_registers %},{% endif %}
+{% if module.to_hw_registers %}
+      to_hw   => to_hw{% if module.from_hw_registers %},{% endif %}
+{% endif %}
+{% if module.from_hw_registers %}
+      from_hw => from_hw{% endif %});
+{% include "vhdl/testbench/localbus_tb/monitor_process.j2" %}
+
+  p_main : process is
+
+    procedure bus_write(constant addr : in unsigned;
+                        constant data : in std_logic_vector;
+                        constant msg  : in string) is
+    begin
+      sbi_write(addr, data, msg, clk, sbi_if, C_SCOPE,
+                shared_msg_id_panel, sbi_bfm_config);
+    end procedure;
+
+    procedure bus_check(constant addr : in unsigned;
+                        constant data : in std_logic_vector;
+                        constant msg  : in string) is
+    begin
+      sbi_check(addr, data, msg, clk, sbi_if, error, C_SCOPE,
+                shared_msg_id_panel, sbi_bfm_config);
+    end procedure;
+{% include "vhdl/testbench/localbus_tb/snapshot_vars.j2" %}
+
+  begin
+    sbi_bfm_config.clock_period <= C_CLK_PERIOD;
+
+    disable_log_msg(ALL_MESSAGES, QUIET);
+    enable_log_msg(ID_LOG_HDR, QUIET);
+
+    gen_pulse(reset, '1', 500 ns, BLOCKING, "Reset for 500 ns");
+{% include "vhdl/testbench/localbus_tb/test_sequence.j2" %}
+
+    wait for 10*C_CLK_PERIOD;
+    report_alert_counters(FINAL);
+    log(ID_LOG_HDR, "SIMULATION COMPLETED", C_SCOPE);
+    std.env.stop;
+    wait;
+  end process p_main;
+
+end architecture tb;

@@ -1,0 +1,116 @@
+# Changelog
+
+All notable changes to this project are documented here. The format is based on
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
+adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Version
+strings use their PEP 440 form, so the first 1.0.0 alpha is `1.0.0a0`.
+
+Releases up to and including 0.14.1 predate this changelog. Their history is in
+the git log and on [PyPI](https://pypi.org/project/bust/#history).
+
+## [Unreleased]
+
+## [1.0.0a0] - 2026-10-15
+
+First pre-release of bust 1.0.0, for testing. Install it with
+`pip install --pre bust` or `pip install bust==1.0.0a0`. A plain
+`pip install bust` still installs 0.14.1.
+
+### Added
+- A local-bus architecture: every bus is a thin endpoint over one
+  protocol-agnostic local bus and register file, so the register-map logic is
+  the same for all of them. Each module is generated as
+  `<module>_localbus_pkg`, `<module>_regfile_pkg`, `<module>_regfile`,
+  `<module>_<bus>_endpoint` and a fixed `<module>` top wrapper. The local-bus
+  package is sized from and named after its module, so modules with different
+  address or data widths can be compiled into the same VHDL library.
+- SBI, Avalon-MM, Wishbone (B4 classic) and APB, alongside AXI4-Lite and IPBus.
+- A self-checking UVVM testbench generated for every bus. CI simulates each of
+  them with nvc.
+- Access modes aligned with SystemRDL: separate software (`sw`) and hardware
+  (`hw`) access per field, `onread` and `onwrite` side effects, `singlepulse`,
+  and the hardware modifiers `we`, `wel`, `hwset`, `hwclr`, `swmod` and
+  `swacc`. Access set on a register is the default for its fields, which can
+  override it.
+- Enumerated fields, generated as VHDL enumeration types.
+- Access-mode combinations the generator cannot render are rejected with an
+  error naming the register and field: an enumerated field with `onwrite`,
+  `onread`, `hwset`, `hwclr` or `singlepulse`; `swmod`, `swacc` or
+  `singlepulse` on a field hardware cannot read; and `singlepulse` together
+  with `onread` or on a field hardware writes every cycle.
+- The `G_BASE_ADDRESS` generic sets the base address when the module is
+  instantiated, and `G_CHECK_BASE_ADDRESS => false` leaves address decoding to
+  the instantiating design.
+- Python 3.12, 3.13 and 3.14 support. CI tests 3.9 to 3.14 and the 3.15
+  pre-release.
+- `scripts/smoke-test.sh`, which checks an installed bust against the committed
+  example outputs. CI runs it on the built wheel.
+- A release pipeline: publishing a GitHub Release runs the tests and the VHDL
+  simulations, builds the package, publishes it to TestPyPI, installs and
+  smoke-tests it from there, and then publishes the same files to PyPI with
+  Trusted Publishing.
+
+### Changed
+- Relicensed from MIT to the Apache License 2.0. The package metadata gives the
+  license as the SPDX expression `Apache-2.0`, and the wheel includes `LICENSE`
+  and `NOTICE`.
+- JSON that uses the old `mode` keyword is still accepted and translated to
+  `sw` and `hw` access.
+- A `singlepulse` field returns to its reset value one clock after a software
+  write, not to 0, so a pulse field with a non-zero reset idles at that value.
+  A 0.14 `pulse` register becomes a `singlepulse` field and so still returns to
+  its reset value as in 0.14, but after one cycle (see `pulse_cycles` under
+  Removed).
+- When a hardware update (`hwclr`, `hwset`, or a `we`/`wel` write) and a
+  software read side effect (`onread: rclr` or `rset`) hit a field in the same
+  clock, the hardware update wins, as it already did over a software write. A
+  `hwset` that coincides with an `rclr` read is no longer lost.
+- The top-level `<module>` VHDL file is a fixed wrapper that bust regenerates,
+  so `-f` overwrites it like any other file. `-F` is kept as an alias of `-f`.
+  In 0.14 that file held user logic between `-- User ... Start/End` markers
+  and `-f` left it alone. bust now stops with an error, before writing
+  anything, instead of overwriting a top-level file that still has those
+  markers. Move that logic into your own design, where it connects through the
+  `to_hw`/`from_hw` records, then delete or rename the old file.
+- The supported buses are described in one data-driven registry table, so
+  adding a single-beat bus takes a new table entry plus its endpoint and
+  testbench templates.
+- IPBus modules must use a `data_width` of 32 and an `addr_width` of at most
+  32. Other values are rejected with an error instead of generating VHDL that
+  does not compile.
+- The IPBus address table lists only registers and fields that software can
+  reach, with permissions taken from the fields' effective access.
+- bumpversion no longer creates the version tag. The GitHub Release does.
+
+### Removed
+- The legacy per-protocol "PIF" generation path. Local-bus generation is the
+  only path.
+- The `-u`, `-b`, `-t` and `-m` command-line options, which belonged to the PIF
+  path.
+- The generated ModelSim/QuestaSim TCL simulation scripts. Choosing a simulator
+  and flow is left to the user.
+- Multi-cycle pulses and IPBus stalls from 0.14. The 1.0 register file drives a
+  pulse for one cycle and answers every access in one cycle, so `pulse_cycles`
+  other than 1 and `stall_cycles` other than 0 are rejected with an error
+  naming the register, instead of being dropped while the LaTeX documentation
+  and the IPBus address table still printed them. Remove both keys from 0.14
+  JSON. `pulse_cycles: 1` and `stall_cycles: 0` are accepted and have no
+  effect.
+
+### Fixed
+- An enumerated field with no `reset` and no literal of value 0 resets to its
+  first literal in hardware, but the C/C++/Python headers and the LaTeX
+  documentation reported a reset of 0. They now report the reset hardware uses.
+- The IPBus address table gives each field node its own permission. A
+  read-only field in a read-write register was writable through uHAL.
+- The interactive editor (`-c`, `-e`) failed to add a register when its address
+  was entered by hand.
+- `bust --help` and the README named the command `bust.py`. The installed
+  command is `bust`.
+- `python -m build` and `pip install -e .` failed on the reworked source tree,
+  because setuptools also took the new `hdl/` and `sim/` directories for
+  packages. The wheel also left out the Jinja2 templates, without which an
+  installed bust cannot generate anything.
+
+[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0a0...HEAD
+[1.0.0a0]: https://github.com/logvik-org/bust/compare/0d2a394f4710dd007be031b2b05c1bce4f35d56b...v1.0.0a0

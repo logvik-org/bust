@@ -16,10 +16,8 @@ Filters defined:
 - get_reset_value: Returns the formatted VHDL reset value for registers.
 
 Copyright (c) 2025 Grottviq
-All rights reserved.
+Licensed under the Apache License, Version 2.0. See the LICENSE file for details.
 """
-
-from pylatexenc.latexencode import utf8tolatex as _utf8tolatex
 
 
 def indent_all(text, spaces=4):
@@ -35,8 +33,16 @@ def hex_format(value, width):
     return f"{value:0{width}X}"
 
 
+def to_binary(value, width):
+    """Format an integer as a width-bit binary string for VHDL literals."""
+    return f"{value:0{width}b}"
+
+
 def utf8tolatex(text):
     """Convert UTF-8 text to LaTeX-safe encoding."""
+    # Imported lazily so VHDL/header rendering does not require pylatexenc.
+    from pylatexenc.latexencode import utf8tolatex as _utf8tolatex
+
     return _utf8tolatex(text)
 
 

@@ -11,7 +11,7 @@ import json
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Dict, List, cast
 
-from bust.core.enums import RegisterMode, RegisterType
+from bust.core.enums import RegisterMode
 from bust.exceptions import InvalidAddress, InvalidRegister
 from bust.core.register import Register
 from bust.utils.formatting import indent_string
@@ -20,6 +20,7 @@ from bust.validation.config_validator import ConfigWrapper
 
 if TYPE_CHECKING:
     from bust.core.bus import Bus
+    from bust.core.field import Field
     from bust.settings import Settings
 
 
@@ -36,7 +37,7 @@ class Module:
         description: Optional module description.
         version: Module version string.
         git_hash: Git commit hash (currently unused).
-        byte_addressable: Whether addresses are byte-based (True for AXI).
+        byte_addressable: Whether addresses are byte-based (defaults to the bus).
         addr_width: Address bus width in bits.
         data_width: Data bus width in bits.
         bus: Bus configuration instance.
@@ -54,7 +55,7 @@ class Module:
                 - description: Module description (default: "")
                 - version: Version string (default: "")
                 - git_hash: Git hash for tracking (optional)
-                - byte_addressable: Use byte addressing (default: True for AXI)
+                - byte_addressable: Use byte addressing (default: from the bus)
                 - register: List of register configurations (required)
             bus: Bus interface configuration.
             settings: Project-wide settings.
@@ -81,7 +82,7 @@ class Module:
                 "description": "",
                 "version": "",
                 "git_hash": None,
-                "byte_addressable": bus.bus_type == "axi",
+                "byte_addressable": bus.byte_addressable,
             },
         )
 
@@ -98,10 +99,6 @@ class Module:
         self.data_width = bus.data_width
 
         for reg in mod["register"]:
-            if "stall_cycles" in reg and bus.bus_type != "ipbus":
-                raise NotImplementedError(
-                    "Stall cycles has not been implemented for other buses than IPBus..."
-                )
             self.add_register(reg)
 
     def add_register(self, reg: Dict) -> None:
@@ -130,12 +127,22 @@ class Module:
             try:
                 self.registers.append(Register(reg, addr, self.name, self.data_width))
             except Exception as e:
-                self.logger.error(str(e))
+                self.logger.error(
+                    f"Failed to parse register {reg.get('name', '<unknown>')}: "
+                    f"{type(e).__name__}: {e}"
+                )
                 raise InvalidRegister(reg) from e
 
         else:
             addr = self.get_next_address()
-            self.registers.append(Register(reg, addr, self.name, self.data_width))
+            try:
+                self.registers.append(Register(reg, addr, self.name, self.data_width))
+            except Exception as e:
+                self.logger.error(
+                    f"Failed to parse register {reg.get('name', '<unknown>')}: "
+                    f"{type(e).__name__}: {e}"
+                )
+                raise InvalidRegister(reg) from e
 
     def get_next_address(self) -> int:
         """Find next available register address.
@@ -226,6 +233,42 @@ class Module:
             reg.address = addr
 
     @property
+    def stored_registers(self) -> List[Register]:
+        """Registers with at least one state-holding field."""
+        return [reg for reg in self.registers if reg.stored_fields]
+
+    @property
+    def to_hw_registers(self) -> List[Register]:
+        """Registers with at least one hardware-readable field."""
+        return [reg for reg in self.registers if reg.in_to_hw]
+
+    @property
+    def from_hw_registers(self) -> List[Register]:
+        """Registers with at least one hardware-driven field."""
+        return [reg for reg in self.registers if reg.in_from_hw]
+
+    @property
+    def strobe_registers(self) -> List[Register]:
+        """Registers with a swmod/swacc/singlepulse to_hw strobe output."""
+        return [reg for reg in self.registers if reg.has_strobes]
+
+    @property
+    def enum_fields(self) -> List["Field"]:
+        """Every enumerated field across the module, in register order."""
+        return [field for reg in self.registers for field in reg.enum_fields]
+
+    @property
+    def register_select_width(self) -> int:
+        """Bits needed to decode this module's register window (C_MODULE_ADDR_WIDTH).
+
+        Covers the span from offset 0 to the last register plus one stride, so the
+        window is a power-of-two byte range the base address must align to.
+        """
+        stride = self.data_width // 8 if self.byte_addressable else 1
+        top = max((reg.address for reg in self.registers), default=0) + stride
+        return max(1, (top - 1).bit_length())
+
+    @property
     def num_ro_regs(self) -> int:
         """Count of read-only registers.
 
@@ -252,17 +295,6 @@ class Module:
         """
         return sum(1 for reg in self.registers if reg.mode == RegisterMode.PULSE)
 
-    def has_stall_regs(self) -> bool:
-        """Check if any register uses stall cycles.
-
-        Returns:
-            True if at least one register has stall enabled.
-        """
-        if len([reg for reg in self.registers if reg.stall]) > 0:
-            return True
-        else:
-            return False
-
     def __str__(self) -> str:
         string = "Name: " + self.name + "\n"
         string += "Address width: " + str(self.addr_width) + "\n"
@@ -275,6 +307,9 @@ class Module:
 
     def to_json(self, include_address: bool = False) -> str:
         """Export complete module configuration as JSON string.
+
+        Every register is written in the schema it was authored in (see
+        Register.to_json), so parsing the output rebuilds an identical module.
 
         Args:
             include_address: Whether to include explicit address values in output
@@ -295,42 +330,10 @@ class Module:
         mod["description"] = self.description
         if self.git_hash is not None:
             mod["git_hash"] = self.git_hash
+        if self._config.is_set("byte_addressable"):
+            mod["byte_addressable"] = self.byte_addressable
 
-        mod["register"] = []
-
-        for _, reg in enumerate(self.registers):
-            reg_dic = OrderedDict()
-
-            reg_dic["name"] = reg.name
-            reg_dic["mode"] = reg.mode.value
-            if reg.mode == RegisterMode.PULSE:
-                reg_dic["pulse_cycles"] = reg.pulse_cycles
-            reg_dic["type"] = reg.type.value
-
-            if include_address:
-                reg_dic["address"] = str(hex(reg.address))
-
-            if (
-                reg.type != RegisterType.DEFAULT
-                and reg.type != RegisterType.FIELDS
-                and reg.type != RegisterType.BIT
-            ):
-                reg_dic["width"] = reg.width
-
-            if reg.type != RegisterType.FIELDS:
-                reg_dic["reset"] = reg.reset
-
-            if reg.stall is True:
-                reg_dic["stall_cycles"] = reg.stall_cycles
-
-            if reg.type == RegisterType.FIELDS and len(reg.fields) > 0:
-                reg_dic["fields"] = []
-                for field in reg.fields:
-                    reg_dic["fields"].append(field.return_dic())
-
-            reg_dic["description"] = reg.description
-
-            mod["register"].append(reg_dic)
+        mod["register"] = [reg.to_json(include_address) for reg in self.registers]
 
         dic["module"] = mod
 

@@ -5,7 +5,7 @@ import tempfile
 import unittest
 
 from bust.interaction import AutomatedInteractionHandler
-from bust.utils.file_utils import update_module_top_level, write_string_to_file
+from bust.utils.file_utils import write_string_to_file
 
 
 class TestWriteStringToFile(unittest.TestCase):
@@ -95,90 +95,6 @@ class TestWriteStringToFile(unittest.TestCase):
             interaction_handler=_TrackingHandler("n"),
         )
         self.assertEqual(called, [])
-
-
-class TestUpdateModuleTopLevel(unittest.TestCase):
-    """Tests for update_module_top_level using AutomatedInteractionHandler."""
-
-    _VHDL_TEMPLATE = """\
--- User Libraries Start
--- User Libraries End
--- User Generics Start
--- User Generics End
--- User Ports Start
--- User Ports End
--- User Architecture Start
--- User Architecture End
--- User Logic Start
--- User Logic End
-"""
-
-    _VHDL_WITH_USER_CONTENT = """\
--- User Libraries Start
-library ieee_extras;
--- User Libraries End
--- User Generics Start
--- User Generics End
--- User Ports Start
--- User Ports End
--- User Architecture Start
--- User Architecture End
--- User Logic Start
-  my_signal <= '1';
--- User Logic End
-"""
-
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-
-    def _write(self, filename, content):
-        path = os.path.join(self.tmpdir, filename)
-        with open(path, "w") as f:
-            f.write(content)
-        return path
-
-    def test_returns_new_top_level_when_file_missing(self):
-        result = update_module_top_level(
-            "/nonexistent/path/module.vhd",
-            self._VHDL_TEMPLATE,
-            interaction_handler=AutomatedInteractionHandler("y"),
-        )
-        self.assertEqual(result, self._VHDL_TEMPLATE)
-
-    def test_merges_user_sections_and_proceeds(self):
-        existing = self._write("module.vhd", self._VHDL_WITH_USER_CONTENT)
-        result = update_module_top_level(
-            existing,
-            self._VHDL_TEMPLATE,
-            interaction_handler=AutomatedInteractionHandler("y"),
-        )
-        self.assertIn("library ieee_extras;", result)
-        self.assertIn("my_signal <= '1';", result)
-
-    def test_raises_when_user_cancels_update(self):
-        existing = self._write("module.vhd", self._VHDL_WITH_USER_CONTENT)
-        with self.assertRaises(Exception) as ctx:
-            update_module_top_level(
-                existing,
-                self._VHDL_TEMPLATE,
-                interaction_handler=AutomatedInteractionHandler("n"),
-            )
-        self.assertIn("Cancelled", str(ctx.exception))
-
-    def test_preview_does_not_affect_return_value(self):
-        existing = self._write("module.vhd", self._VHDL_WITH_USER_CONTENT)
-        # "y" → preview printed AND proceed; "" → no preview AND proceed
-        result_with_preview = update_module_top_level(
-            existing,
-            self._VHDL_TEMPLATE,
-            interaction_handler=AutomatedInteractionHandler("y"),
-        )
-        result_without_preview = update_module_top_level(
-            existing,
-            self._VHDL_TEMPLATE,
-            interaction_handler=AutomatedInteractionHandler(""),
-        )
-        self.assertEqual(result_with_preview, result_without_preview)
 
 
 if __name__ == "__main__":

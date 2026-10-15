@@ -39,7 +39,7 @@ GTKWAVE_RUN := docker run --rm \
     -v "$(WAVES_DIR):/waves:ro" \
     $(GTKWAVE_IMAGE)
 
-.PHONY: help build rebuild sim-ipbus sim-axi wave-ipbus wave-axi gtkwave clean
+.PHONY: help build rebuild sim-ipbus sim-axi sim-prototype sim-prototype-generated sim-prototype-axi sim-prototype-axi-generated sim-prototype-tb-generated sim-prototype-ipbus sim-prototype-ipbus-generated sim-prototype-ipbus-tb-generated sim-prototype-sbi sim-prototype-sbi-generated sim-prototype-sbi-tb-generated sim-prototype-avalon sim-prototype-avalon-generated sim-prototype-avalon-tb-generated sim-prototype-wishbone sim-prototype-wishbone-generated sim-prototype-wishbone-tb-generated sim-prototype-apb sim-prototype-apb-generated sim-prototype-apb-tb-generated sim-access-matrix-tb-generated sim-multi-module-generated wave-ipbus wave-axi wave-prototype wave-prototype-generated wave-prototype-axi wave-prototype-ipbus wave-prototype-sbi wave-prototype-avalon wave-prototype-wishbone wave-prototype-apb gtkwave clean
 
 # Default target
 help:
@@ -50,8 +50,31 @@ help:
 	@echo "  make rebuild        Force-rebuild the image (no cache)"
 	@echo "  make sim-ipbus      Run the example_ipbus testbench"
 	@echo "  make sim-axi        Run the example_axi testbench"
+	@echo "  make sim-prototype  Run the prototype local-bus regfile testbench"
+	@echo "  make sim-prototype-generated  Run that testbench against the generated package"
+	@echo "  make sim-prototype-axi  Run the AXI-Lite wrapper testbench"
+	@echo "  make sim-prototype-axi-generated  Run that testbench against the generated AXI stack"
+	@echo "  make sim-prototype-tb-generated  Run the fully generated AXI stack incl. generated testbench"
+	@echo "  make sim-prototype-ipbus  Run the IPBus wrapper testbench"
+	@echo "  make sim-prototype-ipbus-generated  Run that testbench against the generated IPBus stack"
+	@echo "  make sim-prototype-ipbus-tb-generated  Run the fully generated IPBus stack incl. generated testbench"
+	@echo "  make sim-prototype-sbi  Run the SBI wrapper testbench"
+	@echo "  make sim-prototype-sbi-generated  Run that testbench against the generated SBI stack"
+	@echo "  make sim-prototype-sbi-tb-generated  Run the fully generated SBI stack incl. generated testbench"
+	@echo "  make sim-prototype-avalon  Run the Avalon-MM wrapper testbench"
+	@echo "  make sim-prototype-avalon-generated  Run that testbench against the generated Avalon stack"
+	@echo "  make sim-prototype-avalon-tb-generated  Run the fully generated Avalon stack incl. generated testbench"
+	@echo "  make sim-prototype-wishbone  Run the Wishbone wrapper testbench"
+	@echo "  make sim-prototype-wishbone-generated  Run that testbench against the generated Wishbone stack"
+	@echo "  make sim-prototype-wishbone-tb-generated  Run the fully generated Wishbone stack incl. generated testbench"
+	@echo "  make sim-prototype-apb  Run the APB wrapper testbench"
+	@echo "  make sim-prototype-apb-generated  Run that testbench against the generated APB stack"
+	@echo "  make sim-prototype-apb-tb-generated  Run the fully generated APB stack incl. generated testbench"
+	@echo "  make sim-access-matrix-tb-generated  Run the fully generated access-mode combination example"
+	@echo "  make sim-multi-module-generated      Run two generated modules compiled into one library"
 	@echo "  make wave-ipbus     Run example_ipbus + capture FST + open GTKWave"
 	@echo "  make wave-axi       Run example_axi  + capture FST + open GTKWave"
+	@echo "  make wave-prototype Run prototype    + capture FST + open GTKWave"
 	@echo "  make gtkwave FILE=<path>  Open any FST/VCD file in GTKWave"
 	@echo "  make clean          Remove the local Docker image"
 	@echo ""
@@ -86,6 +109,72 @@ sim-ipbus: _require-image
 sim-axi: _require-image
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh example_axi
 
+sim-prototype: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype
+
+sim-prototype-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_generated
+
+sim-prototype-axi: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_axi
+
+sim-prototype-axi-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_axi_generated
+
+sim-prototype-tb-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_tb_generated
+
+sim-prototype-ipbus: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_ipbus
+
+sim-prototype-ipbus-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_ipbus_generated
+
+sim-prototype-ipbus-tb-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_ipbus_tb_generated
+
+sim-prototype-sbi: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_sbi
+
+sim-prototype-sbi-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_sbi_generated
+
+sim-prototype-sbi-tb-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_sbi_tb_generated
+
+sim-prototype-avalon: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_avalon
+
+sim-prototype-avalon-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_avalon_generated
+
+sim-prototype-avalon-tb-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_avalon_tb_generated
+
+sim-prototype-wishbone: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_wishbone
+
+sim-prototype-wishbone-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_wishbone_generated
+
+sim-prototype-wishbone-tb-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_wishbone_tb_generated
+
+sim-prototype-apb: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_apb
+
+sim-prototype-apb-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_apb_generated
+
+sim-prototype-apb-tb-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_apb_tb_generated
+
+sim-access-matrix-tb-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh access_matrix_tb_generated
+
+sim-multi-module-generated: _require-image
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh multi_module_generated
+
 # ---------------------------------------------------------------------------
 # Waveform targets
 #
@@ -104,6 +193,41 @@ wave-axi: _require-image
 	@mkdir -p "$(WAVES_DIR)"
 	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh example_axi --wave=/work/sim/waves/example_axi.fst
 	$(GTKWAVE_RUN) gtkwave /waves/example_axi.fst
+
+wave-prototype: _require-image
+	@mkdir -p "$(WAVES_DIR)"
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype --wave=/work/sim/waves/prototype.fst
+	$(GTKWAVE_RUN) gtkwave /waves/prototype.fst
+
+wave-prototype-axi: _require-image
+	@mkdir -p "$(WAVES_DIR)"
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_axi --wave=/work/sim/waves/prototype_axi.fst
+	$(GTKWAVE_RUN) gtkwave /waves/prototype_axi.fst
+
+wave-prototype-ipbus: _require-image
+	@mkdir -p "$(WAVES_DIR)"
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_ipbus --wave=/work/sim/waves/prototype_ipbus.fst
+	$(GTKWAVE_RUN) gtkwave /waves/prototype_ipbus.fst
+
+wave-prototype-sbi: _require-image
+	@mkdir -p "$(WAVES_DIR)"
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_sbi --wave=/work/sim/waves/prototype_sbi.fst
+	$(GTKWAVE_RUN) gtkwave /waves/prototype_sbi.fst
+
+wave-prototype-avalon: _require-image
+	@mkdir -p "$(WAVES_DIR)"
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_avalon --wave=/work/sim/waves/prototype_avalon.fst
+	$(GTKWAVE_RUN) gtkwave /waves/prototype_avalon.fst
+
+wave-prototype-wishbone: _require-image
+	@mkdir -p "$(WAVES_DIR)"
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_wishbone --wave=/work/sim/waves/prototype_wishbone.fst
+	$(GTKWAVE_RUN) gtkwave /waves/prototype_wishbone.fst
+
+wave-prototype-apb: _require-image
+	@mkdir -p "$(WAVES_DIR)"
+	$(DOCKER_RUN) /work/sim/scripts/run_sim.sh prototype_apb --wave=/work/sim/waves/prototype_apb.fst
+	$(GTKWAVE_RUN) gtkwave /waves/prototype_apb.fst
 
 # Open any FST or VCD file with GTKWave.
 # Usage: make gtkwave FILE=sim/waves/example_axi.fst

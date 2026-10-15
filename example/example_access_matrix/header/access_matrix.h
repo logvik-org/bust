@@ -1,0 +1,534 @@
+#ifndef ACCESS_MATRIX_H
+#define ACCESS_MATRIX_H
+
+
+/* Register: plain */
+#define PLAIN_SW "rw"
+#define PLAIN_HW "r"
+#define PLAIN_WIDTH 8
+#define PLAIN_OFFSET 0x0
+#define PLAIN_RESET 0x0
+
+/* Field: flag */
+#define PLAIN_FLAG_OFFSET 0
+#define PLAIN_FLAG_WIDTH 1
+#define PLAIN_FLAG_RESET 0x0
+#define PLAIN_FLAG_MASK 0x1
+#define PLAIN_FLAG_SW "rw"
+#define PLAIN_FLAG_HW "r"
+
+/* Field: level */
+#define PLAIN_LEVEL_OFFSET 1
+#define PLAIN_LEVEL_WIDTH 3
+#define PLAIN_LEVEL_RESET 0x0
+#define PLAIN_LEVEL_MASK 0xe
+#define PLAIN_LEVEL_SW "rw"
+#define PLAIN_LEVEL_HW "r"
+
+/* Field: scratch */
+#define PLAIN_SCRATCH_OFFSET 4
+#define PLAIN_SCRATCH_WIDTH 4
+#define PLAIN_SCRATCH_RESET 0x0
+#define PLAIN_SCRATCH_MASK 0xf0
+#define PLAIN_SCRATCH_SW "rw"
+#define PLAIN_SCRATCH_HW "na"
+
+/* Register: status */
+#define STATUS_SW "ro"
+#define STATUS_HW "w"
+#define STATUS_WIDTH 6
+#define STATUS_OFFSET 0x4
+#define STATUS_RESET 0x0
+
+/* Field: busy */
+#define STATUS_BUSY_OFFSET 0
+#define STATUS_BUSY_WIDTH 1
+#define STATUS_BUSY_RESET 0x0
+#define STATUS_BUSY_MASK 0x1
+#define STATUS_BUSY_SW "ro"
+#define STATUS_BUSY_HW "w"
+
+/* Field: count */
+#define STATUS_COUNT_OFFSET 1
+#define STATUS_COUNT_WIDTH 4
+#define STATUS_COUNT_RESET 0x0
+#define STATUS_COUNT_MASK 0x1e
+#define STATUS_COUNT_SW "ro"
+#define STATUS_COUNT_HW "w"
+
+/* Field: fault */
+#define STATUS_FAULT_OFFSET 5
+#define STATUS_FAULT_WIDTH 1
+#define STATUS_FAULT_RESET 0x0
+#define STATUS_FAULT_MASK 0x20
+#define STATUS_FAULT_SW "ro"
+#define STATUS_FAULT_HW "w"
+
+/* Register: command */
+#define COMMAND_SW "wo"
+#define COMMAND_HW "r"
+#define COMMAND_WIDTH 4
+#define COMMAND_OFFSET 0x8
+#define COMMAND_RESET 0x0
+
+/* Field: opcode */
+#define COMMAND_OPCODE_OFFSET 0
+#define COMMAND_OPCODE_WIDTH 4
+#define COMMAND_OPCODE_RESET 0x0
+#define COMMAND_OPCODE_MASK 0xf
+#define COMMAND_OPCODE_SW "wo"
+#define COMMAND_OPCODE_HW "r"
+
+/* Register: identity */
+#define IDENTITY_SW "ro"
+#define IDENTITY_HW "r"
+#define IDENTITY_WIDTH 10
+#define IDENTITY_OFFSET 0xc
+#define IDENTITY_RESET 0x1a5
+
+/* Field: id */
+#define IDENTITY_ID_OFFSET 0
+#define IDENTITY_ID_WIDTH 8
+#define IDENTITY_ID_RESET 0xA5
+#define IDENTITY_ID_MASK 0xff
+#define IDENTITY_ID_SW "ro"
+#define IDENTITY_ID_HW "r"
+
+/* Field: pwr_default */
+#define IDENTITY_PWR_DEFAULT_OFFSET 8
+#define IDENTITY_PWR_DEFAULT_WIDTH 1
+#define IDENTITY_PWR_DEFAULT_RESET 0x1
+#define IDENTITY_PWR_DEFAULT_MASK 0x100
+#define IDENTITY_PWR_DEFAULT_SW "ro"
+#define IDENTITY_PWR_DEFAULT_HW "r"
+#define IDENTITY_PWR_DEFAULT_PWR_OFF 0
+#define IDENTITY_PWR_DEFAULT_PWR_ON 1
+
+/* Field: pwr_spare */
+#define IDENTITY_PWR_SPARE_OFFSET 9
+#define IDENTITY_PWR_SPARE_WIDTH 1
+#define IDENTITY_PWR_SPARE_RESET 0x0
+#define IDENTITY_PWR_SPARE_MASK 0x200
+#define IDENTITY_PWR_SPARE_SW "ro"
+#define IDENTITY_PWR_SPARE_HW "r"
+#define IDENTITY_PWR_SPARE_PWR_OFF 0
+#define IDENTITY_PWR_SPARE_PWR_ON 1
+
+/* Register: hw_modify */
+#define HW_MODIFY_SW "rw"
+#define HW_MODIFY_HW "rw"
+#define HW_MODIFY_WIDTH 5
+#define HW_MODIFY_OFFSET 0x10
+#define HW_MODIFY_RESET 0x0
+
+/* Field: override */
+#define HW_MODIFY_OVERRIDE_OFFSET 0
+#define HW_MODIFY_OVERRIDE_WIDTH 4
+#define HW_MODIFY_OVERRIDE_RESET 0x0
+#define HW_MODIFY_OVERRIDE_MASK 0xf
+#define HW_MODIFY_OVERRIDE_SW "rw"
+#define HW_MODIFY_OVERRIDE_HW "rw"
+
+/* Field: sticky */
+#define HW_MODIFY_STICKY_OFFSET 4
+#define HW_MODIFY_STICKY_WIDTH 1
+#define HW_MODIFY_STICKY_RESET 0x0
+#define HW_MODIFY_STICKY_MASK 0x10
+#define HW_MODIFY_STICKY_SW "rw"
+#define HW_MODIFY_STICKY_HW "r"
+
+/* Register: hw_set_clear */
+#define HW_SET_CLEAR_SW "rw"
+#define HW_SET_CLEAR_HW "rw"
+#define HW_SET_CLEAR_WIDTH 5
+#define HW_SET_CLEAR_OFFSET 0x14
+#define HW_SET_CLEAR_RESET 0x0
+
+/* Field: set_only */
+#define HW_SET_CLEAR_SET_ONLY_OFFSET 0
+#define HW_SET_CLEAR_SET_ONLY_WIDTH 4
+#define HW_SET_CLEAR_SET_ONLY_RESET 0x0
+#define HW_SET_CLEAR_SET_ONLY_MASK 0xf
+#define HW_SET_CLEAR_SET_ONLY_SW "ro"
+#define HW_SET_CLEAR_SET_ONLY_HW "w"
+
+/* Field: clr_only */
+#define HW_SET_CLEAR_CLR_ONLY_OFFSET 4
+#define HW_SET_CLEAR_CLR_ONLY_WIDTH 1
+#define HW_SET_CLEAR_CLR_ONLY_RESET 0x0
+#define HW_SET_CLEAR_CLR_ONLY_MASK 0x10
+#define HW_SET_CLEAR_CLR_ONLY_SW "rw"
+#define HW_SET_CLEAR_CLR_ONLY_HW "rw"
+
+/* Register: read_effects */
+#define READ_EFFECTS_SW "rw"
+#define READ_EFFECTS_HW "r"
+#define READ_EFFECTS_WIDTH 8
+#define READ_EFFECTS_OFFSET 0x18
+#define READ_EFFECTS_RESET 0x0
+
+/* Field: clear_on_read */
+#define READ_EFFECTS_CLEAR_ON_READ_OFFSET 0
+#define READ_EFFECTS_CLEAR_ON_READ_WIDTH 4
+#define READ_EFFECTS_CLEAR_ON_READ_RESET 0x0
+#define READ_EFFECTS_CLEAR_ON_READ_MASK 0xf
+#define READ_EFFECTS_CLEAR_ON_READ_SW "rw"
+#define READ_EFFECTS_CLEAR_ON_READ_HW "r"
+#define READ_EFFECTS_CLEAR_ON_READ_ONREAD "rclr"
+
+/* Field: set_on_read */
+#define READ_EFFECTS_SET_ON_READ_OFFSET 4
+#define READ_EFFECTS_SET_ON_READ_WIDTH 4
+#define READ_EFFECTS_SET_ON_READ_RESET 0x0
+#define READ_EFFECTS_SET_ON_READ_MASK 0xf0
+#define READ_EFFECTS_SET_ON_READ_SW "rw"
+#define READ_EFFECTS_SET_ON_READ_HW "r"
+#define READ_EFFECTS_SET_ON_READ_ONREAD "rset"
+
+/* Register: write_effects */
+#define WRITE_EFFECTS_SW "rw"
+#define WRITE_EFFECTS_HW "r"
+#define WRITE_EFFECTS_WIDTH 13
+#define WRITE_EFFECTS_OFFSET 0x1c
+#define WRITE_EFFECTS_RESET 0xf0
+
+/* Field: set_bits */
+#define WRITE_EFFECTS_SET_BITS_OFFSET 0
+#define WRITE_EFFECTS_SET_BITS_WIDTH 4
+#define WRITE_EFFECTS_SET_BITS_RESET 0x0
+#define WRITE_EFFECTS_SET_BITS_MASK 0xf
+#define WRITE_EFFECTS_SET_BITS_SW "rw"
+#define WRITE_EFFECTS_SET_BITS_HW "r"
+#define WRITE_EFFECTS_SET_BITS_ONWRITE "woset"
+
+/* Field: clear_bits */
+#define WRITE_EFFECTS_CLEAR_BITS_OFFSET 4
+#define WRITE_EFFECTS_CLEAR_BITS_WIDTH 4
+#define WRITE_EFFECTS_CLEAR_BITS_RESET 0xF
+#define WRITE_EFFECTS_CLEAR_BITS_MASK 0xf0
+#define WRITE_EFFECTS_CLEAR_BITS_SW "rw"
+#define WRITE_EFFECTS_CLEAR_BITS_HW "r"
+#define WRITE_EFFECTS_CLEAR_BITS_ONWRITE "woclr"
+
+/* Field: toggle_on_zero */
+#define WRITE_EFFECTS_TOGGLE_ON_ZERO_OFFSET 8
+#define WRITE_EFFECTS_TOGGLE_ON_ZERO_WIDTH 4
+#define WRITE_EFFECTS_TOGGLE_ON_ZERO_RESET 0x0
+#define WRITE_EFFECTS_TOGGLE_ON_ZERO_MASK 0xf00
+#define WRITE_EFFECTS_TOGGLE_ON_ZERO_SW "rw"
+#define WRITE_EFFECTS_TOGGLE_ON_ZERO_HW "r"
+#define WRITE_EFFECTS_TOGGLE_ON_ZERO_ONWRITE "wzt"
+
+/* Field: set_all */
+#define WRITE_EFFECTS_SET_ALL_OFFSET 12
+#define WRITE_EFFECTS_SET_ALL_WIDTH 1
+#define WRITE_EFFECTS_SET_ALL_RESET 0x0
+#define WRITE_EFFECTS_SET_ALL_MASK 0x1000
+#define WRITE_EFFECTS_SET_ALL_SW "rw"
+#define WRITE_EFFECTS_SET_ALL_HW "r"
+#define WRITE_EFFECTS_SET_ALL_ONWRITE "wset"
+
+/* Register: pulses */
+#define PULSES_SW "rw"
+#define PULSES_HW "r"
+#define PULSES_WIDTH 5
+#define PULSES_OFFSET 0x20
+#define PULSES_RESET 0x0
+
+/* Field: go */
+#define PULSES_GO_OFFSET 0
+#define PULSES_GO_WIDTH 1
+#define PULSES_GO_RESET 0x0
+#define PULSES_GO_MASK 0x1
+#define PULSES_GO_SW "rw"
+#define PULSES_GO_HW "r"
+#define PULSES_GO_SINGLEPULSE 1
+
+/* Field: kick */
+#define PULSES_KICK_OFFSET 1
+#define PULSES_KICK_WIDTH 4
+#define PULSES_KICK_RESET 0x0
+#define PULSES_KICK_MASK 0x1e
+#define PULSES_KICK_SW "rw"
+#define PULSES_KICK_HW "r"
+#define PULSES_KICK_SINGLEPULSE 1
+
+/* Register: strobes */
+#define STROBES_SW "rw"
+#define STROBES_HW "r"
+#define STROBES_WIDTH 8
+#define STROBES_OFFSET 0x24
+#define STROBES_RESET 0x0
+
+/* Field: modified */
+#define STROBES_MODIFIED_OFFSET 0
+#define STROBES_MODIFIED_WIDTH 4
+#define STROBES_MODIFIED_RESET 0x0
+#define STROBES_MODIFIED_MASK 0xf
+#define STROBES_MODIFIED_SW "rw"
+#define STROBES_MODIFIED_HW "r"
+
+/* Field: accessed */
+#define STROBES_ACCESSED_OFFSET 4
+#define STROBES_ACCESSED_WIDTH 4
+#define STROBES_ACCESSED_RESET 0x0
+#define STROBES_ACCESSED_MASK 0xf0
+#define STROBES_ACCESSED_SW "rw"
+#define STROBES_ACCESSED_HW "r"
+
+/* Register: enum_vector */
+#define ENUM_VECTOR_SW "rw"
+#define ENUM_VECTOR_HW "r"
+#define ENUM_VECTOR_WIDTH 2
+#define ENUM_VECTOR_OFFSET 0x28
+#define ENUM_VECTOR_RESET 0x0
+
+/* Field: mode */
+#define ENUM_VECTOR_MODE_OFFSET 0
+#define ENUM_VECTOR_MODE_WIDTH 2
+#define ENUM_VECTOR_MODE_RESET 0x0
+#define ENUM_VECTOR_MODE_MASK 0x3
+#define ENUM_VECTOR_MODE_SW "rw"
+#define ENUM_VECTOR_MODE_HW "r"
+#define ENUM_VECTOR_MODE_MODE_SLOW 0
+#define ENUM_VECTOR_MODE_MODE_FAST 3
+
+/* Register: enum_bit */
+#define ENUM_BIT_SW "rw"
+#define ENUM_BIT_HW "r"
+#define ENUM_BIT_WIDTH 1
+#define ENUM_BIT_OFFSET 0x2c
+#define ENUM_BIT_RESET 0x0
+
+/* Field: power */
+#define ENUM_BIT_POWER_OFFSET 0
+#define ENUM_BIT_POWER_WIDTH 1
+#define ENUM_BIT_POWER_RESET 0x0
+#define ENUM_BIT_POWER_MASK 0x1
+#define ENUM_BIT_POWER_SW "rw"
+#define ENUM_BIT_POWER_HW "r"
+#define ENUM_BIT_POWER_PWR_OFF 0
+#define ENUM_BIT_POWER_PWR_ON 1
+
+/* Register: enum_hw */
+#define ENUM_HW_SW "ro"
+#define ENUM_HW_HW "rw"
+#define ENUM_HW_WIDTH 3
+#define ENUM_HW_OFFSET 0x30
+#define ENUM_HW_RESET 0x2
+
+/* Field: state */
+#define ENUM_HW_STATE_OFFSET 0
+#define ENUM_HW_STATE_WIDTH 2
+#define ENUM_HW_STATE_RESET 0x2
+#define ENUM_HW_STATE_MASK 0x3
+#define ENUM_HW_STATE_SW "ro"
+#define ENUM_HW_STATE_HW "w"
+#define ENUM_HW_STATE_ST_RESET 0
+#define ENUM_HW_STATE_ST_RUN 1
+#define ENUM_HW_STATE_ST_HALT 2
+
+/* Field: supply */
+#define ENUM_HW_SUPPLY_OFFSET 2
+#define ENUM_HW_SUPPLY_WIDTH 1
+#define ENUM_HW_SUPPLY_RESET 0x0
+#define ENUM_HW_SUPPLY_MASK 0x4
+#define ENUM_HW_SUPPLY_SW "ro"
+#define ENUM_HW_SUPPLY_HW "rw"
+#define ENUM_HW_SUPPLY_PWR_OFF 0
+#define ENUM_HW_SUPPLY_PWR_ON 1
+
+/* Register: enum_swacc */
+#define ENUM_SWACC_SW "rw"
+#define ENUM_SWACC_HW "r"
+#define ENUM_SWACC_WIDTH 2
+#define ENUM_SWACC_OFFSET 0x34
+#define ENUM_SWACC_RESET 0x0
+
+/* Field: phase */
+#define ENUM_SWACC_PHASE_OFFSET 0
+#define ENUM_SWACC_PHASE_WIDTH 2
+#define ENUM_SWACC_PHASE_RESET 0x0
+#define ENUM_SWACC_PHASE_MASK 0x3
+#define ENUM_SWACC_PHASE_SW "rw"
+#define ENUM_SWACC_PHASE_HW "r"
+#define ENUM_SWACC_PHASE_PH_IDLE 0
+#define ENUM_SWACC_PHASE_PH_ARM 1
+#define ENUM_SWACC_PHASE_PH_FIRE 2
+
+/* Register: mixed_swacc */
+#define MIXED_SWACC_SW "rw"
+#define MIXED_SWACC_HW "r"
+#define MIXED_SWACC_WIDTH 19
+#define MIXED_SWACC_OFFSET 0x38
+#define MIXED_SWACC_RESET 0x40900
+
+/* Field: clear_bits */
+#define MIXED_SWACC_CLEAR_BITS_OFFSET 0
+#define MIXED_SWACC_CLEAR_BITS_WIDTH 4
+#define MIXED_SWACC_CLEAR_BITS_RESET 0x0
+#define MIXED_SWACC_CLEAR_BITS_MASK 0xf
+#define MIXED_SWACC_CLEAR_BITS_SW "rw"
+#define MIXED_SWACC_CLEAR_BITS_HW "r"
+#define MIXED_SWACC_CLEAR_BITS_ONWRITE "woclr"
+
+/* Field: toggle_bits */
+#define MIXED_SWACC_TOGGLE_BITS_OFFSET 4
+#define MIXED_SWACC_TOGGLE_BITS_WIDTH 4
+#define MIXED_SWACC_TOGGLE_BITS_RESET 0x0
+#define MIXED_SWACC_TOGGLE_BITS_MASK 0xf0
+#define MIXED_SWACC_TOGGLE_BITS_SW "rw"
+#define MIXED_SWACC_TOGGLE_BITS_HW "r"
+#define MIXED_SWACC_TOGGLE_BITS_ONWRITE "wot"
+
+/* Field: fixed */
+#define MIXED_SWACC_FIXED_OFFSET 8
+#define MIXED_SWACC_FIXED_WIDTH 4
+#define MIXED_SWACC_FIXED_RESET 0x9
+#define MIXED_SWACC_FIXED_MASK 0xf00
+#define MIXED_SWACC_FIXED_SW "ro"
+#define MIXED_SWACC_FIXED_HW "r"
+
+/* Field: arg */
+#define MIXED_SWACC_ARG_OFFSET 12
+#define MIXED_SWACC_ARG_WIDTH 4
+#define MIXED_SWACC_ARG_RESET 0x0
+#define MIXED_SWACC_ARG_MASK 0xf000
+#define MIXED_SWACC_ARG_SW "wo"
+#define MIXED_SWACC_ARG_HW "r"
+
+/* Field: go */
+#define MIXED_SWACC_GO_OFFSET 16
+#define MIXED_SWACC_GO_WIDTH 1
+#define MIXED_SWACC_GO_RESET 0x0
+#define MIXED_SWACC_GO_MASK 0x10000
+#define MIXED_SWACC_GO_SW "rw"
+#define MIXED_SWACC_GO_HW "r"
+#define MIXED_SWACC_GO_SINGLEPULSE 1
+
+/* Field: power */
+#define MIXED_SWACC_POWER_OFFSET 17
+#define MIXED_SWACC_POWER_WIDTH 1
+#define MIXED_SWACC_POWER_RESET 0x0
+#define MIXED_SWACC_POWER_MASK 0x20000
+#define MIXED_SWACC_POWER_SW "rw"
+#define MIXED_SWACC_POWER_HW "r"
+#define MIXED_SWACC_POWER_PWR_OFF 0
+#define MIXED_SWACC_POWER_PWR_ON 1
+
+/* Field: power_fixed */
+#define MIXED_SWACC_POWER_FIXED_OFFSET 18
+#define MIXED_SWACC_POWER_FIXED_WIDTH 1
+#define MIXED_SWACC_POWER_FIXED_RESET 0x1
+#define MIXED_SWACC_POWER_FIXED_MASK 0x40000
+#define MIXED_SWACC_POWER_FIXED_SW "ro"
+#define MIXED_SWACC_POWER_FIXED_HW "r"
+#define MIXED_SWACC_POWER_FIXED_PWR_OFF 0
+#define MIXED_SWACC_POWER_FIXED_PWR_ON 1
+
+/* Register: mixed_history */
+#define MIXED_HISTORY_SW "rw"
+#define MIXED_HISTORY_HW "r"
+#define MIXED_HISTORY_WIDTH 16
+#define MIXED_HISTORY_OFFSET 0x3c
+#define MIXED_HISTORY_RESET 0xf00
+
+/* Field: toggle */
+#define MIXED_HISTORY_TOGGLE_OFFSET 0
+#define MIXED_HISTORY_TOGGLE_WIDTH 4
+#define MIXED_HISTORY_TOGGLE_RESET 0x0
+#define MIXED_HISTORY_TOGGLE_MASK 0xf
+#define MIXED_HISTORY_TOGGLE_SW "rw"
+#define MIXED_HISTORY_TOGGLE_HW "r"
+#define MIXED_HISTORY_TOGGLE_ONWRITE "wot"
+
+/* Field: set_on_zero */
+#define MIXED_HISTORY_SET_ON_ZERO_OFFSET 4
+#define MIXED_HISTORY_SET_ON_ZERO_WIDTH 4
+#define MIXED_HISTORY_SET_ON_ZERO_RESET 0x0
+#define MIXED_HISTORY_SET_ON_ZERO_MASK 0xf0
+#define MIXED_HISTORY_SET_ON_ZERO_SW "rw"
+#define MIXED_HISTORY_SET_ON_ZERO_HW "r"
+#define MIXED_HISTORY_SET_ON_ZERO_ONWRITE "wzs"
+
+/* Field: clear_on_zero */
+#define MIXED_HISTORY_CLEAR_ON_ZERO_OFFSET 8
+#define MIXED_HISTORY_CLEAR_ON_ZERO_WIDTH 4
+#define MIXED_HISTORY_CLEAR_ON_ZERO_RESET 0xF
+#define MIXED_HISTORY_CLEAR_ON_ZERO_MASK 0xf00
+#define MIXED_HISTORY_CLEAR_ON_ZERO_SW "rw"
+#define MIXED_HISTORY_CLEAR_ON_ZERO_HW "r"
+#define MIXED_HISTORY_CLEAR_ON_ZERO_ONWRITE "wzc"
+
+/* Field: toggle_on_zero */
+#define MIXED_HISTORY_TOGGLE_ON_ZERO_OFFSET 12
+#define MIXED_HISTORY_TOGGLE_ON_ZERO_WIDTH 4
+#define MIXED_HISTORY_TOGGLE_ON_ZERO_RESET 0x0
+#define MIXED_HISTORY_TOGGLE_ON_ZERO_MASK 0xf000
+#define MIXED_HISTORY_TOGGLE_ON_ZERO_SW "rw"
+#define MIXED_HISTORY_TOGGLE_ON_ZERO_HW "r"
+#define MIXED_HISTORY_TOGGLE_ON_ZERO_ONWRITE "wzt"
+
+/* Register: hw_status_swacc */
+#define HW_STATUS_SWACC_SW "ro"
+#define HW_STATUS_SWACC_HW "rw"
+#define HW_STATUS_SWACC_WIDTH 8
+#define HW_STATUS_SWACC_OFFSET 0x40
+#define HW_STATUS_SWACC_RESET 0x0
+
+/* Field: level */
+#define HW_STATUS_SWACC_LEVEL_OFFSET 0
+#define HW_STATUS_SWACC_LEVEL_WIDTH 4
+#define HW_STATUS_SWACC_LEVEL_RESET 0x0
+#define HW_STATUS_SWACC_LEVEL_MASK 0xf
+#define HW_STATUS_SWACC_LEVEL_SW "ro"
+#define HW_STATUS_SWACC_LEVEL_HW "rw"
+
+/* Field: latched */
+#define HW_STATUS_SWACC_LATCHED_OFFSET 4
+#define HW_STATUS_SWACC_LATCHED_WIDTH 4
+#define HW_STATUS_SWACC_LATCHED_RESET 0x0
+#define HW_STATUS_SWACC_LATCHED_MASK 0xf0
+#define HW_STATUS_SWACC_LATCHED_SW "ro"
+#define HW_STATUS_SWACC_LATCHED_HW "rw"
+
+/* Register: hw_only */
+#define HW_ONLY_SW "rw"
+#define HW_ONLY_HW "rw"
+#define HW_ONLY_WIDTH 5
+#define HW_ONLY_OFFSET 0x44
+#define HW_ONLY_RESET 0x0
+
+/* Field: shadow */
+#define HW_ONLY_SHADOW_OFFSET 0
+#define HW_ONLY_SHADOW_WIDTH 4
+#define HW_ONLY_SHADOW_RESET 0x0
+#define HW_ONLY_SHADOW_MASK 0xf
+#define HW_ONLY_SHADOW_SW "na"
+#define HW_ONLY_SHADOW_HW "rw"
+
+/* Field: enable */
+#define HW_ONLY_ENABLE_OFFSET 4
+#define HW_ONLY_ENABLE_WIDTH 1
+#define HW_ONLY_ENABLE_RESET 0x0
+#define HW_ONLY_ENABLE_MASK 0x10
+#define HW_ONLY_ENABLE_SW "rw"
+#define HW_ONLY_ENABLE_HW "r"
+
+/* Register: irq_status */
+#define IRQ_STATUS_SW "ro"
+#define IRQ_STATUS_HW "r"
+#define IRQ_STATUS_WIDTH 1
+#define IRQ_STATUS_OFFSET 0x48
+#define IRQ_STATUS_RESET 0x0
+
+/* Field: pending */
+#define IRQ_STATUS_PENDING_OFFSET 0
+#define IRQ_STATUS_PENDING_WIDTH 1
+#define IRQ_STATUS_PENDING_RESET 0x0
+#define IRQ_STATUS_PENDING_MASK 0x1
+#define IRQ_STATUS_PENDING_SW "ro"
+#define IRQ_STATUS_PENDING_HW "r"
+#define IRQ_STATUS_PENDING_ONREAD "rclr"
+
+#endif
