@@ -58,7 +58,7 @@ begin
   -- aligned to that window.
   assert (not G_CHECK_BASE_ADDRESS)
       or (G_BASE_ADDRESS(C_MODULE_ADDR_WIDTH-1 downto 0) = 0)
-    report "G_BASE_ADDRESS must be aligned to 2**C_MODULE_ADDR_WIDTH bytes"
+    report "G_BASE_ADDRESS must be a multiple of 2**C_MODULE_ADDR_WIDTH"
     severity failure;
 
   -- Register storage and write response. Single driver of `regs`: software
