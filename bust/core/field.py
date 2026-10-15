@@ -350,8 +350,26 @@ class Field:
             ValueError: If called on non-VECTOR field type.
         """
         if self.type == FieldType.VECTOR:
-            return f"{self.width - 1} downto 0"
+            return self.vector_range_vhdl
         raise ValueError("Only vector fields have a range")
+
+    @property
+    def vector_range_vhdl(self) -> str:
+        """`N-1 downto 0` for any field type, `0 downto 0` for a bit.
+
+        An enumerated field's encoding is a std_logic_vector even when it is one
+        bit wide, so its to_slv/decode functions have the same shape either way.
+        """
+        return f"{self.width - 1} downto 0"
+
+    @property
+    def vector_pos_vhdl(self) -> str:
+        """Bit position as a `high downto low` slice for any field type.
+
+        Slicing a bit field this way yields a 1-element vector, matching the
+        enum encoding functions.
+        """
+        return f"{self.pos_high} downto {self.pos_low}"
 
     @property
     def type_vhdl(self) -> str:
@@ -423,6 +441,11 @@ class Field:
             or self.hwclr
             or self.onread is not None
         )
+
+    @property
+    def hw_writes_continuously(self) -> bool:
+        """True when hardware writes the field every cycle (hw w/rw, no we/wel)."""
+        return self.hw_writable and not self.we and not self.wel
 
     @property
     def driven_by_hw(self) -> bool:
