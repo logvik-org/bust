@@ -216,14 +216,18 @@ def generate_output(settings, bus, module, header, documentation, gen_settings):
     if gen_settings["gen_pdf"]:
         logger.info("Generating Documentation PDF...")
         try:
-            subprocess.call(
+            status = subprocess.call(
                 [
                     "pdflatex",
                     "--interaction=batchmode",
                     f"--output-directory={mod_doc}",
                     os.path.join(mod_doc, module.name + ".tex"),
                 ],
-                stdout=open(os.devnull, "wb"),
+                stdout=subprocess.DEVNULL,
             )
-        except Exception:
-            logger.error("ERROR: PDF Generation Failed")
+        except OSError as e:
+            logger.error(f"Could not run pdflatex ({e}). Use -p to skip the PDF.")
+        else:
+            if status != 0:
+                log = os.path.join(mod_doc, module.name + ".log")
+                logger.warning(f"pdflatex reported errors. See {log}")

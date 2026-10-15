@@ -145,3 +145,18 @@ def test_ipbus_data_width_other_than_32_rejected():
 
 def test_data_width_constraint_is_ipbus_only():
     assert Bus({"type": "axi", "addr_width": 32, "data_width": 64}).data_width == 64
+
+
+def test_address_table_escapes_descriptions():
+    registers = [
+        {
+            "name": "r",
+            "description": 'A & B < "C"',
+            "fields": [{"name": "f", "type": "bit", "description": "x > y & z"}],
+        }
+    ]
+    xml = HeaderGenerator(_ipbus_module(registers)).generate_ipbus_addr_table()
+
+    reg = ET.fromstring(xml.encode("utf-8")).find("node")
+    assert reg.get("description") == 'A & B < "C"'
+    assert reg.find("node").get("description") == "x > y & z"

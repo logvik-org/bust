@@ -30,6 +30,7 @@ import logging
 from typing import Dict, Union
 
 from bust.utils.json_utils import json_parser
+from bust.validation.config_validator import warn_unknown_keys
 from bust.utils.file_utils import write_string_to_file
 from bust.core.module import Module
 from bust.core.bus import Bus
@@ -71,6 +72,13 @@ def main():
         if args["FILE"] is not None:
             json_file = args["FILE"]
 
+            # The editor's curses menus fail in a background thread without a
+            # terminal, which would leave bust exiting 0 with nothing saved.
+            is_terminal = sys.stdin.isatty() and sys.stdout.isatty()
+            if (args["-c"] or args["-e"]) and not is_terminal:
+                logger.error("The editor (-c, -e) needs an interactive terminal.")
+                exit(1)
+
             if args["-c"] and json_file is not None:
                 try:
                     e = Editor(False, json_file)
@@ -97,6 +105,7 @@ def main():
 
             try:
                 json_dict = json_parser(json_file)
+                warn_unknown_keys(json_dict, ("settings", "bus", "module"), "the file")
                 settings = Settings(json_file, json_dict.get("settings"))
                 bus = Bus(json_dict["bus"])
                 module = Module(json_dict["module"], bus, settings)

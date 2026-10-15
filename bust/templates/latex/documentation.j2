@@ -62,7 +62,7 @@
 \section{Registers}
 
 {% for reg in module.registers %}
-\begin{register}{{ '{' }}H{{ '}' }}{{ '{' }}{{ reg.name | utf8tolatex }} - {{ reg.sw.value.upper() }}/{{ reg.hw.value.upper() }}{{ '}' }}{{ '{' }}0x{{ "%08X" | format(reg.address) }}{{ '}' }}  \par {{ reg.description | utf8tolatex }} \regnewline
+\begin{register}{{ '{' }}H{{ '}' }}{{ '{' }}{{ reg.name | utf8tolatex }} - {{ reg.sw.value.upper() }}/{{ reg.hw.value.upper() }}{{ '}' }}{{ '{' }}0x{{ "%08X" | format(reg.address) }}{{ '}' }}{% if reg.description %}  \par {{ reg.description | utf8tolatex }} \regnewline{% endif +%}
   \label{{ '{' }}{{ reg.name }}{{ '}' }}
 {% if reg.width < module.data_width %}
   \regfield{{ '{' }}unused{{ '}' }}{{ '{' }}{{ module.data_width - reg.width }}{{ '}' }}{{ '{' }}{{ reg.width }}{{ '}' }}{{ '{' }}-{{ '}' }}
