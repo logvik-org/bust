@@ -112,8 +112,6 @@ def main():
                 NotImplementedError,
             ) as e:
                 logger.error(str(e))
-                if hasattr(e, "__cause__") and isinstance(e.__cause__, ValueError):
-                    logger.error(str(e.__cause__))
                 logger.debug("Detailed traceback:", exc_info=True)
                 exit(1)
 
