@@ -44,6 +44,13 @@ def _load_prototype(bus_type):
     return bus, mod, Documentation(mod), Header(mod)
 
 
+def _load_access_matrix():
+    """The access-mode combination example, one register per combination class."""
+    json = json_parser("example/example_access_matrix.json")
+    mod = Module(json["module"], Bus(json["bus"]), settings=None)
+    return mod, Header(mod)
+
+
 class Test_Suite(unittest.TestCase):
     maxDiff = None
 
@@ -308,6 +315,48 @@ class Test_Suite(unittest.TestCase):
             base + ".py",
             "prototype python header must match",
         )
+
+    ############## Access-mode combination matrix ##################
+
+    def test_access_matrix_hdl_and_tb(self):
+        self.logger.info("Testing access-matrix HDL and testbench generation...")
+        mod, _ = _load_access_matrix()
+        hdl = "example/example_access_matrix/hdl"
+        for generated, name in (
+            (GeneratorFactory.generate_localbus_package_vhdl(mod), "localbus_pkg.vhd"),
+            (
+                GeneratorFactory.generate_regfile_package_vhdl(mod),
+                "access_matrix_regfile_pkg.vhd",
+            ),
+            (GeneratorFactory.generate_regfile_vhdl(mod), "access_matrix_regfile.vhd"),
+            (
+                GeneratorFactory.generate_axi_endpoint_vhdl(mod),
+                "access_matrix_axi_endpoint.vhd",
+            ),
+            (GeneratorFactory.generate_module_top_vhdl(mod), "access_matrix.vhd"),
+            (
+                GeneratorFactory.generate_localbus_axi_testbench_vhdl(mod),
+                "access_matrix_tb.vhd",
+            ),
+        ):
+            with self.subTest(file=name):
+                self._assert_matches(
+                    generated, f"{hdl}/{name}", f"access_matrix {name} must match"
+                )
+
+    def test_access_matrix_hdr(self):
+        self.logger.info("Testing access-matrix header generation...")
+        _, hdr = _load_access_matrix()
+        base = "example/example_access_matrix/header/access_matrix"
+        for generated, ext in (
+            (hdr.generate_c_header(), ".h"),
+            (hdr.generate_cpp_header(), ".hpp"),
+            (hdr.generate_python_header(), ".py"),
+        ):
+            with self.subTest(file=ext):
+                self._assert_matches(
+                    generated, base + ext, f"access_matrix {ext} header must match"
+                )
 
 
 if __name__ == "__main__":

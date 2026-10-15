@@ -1,0 +1,534 @@
+{
+  "settings": {
+    "mod_subdir": true,
+    "bus_subdir": false,
+    "uvvm_rel_path": "../../../UVVM",
+    "coverage": true
+  },
+  "bus": {
+    "type": "axi",
+    "addr_width": 32,
+    "data_width": 32,
+    "comp_library": "bust"
+  },
+  "module": {
+    "name": "access_matrix",
+    "version": "1.0",
+    "description": "One register per supported access-mode combination class, including fields that mix several modes in one register.",
+    "register": [
+      {
+        "name": "plain",
+        "sw": "rw",
+        "hw": "r",
+        "type": "fields",
+        "description": "Plain software read-write storage, read by hardware, plus a software-only field.",
+        "fields": [
+          {
+            "name": "flag",
+            "type": "bit"
+          },
+          {
+            "name": "level",
+            "type": "vector",
+            "width": 3
+          },
+          {
+            "name": "scratch",
+            "type": "vector",
+            "width": 4,
+            "hw": "na"
+          }
+        ]
+      },
+      {
+        "name": "status",
+        "sw": "ro",
+        "hw": "w",
+        "type": "fields",
+        "description": "Hardware-driven status: continuous, write-enable and active-low write-enable inputs.",
+        "fields": [
+          {
+            "name": "busy",
+            "type": "bit"
+          },
+          {
+            "name": "count",
+            "type": "vector",
+            "width": 4,
+            "we": true
+          },
+          {
+            "name": "fault",
+            "type": "bit",
+            "wel": true
+          }
+        ]
+      },
+      {
+        "name": "command",
+        "sw": "wo",
+        "hw": "r",
+        "type": "fields",
+        "description": "Write-only command, reads back zero.",
+        "fields": [
+          {
+            "name": "opcode",
+            "type": "vector",
+            "width": 4
+          }
+        ]
+      },
+      {
+        "name": "identity",
+        "sw": "ro",
+        "hw": "r",
+        "type": "fields",
+        "description": "Read-only constants, including enumerated constants that share literal names.",
+        "fields": [
+          {
+            "name": "id",
+            "type": "vector",
+            "width": 8,
+            "reset": "0xA5"
+          },
+          {
+            "name": "pwr_default",
+            "type": "bit",
+            "reset": "0x1",
+            "enums": [
+              {
+                "name": "PWR_OFF",
+                "value": 0
+              },
+              {
+                "name": "PWR_ON",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "name": "pwr_spare",
+            "type": "bit",
+            "enums": [
+              {
+                "name": "PWR_OFF",
+                "value": 0
+              },
+              {
+                "name": "PWR_ON",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "hw_modify",
+        "sw": "rw",
+        "hw": "r",
+        "type": "fields",
+        "description": "Hardware override with write enable, and hardware set/clear on a hardware-read field.",
+        "fields": [
+          {
+            "name": "override",
+            "type": "vector",
+            "width": 4,
+            "hw": "rw",
+            "we": true
+          },
+          {
+            "name": "sticky",
+            "type": "bit",
+            "hwset": true,
+            "hwclr": true
+          }
+        ]
+      },
+      {
+        "name": "hw_set_clear",
+        "type": "fields",
+        "description": "Hardware set/clear on fields hardware also writes every cycle (no we/wel).",
+        "fields": [
+          {
+            "name": "set_only",
+            "type": "vector",
+            "width": 4,
+            "sw": "ro",
+            "hw": "w",
+            "hwset": true
+          },
+          {
+            "name": "clr_only",
+            "type": "bit",
+            "sw": "rw",
+            "hw": "rw",
+            "hwclr": true,
+            "swacc": true
+          }
+        ]
+      },
+      {
+        "name": "read_effects",
+        "sw": "rw",
+        "hw": "r",
+        "type": "fields",
+        "description": "Read side effects: clear and set on read.",
+        "fields": [
+          {
+            "name": "clear_on_read",
+            "type": "vector",
+            "width": 4,
+            "onread": "rclr"
+          },
+          {
+            "name": "set_on_read",
+            "type": "vector",
+            "width": 4,
+            "onread": "rset"
+          }
+        ]
+      },
+      {
+        "name": "write_effects",
+        "sw": "rw",
+        "hw": "r",
+        "type": "fields",
+        "description": "Write side effects: write-1, write-0 and whole-field variants.",
+        "fields": [
+          {
+            "name": "set_bits",
+            "type": "vector",
+            "width": 4,
+            "onwrite": "woset"
+          },
+          {
+            "name": "clear_bits",
+            "type": "vector",
+            "width": 4,
+            "onwrite": "woclr",
+            "reset": "0xF"
+          },
+          {
+            "name": "toggle_on_zero",
+            "type": "vector",
+            "width": 4,
+            "onwrite": "wzt"
+          },
+          {
+            "name": "set_all",
+            "type": "bit",
+            "onwrite": "wset"
+          }
+        ]
+      },
+      {
+        "name": "pulses",
+        "sw": "rw",
+        "hw": "r",
+        "singlepulse": true,
+        "type": "fields",
+        "description": "Single-cycle pulses on software write.",
+        "fields": [
+          {
+            "name": "go",
+            "type": "bit"
+          },
+          {
+            "name": "kick",
+            "type": "vector",
+            "width": 4,
+            "swmod": true
+          }
+        ]
+      },
+      {
+        "name": "strobes",
+        "sw": "rw",
+        "hw": "r",
+        "type": "fields",
+        "description": "Software-modify and software-access strobes on plain storage.",
+        "fields": [
+          {
+            "name": "modified",
+            "type": "vector",
+            "width": 4,
+            "swmod": true
+          },
+          {
+            "name": "accessed",
+            "type": "vector",
+            "width": 4,
+            "swacc": true
+          }
+        ]
+      },
+      {
+        "name": "enum_vector",
+        "sw": "rw",
+        "hw": "r",
+        "type": "fields",
+        "description": "Enumerated vector field with sparse values.",
+        "fields": [
+          {
+            "name": "mode",
+            "type": "vector",
+            "width": 2,
+            "enums": [
+              {
+                "name": "MODE_SLOW",
+                "value": 0
+              },
+              {
+                "name": "MODE_FAST",
+                "value": 3
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "enum_bit",
+        "sw": "rw",
+        "hw": "r",
+        "type": "fields",
+        "description": "One-bit enumerated field (on/off).",
+        "fields": [
+          {
+            "name": "power",
+            "type": "bit",
+            "enums": [
+              {
+                "name": "PWR_OFF",
+                "value": 0
+              },
+              {
+                "name": "PWR_ON",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "enum_hw",
+        "sw": "ro",
+        "type": "fields",
+        "description": "Enumerated fields hardware writes, continuously and with a write enable.",
+        "fields": [
+          {
+            "name": "state",
+            "type": "vector",
+            "width": 2,
+            "hw": "w",
+            "reset": "0x2",
+            "enums": [
+              {
+                "name": "ST_RESET",
+                "value": 0
+              },
+              {
+                "name": "ST_RUN",
+                "value": 1
+              },
+              {
+                "name": "ST_HALT",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "name": "supply",
+            "type": "bit",
+            "hw": "rw",
+            "we": true,
+            "enums": [
+              {
+                "name": "PWR_OFF",
+                "value": 0
+              },
+              {
+                "name": "PWR_ON",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "enum_swacc",
+        "sw": "rw",
+        "hw": "r",
+        "type": "fields",
+        "description": "Enumerated field with an access strobe; an undefined encoding decodes to the first literal.",
+        "fields": [
+          {
+            "name": "phase",
+            "type": "vector",
+            "width": 2,
+            "swacc": true,
+            "enums": [
+              {
+                "name": "PH_IDLE",
+                "value": 0
+              },
+              {
+                "name": "PH_ARM",
+                "value": 1
+              },
+              {
+                "name": "PH_FIRE",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "mixed_swacc",
+        "sw": "rw",
+        "hw": "r",
+        "type": "fields",
+        "description": "Access strobe in a register mixing write effects, read-only, write-only, pulse and enumerated fields.",
+        "fields": [
+          {
+            "name": "clear_bits",
+            "type": "vector",
+            "width": 4,
+            "onwrite": "woclr",
+            "swacc": true
+          },
+          {
+            "name": "toggle_bits",
+            "type": "vector",
+            "width": 4,
+            "onwrite": "wot"
+          },
+          {
+            "name": "fixed",
+            "type": "vector",
+            "width": 4,
+            "sw": "ro",
+            "reset": "0x9"
+          },
+          {
+            "name": "arg",
+            "type": "vector",
+            "width": 4,
+            "sw": "wo"
+          },
+          {
+            "name": "go",
+            "type": "bit",
+            "singlepulse": true
+          },
+          {
+            "name": "power",
+            "type": "bit",
+            "enums": [
+              {
+                "name": "PWR_OFF",
+                "value": 0
+              },
+              {
+                "name": "PWR_ON",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "name": "power_fixed",
+            "type": "bit",
+            "sw": "ro",
+            "reset": "0x1",
+            "enums": [
+              {
+                "name": "PWR_OFF",
+                "value": 0
+              },
+              {
+                "name": "PWR_ON",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "mixed_history",
+        "sw": "rw",
+        "hw": "r",
+        "type": "fields",
+        "description": "Access strobe on write-effect fields whose readback depends on the earlier onwrite test.",
+        "fields": [
+          {
+            "name": "toggle",
+            "type": "vector",
+            "width": 4,
+            "onwrite": "wot",
+            "swacc": true
+          },
+          {
+            "name": "set_on_zero",
+            "type": "vector",
+            "width": 4,
+            "onwrite": "wzs"
+          },
+          {
+            "name": "clear_on_zero",
+            "type": "vector",
+            "width": 4,
+            "onwrite": "wzc",
+            "reset": "0xF"
+          },
+          {
+            "name": "toggle_on_zero",
+            "type": "vector",
+            "width": 4,
+            "onwrite": "wzt"
+          }
+        ]
+      },
+      {
+        "name": "hw_status_swacc",
+        "sw": "ro",
+        "hw": "rw",
+        "type": "fields",
+        "description": "Hardware-driven status with an access strobe; readback follows the hardware inputs.",
+        "fields": [
+          {
+            "name": "level",
+            "type": "vector",
+            "width": 4,
+            "swacc": true
+          },
+          {
+            "name": "latched",
+            "type": "vector",
+            "width": 4,
+            "we": true
+          }
+        ]
+      },
+      {
+        "name": "hw_only",
+        "type": "fields",
+        "description": "A field only hardware accesses, next to a software-written flag.",
+        "fields": [
+          {
+            "name": "shadow",
+            "type": "vector",
+            "width": 4,
+            "sw": "na",
+            "hw": "rw"
+          },
+          {
+            "name": "enable",
+            "type": "bit",
+            "sw": "rw",
+            "hw": "r"
+          }
+        ]
+      }
+    ]
+  }
+}
