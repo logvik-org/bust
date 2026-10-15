@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project Information -----------------------------------------------------
 
 project = "bust"
-copyright = f"{datetime.now().year}, Grottviq"
+copyright = f"{datetime.now().year}, Ola Groettvik"
 author = "Ola Groettvik"
 
 # The short X.Y version.
