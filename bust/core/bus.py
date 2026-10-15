@@ -125,6 +125,11 @@ class Bus:
                 f"(got {self.addr_width})"
             )
 
+        if self.data_width <= 0 or self.data_width % 8:
+            raise FormatError(
+                f"data_width must be a whole number of bytes (got {self.data_width})"
+            )
+
         fixed_data_width = config["fixed_data_width"]
         if fixed_data_width is not None and self.data_width != fixed_data_width:
             raise FormatError(
