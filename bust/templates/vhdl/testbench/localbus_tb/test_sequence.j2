@@ -111,3 +111,19 @@
     check_value({{ reg.name }}_{{ f.name }}_sp_value, {{ f.value_literal(f.pulse_test_value) }}, error, "{{ reg.name }}.{{ f.name }} hw saw the pulse value", C_SCOPE);
 {% endfor %}
 {% endfor %}
+{% for reg in module.registers if reg.is_hwset_read_clear_register %}
+{% set f = reg.effective_fields[0] %}
+
+    -- hwset is held through the read, so it meets the read clear in the same
+    -- cycle. The value sampled with the swacc strobe shows which one won.
+    log(ID_LOG_HDR, "{{ reg.name }}: hwset beats a read clear in the same cycle", C_SCOPE);
+    wait until falling_edge(clk);
+    from_hw.{{ reg.name }}.{{ f.name }}.set <= '1';
+    wait until falling_edge(clk);
+    bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "{{ reg.name }} read while hwset is held");
+    wait until falling_edge(clk);
+    from_hw.{{ reg.name }}.{{ f.name }}.set <= '0';
+    check_value({{ reg.name }}_{{ f.name }}_at_swacc, {{ f.all_ones_literal }}, error, "{{ reg.name }}.{{ f.name }} still set in the cycle after the read clear", C_SCOPE);
+    bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "{{ reg.name }} still set after that read");
+    bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ module.data_width }}x"0", "{{ reg.name }} cleared by a read without hwset");
+{% endfor %}

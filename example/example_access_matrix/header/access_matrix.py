@@ -512,3 +512,19 @@ class ACCESS_MATRIX_H:
     HW_ONLY_ENABLE_MASK = 0x10
     HW_ONLY_ENABLE_SW = "rw"
     HW_ONLY_ENABLE_HW = "r"
+
+    """Register: irq_status"""
+    IRQ_STATUS_SW = "ro"
+    IRQ_STATUS_HW = "r"
+    IRQ_STATUS_WIDTH = 1
+    IRQ_STATUS_OFFSET = 0x48
+    IRQ_STATUS_RESET = 0x0
+
+    """ Field: pending """
+    IRQ_STATUS_PENDING_OFFSET = 0
+    IRQ_STATUS_PENDING_WIDTH = 1
+    IRQ_STATUS_PENDING_RESET = 0x0
+    IRQ_STATUS_PENDING_MASK = 0x1
+    IRQ_STATUS_PENDING_SW = "ro"
+    IRQ_STATUS_PENDING_HW = "r"
+    IRQ_STATUS_PENDING_ONREAD = "rclr"

@@ -519,6 +519,22 @@ const uint32_t HW_ONLY_ENABLE_MASK = 0x10;
 const std::string HW_ONLY_ENABLE_SW = "rw";
 const std::string HW_ONLY_ENABLE_HW = "r";
 
+/* Register: irq_status */
+const std::string IRQ_STATUS_SW = "ro";
+const std::string IRQ_STATUS_HW = "r";
+const uint32_t IRQ_STATUS_WIDTH = 1;
+const uint32_t IRQ_STATUS_OFFSET = 0x48;
+const uint32_t IRQ_STATUS_RESET = 0x0;
+
+/* Field: pending */
+const uint32_t IRQ_STATUS_PENDING_OFFSET = 0;
+const uint32_t IRQ_STATUS_PENDING_WIDTH = 1;
+const uint32_t IRQ_STATUS_PENDING_RESET = 0x0;
+const uint32_t IRQ_STATUS_PENDING_MASK = 0x1;
+const std::string IRQ_STATUS_PENDING_SW = "ro";
+const std::string IRQ_STATUS_PENDING_HW = "r";
+const std::string IRQ_STATUS_PENDING_ONREAD = "rclr";
+
 };
 
 #endif

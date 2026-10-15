@@ -528,6 +528,22 @@
             "hw": "r"
           }
         ]
+      },
+      {
+        "name": "irq_status",
+        "type": "fields",
+        "description": "Sticky event flag: hardware sets it and a software read clears it. A hardware set in the same cycle as the read clear wins.",
+        "fields": [
+          {
+            "name": "pending",
+            "type": "bit",
+            "sw": "ro",
+            "hw": "r",
+            "hwset": true,
+            "onread": "rclr",
+            "swacc": true
+          }
+        ]
       }
     ]
   }
