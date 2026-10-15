@@ -30,7 +30,7 @@ architecture tb of example_ipbus_tb is
   constant C_SCOPE      : string := C_TB_SCOPE_DEFAULT;
   constant C_CLK_PERIOD : time   := 10 ns;
 
-  constant C_BASE : std_logic_vector(31 downto 0) := 32x"0";
+  constant C_BASE : std_logic_vector(15 downto 0) := 16x"0";
 
   signal clk     : std_logic := '0';
   signal reset   : std_logic := '0';
@@ -48,7 +48,7 @@ architecture tb of example_ipbus_tb is
   signal ipbus_if         : t_ipbus_if := init_ipbus_if_signals;
   signal ipbus_bfm_config : t_ipbus_bfm_config := C_IPBUS_BFM_CONFIG_DEFAULT;
 
-  function f_addr(reg : std_logic_vector(31 downto 0)) return unsigned is
+  function f_addr(reg : std_logic_vector(15 downto 0)) return unsigned is
   begin
     return unsigned(C_BASE) + unsigned(reg);
   end function;
