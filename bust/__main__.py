@@ -72,6 +72,13 @@ def main():
         if args["FILE"] is not None:
             json_file = args["FILE"]
 
+            # The editor's curses menus fail in a background thread without a
+            # terminal, which would leave bust exiting 0 with nothing saved.
+            is_terminal = sys.stdin.isatty() and sys.stdout.isatty()
+            if (args["-c"] or args["-e"]) and not is_terminal:
+                logger.error("The editor (-c, -e) needs an interactive terminal.")
+                exit(1)
+
             if args["-c"] and json_file is not None:
                 try:
                     e = Editor(False, json_file)
