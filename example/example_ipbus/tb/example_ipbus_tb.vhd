@@ -19,7 +19,7 @@ context uvvm_util.uvvm_util_context;
 library vip_ipbus;
 use vip_ipbus.ipbus_bfm_pkg.all;
 
-use work.localbus_pkg.all;
+use work.example_ipbus_localbus_pkg.all;
 use work.example_ipbus_regfile_pkg.all;
 
 entity example_ipbus_tb is

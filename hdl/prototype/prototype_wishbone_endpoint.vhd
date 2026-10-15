@@ -22,7 +22,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.localbus_pkg.all;
+use work.prototype_localbus_pkg.all;
 use work.prototype_regfile_pkg.all;
 
 entity prototype_wishbone_endpoint is
