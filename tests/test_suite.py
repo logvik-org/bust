@@ -1,5 +1,7 @@
-import unittest
 import logging.config
+import os
+import unittest
+
 from bust.utils.json_utils import json_parser
 from bust.core.module import Module
 from bust.core.bus import Bus
@@ -7,6 +9,11 @@ from bust.settings import Settings
 from bust.generators.documentation_generator import DocumentationGenerator
 from bust.generators.header_generator import HeaderGenerator
 from bust.generators.factory import GeneratorFactory
+
+
+# BUST_UPDATE_GOLDENS=1 rewrites the committed example outputs from the current
+# generator instead of comparing against them. Review the diff before committing.
+_UPDATE_GOLDENS = os.environ.get("BUST_UPDATE_GOLDENS") == "1"
 
 
 class BusHolder:
@@ -66,6 +73,10 @@ class Test_Suite(unittest.TestCase):
         self.logger = logging.getLogger(__name__)
 
     def _assert_matches(self, generated, path, label):
+        if _UPDATE_GOLDENS:
+            with open(path, "w") as f:
+                f.write(generated)
+            return
         with open(path) as f:
             self.assertEqual(generated, f.read(), label)
 
@@ -314,6 +325,14 @@ class Test_Suite(unittest.TestCase):
             hdr.generate_python_header(),
             base + ".py",
             "prototype python header must match",
+        )
+
+    def test_prototype_doc(self):
+        _, _, doc, _ = _load_prototype("axi")
+        self._assert_matches(
+            doc.generate_tex_documentation("1.0.0-dev"),
+            "example/example_prototype/doc/prototype.tex",
+            "prototype doc must match manual file",
         )
 
     ############## Access-mode combination matrix ##################
