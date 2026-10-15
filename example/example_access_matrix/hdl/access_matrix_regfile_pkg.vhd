@@ -12,7 +12,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.localbus_pkg.all;
+use work.access_matrix_localbus_pkg.all;
 
 package access_matrix_regfile_pkg is
 

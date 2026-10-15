@@ -92,7 +92,7 @@ def generate_output(settings, bus, module, header, documentation, gen_settings):
     if gen_settings.get("gen_localbus"):
         logger.info("Generating local-bus VHDL files...")
         try:
-            filename = "localbus_pkg.vhd"
+            filename = f"{module.name}_localbus_pkg.vhd"
             write_string_to_file(
                 GeneratorFactory.generate_localbus_package_vhdl(module),
                 filename,
