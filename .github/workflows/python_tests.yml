@@ -9,8 +9,11 @@ on:
   pull_request:
     branches: [ "**" ]
 
+permissions:
+  contents: read
+
 jobs:
-  build:
+  test:
 
     runs-on: ubuntu-latest
     strategy:
@@ -43,3 +46,28 @@ jobs:
           coverage report
           echo '```'
         } >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    - run: pip install build twine
+    - name: Build sdist + wheel
+      run: python -m build
+    - name: Check artifacts
+      run: twine check dist/*
+    - name: Smoke-test the built wheel
+      run: |
+        python -m venv "$RUNNER_TEMP/wheel-venv"
+        "$RUNNER_TEMP/wheel-venv/bin/pip" install dist/*.whl
+        # -I keeps the checkout off sys.path, so this reads the installed package.
+        version="$("$RUNNER_TEMP/wheel-venv/bin/python" -I -c 'from bust._version import __VERSION__; print(__VERSION__)')"
+        PATH="$RUNNER_TEMP/wheel-venv/bin:$PATH" scripts/smoke-test.sh "$version"
+    - uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist/*
