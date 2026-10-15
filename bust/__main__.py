@@ -97,7 +97,7 @@ def main():
 
             try:
                 json_dict = json_parser(json_file)
-                settings = Settings(json_file, json_dict["settings"])
+                settings = Settings(json_file, json_dict.get("settings"))
                 bus = Bus(json_dict["bus"])
                 module = Module(json_dict["module"], bus, settings)
                 header = HeaderGenerator(module)
