@@ -20,7 +20,12 @@ from bust.settings import Settings
 from bust.utils.json_utils import json_parser
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
-_EXAMPLES = ["example_prototype.json", "example_axi.json", "example_ipbus.json"]
+_EXAMPLES = [
+    "example_prototype.json",
+    "example_axi.json",
+    "example_ipbus.json",
+    "example_access_matrix.json",
+]
 _NEW_SCHEMA_KEYS = (*INHERITABLE_ACCESS, "position", "enums")
 
 

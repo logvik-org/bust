@@ -324,3 +324,15 @@ jobs:
             -e WORK_ROOT=/work \
             bust-sim:ci \
             /work/sim/scripts/run_sim.sh prototype_apb_tb_generated
+
+      # -----------------------------------------------------------------------
+      # 13. Run the fully generated access-mode combination example (AXI stack
+      #     and generated testbench).
+      # -----------------------------------------------------------------------
+      - name: Run generated access-matrix testbench simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh access_matrix_tb_generated

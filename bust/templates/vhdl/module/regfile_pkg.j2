@@ -32,7 +32,7 @@ package {{ module.name }}_regfile_pkg is
   -- positions are the field's encoded values.
   type {{ f.enum_type_name }} is ({{ f.enums | map(attribute='name') | join(', ') }});
   function to_slv(v : {{ f.enum_type_name }}) return std_logic_vector;
-  function to_{{ f.parent_register_name }}_{{ f.name }}(s : std_logic_vector({{ f.range_vhdl }})) return {{ f.enum_type_name }};
+  function to_{{ f.parent_register_name }}_{{ f.name }}(s : std_logic_vector({{ f.vector_range_vhdl }})) return {{ f.enum_type_name }};
 {% endfor %}
 
   -- Internal storage, one record per register, each member a field that holds
@@ -155,7 +155,7 @@ package body {{ module.name }}_regfile_pkg is
   -- case over the literals so the encoding follows each enum's declared value,
   -- not its position; the two only coincide for in-order 0,1,2,.. enums.
   function to_slv(v : {{ f.enum_type_name }}) return std_logic_vector is
-    variable slv : std_logic_vector({{ f.range_vhdl }});
+    variable slv : std_logic_vector({{ f.vector_range_vhdl }});
   begin
     case v is
 {% for e in f.enums %}
@@ -167,7 +167,7 @@ package body {{ module.name }}_regfile_pkg is
 
   -- case decode rather than to_integer(unsigned(s)) so meta-values (X/U/Z/-)
   -- give a defined result instead of a numeric_std assertion.
-  function to_{{ f.parent_register_name }}_{{ f.name }}(s : std_logic_vector({{ f.range_vhdl }})) return {{ f.enum_type_name }} is
+  function to_{{ f.parent_register_name }}_{{ f.name }}(s : std_logic_vector({{ f.vector_range_vhdl }})) return {{ f.enum_type_name }} is
   begin
     case s is
 {% for e in f.enums %}

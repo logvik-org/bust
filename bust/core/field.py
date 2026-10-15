@@ -10,7 +10,7 @@ bit range within the parent register's data width.
 
 import logging
 from collections import OrderedDict
-from typing import Dict, List, NamedTuple, Optional
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 from bust.core.enums import FieldType, SwAccess, HwAccess, OnRead, OnWrite
 from bust.exceptions import InvalidFieldFormat
@@ -199,6 +199,41 @@ class Field:
         if self.swacc and self.sw is SwAccess.NA:
             reject("swacc requires software access (sw not na)")
 
+        strobes = self._keys_in_effect(("swmod", "swacc", "singlepulse"))
+        if strobes and not self.hw_readable:
+            reject(
+                f"{', '.join(strobes)} {'is' if len(strobes) == 1 else 'are'} "
+                "delivered through to_hw, so the field needs hw r or rw, "
+                f"not hw {self.hw.value}"
+            )
+        # The singlepulse self-clear and a hardware write every cycle both claim
+        # the storage each cycle, so the hardware value would be silently dropped.
+        if self.singlepulse and self.hw_writes_continuously:
+            reject(
+                "singlepulse cannot self-clear a field hardware writes every "
+                "cycle (hw rw needs we or wel)"
+            )
+        if self.singlepulse and self.onread is not None:
+            reject(
+                "onread and singlepulse are mutually exclusive: the field "
+                "self-clears, so rclr has no effect and rset fires a pulse on "
+                "every read"
+            )
+
+        enum_conflicts = self._keys_in_effect(
+            ("onread", "onwrite", "singlepulse", "hwset", "hwclr")
+        )
+        if self.is_enum and enum_conflicts:
+            reject(
+                f"enums cannot be combined with {', '.join(enum_conflicts)}: "
+                "bit-level side effects and hardware set/clear have no meaning "
+                "for an enumerated value"
+            )
+
+    def _keys_in_effect(self, keys: Tuple[str, ...]) -> List[str]:
+        """The access-mode keys among `keys` that are in effect for this field."""
+        return [key for key in keys if getattr(self, key) not in (None, False)]
+
     def _resolve(self, key: str, fallback):
         """Field value if set, else inherited register default, else fallback."""
         if self._config.is_set(key):
@@ -350,8 +385,26 @@ class Field:
             ValueError: If called on non-VECTOR field type.
         """
         if self.type == FieldType.VECTOR:
-            return f"{self.width - 1} downto 0"
+            return self.vector_range_vhdl
         raise ValueError("Only vector fields have a range")
+
+    @property
+    def vector_range_vhdl(self) -> str:
+        """`N-1 downto 0` for any field type, `0 downto 0` for a bit.
+
+        An enumerated field's encoding is a std_logic_vector even when it is one
+        bit wide, so its to_slv/decode functions have the same shape either way.
+        """
+        return f"{self.width - 1} downto 0"
+
+    @property
+    def vector_pos_vhdl(self) -> str:
+        """Bit position as a `high downto low` slice for any field type.
+
+        Slicing a bit field this way yields a 1-element vector, matching the
+        enum encoding functions.
+        """
+        return f"{self.pos_high} downto {self.pos_low}"
 
     @property
     def type_vhdl(self) -> str:
@@ -425,6 +478,11 @@ class Field:
         )
 
     @property
+    def hw_writes_continuously(self) -> bool:
+        """True when hardware writes the field every cycle (hw w/rw, no we/wel)."""
+        return self.hw_writable and not self.we and not self.wel
+
+    @property
     def driven_by_hw(self) -> bool:
         """True when hardware writes or strobes the field (it appears in from_hw)."""
         return self.hw_writable or self.hwset or self.hwclr
@@ -463,29 +521,54 @@ class Field:
         }
         return combine[self.onwrite]
 
-    def written_result(self, written: int) -> int:
-        """Field-local stored value after one software write of `written` from reset.
+    def written_result(self, written: int, stored: Optional[int] = None) -> int:
+        """Field-local value a later software read sees after one software write.
 
-        Accounts for the field's onwrite effect; a field with no effect simply
-        stores the written bits. Mirrors `onwrite_rhs` for value prediction in
-        generated self-checking testbenches.
+        `written` is the field-local write data, `stored` the value before the
+        write (the reset value when omitted). A field software cannot write keeps
+        `stored`, a singlepulse field has already self-cleared, an enumerated field
+        holds the decoded literal, and the onwrite effect combines `stored` with
+        the write; a field with no effect simply stores the written bits. Mirrors
+        the regfile's sw_action for value prediction in generated testbenches.
         """
+        if stored is None:
+            stored = self.reset_state
         mask = (1 << int(self.width)) - 1
         w = written & mask
+        if not self.sw_writable:
+            return stored
+        if self.singlepulse:
+            return 0
+        if self.is_enum:
+            return self.decoded_value(w)
         if self.onwrite is None:
             return w
-        reset = int(self.reset, 16)
         effect = {
-            OnWrite.WOSET: reset | w,
-            OnWrite.WOCLR: reset & ~w & mask,
-            OnWrite.WOT: reset ^ w,
-            OnWrite.WZS: reset | (~w & mask),
-            OnWrite.WZC: reset & w,
-            OnWrite.WZT: reset ^ (~w & mask),
+            OnWrite.WOSET: stored | w,
+            OnWrite.WOCLR: stored & ~w & mask,
+            OnWrite.WOT: stored ^ w,
+            OnWrite.WZS: stored | (~w & mask),
+            OnWrite.WZC: stored & w,
+            OnWrite.WZT: stored ^ (~w & mask),
             OnWrite.WCLR: 0,
             OnWrite.WSET: mask,
         }
         return effect[self.onwrite]
+
+    def _decoded_enum(self, bits: int) -> EnumValue:
+        """Literal the generated decode yields for `bits`: the matching one, else
+        the first (its `when others` arm)."""
+        return next((e for e in self.enums if e.value == bits), self.enums[0])
+
+    def decoded_value(self, bits: int) -> int:
+        """Encoded value an enumerated field holds after decoding `bits`."""
+        return self._decoded_enum(bits).value
+
+    @property
+    def reset_state(self) -> int:
+        """Field-local value after reset (the decoded literal's value for an enum)."""
+        reset = int(self.reset, 16)
+        return self.decoded_value(reset) if self.is_enum else reset
 
     def read_result(self, stored: int) -> int:
         """Field-local value after a software read, accounting for the onread effect."""
@@ -528,10 +611,7 @@ class Field:
         """Reset literal in the field's value type (the enum literal when enumerated)."""
         if not self.is_enum:
             return self.reset_val_vhdl
-        target = int(self.reset, 16)
-        return next(
-            (e.name for e in self.enums if e.value == target), self.enums[0].name
-        )
+        return self._decoded_enum(int(self.reset, 16)).name
 
     @property
     def to_hw_is_record(self) -> bool:
