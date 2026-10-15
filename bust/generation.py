@@ -1,28 +1,63 @@
 """Output file generation module for bust.
 
-This module handles the creation of all output files including VHDL code,
-testbenches, documentation, headers, and simulation scripts. It manages
-directory structure and coordinates file generation from Module, Bus,
-Header, Documentation, and Testbench instances.
+This module handles the creation of all output files: the local-bus VHDL stack
+(regfile package, regfile, bus endpoint, top wrapper) and its UVVM testbench,
+language headers, and documentation. It manages the directory structure and
+coordinates file generation from the Module, Bus, Header, and Documentation
+instances.
 """
 
 import os
 import logging
 import subprocess
 
+from bust.exceptions import LegacyTopLevelFile
 from bust.generators.factory import GeneratorFactory
-from bust.utils.file_utils import write_string_to_file, update_module_top_level
+from bust.utils.file_utils import write_string_to_file
 
 logger = logging.getLogger(__name__)
 
+# Per-bus endpoint and testbench generators. Adding a bus is a new entry plus
+# its templates; the file name comes from the bus's endpoint_suffix.
+_ENDPOINT_GENERATORS = {
+    "axi": GeneratorFactory.generate_axi_endpoint_vhdl,
+    "ipbus": GeneratorFactory.generate_ipb_endpoint_vhdl,
+    "sbi": GeneratorFactory.generate_sbi_endpoint_vhdl,
+    "avalon": GeneratorFactory.generate_avalon_endpoint_vhdl,
+    "wishbone": GeneratorFactory.generate_wishbone_endpoint_vhdl,
+    "apb": GeneratorFactory.generate_apb_endpoint_vhdl,
+}
+_TESTBENCH_GENERATORS = {
+    "axi": GeneratorFactory.generate_localbus_axi_testbench_vhdl,
+    "ipbus": GeneratorFactory.generate_localbus_ipbus_testbench_vhdl,
+    "sbi": GeneratorFactory.generate_localbus_sbi_testbench_vhdl,
+    "avalon": GeneratorFactory.generate_localbus_avalon_testbench_vhdl,
+    "wishbone": GeneratorFactory.generate_localbus_wishbone_testbench_vhdl,
+    "apb": GeneratorFactory.generate_localbus_apb_testbench_vhdl,
+}
 
-def generate_output(
-    settings, bus, module, header, documentation, testbench, gen_settings
-):
+# Comment lines bust 0.14 wrapped around the user-edited regions of the top level.
+_LEGACY_USER_MARKERS = frozenset(
+    f"-- User {region} {edge}"
+    for region in ("Libraries", "Generics", "Ports", "Architecture", "Logic")
+    for edge in ("Start", "End")
+)
+
+
+def _refuse_to_replace_legacy_top(top_path):
+    """Raise LegacyTopLevelFile if `top_path` is a 0.14 top that may hold user logic."""
+    if not os.path.isfile(top_path):
+        return
+    with open(top_path) as top:
+        if any(line.strip() in _LEGACY_USER_MARKERS for line in top):
+            raise LegacyTopLevelFile(top_path)
+
+
+def generate_output(settings, bus, module, header, documentation, gen_settings):
     """Generate all output files for a bus slave module.
 
-    Creates directory structure and writes VHDL files, testbenches,
-    documentation, headers, and scripts based on configuration.
+    Creates directory structure and writes the local-bus VHDL stack,
+    documentation, and language headers based on configuration.
 
     Args:
         settings: Settings instance with paths and configuration.
@@ -30,20 +65,17 @@ def generate_output(
         module: Module instance with register definitions.
         header: Header instance for generating language headers.
         documentation: Documentation instance for generating docs.
-        testbench: Testbench instance for generating test files.
         gen_settings: Dictionary with generation options:
             - dir: Output directory path
             - force_ow: Force overwrite without prompting
-            - gen_bus: Generate bus VHDL package
-            - gen_mod: Generate module VHDL files
-            - update_top: Update existing top-level preserving user code
-            - force_ow_top: Force overwrite top-level
-            - gen_tb: Generate testbench
+            - gen_localbus: Generate the local-bus VHDL stack and testbench
+            - gen_header: Generate language headers
             - gen_doc: Generate documentation
-            - gen_hdr: Generate language headers
-            - format_vhdl: Run VHDL formatter
+            - gen_pdf: Generate PDF from LaTeX
 
     Raises:
+        LegacyTopLevelFile: If the top-level VHDL file to regenerate is a bust
+            0.14 top with user-edited regions. Checked before anything is written.
         Exception: If file generation fails.
     """
 
@@ -55,33 +87,22 @@ def generate_output(
     else:
         mod_dir = proj_dir
 
-    if settings.bus_subdir and not bus.bus_type == "ipbus":
-        bus_dir = os.path.join(proj_dir, bus.bus_type)
-    else:
-        bus_dir = mod_dir
-
     mod_hdl = os.path.join(mod_dir, settings.hdl_dir)
-    mod_script = os.path.join(mod_dir, settings.script_dir)
     mod_tb = os.path.join(mod_dir, settings.tb_dir)
     mod_doc = os.path.join(mod_dir, settings.doc_dir)
     mod_header = os.path.join(mod_dir, settings.header_dir)
-    mod_sim = os.path.join(mod_dir, settings.sim_dir)
-    bus_hdl = os.path.join(bus_dir, settings.hdl_dir)
-    bus_sim = os.path.join(bus_dir, settings.sim_dir)
+
+    if gen_settings.get("gen_localbus"):
+        _refuse_to_replace_legacy_top(os.path.join(mod_hdl, f"{module.name}.vhd"))
 
     logger.debug("Creating all output directories")
     try:
         os.makedirs(proj_dir, exist_ok=True)
         os.makedirs(mod_dir, exist_ok=True)
-        os.makedirs(bus_dir, exist_ok=True)
         os.makedirs(mod_hdl, exist_ok=True)
-        os.makedirs(mod_script, exist_ok=True)
         os.makedirs(mod_tb, exist_ok=True)
         os.makedirs(mod_doc, exist_ok=True)
         os.makedirs(mod_header, exist_ok=True)
-        os.makedirs(mod_sim, exist_ok=True)
-        os.makedirs(bus_hdl, exist_ok=True)
-        os.makedirs(bus_sim, exist_ok=True)
 
     except Exception as e:
         logger.error("ERROR: Could not create output directories")
@@ -90,62 +111,56 @@ def generate_output(
     else:
         logger.debug("Successfully created all output directories")
 
-    if gen_settings["gen_bus"]:
-        logger.info("Generating Bus VHDL Package File...")
+    if gen_settings.get("gen_localbus"):
+        logger.info("Generating local-bus VHDL files...")
         try:
-            filename = f"{bus.bus_type}_pkg.vhd"
+            filename = f"{module.name}_localbus_pkg.vhd"
             write_string_to_file(
-                GeneratorFactory.generate_bus_package_vhdl(bus),
-                filename,
-                bus_hdl,
-                gen_settings["force_ow"],
-            )
-        except Exception as e:
-            logger.error("ERROR: Could not generate Bus VHDL Package File")
-            raise e
-
-    if gen_settings["gen_mod"]:
-        logger.info("Generating Module VHDL Files...")
-        try:
-            # PIF
-            filename = f"{module.name}_{bus.short_name}_pif.vhd"
-            write_string_to_file(
-                GeneratorFactory.generate_bus_pif_vhdl(bus, module),
+                GeneratorFactory.generate_localbus_package_vhdl(module),
                 filename,
                 mod_hdl,
                 gen_settings["force_ow"],
             )
-            # PIF Package
-            filename = f"{module.name}_pif_pkg.vhd"
+            filename = f"{module.name}_regfile_pkg.vhd"
             write_string_to_file(
-                GeneratorFactory.generate_module_package_vhdl(module),
+                GeneratorFactory.generate_regfile_package_vhdl(module),
                 filename,
                 mod_hdl,
                 gen_settings["force_ow"],
             )
-
-            # Top Module
-            filename = f"{module.name}.vhd"
-            if gen_settings["update_top"]:
-                logger.info("Trying to update top level-file")
-                path = os.path.join(mod_hdl, filename)
-                new_top = update_module_top_level(
-                    path, GeneratorFactory.generate_module_vhdl(module)
-                )
+            filename = f"{module.name}_regfile.vhd"
+            write_string_to_file(
+                GeneratorFactory.generate_regfile_vhdl(module),
+                filename,
+                mod_hdl,
+                gen_settings["force_ow"],
+            )
+            endpoint_generator = _ENDPOINT_GENERATORS.get(bus.bus_type)
+            if endpoint_generator is not None:
+                endpoint = endpoint_generator(module)
+                filename = f"{module.name}_{bus.endpoint_suffix}.vhd"
                 write_string_to_file(
-                    new_top, filename, mod_hdl, gen_settings["force_ow_top"]
+                    endpoint, filename, mod_hdl, gen_settings["force_ow"]
                 )
-            else:
+                filename = f"{module.name}.vhd"
                 write_string_to_file(
-                    GeneratorFactory.generate_module_vhdl(module),
+                    GeneratorFactory.generate_module_top_vhdl(module),
                     filename,
                     mod_hdl,
-                    gen_settings["force_ow_top"],
+                    gen_settings["force_ow"],
                 )
-
-        except Exception as e:
-            logger.error("ERROR: Could not generate Module VHDL Files")
-            raise e
+                testbench_generator = _TESTBENCH_GENERATORS.get(bus.bus_type)
+                if testbench_generator is not None:
+                    testbench = testbench_generator(module)
+                    write_string_to_file(
+                        testbench,
+                        f"{module.name}_tb.vhd",
+                        mod_tb,
+                        gen_settings["force_ow"],
+                    )
+        except Exception:
+            logger.error("ERROR: Could not generate local-bus VHDL files")
+            raise
 
     if gen_settings["gen_header"]:
         logger.info("Generating Module Include Files...")
@@ -183,40 +198,6 @@ def generate_output(
         except Exception as e:
             logger.error("ERROR: Could not generate Module Include Files")
             raise e
-
-    if gen_settings["gen_tb"]:
-        if settings.uvvm_rel_path is None:
-            logger.error(
-                "Cannot generate testbench: UVVM Relative Path is not specified"
-            )
-        else:
-            logger.info("Generating PIF Testbench Files...")
-            try:
-                filename = "component_list.txt"
-                write_string_to_file(
-                    testbench.generate_uvvm_component_list(),
-                    filename,
-                    mod_script,
-                    gen_settings["force_ow"],
-                )
-                filename = f"simulate_{bus.bus_type}_pif.do"
-                write_string_to_file(
-                    testbench.generate_tcl_script(),
-                    filename,
-                    mod_script,
-                    gen_settings["force_ow"],
-                )
-                filename = f"{module.name}_{bus.short_name}_pif_tb.vhd"
-                write_string_to_file(
-                    testbench.generate_vhdl_testbench(),
-                    filename,
-                    mod_tb,
-                    gen_settings["force_ow"],
-                )
-
-            except Exception as e:
-                logger.error("ERROR: Could not generate PIF Testbench Files")
-                raise e
 
     if gen_settings["gen_doc"]:
         logger.info("Generating Module Documentation...")

@@ -232,7 +232,7 @@ To avoid re-compiling UVVM and IPBus on every CI run, the image is cached in
 GitHub Container Registry (GHCR):
 
 ```
-ghcr.io/grottviq/bust-sim-cache:buildcache
+ghcr.io/logvik-org/bust-sim-cache:buildcache
 ```
 
 `docker/build-push-action` with `cache-from`/`cache-to` handles this

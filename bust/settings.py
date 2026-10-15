@@ -60,6 +60,7 @@ class Settings:
         if json_path is None and settings is None:
             self.logger.info("No input to Settings. Using default settings.")
             self.json_path = ""
+            self.proj_dir = cast(Optional[str], None)
             self.project_path = ""
             self.json_name = ""
             self.mod_subdir = self.default_val["mod_subdir"]
@@ -75,10 +76,11 @@ class Settings:
 
             self.json_name = file_name
 
-            if "proj_dir" not in settings:
+            self.proj_dir = cast(Optional[str], settings.get("proj_dir"))
+            if self.proj_dir is None:
                 self.project_path = json_dir
             else:
-                self.project_path = settings["proj_dir"]
+                self.project_path = self.proj_dir
 
             if "mod_subdir" not in settings:
                 self.logger.info(
@@ -129,11 +131,9 @@ class Settings:
                 self.coverage = settings["coverage"]
 
         self.hdl_dir = "hdl"
-        self.script_dir = "scripts"
         self.tb_dir = "tb"
         self.doc_dir = "doc"
         self.header_dir = "header"
-        self.sim_dir = "sim"
 
     def to_json(self):
         """Export settings as an ordered dictionary.
@@ -141,59 +141,16 @@ class Settings:
         Returns:
             OrderedDict with settings, omitting None values for optional paths.
         """
-        json = OrderedDict()
+        json: OrderedDict[str, object] = OrderedDict()
+        if self.proj_dir is not None:
+            json["proj_dir"] = self.proj_dir
         json["mod_subdir"] = self.mod_subdir
         json["bus_subdir"] = self.bus_subdir
         if self.uvvm_rel_path is not None:
-            json["uvvm_rel_path"] = self.uvvm_rel_path  # type: ignore[assignment]
+            json["uvvm_rel_path"] = self.uvvm_rel_path
         if self.ipbus_rel_path is not None:
-            json["ipbus_rel_path"] = self.ipbus_rel_path  # type: ignore[assignment]
+            json["ipbus_rel_path"] = self.ipbus_rel_path
         if self.vip_ipbus_rel_path is not None:
-            json["vip_ipbus_rel_path"] = self.vip_ipbus_rel_path  # type: ignore[assignment]
+            json["vip_ipbus_rel_path"] = self.vip_ipbus_rel_path
         json["coverage"] = self.coverage
         return json
-
-    def return_sim_bus_path(self, bus_type):
-        """Return relative path to bus files for simulation scripts.
-
-        Args:
-            bus_type: Bus type identifier ("axi", "ipbus", etc.).
-
-        Returns:
-            Relative path string suitable for simulation compilation scripts.
-        """
-        if bus_type == "ipbus":
-            if self.ipbus_rel_path is not None:
-                path = os.path.join("../", self.ipbus_rel_path)
-            else:
-                path = "../"
-        else:
-            path = "../"
-            if self.bus_subdir:
-                path = os.path.join(path, f"../{bus_type}/")
-        return path
-
-    def return_vip_ipbus_path(self):
-        """Return relative path to IPBus VIP for simulation scripts.
-
-        Returns:
-            Relative path string to IPBus VIP directory.
-        """
-        if self.vip_ipbus_rel_path is not None:
-            path = os.path.join("../", self.vip_ipbus_rel_path)
-        else:
-            path = "../"
-        return path
-
-    def return_sim_uvvm_path(self):
-        """Return relative path to UVVM library for simulation scripts.
-
-        Returns:
-            Relative path string to UVVM directory, accounting for scripts/
-            subdirectory depth.
-        """
-        # Must add one extra subdir because of scripts/
-        path = "../"
-        if self.uvvm_rel_path is not None:
-            path = os.path.join(path, self.uvvm_rel_path)
-        return path

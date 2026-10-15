@@ -8,6 +8,45 @@
 # Supported targets:
 #   example_ipbus   Run example/example_ipbus/tb/example_ipbus_ipb_pif_tb.vhd
 #   example_axi     Run example/example_axi/tb/example_axi_axi_pif_tb.vhd
+#   prototype       Run hdl/prototype/tb/prototype_regfile_tb.vhd (UVVM BFM)
+#   prototype_generated  As 'prototype', but compiling the generator's emitted
+#                   package (example/example_prototype) instead of the hand-written one
+#   prototype_axi   Run hdl/prototype/tb/prototype_axi_endpoint_tb.vhd (AXI-Lite VIP)
+#   prototype_axi_generated  As 'prototype_axi', but compiling the generator's
+#                   emitted package, regfile, and AXI endpoint
+#   prototype_tb_generated  The fully generated AXI stack incl. the generated UVVM
+#                   testbench, self-checking the plain read-write registers
+#   prototype_ipbus Run hdl/prototype/tb/prototype_ipb_endpoint_tb.vhd (vip_ipbus)
+#   prototype_ipbus_generated  As 'prototype_ipbus', but compiling the generator's
+#                   emitted package, regfile, and IPBus endpoint
+#   prototype_ipbus_tb_generated  The fully generated IPBus stack incl. the
+#                   generated UVVM testbench, self-checking every access mode
+#   prototype_sbi   Run hdl/prototype/tb/prototype_sbi_endpoint_tb.vhd (SBI VIP)
+#   prototype_sbi_generated  As 'prototype_sbi', but compiling the generator's
+#                   emitted package, regfile, and SBI endpoint
+#   prototype_sbi_tb_generated  The fully generated SBI stack incl. the generated
+#                   UVVM testbench, self-checking every access mode
+#   prototype_avalon Run hdl/prototype/tb/prototype_avalon_endpoint_tb.vhd (Avalon-MM VIP)
+#   prototype_avalon_generated  As 'prototype_avalon', but compiling the generator's
+#                   emitted package, regfile, and Avalon-MM endpoint
+#   prototype_avalon_tb_generated  The fully generated Avalon stack incl. the
+#                   generated UVVM testbench, self-checking every access mode
+#   prototype_wishbone Run hdl/prototype/tb/prototype_wishbone_endpoint_tb.vhd (hand BFM)
+#   prototype_wishbone_generated  As 'prototype_wishbone', but compiling the
+#                   generator's emitted package, regfile, and Wishbone endpoint
+#   prototype_wishbone_tb_generated  The fully generated Wishbone stack incl. the
+#                   generated testbench (inlined hand-written master BFM)
+#   prototype_apb   Run hdl/prototype/tb/prototype_apb_endpoint_tb.vhd (hand BFM)
+#   prototype_apb_generated  As 'prototype_apb', but compiling the generator's
+#                   emitted package, regfile, and APB endpoint
+#   prototype_apb_tb_generated  The fully generated APB stack incl. the generated
+#                   testbench (inlined hand-written master BFM)
+#   access_matrix_tb_generated  The fully generated AXI stack and UVVM testbench
+#                   for example/example_access_matrix (one register per
+#                   access-mode combination class)
+#   multi_module_generated  example_axi and example_access_matrix analysed into
+#                   one work library, then example_axi's testbench is run, so
+#                   two generated modules can share a library
 #
 # Optional flags:
 #   --wave          Generate a waveform file (FST) for GTKWave debugging.
@@ -80,32 +119,402 @@ pre_compile() { :; }  # default: no-op
 
 case "${TARGET}" in
     example_ipbus)
+        # The fully self-contained generated local-bus IPBus stack (its own
+        # local-bus package, regfile, endpoint, top) and generated UVVM
+        # testbench over the stock vip_ipbus VIP.
         COMPILE_ORDER=(
-            "${WORK_ROOT}/example/example_ipbus/hdl/example_ipbus_pif_pkg.vhd"
-            "${WORK_ROOT}/example/example_ipbus/hdl/example_ipbus_ipb_pif.vhd"
-            "${WORK_ROOT}/example/example_ipbus/tb/example_ipbus_ipb_pif_tb.vhd"
+            "${WORK_ROOT}/example/example_ipbus/hdl/example_ipbus_localbus_pkg.vhd"
+            "${WORK_ROOT}/example/example_ipbus/hdl/example_ipbus_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_ipbus/hdl/example_ipbus_regfile.vhd"
+            "${WORK_ROOT}/example/example_ipbus/hdl/example_ipbus_ipb_endpoint.vhd"
+            "${WORK_ROOT}/example/example_ipbus/hdl/example_ipbus.vhd"
+            "${WORK_ROOT}/example/example_ipbus/tb/example_ipbus_tb.vhd"
         )
-        TOP_ENTITY="example_ipbus_ipb_pif_tb"
+        TOP_ENTITY="example_ipbus_tb"
         ;;
     example_axi)
-        # axi_pkg.vhd is referenced as 'library bust' in the testbench.
-        # We compile it into a separate 'bust' library inside the scratch dir.
+        # The fully self-contained generated local-bus AXI stack (its own
+        # local-bus package, regfile, endpoint, top) and generated UVVM testbench
+        # over the stock Bitvis AXI-Lite VIP.
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi_localbus_pkg.vhd"
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi_regfile.vhd"
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi_axi_endpoint.vhd"
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi.vhd"
+            "${WORK_ROOT}/example/example_axi/tb/example_axi_tb.vhd"
+        )
+        TOP_ENTITY="example_axi_tb"
+        ;;
+    prototype)
+        # Local-bus register-file prototype with a UVVM testbench.
+        # localbus_bfm_pkg uses uvvm_util's shared_msg_id_panel as a default
+        # parameter value, which is not strictly static per VHDL-2008, so it is
+        # analysed with --relaxed (as vip_ipbus is at image-build time).
+        # uvvm_util itself resolves from nvc's system library path.
         pre_compile() {
-            echo "  [nvc -a] axi_pkg.vhd -> library bust"
-            local bust_path="${SIM_WORK_DIR}/bust"
-            nvc --std=08 --work="bust:${bust_path}" \
-                -a "${WORK_ROOT}/example/example_axi/hdl/axi_pkg.vhd"
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+            echo "  [nvc -a --relaxed] localbus_bfm_pkg.vhd"
+            nvc ${NVC_OPTS} -a --relaxed "${WORK_ROOT}/hdl/prototype/localbus_bfm_pkg.vhd"
         }
         COMPILE_ORDER=(
-            "${WORK_ROOT}/example/example_axi/hdl/example_axi_pif_pkg.vhd"
-            "${WORK_ROOT}/example/example_axi/hdl/example_axi_axi_pif.vhd"
-            "${WORK_ROOT}/example/example_axi/tb/example_axi_axi_pif_tb.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_regfile_tb.vhd"
         )
-        TOP_ENTITY="example_axi_axi_pif_tb"
+        TOP_ENTITY="prototype_regfile_tb"
+        ;;
+    prototype_generated)
+        # The generator's emitted package AND entity (example/example_prototype)
+        # compiled against the same verified UVVM testbench as 'prototype'. A PASS
+        # proves the generated output compiles and behaves under the self-checking
+        # testbench, not just that it matches the prototype textually.
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+            echo "  [nvc -a --relaxed] localbus_bfm_pkg.vhd"
+            nvc ${NVC_OPTS} -a --relaxed "${WORK_ROOT}/hdl/prototype/localbus_bfm_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_regfile_tb.vhd"
+        )
+        TOP_ENTITY="prototype_regfile_tb"
+        ;;
+    prototype_axi)
+        # AXI4-Lite wrapper over the local-bus regfile, checked with the stock
+        # Bitvis AXI-Lite VIP (resolved from nvc's system library path).
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_axi_endpoint.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_axi_endpoint_tb.vhd"
+        )
+        TOP_ENTITY="prototype_axi_endpoint_tb"
+        ;;
+    prototype_axi_generated)
+        # The generator's emitted package, regfile, and AXI endpoint compiled
+        # against the verified AXI-Lite endpoint testbench. Proves the generated
+        # AXI stack behaves, not just that it matches the prototype textually.
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_axi_endpoint.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_axi_endpoint_tb.vhd"
+        )
+        TOP_ENTITY="prototype_axi_endpoint_tb"
+        ;;
+    prototype_tb_generated)
+        # The generator's emitted package, regfile, endpoint, top wrapper, AND
+        # UVVM testbench - the whole AXI stack generated by bust, self-checking
+        # the plain read-write registers over the stock AXI-Lite VIP.
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_axi_endpoint.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_tb.vhd"
+        )
+        TOP_ENTITY="prototype_tb"
+        ;;
+    prototype_ipbus)
+        # IPBus wrapper over the local-bus regfile, checked with the stock
+        # vip_ipbus VIP (resolved from nvc's system library path).
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_ipb_endpoint.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_ipb_endpoint_tb.vhd"
+        )
+        TOP_ENTITY="prototype_ipb_endpoint_tb"
+        ;;
+    prototype_ipbus_generated)
+        # The generator's emitted package, regfile, and IPBus endpoint compiled
+        # against the verified IPBus endpoint testbench.
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_ipb_endpoint.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_ipb_endpoint_tb.vhd"
+        )
+        TOP_ENTITY="prototype_ipb_endpoint_tb"
+        ;;
+    prototype_ipbus_tb_generated)
+        # The generator's emitted package, regfile, IPBus endpoint, top wrapper,
+        # AND UVVM testbench - the whole IPBus stack generated by bust, self-
+        # checking every access mode over the stock vip_ipbus VIP.
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_ipb_endpoint.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_ipbus.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_ipbus_tb.vhd"
+        )
+        TOP_ENTITY="prototype_tb"
+        ;;
+    prototype_sbi)
+        # SBI wrapper over the local-bus regfile, checked with the stock Bitvis
+        # SBI VIP (resolved from nvc's system library path).
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_sbi_endpoint.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_sbi_endpoint_tb.vhd"
+        )
+        TOP_ENTITY="prototype_sbi_endpoint_tb"
+        ;;
+    prototype_sbi_generated)
+        # The generator's emitted package, regfile, and SBI endpoint compiled
+        # against the verified SBI endpoint testbench. Proves the generated SBI
+        # stack behaves, not just that it matches the prototype textually.
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_sbi_endpoint.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_sbi.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_sbi_endpoint_tb.vhd"
+        )
+        TOP_ENTITY="prototype_sbi_endpoint_tb"
+        ;;
+    prototype_sbi_tb_generated)
+        # The generator's emitted package, regfile, SBI endpoint, top wrapper,
+        # AND UVVM testbench - the whole SBI stack generated by bust, self-
+        # checking every access mode over the stock Bitvis SBI VIP.
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_sbi_endpoint.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_sbi.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_sbi_tb.vhd"
+        )
+        TOP_ENTITY="prototype_tb"
+        ;;
+    prototype_avalon)
+        # Avalon-MM wrapper over the local-bus regfile, checked with the stock
+        # Bitvis Avalon-MM VIP (resolved from nvc's system library path).
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_avalon_endpoint.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_avalon_endpoint_tb.vhd"
+        )
+        TOP_ENTITY="prototype_avalon_endpoint_tb"
+        ;;
+    prototype_avalon_generated)
+        # The generator's emitted package, regfile, and Avalon-MM endpoint compiled
+        # against the verified Avalon-MM endpoint testbench. Proves the generated
+        # Avalon stack behaves, not just that it matches the prototype textually.
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_avalon_endpoint.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_avalon.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_avalon_endpoint_tb.vhd"
+        )
+        TOP_ENTITY="prototype_avalon_endpoint_tb"
+        ;;
+    prototype_avalon_tb_generated)
+        # The generator's emitted package, regfile, Avalon-MM endpoint, top wrapper,
+        # AND UVVM testbench - the whole Avalon stack generated by bust, self-
+        # checking every access mode over the stock Bitvis Avalon-MM VIP.
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_avalon_endpoint.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_avalon.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_avalon_tb.vhd"
+        )
+        TOP_ENTITY="prototype_tb"
+        ;;
+    prototype_wishbone)
+        # Wishbone wrapper over the local-bus regfile. UVVM has no Wishbone VIP,
+        # so the testbench carries a hand-written classic-cycle master BFM and
+        # needs only uvvm_util (resolved from nvc's system library path).
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_wishbone_endpoint.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_wishbone_endpoint_tb.vhd"
+        )
+        TOP_ENTITY="prototype_wishbone_endpoint_tb"
+        ;;
+    prototype_wishbone_generated)
+        # The generator's emitted package, regfile, and Wishbone endpoint compiled
+        # against the verified Wishbone endpoint testbench. Proves the generated
+        # Wishbone stack behaves, not just that it matches the prototype textually.
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_wishbone_endpoint.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_wishbone.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_wishbone_endpoint_tb.vhd"
+        )
+        TOP_ENTITY="prototype_wishbone_endpoint_tb"
+        ;;
+    prototype_wishbone_tb_generated)
+        # The generator's emitted package, regfile, Wishbone endpoint, top wrapper,
+        # AND testbench - the whole Wishbone stack generated by bust, self-checking
+        # every access mode over the inlined hand-written Wishbone master BFM.
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_wishbone_endpoint.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_wishbone.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_wishbone_tb.vhd"
+        )
+        TOP_ENTITY="prototype_tb"
+        ;;
+    prototype_apb)
+        # APB wrapper over the local-bus regfile. UVVM has no APB VIP, so the
+        # testbench carries a hand-written APB master BFM and needs only
+        # uvvm_util (resolved from nvc's system library path).
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_regfile.vhd"
+            "${WORK_ROOT}/hdl/prototype/prototype_apb_endpoint.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_apb_endpoint_tb.vhd"
+        )
+        TOP_ENTITY="prototype_apb_endpoint_tb"
+        ;;
+    prototype_apb_generated)
+        # The generator's emitted package, regfile, and APB endpoint compiled
+        # against the verified APB endpoint testbench. Proves the generated APB
+        # stack behaves, not just that it matches the prototype textually.
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_apb_endpoint.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_apb.vhd"
+            "${WORK_ROOT}/hdl/prototype/tb/prototype_apb_endpoint_tb.vhd"
+        )
+        TOP_ENTITY="prototype_apb_endpoint_tb"
+        ;;
+    prototype_apb_tb_generated)
+        # The generator's emitted package, regfile, APB endpoint, top wrapper,
+        # AND testbench - the whole APB stack generated by bust, self-checking
+        # every access mode over the inlined hand-written APB master BFM.
+        pre_compile() {
+            echo "  [nvc -a] prototype_localbus_pkg.vhd"
+            nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
+        }
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_apb_endpoint.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_apb.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_apb_tb.vhd"
+        )
+        TOP_ENTITY="prototype_tb"
+        ;;
+    access_matrix_tb_generated)
+        # The fully generated AXI stack (its own local-bus package, regfile,
+        # endpoint, top) AND UVVM testbench for the access-mode combination
+        # example, so mixed and less common access-mode combinations compile and
+        # self-check.
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_localbus_pkg.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_regfile.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_axi_endpoint.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_tb.vhd"
+        )
+        TOP_ENTITY="access_matrix_tb"
+        ;;
+    multi_module_generated)
+        # Two generated modules in one work library. Each emits its own
+        # <module>_localbus_pkg, so analysing the second stack must leave the
+        # first one's units valid. example_axi's testbench is run last.
+        COMPILE_ORDER=(
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi_localbus_pkg.vhd"
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi_regfile.vhd"
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi_axi_endpoint.vhd"
+            "${WORK_ROOT}/example/example_axi/hdl/example_axi.vhd"
+            "${WORK_ROOT}/example/example_axi/tb/example_axi_tb.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_localbus_pkg.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_regfile.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_axi_endpoint.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix.vhd"
+            "${WORK_ROOT}/example/example_access_matrix/hdl/access_matrix_tb.vhd"
+        )
+        TOP_ENTITY="example_axi_tb"
         ;;
     *)
         echo "ERROR: Unknown target '${TARGET}'." >&2
-        echo "Supported targets: example_ipbus, example_axi" >&2
+        echo "Supported targets: example_ipbus, example_axi, prototype, prototype_generated, prototype_axi, prototype_axi_generated, prototype_tb_generated, prototype_ipbus, prototype_ipbus_generated, prototype_ipbus_tb_generated, prototype_sbi, prototype_sbi_generated, prototype_sbi_tb_generated, prototype_avalon, prototype_avalon_generated, prototype_avalon_tb_generated, prototype_wishbone, prototype_wishbone_generated, prototype_wishbone_tb_generated, prototype_apb, prototype_apb_generated, prototype_apb_tb_generated, access_matrix_tb_generated, multi_module_generated" >&2
         exit 1
         ;;
 esac

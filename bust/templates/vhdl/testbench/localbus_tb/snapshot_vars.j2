@@ -1,0 +1,11 @@
+{% for reg in module.strobe_registers %}
+{% for f in reg.swmod_fields %}
+    variable v_{{ reg.name }}_{{ f.name }}_swmod : natural;
+{% endfor %}
+{% for f in reg.swacc_fields %}
+    variable v_{{ reg.name }}_{{ f.name }}_swacc : natural;
+{% endfor %}
+{% for f in reg.singlepulse_fields %}
+    variable v_{{ reg.name }}_{{ f.name }}_sp : natural;
+{% endfor %}
+{% endfor %}
