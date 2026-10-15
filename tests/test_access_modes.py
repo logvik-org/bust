@@ -336,6 +336,9 @@ class TestRegisterEffectiveAccess:
         assert reg.hw is HwAccess.NA
 
 
+_ON_OFF = [{"name": "OFF", "value": 0}, {"name": "ON", "value": 1}]
+
+
 class TestAccessModeValidation:
     def _f(self, cfg):
         base = {"name": "f", "type": "bit"}
@@ -387,3 +390,66 @@ class TestAccessModeValidation:
         self._f({"sw": "rw", "hw": "r", "swmod": True})  # reg9.field0
         self._f({"sw": "rw", "hw": "r", "singlepulse": True})  # reg10.field0
         self._f({"sw": "ro", "hw": "w", "wel": True})  # reg1.field2
+
+    def test_supported_combinations_accepted(self):
+        self._f({"sw": "ro", "hw": "w", "hwset": True})  # hwset without we
+        self._f({"sw": "rw", "hw": "rw", "hwclr": True})  # hwclr without we
+        self._f({"enums": _ON_OFF})  # 1-bit enum
+        self._f({"sw": "ro", "hw": "w", "enums": _ON_OFF})  # hw-written enum
+        self._f({"sw": "rw", "hw": "r", "swacc": True, "enums": _ON_OFF})
+        self._f({"sw": "rw", "hw": "rw", "we": True, "singlepulse": True})
+
+    @pytest.mark.parametrize(
+        "conflict",
+        [
+            {"onread": "rclr"},
+            {"onwrite": "woset"},
+            {"singlepulse": True},
+            {"hwset": True},
+            {"hwclr": True},
+        ],
+    )
+    def test_enum_with_bit_level_effect_rejected(self, conflict):
+        with pytest.raises(InvalidFieldFormat) as exc:
+            self._f(dict(conflict, sw="rw", hw="r", enums=_ON_OFF))
+        (key,) = conflict
+        assert f"enums cannot be combined with {key}" in str(exc.value)
+        assert "(field f in reg reg)" in str(exc.value)
+
+    def test_enum_rejection_names_every_conflicting_key(self):
+        with pytest.raises(InvalidFieldFormat, match="combined with onwrite, hwclr:"):
+            self._f({"hw": "w", "onwrite": "wot", "hwclr": True, "enums": _ON_OFF})
+
+    @pytest.mark.parametrize("strobe", ["swmod", "swacc", "singlepulse"])
+    @pytest.mark.parametrize("hw", ["na", "w"])
+    def test_strobe_requires_hw_readable(self, strobe, hw):
+        with pytest.raises(InvalidFieldFormat) as exc:
+            self._f({"sw": "rw", "hw": hw, strobe: True})
+        assert (
+            f"{strobe} is delivered through to_hw, so the field needs hw r or rw, "
+            f"not hw {hw} (field f in reg reg)"
+        ) in str(exc.value)
+
+    def test_strobe_rejection_names_every_strobe(self):
+        with pytest.raises(InvalidFieldFormat, match="swmod, swacc are delivered"):
+            self._f({"sw": "rw", "hw": "na", "swmod": True, "swacc": True})
+
+    def test_singlepulse_with_continuous_hw_write_rejected(self):
+        with pytest.raises(InvalidFieldFormat, match="hw rw needs we or wel"):
+            self._f({"sw": "rw", "hw": "rw", "singlepulse": True})
+
+    @pytest.mark.parametrize("onread", ["rclr", "rset"])
+    def test_singlepulse_with_onread_rejected(self, onread):
+        with pytest.raises(InvalidFieldFormat, match="onread and singlepulse"):
+            self._f({"sw": "rw", "hw": "r", "singlepulse": True, "onread": onread})
+
+    def test_inherited_conflict_rejected_on_the_field(self):
+        """A register-level default that conflicts with a field's enums is reported
+        against that field."""
+        with pytest.raises(InvalidFieldFormat, match=r"\(field mode in reg ctrl\)"):
+            Field(
+                {"name": "mode", "type": "bit", "enums": _ON_OFF},
+                0,
+                "ctrl",
+                inherited={"sw": "rw", "hw": "r", "onwrite": "woset"},
+            )
