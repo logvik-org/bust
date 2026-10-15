@@ -10,7 +10,7 @@ bit range within the parent register's data width.
 
 import logging
 from collections import OrderedDict
-from typing import Dict, List, NamedTuple, Optional
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 from bust.core.enums import FieldType, SwAccess, HwAccess, OnRead, OnWrite
 from bust.exceptions import InvalidFieldFormat
@@ -198,6 +198,41 @@ class Field:
             reject("swmod requires a software-writable field (sw rw or wo)")
         if self.swacc and self.sw is SwAccess.NA:
             reject("swacc requires software access (sw not na)")
+
+        strobes = self._keys_in_effect(("swmod", "swacc", "singlepulse"))
+        if strobes and not self.hw_readable:
+            reject(
+                f"{', '.join(strobes)} {'is' if len(strobes) == 1 else 'are'} "
+                "delivered through to_hw, so the field needs hw r or rw, "
+                f"not hw {self.hw.value}"
+            )
+        # The singlepulse self-clear and a hardware write every cycle both claim
+        # the storage each cycle, so the hardware value would be silently dropped.
+        if self.singlepulse and self.hw_writes_continuously:
+            reject(
+                "singlepulse cannot self-clear a field hardware writes every "
+                "cycle (hw rw needs we or wel)"
+            )
+        if self.singlepulse and self.onread is not None:
+            reject(
+                "onread and singlepulse are mutually exclusive: the field "
+                "self-clears, so rclr has no effect and rset fires a pulse on "
+                "every read"
+            )
+
+        enum_conflicts = self._keys_in_effect(
+            ("onread", "onwrite", "singlepulse", "hwset", "hwclr")
+        )
+        if self.is_enum and enum_conflicts:
+            reject(
+                f"enums cannot be combined with {', '.join(enum_conflicts)}: "
+                "bit-level side effects and hardware set/clear have no meaning "
+                "for an enumerated value"
+            )
+
+    def _keys_in_effect(self, keys: Tuple[str, ...]) -> List[str]:
+        """The access-mode keys among `keys` that are in effect for this field."""
+        return [key for key in keys if getattr(self, key) not in (None, False)]
 
     def _resolve(self, key: str, fallback):
         """Field value if set, else inherited register default, else fallback."""
