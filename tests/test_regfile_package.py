@@ -457,3 +457,66 @@ def test_empty_module_is_mapped_returns_false():
     out = GeneratorFactory.generate_regfile_package_vhdl(module)
     assert "return false;" in out
     assert "return ;" not in out
+
+
+_ON_OFF = [{"name": "OFF", "value": 0}, {"name": "ON", "value": 1}]
+
+
+def _fields_module(*fields, **defaults):
+    """Module with one fields register `r`; `defaults` are its access defaults."""
+    reg = dict({"name": "r", "type": "fields", "fields": list(fields)}, **defaults)
+    return Module({"name": "m", "register": [reg]}, _axi_bus(), settings=None)
+
+
+def test_hwset_without_write_enable_takes_the_value_member():
+    """from_hw.<reg>.<field> is a record once hwset/hwclr add strobes, so the
+    every-cycle hardware write must read its value member."""
+    module = _fields_module(
+        {"name": "f", "type": "vector", "width": 4, "hwset": True}, sw="ro", hw="w"
+    )
+    out = GeneratorFactory.generate_regfile_vhdl(module)
+    assert "regs.r.f <= from_hw.r.f.value;" in out
+    assert "regs.r.f <= from_hw.r.f;" not in out
+
+
+def test_bit_enum_encodes_as_one_element_vector():
+    module = _fields_module(
+        {"name": "lo", "type": "bit"},
+        {"name": "f", "type": "bit", "enums": _ON_OFF},
+        sw="rw",
+        hw="r",
+    )
+    pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
+    regfile = GeneratorFactory.generate_regfile_vhdl(module)
+    assert "function to_r_f(s : std_logic_vector(0 downto 0)) return t_r_f;" in pkg
+    assert "variable slv : std_logic_vector(0 downto 0);" in pkg
+    assert 'when "1" => return ON;' in pkg
+    assert "regs.r.f <= to_r_f(lb_m2s.wdata(1 downto 1));" in regfile
+    assert "rdata(1 downto 1) <= to_slv(regs.r.f);" in regfile
+
+
+def test_hw_written_enum_testbench_default_is_its_reset_literal():
+    states = [{"name": n, "value": v} for n, v in (("A", 0), ("B", 1), ("C", 2))]
+    module = _fields_module(
+        {"name": "a", "type": "vector", "width": 2, "reset": "0x2", "enums": states},
+        {"name": "b", "type": "bit", "we": True, "enums": _ON_OFF},
+        sw="ro",
+        hw="w",
+    )
+    tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
+    assert "r => (a => C, b => (value => OFF, we => '0')));" in tb
+
+
+def test_constant_enum_read_is_type_qualified():
+    """Enum literal names may repeat across fields, so a constant's literal is
+    qualified to keep to_slv unambiguous."""
+    module = _fields_module(
+        {"name": "a", "type": "bit", "reset": "0x1", "enums": _ON_OFF},
+        {"name": "b", "type": "bit", "enums": _ON_OFF},
+        sw="ro",
+        hw="r",
+    )
+    out = GeneratorFactory.generate_regfile_vhdl(module)
+    assert "rdata(0 downto 0) <= to_slv(t_r_a'(ON));" in out
+    assert "rdata(1 downto 1) <= to_slv(t_r_b'(OFF));" in out
+    assert "to_hw.r <= (a => t_r_a'(ON), b => t_r_b'(OFF));" in out
