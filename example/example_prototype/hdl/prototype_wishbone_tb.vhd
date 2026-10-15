@@ -1,6 +1,6 @@
 -- Generated testbench for the prototype module (Wishbone B4 classic).
--- UVVM ships no Wishbone VIP, so this drives the prototype top entity with
--- an inlined hand-written classic-cycle Wishbone master BFM (the bus_write/bus_read
+-- This drives the prototype top entity with an inlined hand-written
+-- classic-cycle Wishbone master BFM (the bus_write/bus_read
 -- procedures below) and uses uvvm_util only for logging and checks. It self-checks
 -- every register of the module, by kind: plain read-write,
 -- enumerated, write-only/singlepulse (reads back 0), onread/onwrite software side

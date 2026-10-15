@@ -1,5 +1,5 @@
-#ifndef ACCESS_MATRIX_H
-#define ACCESS_MATRIX_H
+#ifndef ACCESS_MATRIX_HPP
+#define ACCESS_MATRIX_HPP
 
 #include <cstdint>
 #include <string>

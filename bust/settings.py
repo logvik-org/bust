@@ -8,6 +8,8 @@ import os
 from collections import OrderedDict
 from typing import Optional
 
+from bust.validation.config_validator import warn_unknown_keys
+
 
 class Settings:
     """Output settings of a register map.
@@ -45,11 +47,16 @@ class Settings:
                 has none.
         """
         settings = settings or {}
+        warn_unknown_keys(
+            settings, ("proj_dir", "mod_subdir", *self.IGNORED_KEYS), "settings"
+        )
         self.json_path = json_path or ""
         json_dir, self.json_name = os.path.split(self.json_path)
 
         self.proj_dir: Optional[str] = settings.get("proj_dir")
-        self.project_path = json_dir if self.proj_dir is None else self.proj_dir
+        # A file in the working directory has no directory part.
+        default_dir = json_dir or "."
+        self.project_path = default_dir if self.proj_dir is None else self.proj_dir
         self.mod_subdir: bool = settings.get("mod_subdir", True)
         self.ignored = OrderedDict(
             (key, settings[key]) for key in self.IGNORED_KEYS if key in settings
