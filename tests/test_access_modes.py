@@ -233,9 +233,34 @@ class TestLegacyTranslation:
         d = register_access_defaults({"name": "p", "mode": "pulse"})
         assert d == {"sw": "wo", "hw": "r", "singlepulse": True}
 
-    def test_pulse_cycles_warns(self, caplog):
-        register_access_defaults({"name": "p", "mode": "pulse", "pulse_cycles": 4})
-        assert "single-cycle" in caplog.text
+    def test_pulse_cycles_other_than_one_rejected(self):
+        cfg = {"name": "reg9", "mode": "pulse", "pulse_cycles": 4, "type": "bit"}
+        with pytest.raises(InvalidRegisterFormat) as excinfo:
+            Register(cfg, 0, "m", 32)
+        assert str(excinfo.value) == (
+            "Invalid register format: Register 'reg9': pulse_cycles=4 is not "
+            "supported in bust 1.0. A pulse register drives the written value for "
+            "one clock cycle and then returns to its reset value. Remove "
+            "pulse_cycles."
+        )
+
+    def test_pulse_cycles_of_one_accepted(self):
+        cfg = {"name": "reg10", "mode": "pulse", "pulse_cycles": 1, "type": "bit"}
+        assert Register(cfg, 0, "m", 32).fields == []
+
+    def test_stall_cycles_rejected(self):
+        cfg = {"name": "reg3", "mode": "rw", "stall_cycles": 30, "type": "bit"}
+        with pytest.raises(InvalidRegisterFormat) as excinfo:
+            Register(cfg, 0, "m", 32)
+        assert str(excinfo.value) == (
+            "Invalid register format: Register 'reg3': stall_cycles is not "
+            "supported in bust 1.0, because registers live in the generated "
+            "register file and always answer in one cycle. Remove stall_cycles."
+        )
+
+    def test_stall_cycles_of_zero_accepted(self):
+        cfg = {"name": "reg3", "mode": "rw", "stall_cycles": 0, "type": "bit"}
+        assert Register(cfg, 0, "m", 32).to_json()["stall_cycles"] == 0
 
     def test_absent_mode_defaults_rw(self):
         assert register_access_defaults({"name": "r"}) == {"sw": "rw", "hw": "r"}

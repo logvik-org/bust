@@ -170,20 +170,3 @@ class InvalidFieldFormat(RuntimeError):
         """
         msg = "Invalid field format: " + msg
         super().__init__(msg)
-
-
-class InvalidStallValue(RuntimeError):
-    """Raised when stall_cycles value is out of valid range.
-
-    Stall cycles must be either 0 (disabled) or between 2 and 255
-    (inclusive) for IPBus registers.
-    """
-
-    def __init__(self, val):
-        """Initialize InvalidStallValue exception.
-
-        Args:
-            val: The invalid stall cycles value.
-        """
-        msg = "Invalid stall value: {}. Must be between 2 and 255.".format(val)
-        super().__init__(msg)

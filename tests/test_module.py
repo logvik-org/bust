@@ -8,7 +8,7 @@ import pytest
 
 from bust.core.module import Module
 from bust.core.enums import RegisterMode
-from bust.exceptions import InvalidAddress
+from bust.exceptions import InvalidAddress, InvalidRegister, InvalidRegisterFormat
 from bust.validation.vhdl_validator import InvalidVHDLIdentifier
 
 
@@ -79,19 +79,15 @@ class TestRegisterBookkeeping:
         assert mod.num_ro_regs == 1
         assert mod.num_pulse_regs == 1
 
-    def test_has_stall_regs_false_without_stall(self):
-        assert make_module(regs("R0")).has_stall_regs() is False
-
-    def test_has_stall_regs_true_for_ipbus_stall(self):
-        mod = make_module(
-            [{"name": "R0", "mode": "rw", "stall_cycles": 4}],
-            bus=stub_bus(bus_type="ipbus"),
-        )
-        assert mod.has_stall_regs() is True
-
-    def test_stall_on_non_ipbus_rejected(self):
-        with pytest.raises(NotImplementedError):
-            make_module([{"name": "R0", "mode": "rw", "stall_cycles": 4}])
+    @pytest.mark.parametrize("bus_type", ["axi", "ipbus"])
+    def test_stall_rejected_on_every_bus(self, bus_type):
+        with pytest.raises(InvalidRegister) as excinfo:
+            make_module(
+                [{"name": "R0", "mode": "rw", "stall_cycles": 4}],
+                bus=stub_bus(bus_type=bus_type),
+            )
+        assert isinstance(excinfo.value.__cause__, InvalidRegisterFormat)
+        assert "stall_cycles is not supported" in str(excinfo.value.__cause__)
 
     def test_default_byte_addressable_follows_bus_type(self):
         assert make_module(regs("R0")).byte_addressable is True

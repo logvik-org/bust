@@ -52,7 +52,7 @@
       \textbf{Reset} \\
       \hline
 {% for reg in module.registers %}
-      {{ loop.index0 }} & {{ reg.name | utf8tolatex }} & {{ reg.sw.value.upper() }}/{{ reg.hw.value.upper() }}{{ reg.return_stall_string() }} & \texttt{0x{{ "%08X" | format(reg.address) }}} & {{ reg.type.value.upper() }} & {{ reg.width }} & \texttt{0x{{ "%X" | format(reg.reset[2:]|int(base=16)) }}} \\
+      {{ loop.index0 }} & {{ reg.name | utf8tolatex }} & {{ reg.sw.value.upper() }}/{{ reg.hw.value.upper() }} & \texttt{0x{{ "%08X" | format(reg.address) }}} & {{ reg.type.value.upper() }} & {{ reg.width }} & \texttt{0x{{ "%X" | format(reg.reset[2:]|int(base=16)) }}} \\
       \hline
 {% endfor %}
     \end{tabularx}
@@ -62,7 +62,7 @@
 \section{Registers}
 
 {% for reg in module.registers %}
-\begin{register}{{ '{' }}H{{ '}' }}{{ '{' }}{{ reg.name | utf8tolatex }} - {{ reg.sw.value.upper() }}/{{ reg.hw.value.upper() }}{% if reg.mode.value.lower() == "pulse" %} for {{ reg.pulse_cycles }} cycles {% endif %}{% if reg.stall %} - STALL for {{ reg.stall_cycles }} cycles{% endif %}{{ '}' }}{{ '{' }}0x{{ "%08X" | format(reg.address) }}{{ '}' }}  \par {{ reg.description | utf8tolatex }} \regnewline
+\begin{register}{{ '{' }}H{{ '}' }}{{ '{' }}{{ reg.name | utf8tolatex }} - {{ reg.sw.value.upper() }}/{{ reg.hw.value.upper() }}{{ '}' }}{{ '{' }}0x{{ "%08X" | format(reg.address) }}{{ '}' }}  \par {{ reg.description | utf8tolatex }} \regnewline
   \label{{ '{' }}{{ reg.name }}{{ '}' }}
 {% if reg.width < module.data_width %}
   \regfield{{ '{' }}unused{{ '}' }}{{ '{' }}{{ module.data_width - reg.width }}{{ '}' }}{{ '{' }}{{ reg.width }}{{ '}' }}{{ '{' }}-{{ '}' }}
