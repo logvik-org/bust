@@ -1,6 +1,6 @@
 # Local bus HDL design (step 1)
 
-*Historical design record from the local-bus refactor; kept for provenance. See [roadmap-1.0.md](roadmap-1.0.md) for current status.*
+*Historical design record from the local-bus refactor; kept for provenance.*
 
 Status (at the time): design foundation for the HDL refactor. This is hand-written prototype
 HDL and its verification. The Python/Jinja2 generator is **not** touched at this
