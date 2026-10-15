@@ -47,8 +47,7 @@
                 "address": "0xc",
                 "width": 8,
                 "reset": "0x3",
-                "stall_cycles": 30,
-                "description": "RW std_logic_vector[7:0] register that resets to 0x3. Reading and writing from this register is stalling the bus for 30 extra clock cycles."
+                "description": "RW std_logic_vector[7:0] register that resets to 0x3"
             },
             {
                 "name": "reg4",
@@ -143,7 +142,6 @@
             {
                 "name": "reg9",
                 "mode": "pulse",
-                "pulse_cycles": 4,
                 "type": "bit",
                 "address": "0x24",
                 "reset": "0x1",
@@ -162,7 +160,6 @@
             {
                 "name": "reg11",
                 "mode": "pulse",
-                "pulse_cycles": 50,
                 "type": "fields",
                 "address": "0x2c",
                 "fields": [
