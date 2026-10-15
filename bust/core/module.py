@@ -21,12 +21,22 @@ from bust.exceptions import (
 from bust.core.register import Register
 from bust.utils.formatting import indent_string
 from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
-from bust.validation.config_validator import ConfigWrapper
+from bust.validation.config_validator import ConfigWrapper, warn_unknown_keys
 
 if TYPE_CHECKING:
     from bust.core.bus import Bus
     from bust.core.field import Field
     from bust.settings import Settings
+
+
+MODULE_KEYS = (
+    "name",
+    "description",
+    "version",
+    "git_hash",
+    "byte_addressable",
+    "register",
+)
 
 
 class Module:
@@ -93,6 +103,7 @@ class Module:
 
         self.name = self._config.require("name")
         is_valid_VHDL(self.name)
+        warn_unknown_keys(mod, MODULE_KEYS, "module")
 
         # Store some config values for easy access
         self.description: str = self._config.get("description")

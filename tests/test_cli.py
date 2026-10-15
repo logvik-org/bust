@@ -123,3 +123,14 @@ def test_file_in_the_working_directory_writes_next_to_it(tmp_path):
 
     assert code == 0, output
     assert (tmp_path / "timer" / "hdl" / "timer.vhd").is_file()
+
+
+def test_unknown_key_is_reported(tmp_path):
+    register_map = json.loads(json.dumps(_REGISTER_MAP))
+    register_map["module"]["register"][0]["fields"][0]["onwrit"] = "woclr"
+    path = _write_register_map(tmp_path, register_map)
+
+    code, output = _run_bust(tmp_path, str(path), "-o", "out", "-p")
+
+    assert code == 0, output
+    assert "Unknown key 'onwrit' in field enable of register ctrl is ignored" in output

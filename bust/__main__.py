@@ -30,6 +30,7 @@ import logging
 from typing import Dict, Union
 
 from bust.utils.json_utils import json_parser
+from bust.validation.config_validator import warn_unknown_keys
 from bust.utils.file_utils import write_string_to_file
 from bust.core.module import Module
 from bust.core.bus import Bus
@@ -97,6 +98,7 @@ def main():
 
             try:
                 json_dict = json_parser(json_file)
+                warn_unknown_keys(json_dict, ("settings", "bus", "module"), "the file")
                 settings = Settings(json_file, json_dict.get("settings"))
                 bus = Bus(json_dict["bus"])
                 module = Module(json_dict["module"], bus, settings)

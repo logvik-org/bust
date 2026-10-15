@@ -15,7 +15,7 @@ from typing import Dict, List, NamedTuple, Optional, Tuple
 from bust.core.enums import FieldType, SwAccess, HwAccess, OnRead, OnWrite
 from bust.exceptions import InvalidFieldFormat
 from bust.validation.vhdl_validator import is_valid_VHDL
-from bust.validation.config_validator import ConfigWrapper
+from bust.validation.config_validator import ConfigWrapper, warn_unknown_keys
 
 
 class EnumValue(NamedTuple):
@@ -40,6 +40,18 @@ INHERITABLE_ACCESS = (
     "swmod",
     "swacc",
 )
+
+
+FIELD_KEYS = {
+    "name",
+    "type",
+    "width",
+    "position",
+    "reset",
+    "description",
+    "enums",
+    *INHERITABLE_ACCESS,
+}
 
 
 class Field:
@@ -110,6 +122,9 @@ class Field:
         # the register has validated already.
         if self.name != parent_register_name:
             is_valid_VHDL(self.name)
+        warn_unknown_keys(
+            field, FIELD_KEYS, f"field {self.name} of register {parent_register_name}"
+        )
 
         self.type = FieldType.from_string(self._config.require("type"))
         self.width = self._config.get(
@@ -279,6 +294,9 @@ class Field:
         for entry in enums:
             name = entry["name"]
             is_valid_VHDL(name)
+            warn_unknown_keys(
+                entry, ("name", "value"), f"enum value {name} of field {self.name}"
+            )
             if name in seen_names:
                 raise InvalidFieldFormat(
                     f"Duplicate enum name '{name}' in field {self.name} "
