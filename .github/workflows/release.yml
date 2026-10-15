@@ -1,0 +1,124 @@
+name: Release
+
+# Publishing a GitHub Release runs one chain, each job waiting for the previous:
+# tests and VHDL simulation -> build -> TestPyPI -> install from TestPyPI and
+# smoke-test -> PyPI. PyPI receives the files that were verified on TestPyPI.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    uses: ./.github/workflows/python_tests.yml
+    permissions:
+      contents: read
+
+  vhdl-sim:
+    uses: ./.github/workflows/vhdl_sim.yml
+    # The simulation image's layer cache is the GitHub Actions cache, which the
+    # runner's own token covers, so reading the repository is all it needs.
+    permissions:
+      contents: read
+
+  build:
+    needs: [tests, vhdl-sim]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.11"
+      - name: Check that the tag matches the package version
+        run: |
+          version="$(python -I -c 'import runpy; print(runpy.run_path("bust/_version.py")["__VERSION__"])')"
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match __VERSION__ in bust/_version.py ($version)"
+            exit 1
+          fi
+      - run: pip install build twine
+      - name: Build sdist + wheel
+        # Dating the files by the commit makes a rebuild of the same commit
+        # produce the same wheel, which verify-testpypi compares against.
+        run: SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" python -m build
+      - run: twine check dist/*
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          # Not "dist": python_tests.yml uploads that in this same run, and
+          # artifact names must be unique within a run.
+          name: release-dist
+          path: dist/*
+
+  testpypi:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write  # OIDC for Trusted Publishing
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: release-dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33  # v1.14.2
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          # Lets a failed release be re-run after TestPyPI already has the files.
+          skip-existing: true
+
+  verify-testpypi:
+    needs: testpypi
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: release-dist
+          path: dist
+      # Only bust itself comes from TestPyPI. Anyone can upload there under the
+      # names of bust's dependencies, so those are installed from PyPI.
+      - name: Download the wheel from TestPyPI
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          # A new upload can take a few minutes to show up in the index.
+          for attempt in $(seq 10); do
+            if pip download --no-deps --no-cache-dir --only-binary=:all: \
+                --index-url https://test.pypi.org/simple/ \
+                --dest "$RUNNER_TEMP/testpypi" "bust==$version"; then
+              exit 0
+            fi
+            echo "Attempt $attempt: bust $version not downloadable yet, retrying in 30 s"
+            sleep 30
+          done
+          echo "::error::bust $version never became downloadable from TestPyPI"
+          exit 1
+      # skip-existing keeps the files of an earlier release of the same version
+      # on TestPyPI, which would then be tested in place of this build.
+      - name: Check that TestPyPI serves the wheel this run built
+        run: |
+          if ! cmp "$RUNNER_TEMP"/testpypi/*.whl dist/*.whl; then
+            echo "::error::TestPyPI has a different wheel for ${GITHUB_REF_NAME#v}, from an earlier release. TestPyPI never replaces a file, so release a new version."
+            exit 1
+          fi
+      - name: Install the wheel, with its dependencies from PyPI
+        run: pip install "$RUNNER_TEMP"/testpypi/*.whl
+      - name: Smoke-test the TestPyPI package
+        run: scripts/smoke-test.sh "${GITHUB_REF_NAME#v}"
+
+  pypi:
+    needs: verify-testpypi
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write  # OIDC for Trusted Publishing
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: release-dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33  # v1.14.2

@@ -7,13 +7,29 @@ on:
       # Run whenever simulation infrastructure or VHDL source changes
       - "sim/**"
       - "example/**/*.vhd"
+      - "hdl/**/*.vhd"
+      - ".github/workflows/vhdl_sim.yml"
   pull_request:
     branches: ["**"]
     paths:
       - "sim/**"
       - "example/**/*.vhd"
+      - "hdl/**/*.vhd"
+      - ".github/workflows/vhdl_sim.yml"
   # Allow manual triggering from the Actions tab
   workflow_dispatch:
+  # Called by release.yml, where the path filters above do not apply
+  workflow_call:
+
+permissions:
+  contents: read
+
+# The group is named literally because in a workflow that release.yml calls,
+# github.workflow is the caller's name. python_tests.yml would then share the
+# group, and the two would cancel each other.
+concurrency:
+  group: vhdl-sim-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   simulate:
@@ -27,13 +43,13 @@ jobs:
       # 1. Check out the repository
       # -----------------------------------------------------------------------
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       # -----------------------------------------------------------------------
       # 2. Set up Docker Buildx for layer-caching support
       # -----------------------------------------------------------------------
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069  # v4.4.1
 
       # -----------------------------------------------------------------------
       # 3. Build (or restore from cache) the simulation Docker image.
@@ -43,16 +59,19 @@ jobs:
       # expensive compilation step only re-runs when the Dockerfile or compile
       # script changes. Unlike a GHCR registry cache this needs no extra
       # permissions and works on pull requests from forks.
+      #
+      # A release (release.yml) only reads the cache. It runs on a tag, and
+      # cache entries written from a tag can be restored by that tag alone.
       # -----------------------------------------------------------------------
       - name: Build simulation image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc  # v7.4.0
         with:
           context: sim/
           load: true         # make the image available to `docker run` below
           push: false
           tags: bust-sim:ci
           cache-from: type=gha
-          cache-to:   type=gha,mode=max
+          cache-to:   ${{ github.event_name != 'release' && 'type=gha,mode=max' || '' }}
 
       # -----------------------------------------------------------------------
       # 4. Run the IPBus testbench
@@ -75,3 +94,253 @@ jobs:
             -e WORK_ROOT=/work \
             bust-sim:ci \
             /work/sim/scripts/run_sim.sh example_axi
+
+      # -----------------------------------------------------------------------
+      # 6. Run the local-bus regfile prototype testbench
+      # -----------------------------------------------------------------------
+      - name: Run prototype local-bus simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype
+
+      # -----------------------------------------------------------------------
+      # 6b. Run the same testbench against the GENERATED regfile package, so the
+      #     generator output is compiled and simulated, not only diffed.
+      # -----------------------------------------------------------------------
+      - name: Run generated regfile package simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_generated
+
+      # -----------------------------------------------------------------------
+      # 7. Run the AXI4-Lite wrapper prototype testbench
+      # -----------------------------------------------------------------------
+      - name: Run prototype AXI-Lite wrapper simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_axi
+
+      # -----------------------------------------------------------------------
+      # 7b. Run the generated AXI endpoint (generated package + regfile +
+      #     endpoint) against the verified AXI testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated AXI endpoint simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_axi_generated
+
+      # -----------------------------------------------------------------------
+      # 7c. Run the fully generated AXI stack including the generated testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated AXI testbench simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_tb_generated
+
+      # -----------------------------------------------------------------------
+      # 8. Run the IPBus wrapper prototype testbench
+      # -----------------------------------------------------------------------
+      - name: Run prototype IPBus wrapper simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_ipbus
+
+      # -----------------------------------------------------------------------
+      # 8b. Run the generated IPBus endpoint (generated package + regfile +
+      #     endpoint) against the verified IPBus testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated IPBus endpoint simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_ipbus_generated
+
+      # -----------------------------------------------------------------------
+      # 8c. Run the fully generated IPBus stack including the generated testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated IPBus testbench simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_ipbus_tb_generated
+
+      # -----------------------------------------------------------------------
+      # 9. Run the SBI wrapper prototype testbench
+      # -----------------------------------------------------------------------
+      - name: Run prototype SBI wrapper simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_sbi
+
+      # -----------------------------------------------------------------------
+      # 9b. Run the generated SBI endpoint (generated package + regfile +
+      #     endpoint) against the verified SBI endpoint testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated SBI endpoint simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_sbi_generated
+
+      # -----------------------------------------------------------------------
+      # 9c. Run the fully generated SBI stack including the generated testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated SBI testbench simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_sbi_tb_generated
+
+      # -----------------------------------------------------------------------
+      # 10. Run the Avalon-MM wrapper prototype testbench
+      # -----------------------------------------------------------------------
+      - name: Run prototype Avalon-MM wrapper simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_avalon
+
+      # -----------------------------------------------------------------------
+      # 10b. Run the generated Avalon-MM endpoint (generated package + regfile +
+      #      endpoint) against the verified Avalon-MM endpoint testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated Avalon-MM endpoint simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_avalon_generated
+
+      # -----------------------------------------------------------------------
+      # 10c. Run the fully generated Avalon-MM stack including the generated
+      #      testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated Avalon-MM testbench simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_avalon_tb_generated
+
+      # -----------------------------------------------------------------------
+      # 11. Run the Wishbone wrapper prototype testbench
+      # -----------------------------------------------------------------------
+      - name: Run prototype Wishbone wrapper simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_wishbone
+
+      # -----------------------------------------------------------------------
+      # 11b. Run the generated Wishbone endpoint (generated package + regfile +
+      #      endpoint) against the verified Wishbone endpoint testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated Wishbone endpoint simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_wishbone_generated
+
+      # -----------------------------------------------------------------------
+      # 11c. Run the fully generated Wishbone stack including the generated
+      #      testbench (inlined hand-written master BFM).
+      # -----------------------------------------------------------------------
+      - name: Run generated Wishbone testbench simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_wishbone_tb_generated
+
+      # -----------------------------------------------------------------------
+      # 12. Run the APB wrapper prototype testbench
+      # -----------------------------------------------------------------------
+      - name: Run prototype APB wrapper simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_apb
+
+      # -----------------------------------------------------------------------
+      # 12b. Run the generated APB endpoint (generated package + regfile +
+      #      endpoint) against the verified APB endpoint testbench.
+      # -----------------------------------------------------------------------
+      - name: Run generated APB endpoint simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_apb_generated
+
+      # -----------------------------------------------------------------------
+      # 12c. Run the fully generated APB stack including the generated testbench
+      #      (inlined hand-written master BFM).
+      # -----------------------------------------------------------------------
+      - name: Run generated APB testbench simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh prototype_apb_tb_generated
+
+      # -----------------------------------------------------------------------
+      # 13. Run the fully generated access-mode combination example (AXI stack
+      #     and generated testbench).
+      # -----------------------------------------------------------------------
+      - name: Run generated access-matrix testbench simulation
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh access_matrix_tb_generated
+
+      - name: Run two generated modules in one library
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -e WORK_ROOT=/work \
+            bust-sim:ci \
+            /work/sim/scripts/run_sim.sh multi_module_generated

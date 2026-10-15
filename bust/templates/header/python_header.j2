@@ -2,10 +2,23 @@ class {{ module.name.upper() }}_H:
 {% for reg in module.registers %}
 
     """Register: {{ reg.name }}"""
-    {{ reg.name.upper() }}_MODE = "{{ reg.mode.value }}"
+    {{ reg.name.upper() }}_SW = "{{ reg.sw.value }}"
+    {{ reg.name.upper() }}_HW = "{{ reg.hw.value }}"
     {{ reg.name.upper() }}_WIDTH = {{ reg.width }}
     {{ reg.name.upper() }}_OFFSET = {{ "0x%x" | format(reg.address) }}
     {{ reg.name.upper() }}_RESET = {{ reg.reset }}
+{% if not reg.fields %}
+{% set f = reg.effective_fields[0] %}
+{% if f.onread %}
+    {{ reg.name.upper() }}_ONREAD = "{{ f.onread.value }}"
+{% endif %}
+{% if f.onwrite %}
+    {{ reg.name.upper() }}_ONWRITE = "{{ f.onwrite.value }}"
+{% endif %}
+{% if f.singlepulse %}
+    {{ reg.name.upper() }}_SINGLEPULSE = True
+{% endif %}
+{% endif %}
 {% if reg.type == reg_type_fields %}
 
 {% for field in reg.fields %}
@@ -13,7 +26,21 @@ class {{ module.name.upper() }}_H:
     {{ reg.name.upper() }}_{{ field.name.upper() }}_OFFSET = {{ field.pos_low }}
     {{ reg.name.upper() }}_{{ field.name.upper() }}_WIDTH = {{ field.width }}
     {{ reg.name.upper() }}_{{ field.name.upper() }}_RESET = {{ field.reset }}
-    {{ reg.name.upper() }}_{{ field.name.upper() }}_MASK = {{ "0x%x" | format(((2**field.width - 1) * (2**field.pos_low))) }}
+    {{ reg.name.upper() }}_{{ field.name.upper() }}_MASK = {{ "0x%x" | format(field.mask) }}
+    {{ reg.name.upper() }}_{{ field.name.upper() }}_SW = "{{ field.sw.value }}"
+    {{ reg.name.upper() }}_{{ field.name.upper() }}_HW = "{{ field.hw.value }}"
+{% if field.onread %}
+    {{ reg.name.upper() }}_{{ field.name.upper() }}_ONREAD = "{{ field.onread.value }}"
+{% endif %}
+{% if field.onwrite %}
+    {{ reg.name.upper() }}_{{ field.name.upper() }}_ONWRITE = "{{ field.onwrite.value }}"
+{% endif %}
+{% if field.singlepulse %}
+    {{ reg.name.upper() }}_{{ field.name.upper() }}_SINGLEPULSE = True
+{% endif %}
+{% for enum in field.enums %}
+    {{ reg.name.upper() }}_{{ field.name.upper() }}_{{ enum.name.upper() }} = {{ enum.value }}
+{% endfor %}
 {% if not loop.last %}
 
 {% endif %}

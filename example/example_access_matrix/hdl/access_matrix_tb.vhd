@@ -1,0 +1,382 @@
+-- Generated UVVM testbench for the access_matrix module (AXI4-Lite).
+-- Drives the access_matrix top entity with the stock Bitvis AXI-Lite VIP and
+-- self-checks every register whose behaviour the prototype exercises: plain
+-- read-write, enumerated, write-only/singlepulse (reads back 0), onread/onwrite
+-- software side effects, software-readonly registers driven from from_hw
+-- (we/wel), the hardware we override / hwset / hwclr modifiers, the to_hw values
+-- the hardware sees, and the swmod/swacc/singlepulse to_hw strobe pulses (counted
+-- by a monitor process, since they are single-cycle).
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+library uvvm_util;
+context uvvm_util.uvvm_util_context;
+
+library bitvis_vip_axilite;
+use bitvis_vip_axilite.axilite_bfm_pkg.all;
+
+use work.access_matrix_localbus_pkg.all;
+use work.access_matrix_regfile_pkg.all;
+
+entity access_matrix_tb is
+end entity access_matrix_tb;
+
+architecture tb of access_matrix_tb is
+
+  constant C_SCOPE      : string := C_TB_SCOPE_DEFAULT;
+  constant C_CLK_PERIOD : time   := 10 ns;
+
+  constant C_BASE : std_logic_vector(31 downto 0) := 32x"0";
+
+  signal clk      : std_logic := '0';
+  signal areset_n : std_logic := '1';
+
+  signal to_hw    : t_access_matrix_to_hw;
+  signal from_hw  : t_access_matrix_from_hw := (
+    status => (busy => '0', count => (value => (others => '0'), we => '0'), fault => (value => '0', wel => '1')),
+    hw_modify => (override => (value => (others => '0'), we => '0'), sticky => (set => '0', clr => '0')),
+    hw_set_clear => (set_only => (value => (others => '0'), set => '0'), clr_only => (value => '0', clr => '0')),
+    enum_hw => (state => ST_HALT, supply => (value => PWR_OFF, we => '0')),
+    hw_status_swacc => (level => (others => '0'), latched => (value => (others => '0'), we => '0')),
+    hw_only => (shadow => (others => '0')),
+    irq_status => (pending => (set => '0')));
+
+  constant C_DATA_W : natural := 32;
+  constant C_ADDR_W : natural := 32;
+  signal axilite_if : t_axilite_if(write_address_channel(awaddr(C_ADDR_W-1 downto 0)),
+                                   write_data_channel(wdata(C_DATA_W-1 downto 0),
+                                                      wstrb((C_DATA_W/8)-1 downto 0)),
+                                   read_address_channel(araddr(C_ADDR_W-1 downto 0)),
+                                   read_data_channel(rdata(C_DATA_W-1 downto 0)))
+                      := init_axilite_if_signals(C_DATA_W, C_ADDR_W);
+  signal axilite_bfm_config : t_axilite_bfm_config := C_AXILITE_BFM_CONFIG_DEFAULT;
+
+  function f_addr(reg : std_logic_vector(31 downto 0)) return unsigned is
+  begin
+    return unsigned(C_BASE) + unsigned(reg);
+  end function;
+
+  -- Strobe monitors: count the cycles each swmod/swacc output is high and each
+  -- singlepulse output differs from its reset value, so single-cycle pulses are
+  -- verifiable without cycle-accurate sampling.
+  signal hw_set_clear_clr_only_swacc_count : natural := 0;
+  signal pulses_kick_swmod_count : natural := 0;
+  signal pulses_go_sp_count : natural := 0;
+  signal pulses_go_sp_value : std_logic := '0';
+  signal pulses_kick_sp_count : natural := 0;
+  signal pulses_kick_sp_value : std_logic_vector(3 downto 0) := (others => '0');
+  signal strobes_modified_swmod_count : natural := 0;
+  signal strobes_accessed_swacc_count : natural := 0;
+  signal enum_swacc_phase_swacc_count : natural := 0;
+  signal mixed_swacc_clear_bits_swacc_count : natural := 0;
+  signal mixed_swacc_go_sp_count : natural := 0;
+  signal mixed_swacc_go_sp_value : std_logic := '0';
+  signal mixed_history_toggle_swacc_count : natural := 0;
+  signal hw_status_swacc_level_swacc_count : natural := 0;
+  signal irq_status_pending_swacc_count : natural := 0;
+  signal irq_status_pending_at_swacc : std_logic := '0';
+
+begin
+
+  clock_generator(clk, C_CLK_PERIOD);
+
+  DUT : entity work.access_matrix
+    generic map (
+      G_BASE_ADDRESS       => unsigned(C_BASE),
+      G_CHECK_BASE_ADDRESS => true)
+    port map (
+      clk      => clk,
+      areset_n => areset_n,
+      awaddr   => axilite_if.write_address_channel.awaddr,
+      awvalid  => axilite_if.write_address_channel.awvalid,
+      awready  => axilite_if.write_address_channel.awready,
+      wdata    => axilite_if.write_data_channel.wdata,
+      wvalid   => axilite_if.write_data_channel.wvalid,
+      wready   => axilite_if.write_data_channel.wready,
+      bresp    => axilite_if.write_response_channel.bresp,
+      bvalid   => axilite_if.write_response_channel.bvalid,
+      bready   => axilite_if.write_response_channel.bready,
+      araddr   => axilite_if.read_address_channel.araddr,
+      arvalid  => axilite_if.read_address_channel.arvalid,
+      arready  => axilite_if.read_address_channel.arready,
+      rdata    => axilite_if.read_data_channel.rdata,
+      rresp    => axilite_if.read_data_channel.rresp,
+      rvalid   => axilite_if.read_data_channel.rvalid,
+      rready   => axilite_if.read_data_channel.rready,      to_hw    => to_hw,      from_hw  => from_hw);
+
+  p_strobe_monitor : process (clk) is
+  begin
+    if rising_edge(clk) then
+      if to_hw.hw_set_clear.clr_only.swacc = '1' then
+        hw_set_clear_clr_only_swacc_count <= hw_set_clear_clr_only_swacc_count + 1;
+      end if;
+      if to_hw.pulses.kick.swmod = '1' then
+        pulses_kick_swmod_count <= pulses_kick_swmod_count + 1;
+      end if;
+      if to_hw.pulses.go /= '0' then
+        pulses_go_sp_count <= pulses_go_sp_count + 1;
+        pulses_go_sp_value <= to_hw.pulses.go;
+      end if;
+      if to_hw.pulses.kick.value /= 4x"0" then
+        pulses_kick_sp_count <= pulses_kick_sp_count + 1;
+        pulses_kick_sp_value <= to_hw.pulses.kick.value;
+      end if;
+      if to_hw.strobes.modified.swmod = '1' then
+        strobes_modified_swmod_count <= strobes_modified_swmod_count + 1;
+      end if;
+      if to_hw.strobes.accessed.swacc = '1' then
+        strobes_accessed_swacc_count <= strobes_accessed_swacc_count + 1;
+      end if;
+      if to_hw.enum_swacc.phase.swacc = '1' then
+        enum_swacc_phase_swacc_count <= enum_swacc_phase_swacc_count + 1;
+      end if;
+      if to_hw.mixed_swacc.clear_bits.swacc = '1' then
+        mixed_swacc_clear_bits_swacc_count <= mixed_swacc_clear_bits_swacc_count + 1;
+      end if;
+      if to_hw.mixed_swacc.go /= '0' then
+        mixed_swacc_go_sp_count <= mixed_swacc_go_sp_count + 1;
+        mixed_swacc_go_sp_value <= to_hw.mixed_swacc.go;
+      end if;
+      if to_hw.mixed_history.toggle.swacc = '1' then
+        mixed_history_toggle_swacc_count <= mixed_history_toggle_swacc_count + 1;
+      end if;
+      if to_hw.hw_status_swacc.level.swacc = '1' then
+        hw_status_swacc_level_swacc_count <= hw_status_swacc_level_swacc_count + 1;
+      end if;
+      if to_hw.irq_status.pending.swacc = '1' then
+        irq_status_pending_swacc_count <= irq_status_pending_swacc_count + 1;
+        irq_status_pending_at_swacc <= to_hw.irq_status.pending.value;
+      end if;
+    end if;
+  end process p_strobe_monitor;
+
+  p_main : process is
+
+    procedure bus_write(constant addr : in unsigned;
+                        constant data : in std_logic_vector;
+                        constant msg  : in string) is
+    begin
+      axilite_write(addr, data, msg, clk, axilite_if, C_SCOPE,
+                    shared_msg_id_panel, axilite_bfm_config);
+    end procedure;
+
+    procedure bus_check(constant addr : in unsigned;
+                        constant data : in std_logic_vector;
+                        constant msg  : in string) is
+    begin
+      axilite_check(addr, data, msg, clk, axilite_if, error, C_SCOPE,
+                    shared_msg_id_panel, axilite_bfm_config);
+    end procedure;
+    variable v_hw_set_clear_clr_only_swacc : natural;
+    variable v_pulses_kick_swmod : natural;
+    variable v_pulses_go_sp : natural;
+    variable v_pulses_kick_sp : natural;
+    variable v_strobes_modified_swmod : natural;
+    variable v_strobes_accessed_swacc : natural;
+    variable v_enum_swacc_phase_swacc : natural;
+    variable v_mixed_swacc_clear_bits_swacc : natural;
+    variable v_mixed_swacc_go_sp : natural;
+    variable v_mixed_history_toggle_swacc : natural;
+    variable v_hw_status_swacc_level_swacc : natural;
+    variable v_irq_status_pending_swacc : natural;
+
+  begin
+    axilite_bfm_config.clock_period <= C_CLK_PERIOD;
+
+    disable_log_msg(ALL_MESSAGES, QUIET);
+    enable_log_msg(ID_LOG_HDR, QUIET);
+
+    gen_pulse(areset_n, '0', 500 ns, BLOCKING, "Reset for 500 ns");
+
+    log(ID_LOG_HDR, "plain: software read-write round-trip", C_SCOPE);
+    bus_write(f_addr(C_ADDR_PLAIN), 32x"000000FF", "write plain");
+    bus_check(f_addr(C_ADDR_PLAIN), 32x"000000FF", "plain reads back");
+    check_value(to_hw.plain.flag, '1', error, "plain.flag exposed to hw", C_SCOPE);
+    check_value(to_hw.plain.level, 3x"7", error, "plain.level exposed to hw", C_SCOPE);
+
+    log(ID_LOG_HDR, "strobes: software read-write round-trip", C_SCOPE);
+    bus_write(f_addr(C_ADDR_STROBES), 32x"000000FF", "write strobes");
+    bus_check(f_addr(C_ADDR_STROBES), 32x"000000FF", "strobes reads back");
+    check_value(to_hw.strobes.modified.value, 4x"F", error, "strobes.modified exposed to hw", C_SCOPE);
+    check_value(to_hw.strobes.accessed.value, 4x"F", error, "strobes.accessed exposed to hw", C_SCOPE);
+
+    log(ID_LOG_HDR, "enum_vector: enumerated round-trip", C_SCOPE);
+    bus_write(f_addr(C_ADDR_ENUM_VECTOR), 32x"00000003", "write enum_vector");
+    bus_check(f_addr(C_ADDR_ENUM_VECTOR), 32x"00000003", "enum_vector reads back encoded value");
+
+    log(ID_LOG_HDR, "enum_bit: enumerated round-trip", C_SCOPE);
+    bus_write(f_addr(C_ADDR_ENUM_BIT), 32x"00000001", "write enum_bit");
+    bus_check(f_addr(C_ADDR_ENUM_BIT), 32x"00000001", "enum_bit reads back encoded value");
+
+    log(ID_LOG_HDR, "enum_swacc: enumerated round-trip", C_SCOPE);
+    bus_write(f_addr(C_ADDR_ENUM_SWACC), 32x"00000002", "write enum_swacc");
+    bus_check(f_addr(C_ADDR_ENUM_SWACC), 32x"00000002", "enum_swacc reads back encoded value");
+
+    log(ID_LOG_HDR, "command: write-only / pulse reads back zero", C_SCOPE);
+    bus_write(f_addr(C_ADDR_COMMAND), 32x"0000000F", "write command");
+    bus_check(f_addr(C_ADDR_COMMAND), 32x"0", "command reads back zero");
+
+    log(ID_LOG_HDR, "pulses: write-only / pulse reads back zero", C_SCOPE);
+    bus_write(f_addr(C_ADDR_PULSES), 32x"0000001F", "write pulses");
+    bus_check(f_addr(C_ADDR_PULSES), 32x"0", "pulses reads back zero");
+
+    log(ID_LOG_HDR, "write_effects: onwrite software side effects", C_SCOPE);
+    bus_write(f_addr(C_ADDR_WRITE_EFFECTS), 32x"00001555", "write write_effects");
+    bus_check(f_addr(C_ADDR_WRITE_EFFECTS), 32x"00001AA5", "write_effects applies onwrite effects");
+
+    log(ID_LOG_HDR, "mixed_history: onwrite software side effects", C_SCOPE);
+    bus_write(f_addr(C_ADDR_MIXED_HISTORY), 32x"00005555", "write mixed_history");
+    bus_check(f_addr(C_ADDR_MIXED_HISTORY), 32x"0000A5A5", "mixed_history applies onwrite effects");
+
+    log(ID_LOG_HDR, "read_effects: onread software side effects", C_SCOPE);
+    bus_write(f_addr(C_ADDR_READ_EFFECTS), 32x"00000055", "write read_effects");
+    bus_check(f_addr(C_ADDR_READ_EFFECTS), 32x"00000055", "read_effects first read returns stored value");
+    bus_check(f_addr(C_ADDR_READ_EFFECTS), 32x"000000F0", "read_effects second read reflects onread");
+
+    log(ID_LOG_HDR, "status: hardware-driven status read back over the bus", C_SCOPE);
+    wait until falling_edge(clk);
+    from_hw.status.busy <= '1';
+    from_hw.status.count.value <= 4x"5";
+    from_hw.status.count.we <= '1';
+    from_hw.status.fault.value <= '1';
+    from_hw.status.fault.wel <= '0';
+    wait until falling_edge(clk);
+    from_hw.status.count.we <= '0';
+    from_hw.status.fault.wel <= '1';
+    bus_check(f_addr(C_ADDR_STATUS), 32x"0000002B", "status reflects hardware inputs");
+
+    log(ID_LOG_HDR, "hw_status_swacc: hardware-driven status read back over the bus", C_SCOPE);
+    wait until falling_edge(clk);
+    from_hw.hw_status_swacc.level <= 4x"5";
+    from_hw.hw_status_swacc.latched.value <= 4x"5";
+    from_hw.hw_status_swacc.latched.we <= '1';
+    wait until falling_edge(clk);
+    from_hw.hw_status_swacc.latched.we <= '0';
+    bus_check(f_addr(C_ADDR_HW_STATUS_SWACC), 32x"00000055", "hw_status_swacc reflects hardware inputs");
+
+    log(ID_LOG_HDR, "hw_modify: software baseline write", C_SCOPE);
+    bus_write(f_addr(C_ADDR_HW_MODIFY), 32x"00000015", "write hw_modify");
+    bus_check(f_addr(C_ADDR_HW_MODIFY), 32x"00000015", "hw_modify reads back the software value");
+    check_value(to_hw.hw_modify.override, 4x"5", error, "hw_modify.override exposed to hw", C_SCOPE);
+    check_value(to_hw.hw_modify.sticky, '1', error, "hw_modify.sticky exposed to hw", C_SCOPE);
+
+    log(ID_LOG_HDR, "hw_modify: hardware we overrides the stored value", C_SCOPE);
+    wait until falling_edge(clk);
+    from_hw.hw_modify.override.value <= 4x"A";
+    from_hw.hw_modify.override.we <= '1';
+    wait until falling_edge(clk);
+    from_hw.hw_modify.override.we <= '0';
+    bus_check(f_addr(C_ADDR_HW_MODIFY), 32x"0000001A", "hw_modify reflects the hardware we override");
+
+    log(ID_LOG_HDR, "hw_modify: hwset drives fields high", C_SCOPE);
+    wait until falling_edge(clk);
+    from_hw.hw_modify.sticky.set <= '1';
+    wait until falling_edge(clk);
+    from_hw.hw_modify.sticky.set <= '0';
+    bus_check(f_addr(C_ADDR_HW_MODIFY), 32x"0000001A", "hw_modify reflects hwset");
+
+    log(ID_LOG_HDR, "hw_modify: hwclr clears fields (and beats hwset)", C_SCOPE);
+    wait until falling_edge(clk);
+    from_hw.hw_modify.sticky.set <= '1';
+    from_hw.hw_modify.sticky.clr <= '1';
+    wait until falling_edge(clk);
+    from_hw.hw_modify.sticky.set <= '0';
+    from_hw.hw_modify.sticky.clr <= '0';
+    bus_check(f_addr(C_ADDR_HW_MODIFY), 32x"0000000A", "hw_modify reflects hwclr");
+
+    log(ID_LOG_HDR, "hw_set_clear: software-access strobe pulses", C_SCOPE);
+    v_hw_set_clear_clr_only_swacc := hw_set_clear_clr_only_swacc_count;
+    bus_write(f_addr(C_ADDR_HW_SET_CLEAR), 32x"0000001F", "write hw_set_clear");
+    bus_check(f_addr(C_ADDR_HW_SET_CLEAR), 32x"00000000", "read hw_set_clear");
+    wait until rising_edge(clk);
+    wait until rising_edge(clk);
+    check_value(hw_set_clear_clr_only_swacc_count - v_hw_set_clear_clr_only_swacc, 2, error, "hw_set_clear.clr_only swacc pulses per access (write + read)", C_SCOPE);
+
+    log(ID_LOG_HDR, "pulses: software-access strobe pulses", C_SCOPE);
+    v_pulses_kick_swmod := pulses_kick_swmod_count;
+    v_pulses_go_sp := pulses_go_sp_count;
+    v_pulses_kick_sp := pulses_kick_sp_count;
+    bus_write(f_addr(C_ADDR_PULSES), 32x"0000001F", "write pulses");
+    wait until rising_edge(clk);
+    wait until rising_edge(clk);
+    check_value(pulses_kick_swmod_count - v_pulses_kick_swmod, 1, error, "pulses.kick swmod pulses once per write", C_SCOPE);
+    check_value(pulses_go_sp_count - v_pulses_go_sp, 1, error, "pulses.go singlepulse lasts exactly one cycle", C_SCOPE);
+    check_value(pulses_go_sp_value, '1', error, "pulses.go hw saw the pulse value", C_SCOPE);
+    check_value(pulses_kick_sp_count - v_pulses_kick_sp, 1, error, "pulses.kick singlepulse lasts exactly one cycle", C_SCOPE);
+    check_value(pulses_kick_sp_value, 4x"F", error, "pulses.kick hw saw the pulse value", C_SCOPE);
+
+    log(ID_LOG_HDR, "strobes: software-access strobe pulses", C_SCOPE);
+    v_strobes_modified_swmod := strobes_modified_swmod_count;
+    v_strobes_accessed_swacc := strobes_accessed_swacc_count;
+    bus_write(f_addr(C_ADDR_STROBES), 32x"000000FF", "write strobes");
+    bus_check(f_addr(C_ADDR_STROBES), 32x"000000FF", "read strobes");
+    wait until rising_edge(clk);
+    wait until rising_edge(clk);
+    check_value(strobes_modified_swmod_count - v_strobes_modified_swmod, 1, error, "strobes.modified swmod pulses once per write", C_SCOPE);
+    check_value(strobes_accessed_swacc_count - v_strobes_accessed_swacc, 2, error, "strobes.accessed swacc pulses per access (write + read)", C_SCOPE);
+
+    log(ID_LOG_HDR, "enum_swacc: software-access strobe pulses", C_SCOPE);
+    v_enum_swacc_phase_swacc := enum_swacc_phase_swacc_count;
+    bus_write(f_addr(C_ADDR_ENUM_SWACC), 32x"00000003", "write enum_swacc");
+    bus_check(f_addr(C_ADDR_ENUM_SWACC), 32x"00000000", "read enum_swacc");
+    wait until rising_edge(clk);
+    wait until rising_edge(clk);
+    check_value(enum_swacc_phase_swacc_count - v_enum_swacc_phase_swacc, 2, error, "enum_swacc.phase swacc pulses per access (write + read)", C_SCOPE);
+
+    log(ID_LOG_HDR, "mixed_swacc: software-access strobe pulses", C_SCOPE);
+    v_mixed_swacc_clear_bits_swacc := mixed_swacc_clear_bits_swacc_count;
+    v_mixed_swacc_go_sp := mixed_swacc_go_sp_count;
+    bus_write(f_addr(C_ADDR_MIXED_SWACC), 32x"0007FFFF", "write mixed_swacc");
+    bus_check(f_addr(C_ADDR_MIXED_SWACC), 32x"000609F0", "read mixed_swacc");
+    wait until rising_edge(clk);
+    wait until rising_edge(clk);
+    check_value(mixed_swacc_clear_bits_swacc_count - v_mixed_swacc_clear_bits_swacc, 2, error, "mixed_swacc.clear_bits swacc pulses per access (write + read)", C_SCOPE);
+    check_value(mixed_swacc_go_sp_count - v_mixed_swacc_go_sp, 1, error, "mixed_swacc.go singlepulse lasts exactly one cycle", C_SCOPE);
+    check_value(mixed_swacc_go_sp_value, '1', error, "mixed_swacc.go hw saw the pulse value", C_SCOPE);
+
+    log(ID_LOG_HDR, "mixed_history: software-access strobe pulses", C_SCOPE);
+    v_mixed_history_toggle_swacc := mixed_history_toggle_swacc_count;
+    bus_write(f_addr(C_ADDR_MIXED_HISTORY), 32x"0000FFFF", "write mixed_history");
+    bus_check(f_addr(C_ADDR_MIXED_HISTORY), 32x"0000A5AA", "read mixed_history");
+    wait until rising_edge(clk);
+    wait until rising_edge(clk);
+    check_value(mixed_history_toggle_swacc_count - v_mixed_history_toggle_swacc, 2, error, "mixed_history.toggle swacc pulses per access (write + read)", C_SCOPE);
+
+    log(ID_LOG_HDR, "hw_status_swacc: software-access strobe pulses", C_SCOPE);
+    v_hw_status_swacc_level_swacc := hw_status_swacc_level_swacc_count;
+    bus_write(f_addr(C_ADDR_HW_STATUS_SWACC), 32x"000000FF", "write hw_status_swacc");
+    bus_check(f_addr(C_ADDR_HW_STATUS_SWACC), 32x"00000055", "read hw_status_swacc");
+    wait until rising_edge(clk);
+    wait until rising_edge(clk);
+    check_value(hw_status_swacc_level_swacc_count - v_hw_status_swacc_level_swacc, 2, error, "hw_status_swacc.level swacc pulses per access (write + read)", C_SCOPE);
+
+    log(ID_LOG_HDR, "irq_status: software-access strobe pulses", C_SCOPE);
+    v_irq_status_pending_swacc := irq_status_pending_swacc_count;
+    bus_write(f_addr(C_ADDR_IRQ_STATUS), 32x"00000001", "write irq_status");
+    bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"00000000", "read irq_status");
+    wait until rising_edge(clk);
+    wait until rising_edge(clk);
+    check_value(irq_status_pending_swacc_count - v_irq_status_pending_swacc, 2, error, "irq_status.pending swacc pulses per access (write + read)", C_SCOPE);
+
+    -- hwset is held through the read, so it meets the read clear in the same
+    -- cycle. The value sampled with the swacc strobe shows which one won.
+    log(ID_LOG_HDR, "irq_status: hwset beats a read clear in the same cycle", C_SCOPE);
+    wait until falling_edge(clk);
+    from_hw.irq_status.pending.set <= '1';
+    wait until falling_edge(clk);
+    bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"00000001", "irq_status read while hwset is held");
+    wait until falling_edge(clk);
+    from_hw.irq_status.pending.set <= '0';
+    check_value(irq_status_pending_at_swacc, '1', error, "irq_status.pending still set in the cycle after the read clear", C_SCOPE);
+    bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"00000001", "irq_status still set after that read");
+    bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"0", "irq_status cleared by a read without hwset");
+
+    wait for 10*C_CLK_PERIOD;
+    report_alert_counters(FINAL);
+    log(ID_LOG_HDR, "SIMULATION COMPLETED", C_SCOPE);
+    std.env.stop;
+    wait;
+  end process p_main;
+
+end architecture tb;

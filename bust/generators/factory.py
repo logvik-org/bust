@@ -6,11 +6,9 @@ decoupling the domain classes (Module and Bus) from the generator implementation
 
 from typing import TYPE_CHECKING
 
-from bust.generators.vhdl.bus_generator import BusGenerator
 from bust.generators.vhdl.module_generator import ModuleGenerator
 
 if TYPE_CHECKING:
-    from bust.core.bus import Bus
     from bust.core.module import Module
 
 
@@ -23,90 +21,236 @@ class GeneratorFactory:
     """
 
     @staticmethod
-    def create_bus_generator(bus: "Bus") -> BusGenerator:
-        """Create a VHDL generator instance for a bus configuration.
+    def create_module_generator(module=None) -> ModuleGenerator:
+        """Create the (stateless) local-bus VHDL generator.
 
         Args:
-            bus: Bus instance with interface configuration.
+            module: Accepted for backward compatibility and ignored; the
+                generator holds no state and renders from the module passed to
+                each generate method.
 
         Returns:
-            BusGenerator instance configured for the bus type.
+            ModuleGenerator that renders a module's local-bus artifacts.
         """
-        return BusGenerator(
-            bus_type=bus.bus_type,
-            comp_library=bus.comp_library,
-            data_width=bus.data_width,
-            addr_width=bus.addr_width,
-        )
+        return ModuleGenerator()
 
     @staticmethod
-    def create_module_generator(module: "Module") -> ModuleGenerator:
-        """Create a VHDL generator instance for a module.
+    def generate_localbus_package_vhdl(module: "Module") -> str:
+        """Generate the protocol-agnostic local-bus interface support package.
 
         Args:
-            module: Module instance with register definitions.
+            module: Module instance whose address/data widths size the interface.
 
         Returns:
-            ModuleGenerator configured with module and bus settings.
+            VHDL package defining the local-bus master/slave records and idle
+            constants that the regfile and every bus endpoint depend on.
         """
-        bus_gen = GeneratorFactory.create_bus_generator(module.bus)
-        return ModuleGenerator(
-            name=module.name,
-            bus_gen=bus_gen,
-            regs=module.registers,
-            data_width=module.data_width,
-            addr_width=module.addr_width,
-        )
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_localbus_package_vhdl(module)
 
     @staticmethod
-    def generate_module_package_vhdl(module: "Module") -> str:
-        """Generate VHDL package code for a module.
+    def generate_regfile_package_vhdl(module: "Module") -> str:
+        """Generate the local-bus regfile package VHDL for a module.
 
         Args:
-            module: Module instance to generate package for.
+            module: Module instance to generate the regfile package for.
 
         Returns:
-            VHDL package source code with register type definitions.
+            VHDL package source with the storage/to_hw/from_hw record families,
+            reset constant, and address-decode helpers.
         """
-        generator = GeneratorFactory.create_module_generator(module)
-        return generator.generate_module_package_vhdl(module)
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_regfile_package_vhdl(module)
 
     @staticmethod
-    def generate_module_vhdl(module: "Module") -> str:
-        """Generate main VHDL module entity and architecture.
+    def generate_regfile_vhdl(module: "Module") -> str:
+        """Generate the local-bus regfile entity VHDL for a module.
 
         Args:
-            module: Module instance to generate VHDL for.
+            module: Module instance to generate the regfile entity for.
 
         Returns:
-            VHDL source code for the complete bus slave module.
+            VHDL entity/architecture implementing storage, software side effects,
+            hardware updates, the read mux, and the bus response.
         """
-        generator = GeneratorFactory.create_module_generator(module)
-        return generator.generate_module_vhdl(module)
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_regfile_vhdl(module)
 
     @staticmethod
-    def generate_bus_package_vhdl(bus: "Bus") -> str:
-        """Generate VHDL package code for a bus interface.
+    def generate_axi_endpoint_vhdl(module: "Module") -> str:
+        """Generate the AXI4-Lite endpoint wrapper VHDL for a module.
 
         Args:
-            bus: Bus instance to generate package for.
+            module: Module instance to generate the AXI endpoint for.
 
         Returns:
-            VHDL package source code as a string.
+            VHDL entity/architecture bridging AXI4-Lite to the local bus regfile.
         """
-        generator = GeneratorFactory.create_bus_generator(bus)
-        return generator.generate_bus_package_vhdl()
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_axi_endpoint_vhdl(module)
 
     @staticmethod
-    def generate_bus_pif_vhdl(bus: "Bus", module: "Module") -> str:
-        """Generate bus protocol interface VHDL code for a module.
+    def generate_ipb_endpoint_vhdl(module: "Module") -> str:
+        """Generate the IPBus endpoint wrapper VHDL for a module.
 
         Args:
-            bus: Bus instance with interface configuration.
-            module: Module instance to generate interface code for.
+            module: Module instance to generate the IPBus endpoint for.
 
         Returns:
-            VHDL source code for the bus protocol interface.
+            VHDL entity/architecture bridging IPBus to the local bus regfile.
         """
-        generator = GeneratorFactory.create_bus_generator(bus)
-        return generator.generate_bus_pif_vhdl(module)
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_ipb_endpoint_vhdl(module)
+
+    @staticmethod
+    def generate_sbi_endpoint_vhdl(module: "Module") -> str:
+        """Generate the SBI endpoint wrapper VHDL for a module.
+
+        Args:
+            module: Module instance to generate the SBI endpoint for.
+
+        Returns:
+            VHDL entity/architecture bridging SBI to the local bus regfile.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_sbi_endpoint_vhdl(module)
+
+    @staticmethod
+    def generate_avalon_endpoint_vhdl(module: "Module") -> str:
+        """Generate the Avalon-MM endpoint wrapper VHDL for a module.
+
+        Args:
+            module: Module instance to generate the Avalon-MM endpoint for.
+
+        Returns:
+            VHDL entity/architecture bridging Avalon-MM to the local bus regfile.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_avalon_endpoint_vhdl(module)
+
+    @staticmethod
+    def generate_wishbone_endpoint_vhdl(module: "Module") -> str:
+        """Generate the Wishbone endpoint wrapper VHDL for a module.
+
+        Args:
+            module: Module instance to generate the Wishbone endpoint for.
+
+        Returns:
+            VHDL entity/architecture bridging Wishbone B4 classic to the local
+            bus regfile.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_wishbone_endpoint_vhdl(module)
+
+    @staticmethod
+    def generate_apb_endpoint_vhdl(module: "Module") -> str:
+        """Generate the APB endpoint wrapper VHDL for a module.
+
+        Args:
+            module: Module instance to generate the APB endpoint for.
+
+        Returns:
+            VHDL entity/architecture bridging AMBA APB to the local bus regfile.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_apb_endpoint_vhdl(module)
+
+    @staticmethod
+    def generate_module_top_vhdl(module: "Module") -> str:
+        """Generate the thin top-level wrapper VHDL for a module.
+
+        Args:
+            module: Module instance to generate the top-level wrapper for.
+
+        Returns:
+            VHDL entity/architecture instantiating the bus endpoint, exposing the
+            protocol ports and the to_hw/from_hw records.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_module_top_vhdl(module)
+
+    @staticmethod
+    def generate_localbus_axi_testbench_vhdl(module: "Module") -> str:
+        """Generate the UVVM AXI testbench for a module's local-bus top wrapper.
+
+        Args:
+            module: Module instance to generate the testbench for.
+
+        Returns:
+            VHDL UVVM testbench that drives the top wrapper over the AXI-Lite VIP
+            and self-checks the plain read-write registers.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_localbus_axi_testbench_vhdl(module)
+
+    @staticmethod
+    def generate_localbus_ipbus_testbench_vhdl(module: "Module") -> str:
+        """Generate the UVVM IPBus testbench for a module's local-bus top wrapper.
+
+        Args:
+            module: Module instance to generate the testbench for.
+
+        Returns:
+            VHDL UVVM testbench that drives the top wrapper over the vip_ipbus VIP
+            and self-checks the register-map access modes.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_localbus_ipbus_testbench_vhdl(module)
+
+    @staticmethod
+    def generate_localbus_sbi_testbench_vhdl(module: "Module") -> str:
+        """Generate the UVVM SBI testbench for a module's local-bus top wrapper.
+
+        Args:
+            module: Module instance to generate the testbench for.
+
+        Returns:
+            VHDL UVVM testbench that drives the top wrapper over the Bitvis SBI
+            VIP and self-checks the register-map access modes.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_localbus_sbi_testbench_vhdl(module)
+
+    @staticmethod
+    def generate_localbus_avalon_testbench_vhdl(module: "Module") -> str:
+        """Generate the UVVM Avalon-MM testbench for a module's top wrapper.
+
+        Args:
+            module: Module instance to generate the testbench for.
+
+        Returns:
+            VHDL UVVM testbench that drives the top wrapper over the Bitvis
+            Avalon-MM VIP and self-checks the register-map access modes.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_localbus_avalon_testbench_vhdl(module)
+
+    @staticmethod
+    def generate_localbus_wishbone_testbench_vhdl(module: "Module") -> str:
+        """Generate the Wishbone testbench for a module's top wrapper.
+
+        Args:
+            module: Module instance to generate the testbench for.
+
+        Returns:
+            VHDL UVVM testbench that drives the top wrapper over an inlined
+            hand-written Wishbone B4 classic master BFM (UVVM ships no Wishbone
+            VIP) and self-checks the register-map access modes.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_localbus_wishbone_testbench_vhdl(module)
+
+    @staticmethod
+    def generate_localbus_apb_testbench_vhdl(module: "Module") -> str:
+        """Generate the APB testbench for a module's top wrapper.
+
+        Args:
+            module: Module instance to generate the testbench for.
+
+        Returns:
+            VHDL UVVM testbench that drives the top wrapper over an inlined
+            hand-written APB master BFM (UVVM ships no APB VIP) and self-checks
+            the register-map access modes.
+        """
+        generator = GeneratorFactory.create_module_generator()
+        return generator.generate_localbus_apb_testbench_vhdl(module)
