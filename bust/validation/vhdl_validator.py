@@ -161,7 +161,8 @@ def is_VHDL_keyword(string):
         "xor",
     ]
 
-    return string in keywords
+    # VHDL is case-insensitive, so "ON" is the keyword "on".
+    return string.lower() in keywords
 
 
 def contain_spaces(string):
