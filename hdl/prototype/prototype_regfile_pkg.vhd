@@ -16,7 +16,7 @@
 -- strobes, so a field's write-enable or set/clear lives next to its value
 -- (from_hw.reg4.field0.we, from_hw.reg4.field1.set, ...).
 --
--- prototype register map (byte offsets; see local-bus-hdl.md for why the local
+-- prototype register map (byte offsets; see docs/generated-hdl.md for why the local
 -- bus carries byte addresses):
 --   reg0  0x00  field0 [0]     sw rw  hw r
 --               field1 [2:1]   sw rw  hw r

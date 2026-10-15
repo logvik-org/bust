@@ -50,12 +50,18 @@ dev = [
     "twine>=5.0",
     "pre-commit>=3.0",
 ]
+docs = [
+    "sphinx>=7.4",
+    "myst-parser>=3.0",
+    "furo>=2024.8",
+]
 
 [project.scripts]
 bust = "bust.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/logvik-org/bust"
+Documentation = "https://bust.readthedocs.io"
 Repository = "https://github.com/logvik-org/bust"
 Issues = "https://github.com/logvik-org/bust/issues"
 Changelog = "https://github.com/logvik-org/bust/blob/master/CHANGELOG.md"
