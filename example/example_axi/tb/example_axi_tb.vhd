@@ -16,7 +16,7 @@ context uvvm_util.uvvm_util_context;
 library bitvis_vip_axilite;
 use bitvis_vip_axilite.axilite_bfm_pkg.all;
 
-use work.localbus_pkg.all;
+use work.example_axi_localbus_pkg.all;
 use work.example_axi_regfile_pkg.all;
 
 entity example_axi_tb is

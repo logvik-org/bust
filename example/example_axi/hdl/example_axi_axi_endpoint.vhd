@@ -13,7 +13,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.localbus_pkg.all;
+use work.example_axi_localbus_pkg.all;
 use work.example_axi_regfile_pkg.all;
 
 entity example_axi_axi_endpoint is
