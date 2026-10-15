@@ -10,6 +10,23 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Changed
+- The `settings` section of the JSON file is optional.
+- `bust -a -f` saves the JSON file without asking first.
+- bust no longer waits for an answer when it would overwrite a file and there
+  is no terminal to ask, for example in CI. It stops with an error that
+  suggests `-f`.
+- An invalid register is reported in one line that names the register and the
+  reason, without the generic "Lacking or misspelt JSON keys?" guess and the
+  dump of the register.
+- The settings `bus_subdir`, `coverage`, `uvvm_rel_path`, `ipbus_rel_path` and
+  `vip_ipbus_rel_path` and the bus keys `comp_library` and `reset` have no
+  effect in 1.0. bust no longer logs messages about them, and `bust -a` keeps
+  them as they are instead of adding or dropping them.
+
+### Fixed
+- `bust -a` exited with status 0 when it could not save the file.
+
 ### Removed
 - The 0.14 module paths such as `bust.module`, `bust.register` and
   `bust.header`, which 1.0.0a0 kept as aliases. The code now lives in the
