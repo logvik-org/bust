@@ -26,6 +26,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ### Fixed
 - `bust -a` exited with status 0 when it could not save the file.
+- Names that are VHDL keywords in upper or mixed case, such as an enumerated
+  value called `ON`, were accepted and produced VHDL that does not compile. They
+  are now rejected like their lower-case spelling.
 
 ### Removed
 - The 0.14 module paths such as `bust.module`, `bust.register` and
