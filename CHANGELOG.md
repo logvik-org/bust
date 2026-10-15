@@ -2,12 +2,19 @@
 
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
-adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Version
+strings use their PEP 440 form, so the first 1.0.0 alpha is `1.0.0a0`.
 
 Releases up to and including 0.14.1 predate this changelog. Their history is in
 the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
+
+## [1.0.0a0] - 2026-10-15
+
+First pre-release of bust 1.0.0, for testing. Install it with
+`pip install --pre bust` or `pip install bust==1.0.0a0`. A plain
+`pip install bust` still installs 0.14.1.
 
 ### Added
 - A local-bus architecture: every bus is a thin endpoint over one
@@ -98,9 +105,12 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   read-only field in a read-write register was writable through uHAL.
 - The interactive editor (`-c`, `-e`) failed to add a register when its address
   was entered by hand.
+- `bust --help` and the README named the command `bust.py`. The installed
+  command is `bust`.
 - `python -m build` and `pip install -e .` failed on the reworked source tree,
   because setuptools also took the new `hdl/` and `sim/` directories for
   packages. The wheel also left out the Jinja2 templates, without which an
   installed bust cannot generate anything.
 
-[Unreleased]: https://github.com/logvik-org/bust/compare/0d2a394f4710dd007be031b2b05c1bce4f35d56b...HEAD
+[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0a0...HEAD
+[1.0.0a0]: https://github.com/logvik-org/bust/compare/0d2a394f4710dd007be031b2b05c1bce4f35d56b...v1.0.0a0
