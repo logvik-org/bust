@@ -42,7 +42,7 @@ class Bus:
     Class Attributes:
         BUS_CONFIG: Per-bus-type configuration (short name, reset convention,
             forced component library, byte addressing, endpoint file suffix,
-            widest supported addr_width).
+            widest supported addr_width, fixed data_width).
         supported_bus: Supported bus type strings (the BUS_CONFIG keys).
         default_comp_library: Default VHDL library ("work") used when no library
             is forced by the bus or supplied in the JSON.
@@ -52,6 +52,7 @@ class Bus:
     # plus its endpoint/testbench templates, not edits scattered across methods.
     # comp_library None means "use the JSON value, else default_comp_library".
     # max_addr_width None means the protocol's address port follows addr_width.
+    # fixed_data_width None means the protocol's data ports follow data_width.
     BUS_CONFIG: Dict[str, Dict[str, Any]] = {
         "axi": {
             "short_name": "axi",
@@ -60,6 +61,7 @@ class Bus:
             "byte_addressable": True,
             "endpoint_suffix": "axi_endpoint",
             "max_addr_width": None,
+            "fixed_data_width": None,
         },
         "ipbus": {
             "short_name": "ipb",
@@ -69,6 +71,8 @@ class Bus:
             "endpoint_suffix": "ipb_endpoint",
             # ipb_addr is a fixed 32-bit port that the endpoint slices to addr_width.
             "max_addr_width": 32,
+            # ipb_wdata/ipb_rdata are fixed 32-bit ports wired straight through.
+            "fixed_data_width": 32,
         },
         "sbi": {
             "short_name": "sbi",
@@ -77,6 +81,7 @@ class Bus:
             "byte_addressable": True,
             "endpoint_suffix": "sbi_endpoint",
             "max_addr_width": None,
+            "fixed_data_width": None,
         },
         "avalon": {
             "short_name": "avalon",
@@ -85,6 +90,7 @@ class Bus:
             "byte_addressable": True,
             "endpoint_suffix": "avalon_endpoint",
             "max_addr_width": None,
+            "fixed_data_width": None,
         },
         "wishbone": {
             "short_name": "wishbone",
@@ -93,6 +99,7 @@ class Bus:
             "byte_addressable": True,
             "endpoint_suffix": "wishbone_endpoint",
             "max_addr_width": None,
+            "fixed_data_width": None,
         },
         "apb": {
             "short_name": "apb",
@@ -101,6 +108,7 @@ class Bus:
             "byte_addressable": True,
             "endpoint_suffix": "apb_endpoint",
             "max_addr_width": None,
+            "fixed_data_width": None,
         },
     }
     default_comp_library = "work"
@@ -138,6 +146,13 @@ class Bus:
                 f"Bus type {self.bus_type} carries {max_addr_width}-bit addresses, "
                 f"so addr_width must be at most {max_addr_width} "
                 f"(got {self.addr_width})"
+            )
+
+        fixed_data_width = config["fixed_data_width"]
+        if fixed_data_width is not None and self.data_width != fixed_data_width:
+            raise FormatError(
+                f"Bus type {self.bus_type} carries {fixed_data_width}-bit data, "
+                f"so data_width must be {fixed_data_width} (got {self.data_width})"
             )
 
         forced_library = config["comp_library"]
