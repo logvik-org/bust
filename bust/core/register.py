@@ -18,7 +18,7 @@ from bust.exceptions import (
     InvalidRegisterFormat,
     InvalidFieldFormat,
 )
-from bust.core.field import Field
+from bust.core.field import INHERITABLE_ACCESS, Field
 from bust.core.legacy_schema import (
     register_access_defaults,
     reject_unsupported_timing,
@@ -26,7 +26,7 @@ from bust.core.legacy_schema import (
 )
 from bust.utils.formatting import indent_string
 from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
-from bust.validation.config_validator import ConfigWrapper
+from bust.validation.config_validator import ConfigWrapper, warn_unknown_keys
 from bust.core.enums import OnRead, RegisterMode, RegisterType, SwAccess, HwAccess
 
 # Register-level access summarised from its fields, keyed by
@@ -42,6 +42,23 @@ _HW_BY_READ_WRITE = {
     (True, False): HwAccess.R,
     (False, True): HwAccess.W,
     (False, False): HwAccess.NA,
+}
+
+
+# pulse_cycles and stall_cycles are bust 0.14 keys, kept so that 0.14 files are
+# rejected with an explanation when they use values 1.0 cannot generate.
+REGISTER_KEYS = {
+    "name",
+    "description",
+    "address",
+    "type",
+    "width",
+    "reset",
+    "fields",
+    "mode",
+    "pulse_cycles",
+    "stall_cycles",
+    *INHERITABLE_ACCESS,
 }
 
 
@@ -118,6 +135,7 @@ class Register:
 
         self.name = self._config.require("name")
         is_valid_VHDL(self.name)
+        warn_unknown_keys(reg, REGISTER_KEYS, f"register {self.name}")
         reject_unsupported_timing(reg)
 
         self.description: str = self._config.get("description")
