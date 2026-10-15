@@ -8,12 +8,14 @@ on:
       - "sim/**"
       - "example/**/*.vhd"
       - "hdl/**/*.vhd"
+      - ".github/workflows/vhdl_sim.yml"
   pull_request:
     branches: ["**"]
     paths:
       - "sim/**"
       - "example/**/*.vhd"
       - "hdl/**/*.vhd"
+      - ".github/workflows/vhdl_sim.yml"
   # Allow manual triggering from the Actions tab
   workflow_dispatch:
   # Called by release.yml, where the path filters above do not apply
