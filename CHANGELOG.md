@@ -10,6 +10,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Added
+- A logo, shown in the README and the documentation.
+
 ## [1.0.0a1] - 2026-10-16
 
 Second pre-release of bust 1.0.0, for testing. Install it with
