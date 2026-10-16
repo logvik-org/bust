@@ -22,7 +22,7 @@ THEMES = {
     "dark": {"ink": "#ece8df", "teal": "#5fa8a0", "muted": "#c9c3b6"},
 }
 PAPER = "#f2eee3"
-TAGLINE = "ONE REGISTER MAP, EVERY BUS"
+TAGLINE = "SINGLE SOURCE OF TRUTH"
 
 S = 40  # stroke
 R = 60  # outer corner radius
@@ -31,7 +31,7 @@ X = 200  # x-height
 A = 280  # ascender
 GAP = 40  # space between letters
 BIT = (60, -120, 60, 60)  # x, y, width and height of the bit in the b
-PIXEL = 4.5  # size of one tagline pixel
+TRACK = 2  # tagline letter spacing, in pixels
 
 # The b at one pixel per 20-unit cell, for the favicon: ink (#) and bit (o).
 FAVICON = [
@@ -174,13 +174,12 @@ def wordmark(theme: str) -> tuple[str, float]:
 
 
 def tagline(text: str, width: float, colour: str) -> tuple[str, float]:
-    """The tagline in pixel capitals, spaced out to span `width`.
+    """The tagline in pixel capitals, with the pixel size chosen to span `width`.
 
     Returns SVG and height.
     """
     glyphs = [PIXEL_FONT[c] for c in text]
-    ink = sum(len(g[0]) for g in glyphs) * PIXEL
-    track = (width - ink) / (len(glyphs) - 1)
+    px = width / (sum(len(g[0]) for g in glyphs) + TRACK * (len(glyphs) - 1))
     runs, x = [], 0.0
     for glyph in glyphs:
         for row, bits in enumerate(glyph):
@@ -189,14 +188,14 @@ def tagline(text: str, width: float, colour: str) -> tuple[str, float]:
                 if bits[col] == "1":
                     length = len(bits[col:]) - len(bits[col:].lstrip("1"))
                     runs.append(
-                        f"M{num(x + col * PIXEL)} {num(row * PIXEL)}"
-                        f"h{num(length * PIXEL)}v{PIXEL}h{num(-length * PIXEL)}Z"
+                        f"M{num(x + col * px)} {num(row * px)}"
+                        f"h{num(length * px)}v{num(px)}h{num(-length * px)}Z"
                     )
                     col += length
                 else:
                     col += 1
-        x += len(glyph[0]) * PIXEL + track
-    return f'<path fill="{colour}" d="{"".join(runs)}"/>', 7 * PIXEL
+        x += (len(glyph[0]) + TRACK) * px
+    return f'<path fill="{colour}" d="{"".join(runs)}"/>', 7 * px
 
 
 def svg(view_box: str, body: str, label: str, extra: str = "") -> str:

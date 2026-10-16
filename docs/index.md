@@ -1,8 +1,8 @@
 # bust
 
 <p align="center">
-  <img class="only-light" alt="bust: one register map, every bus" src="_static/logo-light.svg" width="480">
-  <img class="only-dark" alt="bust: one register map, every bus" src="_static/logo-dark.svg" width="480">
+  <img class="only-light" alt="bust: single source of truth" src="_static/logo-light.svg" width="480">
+  <img class="only-dark" alt="bust: single source of truth" src="_static/logo-dark.svg" width="480">
 </p>
 
 **bust** generates the register file of an FPGA or ASIC module from a JSON
