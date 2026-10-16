@@ -1,19 +1,34 @@
 [build-system]
-requires = ["setuptools>=77.0", "wheel"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "bust"
-version = "1.0.0a0"
-description = "Utility for simply creating and modifying VHDL bus slave modules"
+dynamic = ["version"]
+description = "Generate VHDL register files, UVVM testbenches, headers and documentation from a JSON register map."
 readme = "README.md"
 authors = [
     {name = "Ola Groettvik", email = "olagrottvik@gmail.com"}
 ]
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
-keywords = ["vhdl", "bus", "axi", "ipbus", "slave", "generator"]
-requires-python = ">=3.9.0"
+keywords = ["vhdl", "fpga", "register-map", "generator", "uvvm", "axi", "ipbus", "avalon", "wishbone", "apb"]
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
+    "Topic :: Software Development :: Code Generators",
+]
 dependencies = [
     "docopt>=0.6.2",
     "pylatexenc>=2.1",
@@ -23,18 +38,41 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-cov", "pylint", "mypy", "pydocstyle"]
+# mypy is pinned because a new release can report new errors on unchanged code.
+test = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "mypy==1.18.2",
+]
+dev = [
+    "bust[test]",
+    "build>=1.0",
+    "twine>=5.0",
+    "pre-commit>=3.0",
+]
+docs = [
+    "sphinx>=7.4",
+    "myst-parser>=3.0",
+    "furo>=2024.8",
+]
 
 [project.scripts]
 bust = "bust.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/logvik-org/bust"
+Documentation = "https://bust.readthedocs.io"
+Repository = "https://github.com/logvik-org/bust"
+Issues = "https://github.com/logvik-org/bust/issues"
+Changelog = "https://github.com/logvik-org/bust/blob/master/CHANGELOG.md"
 
 # The repository root also holds hdl/ and sim/, which flat-layout discovery
 # would otherwise pick up as packages.
 [tool.setuptools.packages.find]
 include = ["bust", "bust.*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "bust._version.__VERSION__"}
 
 [tool.setuptools.package-data]
 bust = ["templates/**/*.j2"]
@@ -45,20 +83,6 @@ omit = [
     "bust/_version.py",
     "bust/editor.py",         # interactive curses UI, not exercised in CI
     "bust/__main__.py",       # docopt CLI entrypoint
-    # Backward-compatibility shims that only re-export from the new locations.
-    "bust/bus.py",
-    "bust/bus_vhdl_gen.py",
-    "bust/config_wrapper.py",
-    "bust/documentation.py",
-    "bust/enums.py",
-    "bust/field.py",
-    "bust/generator_factory.py",
-    "bust/header.py",
-    "bust/module.py",
-    "bust/module_vhdl_gen.py",
-    "bust/register.py",
-    "bust/testbench.py",
-    "bust/utils.py",
 ]
 
 [tool.mypy]

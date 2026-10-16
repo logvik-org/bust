@@ -10,6 +10,61 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+## [1.0.0a1] - 2026-10-16
+
+Second pre-release of bust 1.0.0, for testing. Install it with
+`pip install --pre bust` or `pip install bust==1.0.0a1`. The documentation is
+now at [bust.readthedocs.io](https://bust.readthedocs.io).
+
+### Changed
+- The `settings` section of the JSON file is optional.
+- `bust -a -f` saves the JSON file without asking first.
+- bust no longer waits for an answer when it would overwrite a file and there
+  is no terminal to ask, for example in CI. It stops with an error that
+  suggests `-f`.
+- An invalid register is reported in one line that names the register and the
+  reason, without the generic "Lacking or misspelt JSON keys?" guess and the
+  dump of the register.
+- The settings `bus_subdir`, `coverage`, `uvvm_rel_path`, `ipbus_rel_path` and
+  `vip_ipbus_rel_path` and the bus keys `comp_library` and `reset` have no
+  effect in 1.0. bust no longer logs messages about them, and `bust -a` keeps
+  them as they are instead of adding or dropping them.
+- bust warns about each key it does not read, so a misspelt key such as
+  `onwrit` no longer goes unnoticed.
+- bust rejects register maps that produced VHDL that does not compile, or a
+  register software could not reach: two registers, or two fields of one
+  register, whose names differ only in case, a register with the name of its
+  module, a `fields` register with no fields, an address that is not a multiple
+  of the data width in bytes on a byte-addressed bus, and a `data_width` that is
+  not a whole number of bytes.
+- A register with a `fields` list is a `fields` register even without
+  `"type": "fields"`. Before, its fields were dropped without a warning. A
+  `fields` list on a register of another type is an error.
+- `true`/`false` keys such as `swmod` or `hwset` must be JSON booleans. A quoted
+  `"false"` used to switch the option on.
+- The editor (`-c`, `-e`) stops with an error when there is no terminal instead
+  of exiting with status 0 without saving.
+- bust reports when `pdflatex` fails or finds errors in the documentation.
+
+### Fixed
+- `bust FILE` without `-o` failed when `FILE` was in the working directory.
+- The IPBus address table was malformed when a description contained `&`, `<`
+  or a quote. Descriptions are now escaped, and the file is declared and
+  written as UTF-8.
+- The C and C++ headers used the same include guard, so a file that included
+  both lost the second.
+- A register with an empty description produced LaTeX errors.
+- `bust -a` exited with status 0 when it could not save the file.
+- Names that are VHDL keywords in upper or mixed case, such as an enumerated
+  value called `ON`, were accepted and produced VHDL that does not compile. They
+  are now rejected like their lower-case spelling.
+
+### Removed
+- The 0.14 module paths such as `bust.module`, `bust.register` and
+  `bust.header`, which 1.0.0a0 kept as aliases. The code now lives in the
+  `bust.core`, `bust.generators` and `bust.validation` packages. bust is a
+  command-line tool, and its Python modules are not a supported API.
+
 ## [1.0.0a0] - 2026-10-15
 
 First pre-release of bust 1.0.0, for testing. Install it with
@@ -112,5 +167,6 @@ First pre-release of bust 1.0.0, for testing. Install it with
   packages. The wheel also left out the Jinja2 templates, without which an
   installed bust cannot generate anything.
 
-[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0a0...HEAD
+[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0a1...HEAD
+[1.0.0a1]: https://github.com/logvik-org/bust/compare/v1.0.0a0...v1.0.0a1
 [1.0.0a0]: https://github.com/logvik-org/bust/compare/0d2a394f4710dd007be031b2b05c1bce4f35d56b...v1.0.0a0

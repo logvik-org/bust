@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <node id="example_ipbus">
     <node id="reg0" address="0x00000000" permission="rw" description="RW std_logic register that resets to 0x0" parameters="reset=0x0"/>
     <node id="reg1" address="0x00000004" permission="rw" description="RW std_logic register that resets to 0x1" parameters="reset=0x1"/>

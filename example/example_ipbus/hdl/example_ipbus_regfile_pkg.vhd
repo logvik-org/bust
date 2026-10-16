@@ -16,18 +16,18 @@ use work.example_ipbus_localbus_pkg.all;
 
 package example_ipbus_regfile_pkg is
 
-  constant C_ADDR_REG0 : std_logic_vector(31 downto 0) := 32x"00";
-  constant C_ADDR_REG1 : std_logic_vector(31 downto 0) := 32x"04";
-  constant C_ADDR_REG2 : std_logic_vector(31 downto 0) := 32x"08";
-  constant C_ADDR_REG3 : std_logic_vector(31 downto 0) := 32x"0C";
-  constant C_ADDR_REG4 : std_logic_vector(31 downto 0) := 32x"10";
-  constant C_ADDR_REG5 : std_logic_vector(31 downto 0) := 32x"14";
-  constant C_ADDR_REG6 : std_logic_vector(31 downto 0) := 32x"18";
-  constant C_ADDR_REG7 : std_logic_vector(31 downto 0) := 32x"1C";
-  constant C_ADDR_REG8 : std_logic_vector(31 downto 0) := 32x"20";
-  constant C_ADDR_REG9 : std_logic_vector(31 downto 0) := 32x"24";
-  constant C_ADDR_REG10 : std_logic_vector(31 downto 0) := 32x"28";
-  constant C_ADDR_REG11 : std_logic_vector(31 downto 0) := 32x"2C";
+  constant C_ADDR_REG0 : std_logic_vector(15 downto 0) := 16x"00";
+  constant C_ADDR_REG1 : std_logic_vector(15 downto 0) := 16x"04";
+  constant C_ADDR_REG2 : std_logic_vector(15 downto 0) := 16x"08";
+  constant C_ADDR_REG3 : std_logic_vector(15 downto 0) := 16x"0C";
+  constant C_ADDR_REG4 : std_logic_vector(15 downto 0) := 16x"10";
+  constant C_ADDR_REG5 : std_logic_vector(15 downto 0) := 16x"14";
+  constant C_ADDR_REG6 : std_logic_vector(15 downto 0) := 16x"18";
+  constant C_ADDR_REG7 : std_logic_vector(15 downto 0) := 16x"1C";
+  constant C_ADDR_REG8 : std_logic_vector(15 downto 0) := 16x"20";
+  constant C_ADDR_REG9 : std_logic_vector(15 downto 0) := 16x"24";
+  constant C_ADDR_REG10 : std_logic_vector(15 downto 0) := 16x"28";
+  constant C_ADDR_REG11 : std_logic_vector(15 downto 0) := 16x"2C";
 
   -- Register-select width. base_match compares the bits above this width, so the
   -- base address must be aligned to this register window.
@@ -179,12 +179,12 @@ package example_ipbus_regfile_pkg is
     reg8 : t_reg8_from_hw;
   end record;
 
-  function base_match(addr  : std_logic_vector(31 downto 0);
-                      base  : unsigned(31 downto 0);
+  function base_match(addr  : std_logic_vector(15 downto 0);
+                      base  : unsigned(15 downto 0);
                       check : boolean) return boolean;
 
   function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-                  reg_addr : std_logic_vector(31 downto 0)) return boolean;
+                  reg_addr : std_logic_vector(15 downto 0)) return boolean;
 
   function is_mapped(sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
 
@@ -192,20 +192,20 @@ end package example_ipbus_regfile_pkg;
 
 package body example_ipbus_regfile_pkg is
 
-  function base_match(addr  : std_logic_vector(31 downto 0);
-                      base  : unsigned(31 downto 0);
+  function base_match(addr  : std_logic_vector(15 downto 0);
+                      base  : unsigned(15 downto 0);
                       check : boolean) return boolean is
-    constant base_slv : std_logic_vector(31 downto 0) := std_logic_vector(base);
+    constant base_slv : std_logic_vector(15 downto 0) := std_logic_vector(base);
   begin
     if not check then
       return true;
     end if;
-    return addr(31 downto C_MODULE_ADDR_WIDTH)
-         = base_slv(31 downto C_MODULE_ADDR_WIDTH);
+    return addr(15 downto C_MODULE_ADDR_WIDTH)
+         = base_slv(15 downto C_MODULE_ADDR_WIDTH);
   end function;
 
   function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-                  reg_addr : std_logic_vector(31 downto 0)) return boolean is
+                  reg_addr : std_logic_vector(15 downto 0)) return boolean is
   begin
     return sel = reg_addr(C_MODULE_ADDR_WIDTH-1 downto 0);
   end function;

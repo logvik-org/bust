@@ -32,21 +32,19 @@ class InvalidAddress(RuntimeError):
 
 
 class InvalidRegister(RuntimeError):
-    """Raised when register configuration has missing or invalid keys.
+    """Raised when a register definition in the JSON configuration is invalid."""
 
-    This exception indicates that a register definition in the JSON
-    configuration is missing required keys or has invalid values.
-    """
-
-    def __init__(self, reg):
+    def __init__(self, reg, cause):
         """Initialize InvalidRegister exception.
 
         Args:
             reg: Register configuration dictionary.
+            cause: The error that made the register invalid.
         """
         name = reg.get("name", "<unknown>")
-        msg = f"Could not parse register {name}. Lacking or misspelt JSON keys?\n{reg}"
-        super().__init__(msg)
+        # str() of a KeyError quotes its message.
+        reason = cause.args[0] if isinstance(cause, KeyError) and cause.args else cause
+        super().__init__(f"Could not parse register {name}: {reason}")
 
 
 class InvalidBusType(RuntimeError):
@@ -120,23 +118,6 @@ class UndefinedRegisterType(RuntimeError):
             regtype: The unrecognized register type string.
         """
         msg = "Could not parse register type: " + regtype
-        super().__init__(msg)
-
-
-class UndefinedFieldType(RuntimeError):
-    """Raised when field type is not recognized.
-
-    This exception is raised when parsing a field with an unsupported
-    or misspelled type value.
-    """
-
-    def __init__(self, type):
-        """Initialize UndefinedFieldType exception.
-
-        Args:
-            type: The unrecognized field type string.
-        """
-        msg = "Could not parse field type: " + type
         super().__init__(msg)
 
 

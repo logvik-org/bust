@@ -40,56 +40,56 @@ package access_matrix_regfile_pkg is
   -- base address must be aligned to this register window.
   constant C_MODULE_ADDR_WIDTH : natural := 7;
 
-  -- Enumerated field type for identity.pwr_default: literal
-  -- positions are the field's encoded values.
+  -- Enumerated field type for identity.pwr_default. The
+  -- conversion functions map each literal to and from its encoded value.
   type t_identity_pwr_default is (PWR_OFF, PWR_ON);
   function to_slv(v : t_identity_pwr_default) return std_logic_vector;
   function to_identity_pwr_default(s : std_logic_vector(0 downto 0)) return t_identity_pwr_default;
 
-  -- Enumerated field type for identity.pwr_spare: literal
-  -- positions are the field's encoded values.
+  -- Enumerated field type for identity.pwr_spare. The
+  -- conversion functions map each literal to and from its encoded value.
   type t_identity_pwr_spare is (PWR_OFF, PWR_ON);
   function to_slv(v : t_identity_pwr_spare) return std_logic_vector;
   function to_identity_pwr_spare(s : std_logic_vector(0 downto 0)) return t_identity_pwr_spare;
 
-  -- Enumerated field type for enum_vector.mode: literal
-  -- positions are the field's encoded values.
+  -- Enumerated field type for enum_vector.mode. The
+  -- conversion functions map each literal to and from its encoded value.
   type t_enum_vector_mode is (MODE_SLOW, MODE_FAST);
   function to_slv(v : t_enum_vector_mode) return std_logic_vector;
   function to_enum_vector_mode(s : std_logic_vector(1 downto 0)) return t_enum_vector_mode;
 
-  -- Enumerated field type for enum_bit.power: literal
-  -- positions are the field's encoded values.
+  -- Enumerated field type for enum_bit.power. The
+  -- conversion functions map each literal to and from its encoded value.
   type t_enum_bit_power is (PWR_OFF, PWR_ON);
   function to_slv(v : t_enum_bit_power) return std_logic_vector;
   function to_enum_bit_power(s : std_logic_vector(0 downto 0)) return t_enum_bit_power;
 
-  -- Enumerated field type for enum_hw.state: literal
-  -- positions are the field's encoded values.
+  -- Enumerated field type for enum_hw.state. The
+  -- conversion functions map each literal to and from its encoded value.
   type t_enum_hw_state is (ST_RESET, ST_RUN, ST_HALT);
   function to_slv(v : t_enum_hw_state) return std_logic_vector;
   function to_enum_hw_state(s : std_logic_vector(1 downto 0)) return t_enum_hw_state;
 
-  -- Enumerated field type for enum_hw.supply: literal
-  -- positions are the field's encoded values.
+  -- Enumerated field type for enum_hw.supply. The
+  -- conversion functions map each literal to and from its encoded value.
   type t_enum_hw_supply is (PWR_OFF, PWR_ON);
   function to_slv(v : t_enum_hw_supply) return std_logic_vector;
   function to_enum_hw_supply(s : std_logic_vector(0 downto 0)) return t_enum_hw_supply;
 
-  -- Enumerated field type for enum_swacc.phase: literal
-  -- positions are the field's encoded values.
+  -- Enumerated field type for enum_swacc.phase. The
+  -- conversion functions map each literal to and from its encoded value.
   type t_enum_swacc_phase is (PH_IDLE, PH_ARM, PH_FIRE);
   function to_slv(v : t_enum_swacc_phase) return std_logic_vector;
   function to_enum_swacc_phase(s : std_logic_vector(1 downto 0)) return t_enum_swacc_phase;
 
-  -- Enumerated field type for mixed_swacc.power: literal
-  -- positions are the field's encoded values.
+  -- Enumerated field type for mixed_swacc.power. The
+  -- conversion functions map each literal to and from its encoded value.
   type t_mixed_swacc_power is (PWR_OFF, PWR_ON);
   function to_slv(v : t_mixed_swacc_power) return std_logic_vector;
   function to_mixed_swacc_power(s : std_logic_vector(0 downto 0)) return t_mixed_swacc_power;
 
-  -- Enumerated field type for mixed_swacc.power_fixed: literal
-  -- positions are the field's encoded values.
+  -- Enumerated field type for mixed_swacc.power_fixed. The
+  -- conversion functions map each literal to and from its encoded value.
   type t_mixed_swacc_power_fixed is (PWR_OFF, PWR_ON);
   function to_slv(v : t_mixed_swacc_power_fixed) return std_logic_vector;
   function to_mixed_swacc_power_fixed(s : std_logic_vector(0 downto 0)) return t_mixed_swacc_power_fixed;
