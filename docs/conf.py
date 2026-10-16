@@ -13,13 +13,18 @@ exclude_patterns = ["_build"]
 
 html_theme = "furo"
 html_title = "bust"
-html_static_path = ["_static"]
+html_favicon = "images/favicon.png"
+html_static_path = ["_static", "images"]
 html_css_files = ["custom.css"]
 pygments_style = "friendly"
 pygments_dark_style = "monokai"
 
-# The same paper-and-ink palette as the ohsh docs, with a teal accent for bust.
+# The logvik paper, ink and teal, as in the logo. The ohsh docs use the same
+# paper and ink.
 html_theme_options = {
+    "light_logo": "wordmark-light.svg",
+    "dark_logo": "wordmark-dark.svg",
+    "sidebar_hide_name": True,
     "source_repository": "https://github.com/logvik-org/bust/",
     "source_branch": "master",
     "source_directory": "docs/",
@@ -31,8 +36,8 @@ html_theme_options = {
         "color-foreground-primary": "#1c2118",
         "color-foreground-secondary": "#4a4d43",
         "color-foreground-muted": "#686b61",
-        "color-brand-primary": "#0f6b63",
-        "color-brand-content": "#0f6b63",
+        "color-brand-primary": "#2c6e6a",
+        "color-brand-content": "#2c6e6a",
         "color-code-background": "#e9e3d3",
         "color-highlighted-background": "#e3ddcb",
     },
@@ -44,8 +49,8 @@ html_theme_options = {
         "color-foreground-primary": "#ece8df",
         "color-foreground-secondary": "#c9c3b6",
         "color-foreground-muted": "#9a948a",
-        "color-brand-primary": "#5cc2b6",
-        "color-brand-content": "#5cc2b6",
+        "color-brand-primary": "#5fa8a0",
+        "color-brand-content": "#5fa8a0",
         "color-code-background": "#131312",
         "color-highlighted-background": "#2f2c2a",
     },

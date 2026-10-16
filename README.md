@@ -1,11 +1,17 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/logo-light.png">
+    <img alt="bust: FPGA register file generator" src="https://raw.githubusercontent.com/logvik-org/bust/master/docs/images/logo-light.png" width="480">
+  </picture>
+</p>
+
 [![Tests](https://github.com/logvik-org/bust/actions/workflows/python_tests.yml/badge.svg)](https://github.com/logvik-org/bust/actions/workflows/python_tests.yml)
 [![VHDL simulation](https://github.com/logvik-org/bust/actions/workflows/vhdl_sim.yml/badge.svg)](https://github.com/logvik-org/bust/actions/workflows/vhdl_sim.yml)
 [![Docs](https://readthedocs.org/projects/bust/badge/?version=latest)](https://bust.readthedocs.io)
 [![PyPI](https://img.shields.io/pypi/v/bust.svg)](https://pypi.org/project/bust/)
 [![Python](https://img.shields.io/pypi/pyversions/bust.svg)](https://pypi.org/project/bust/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/logvik-org/bust/blob/master/LICENSE)
-
-# bust
 
 **bust** generates the register file of an FPGA module from a JSON register
 map. From one file it writes the VHDL register file with its bus endpoint, a

@@ -68,6 +68,10 @@ This site is built with Sphinx from the Markdown pages in `docs/` and published
 on Read the Docs, which rebuilds it for every push to `master` and every
 release tag. The configuration is in `.readthedocs.yaml` and `docs/conf.py`.
 
+The logo, the sidebar wordmark and the favicon in `docs/images/` are drawn by
+`scripts/make_logo.py`. To change them, edit the script and run it from the
+repository root. The PNG files need `pip install cairosvg`.
+
 ## Changelog
 
 `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
