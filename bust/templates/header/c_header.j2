@@ -1,44 +1,45 @@
 #ifndef {{ module.name.upper() }}_H
 #define {{ module.name.upper() }}_H
+{% set m = module.name.upper() %}
 
 
 {% for reg in module.registers %}
 /* Register: {{ reg.name }} */
-#define {{ reg.name.upper() }}_SW "{{ reg.sw.value }}"
-#define {{ reg.name.upper() }}_HW "{{ reg.hw.value }}"
-#define {{ reg.name.upper() }}_WIDTH {{ reg.width }}
-#define {{ reg.name.upper() }}_OFFSET {{ "0x%x" | format(reg.address) }}
-#define {{ reg.name.upper() }}_RESET {{ reg.reset }}
+#define {{ m }}_{{ reg.name.upper() }}_SW "{{ reg.sw.value }}"
+#define {{ m }}_{{ reg.name.upper() }}_HW "{{ reg.hw.value }}"
+#define {{ m }}_{{ reg.name.upper() }}_WIDTH {{ reg.width }}
+#define {{ m }}_{{ reg.name.upper() }}_OFFSET {{ "0x%x" | format(reg.address) }}
+#define {{ m }}_{{ reg.name.upper() }}_RESET {{ reg.reset }}
 {% if not reg.fields %}
 {% set f = reg.effective_fields[0] %}
-{% if f.onread %}#define {{ reg.name.upper() }}_ONREAD "{{ f.onread.value }}"
+{% if f.onread %}#define {{ m }}_{{ reg.name.upper() }}_ONREAD "{{ f.onread.value }}"
 {% endif %}
-{% if f.onwrite %}#define {{ reg.name.upper() }}_ONWRITE "{{ f.onwrite.value }}"
+{% if f.onwrite %}#define {{ m }}_{{ reg.name.upper() }}_ONWRITE "{{ f.onwrite.value }}"
 {% endif %}
-{% if f.singlepulse %}#define {{ reg.name.upper() }}_SINGLEPULSE 1
+{% if f.singlepulse %}#define {{ m }}_{{ reg.name.upper() }}_SINGLEPULSE 1
 {% endif %}
 {% endif %}
 
 {% if reg.type == reg_type_fields %}
 {% for field in reg.fields %}
 /* Field: {{ field.name }} */
-#define {{ reg.name.upper() }}_{{ field.name.upper() }}_OFFSET {{ field.pos_low }}
-#define {{ reg.name.upper() }}_{{ field.name.upper() }}_WIDTH {{ field.width }}
-#define {{ reg.name.upper() }}_{{ field.name.upper() }}_RESET {{ field.reset }}
-#define {{ reg.name.upper() }}_{{ field.name.upper() }}_MASK {{ "0x%x" | format(field.mask) }}
-#define {{ reg.name.upper() }}_{{ field.name.upper() }}_SW "{{ field.sw.value }}"
-#define {{ reg.name.upper() }}_{{ field.name.upper() }}_HW "{{ field.hw.value }}"
+#define {{ m }}_{{ reg.name.upper() }}_{{ field.name.upper() }}_OFFSET {{ field.pos_low }}
+#define {{ m }}_{{ reg.name.upper() }}_{{ field.name.upper() }}_WIDTH {{ field.width }}
+#define {{ m }}_{{ reg.name.upper() }}_{{ field.name.upper() }}_RESET {{ field.reset }}
+#define {{ m }}_{{ reg.name.upper() }}_{{ field.name.upper() }}_MASK {{ "0x%x" | format(field.mask) }}
+#define {{ m }}_{{ reg.name.upper() }}_{{ field.name.upper() }}_SW "{{ field.sw.value }}"
+#define {{ m }}_{{ reg.name.upper() }}_{{ field.name.upper() }}_HW "{{ field.hw.value }}"
 {% if field.onread %}
-#define {{ reg.name.upper() }}_{{ field.name.upper() }}_ONREAD "{{ field.onread.value }}"
+#define {{ m }}_{{ reg.name.upper() }}_{{ field.name.upper() }}_ONREAD "{{ field.onread.value }}"
 {% endif %}
 {% if field.onwrite %}
-#define {{ reg.name.upper() }}_{{ field.name.upper() }}_ONWRITE "{{ field.onwrite.value }}"
+#define {{ m }}_{{ reg.name.upper() }}_{{ field.name.upper() }}_ONWRITE "{{ field.onwrite.value }}"
 {% endif %}
 {% if field.singlepulse %}
-#define {{ reg.name.upper() }}_{{ field.name.upper() }}_SINGLEPULSE 1
+#define {{ m }}_{{ reg.name.upper() }}_{{ field.name.upper() }}_SINGLEPULSE 1
 {% endif %}
 {% for enum in field.enums %}
-#define {{ reg.name.upper() }}_{{ field.name.upper() }}_{{ enum.name.upper() }} {{ enum.value }}
+#define {{ m }}_{{ reg.name.upper() }}_{{ field.name.upper() }}_{{ enum.name.upper() }} {{ enum.value }}
 {% endfor %}
 
 {% endfor %}

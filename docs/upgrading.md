@@ -90,6 +90,19 @@ A few keys need changes:
   and the documentation now give the reset that the hardware uses, which is
   the first value.
 
+## Update your software
+
+Code that includes the generated headers needs these changes:
+
+- Each name in the C header starts with the module name, so `REG0_OFFSET` in
+  `example_axi.h` becomes `EXAMPLE_AXI_REG0_OFFSET`. The C++ and Python names
+  are unchanged, in the namespace and the class named after the module.
+- `<REG>_MODE` is gone. `<REG>_SW` and `<REG>_HW` give the software and
+  hardware access instead. [Headers and documentation](headers-and-docs.md)
+  lists every constant.
+- The C `#define` lines no longer end in a semicolon, so the constants work in
+  expressions.
+
 ## Command-line options
 
 The options `-u`, `-b`, `-t` and `-m` are gone. They controlled files that bust

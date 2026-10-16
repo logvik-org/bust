@@ -170,16 +170,17 @@ complete timer logic and describes the files and records in detail, and
 The headers give software the same names. From `timer.h`:
 
 ```c
-#define CTRL_OFFSET 0x0
-#define CTRL_MODE_OFFSET 1
-#define CTRL_MODE_MASK 0x6
-#define CTRL_MODE_PERIODIC 1
+#define TIMER_CTRL_OFFSET 0x0
+#define TIMER_CTRL_MODE_OFFSET 1
+#define TIMER_CTRL_MODE_MASK 0x6
+#define TIMER_CTRL_MODE_PERIODIC 1
 ```
 
 ```c
-uint32_t ctrl = read32(TIMER_BASE + CTRL_OFFSET);
-ctrl = (ctrl & ~CTRL_MODE_MASK) | (CTRL_MODE_PERIODIC << CTRL_MODE_OFFSET);
-write32(TIMER_BASE + CTRL_OFFSET, ctrl);
+uint32_t ctrl = read32(TIMER_BASE + TIMER_CTRL_OFFSET);
+ctrl = (ctrl & ~TIMER_CTRL_MODE_MASK)
+     | (TIMER_CTRL_MODE_PERIODIC << TIMER_CTRL_MODE_OFFSET);
+write32(TIMER_BASE + TIMER_CTRL_OFFSET, ctrl);
 ```
 
 `read32`, `write32` and `TIMER_BASE` stand for whatever your platform uses.
