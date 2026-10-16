@@ -12,7 +12,7 @@ authors = [
 ]
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
-keywords = ["vhdl", "fpga", "register-map", "generator", "uvvm", "axi", "ipbus", "avalon", "wishbone", "apb"]
+keywords = ["vhdl", "fpga", "asic", "register-map", "generator", "uvvm", "axi", "ipbus", "avalon", "wishbone", "apb"]
 requires-python = ">=3.9"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
