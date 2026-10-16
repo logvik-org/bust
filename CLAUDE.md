@@ -116,3 +116,5 @@ AXI-Stream) would get native implementations, not the local bus.
 - black formats everything except `example/`. Docstrings use the Google
   convention.
 - Docs and changelog prose: plain sentences, no em-dashes, no semicolons.
+- The images in `docs/images/` come from `scripts/make_logo.py`. Change the
+  script and rerun it rather than editing the files.
