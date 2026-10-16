@@ -3,8 +3,8 @@
 
 The letters are built like the logvik mark: a 40-unit stroke, a 60-unit outer
 corner radius with a concentric 20-unit inner one, and square ends, all on a
-20-unit grid. The teal square in the counter of the b is one register bit. The
-tagline and the favicon are pixel art on the same grid.
+20-unit grid. The teal square after the t is a terminal cursor. The tagline and
+the favicon are pixel art on the same grid.
 
 Run it from the repository root. The PNG files need CairoSVG:
 
@@ -22,7 +22,7 @@ THEMES = {
     "dark": {"ink": "#ece8df", "teal": "#5fa8a0", "muted": "#c9c3b6"},
 }
 PAPER = "#f2eee3"
-TAGLINE = "FPGA REGISTER FILE GENERATOR"
+TAGLINE = "ONE REGISTER MAP, EVERY BUS"
 
 S = 40  # stroke
 R = 60  # outer corner radius
@@ -30,40 +30,59 @@ r = R - S  # inner corner radius
 X = 200  # x-height
 A = 280  # ascender
 GAP = 40  # space between letters
-BIT = (60, -120, 60, 60)  # x, y, width and height of the bit in the b
+CURSOR = 60  # side of the cursor square, which sits on the baseline
+PIXEL = 5  # size of one tagline pixel
 
-# The b at one pixel per 20-unit cell, for the favicon: ink (#) and bit (o).
+# The b and the cursor at one pixel per 20-unit cell, for the favicon: ink (#)
+# and cursor (o).
 FAVICON = [
-    "##........",
-    "##........",
-    "##........",
-    "##........",
-    "#######...",
-    "#########.",
-    "##.....##.",
-    "##......##",
-    "##.ooo..##",
-    "##.ooo..##",
-    "##.ooo..##",
-    "##......##",
-    "##########",
-    ".#########",
+    "##............",
+    "##............",
+    "##............",
+    "##............",
+    "#######.......",
+    "#########.....",
+    "##.....##.....",
+    "##......##....",
+    "##......##....",
+    "##......##....",
+    "##......##....",
+    "##......##.ooo",
+    "##########.ooo",
+    ".#########.ooo",
 ]
 
-# 5x7 pixel capitals for the tagline.
+# 5x7 pixel capitals for the tagline, plus narrow punctuation.
 PIXEL_FONT = {
     "A": ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
+    "B": ["11110", "10001", "10001", "11110", "10001", "10001", "11110"],
+    "C": ["01111", "10000", "10000", "10000", "10000", "10000", "01111"],
+    "D": ["11110", "10001", "10001", "10001", "10001", "10001", "11110"],
     "E": ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
     "F": ["11111", "10000", "10000", "11110", "10000", "10000", "10000"],
     "G": ["01111", "10000", "10000", "10011", "10001", "10001", "01111"],
+    "H": ["10001", "10001", "10001", "11111", "10001", "10001", "10001"],
     "I": ["11111", "00100", "00100", "00100", "00100", "00100", "11111"],
+    "J": ["00111", "00001", "00001", "00001", "00001", "10001", "01110"],
+    "K": ["10001", "10010", "10100", "11000", "10100", "10010", "10001"],
     "L": ["10000", "10000", "10000", "10000", "10000", "10000", "11111"],
+    "M": ["10001", "11011", "10101", "10101", "10001", "10001", "10001"],
     "N": ["10001", "11001", "10101", "10011", "10001", "10001", "10001"],
     "O": ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
     "P": ["11110", "10001", "10001", "11110", "10000", "10000", "10000"],
+    "Q": ["01110", "10001", "10001", "10001", "10101", "10010", "01101"],
     "R": ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
     "S": ["01111", "10000", "10000", "01110", "00001", "00001", "11110"],
     "T": ["11111", "00100", "00100", "00100", "00100", "00100", "00100"],
+    "U": ["10001", "10001", "10001", "10001", "10001", "10001", "01110"],
+    "V": ["10001", "10001", "10001", "10001", "10001", "01010", "00100"],
+    "W": ["10001", "10001", "10001", "10101", "10101", "10101", "01010"],
+    "X": ["10001", "10001", "01010", "00100", "01010", "10001", "10001"],
+    "Y": ["10001", "10001", "01010", "00100", "00100", "00100", "00100"],
+    "Z": ["11111", "00001", "00010", "00100", "01000", "10000", "11111"],
+    ",": ["00", "00", "00", "00", "11", "01", "10"],
+    ".": ["00", "00", "00", "00", "00", "11", "11"],
+    "-": ["000", "000", "000", "111", "000", "000", "000"],
     " ": ["00000"] * 7,
 }
 
@@ -140,43 +159,45 @@ def letter_t(w: float = 160, top: float = -260) -> tuple[str, float]:
 
 
 def wordmark(theme: str) -> tuple[str, float]:
-    """The letters and the bit, with the baseline at y=0. Returns SVG and width."""
+    """The letters and the cursor, with the baseline at y=0. Returns SVG and width."""
     colours = THEMES[theme]
     paths, x = [], 0.0
     for draw in (letter_b, letter_u, letter_s, letter_t):
         d, w = draw()
         paths.append(f'<path transform="translate({num(x)} 0)" d="{d}"/>')
         x += w + GAP
-    bx, by, bw, bh = BIT
     body = (
         f'<g fill="{colours["ink"]}" fill-rule="evenodd">{"".join(paths)}</g>'
-        f'<rect x="{bx}" y="{by}" width="{bw}" height="{bh}" fill="{colours["teal"]}"/>'
+        f'<rect x="{num(x)}" y="{-CURSOR}" width="{CURSOR}" height="{CURSOR}" '
+        f'fill="{colours["teal"]}"/>'
     )
-    return body, x - GAP
+    return body, x + CURSOR
 
 
-def tagline(width: float, colour: str) -> tuple[str, float]:
-    """The tagline in pixel capitals, scaled to span `width`. Returns SVG and height."""
-    track = 2
-    cells = sum(len(PIXEL_FONT[c][0]) + track for c in TAGLINE) - track
-    px = width / cells
-    runs, x = [], 0
-    for c in TAGLINE:
-        glyph = PIXEL_FONT[c]
+def tagline(text: str, width: float, colour: str) -> tuple[str, float]:
+    """The tagline in pixel capitals, spaced out to span `width`.
+
+    Returns SVG and height.
+    """
+    glyphs = [PIXEL_FONT[c] for c in text]
+    ink = sum(len(g[0]) for g in glyphs) * PIXEL
+    track = (width - ink) / (len(glyphs) - 1)
+    runs, x = [], 0.0
+    for glyph in glyphs:
         for row, bits in enumerate(glyph):
             col = 0
             while col < len(bits):
                 if bits[col] == "1":
                     length = len(bits[col:]) - len(bits[col:].lstrip("1"))
                     runs.append(
-                        f"M{num((x + col) * px)} {num(row * px)}"
-                        f"h{num(length * px)}v{num(px)}h{num(-length * px)}Z"
+                        f"M{num(x + col * PIXEL)} {num(row * PIXEL)}"
+                        f"h{num(length * PIXEL)}v{PIXEL}h{num(-length * PIXEL)}Z"
                     )
                     col += length
                 else:
                     col += 1
-        x += len(glyph[0]) + track
-    return f'<path fill="{colour}" d="{"".join(runs)}"/>', 7 * px
+        x += len(glyph[0]) * PIXEL + track
+    return f'<path fill="{colour}" d="{"".join(runs)}"/>', 7 * PIXEL
 
 
 def svg(view_box: str, body: str, label: str, extra: str = "") -> str:
@@ -186,14 +207,14 @@ def svg(view_box: str, body: str, label: str, extra: str = "") -> str:
     )
 
 
-def logo(theme: str) -> str:
+def logo(theme: str, text: str = TAGLINE) -> str:
     """The wordmark over the tagline."""
     body, width = wordmark(theme)
-    line, height = tagline(width, THEMES[theme]["muted"])
+    line, height = tagline(text, width, THEMES[theme]["muted"])
     body += f'<g transform="translate(0 80)">{line}</g>'
     m = 40
     box = f"{-m} {-A - m} {num(width + 2 * m)} {num(A + 80 + height + 2 * m)}"
-    return svg(box, body, f"bust: {TAGLINE.lower()}")
+    return svg(box, body, f"bust: {text.lower()}")
 
 
 def wordmark_svg(theme: str) -> str:
@@ -202,7 +223,7 @@ def wordmark_svg(theme: str) -> str:
 
 
 def favicon() -> str:
-    """The pixel b on a paper tile, 16 units square."""
+    """The pixel b and cursor on a paper tile, 16 units square."""
     colours = THEMES["light"]
     ox, oy = (16 - len(FAVICON[0])) // 2, (16 - len(FAVICON)) // 2
     body = f'<rect width="16" height="16" rx="3" fill="{PAPER}"/>'
