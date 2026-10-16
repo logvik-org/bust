@@ -83,6 +83,18 @@ This writes `out/blinky/` with the VHDL in `hdl/`, the testbench in `tb/`, the
 headers in `header/` and the LaTeX documentation in `doc/`. Your logic reads
 `to_hw.ctrl.enable` and `to_hw.ctrl.rate` from the generated `blinky` entity.
 
+## How bust is tested
+
+- The generated files for the example register maps are kept in the
+  repository. Every change is compared with them byte for byte, on Python 3.9
+  to 3.14.
+- Every change to the generated VHDL is simulated with nvc and UVVM. This runs
+  the generated testbench on all six buses, a register map with every class of
+  access mode combination, and two modules compiled into one library.
+- Hand-written reference VHDL and testbenches for all six buses run against the
+  generated VHDL. They are the one check that does not come from the generator
+  itself.
+
 ## Documentation
 
 The full documentation is at [bust.readthedocs.io](https://bust.readthedocs.io):
@@ -108,5 +120,6 @@ Licensed under the **Apache License 2.0**. See [LICENSE](https://github.com/logv
 
 ### AI assistance
 
-bust started as a hand-written tool. Most of the work on 1.0 was done with AI
-assistance, with all changes reviewed and tested by the author.
+bust started as a hand-written tool. Most of the code for 1.0 was written with
+AI assistance. The author reviewed every change, and no change is merged before
+it passes the checks under How bust is tested above.
