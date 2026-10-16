@@ -1,83 +1,106 @@
-![Workflow status](https://github.com/logvik-org/bust/actions/workflows/python_tests.yml/badge.svg)
+[![Tests](https://github.com/logvik-org/bust/actions/workflows/python_tests.yml/badge.svg)](https://github.com/logvik-org/bust/actions/workflows/python_tests.yml)
+[![VHDL simulation](https://github.com/logvik-org/bust/actions/workflows/vhdl_sim.yml/badge.svg)](https://github.com/logvik-org/bust/actions/workflows/vhdl_sim.yml)
+[![Docs](https://readthedocs.org/projects/bust/badge/?version=latest)](https://bust.readthedocs.io)
+[![PyPI](https://img.shields.io/pypi/v/bust.svg)](https://pypi.org/project/bust/)
+[![Python](https://img.shields.io/pypi/pyversions/bust.svg)](https://pypi.org/project/bust/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/logvik-org/bust/blob/master/LICENSE)
 
-# bust bus tool
+# bust
 
-Utility for simply creating and modifying VHDL bus slave modules.
+**bust** generates the register file of an FPGA module from a JSON register
+map. From one file it writes the VHDL register file with its bus endpoint, a
+self-checking UVVM testbench, C, C++ and Python headers, an IPBus address table
+and LaTeX documentation.
 
-## Concept
+## Features
 
-The main goal of the project is to able to automatically create and modify VHDL bus slave modules based on a simple definition format.
-By employing VHDL records the handling of the registers can be completely hidden in a module separate from the rest of the design.
-Every supported bus protocol is a thin wrapper (an "endpoint") around a small protocol-agnostic local bus, so the register-map logic stays the same regardless of bus. The hardware side references each field by name through `to_hw`/`from_hw` records, with software/hardware access modes and side effects (read/write clear/set, single-pulse, hardware set/clear, enumerated values) described in the JSON.
+- Six buses: [AXI4-Lite](https://developer.arm.com/documentation/ihi0022/latest/),
+  [IPBus](https://ipbus.web.cern.ch/), SBI (the UVVM simple bus interface),
+  [Avalon-MM](https://www.intel.com/content/www/us/en/docs/programmable/683091/current/introduction-to-the-interface-specifications.html),
+  [Wishbone](https://wishbone-interconnect.readthedocs.io/) and
+  [APB](https://developer.arm.com/documentation/ihi0024/latest/). Each is a thin
+  endpoint in front of the same register file.
+- Your design reaches every field by name through the `to_hw` and `from_hw`
+  VHDL records, and enumerated fields become VHDL enumeration types.
+- Separate software and hardware access per field, with SystemRDL-style side
+  effects: clear or set on read, set, clear or toggle on write, single-cycle
+  pulses, hardware set and clear, write enables and access strobes.
+- The base address is a VHDL generic, so one module can sit at any address.
+- A self-checking UVVM testbench for every module, on every bus.
+- C, C++ and Python headers, an IPBus address table for uHAL and LaTeX/PDF
+  documentation from the same file.
 
-## Bus support
+## Installation
 
-bust currently supports these bus standards:
+bust needs Python 3.9 or newer.
 
-- [AXI4-lite](https://en.wikipedia.org/wiki/Advanced_eXtensible_Interface#AXI4-Lite)
-- [IPBus](https://ipbus.web.cern.ch/ipbus/)
-- [SBI](https://github.com/UVVM/UVVM) (Simple Bus Interface, as used by UVVM)
-- [Avalon-MM](https://www.intel.com/content/www/us/en/docs/programmable/683091/current/introduction-to-the-interface-specifications.html)
-- [Wishbone](https://wishbone-interconnect.readthedocs.io/)
-- [APB](https://developer.arm.com/documentation/ihi0024/latest/) (AMBA APB)
+```bash
+pip install bust
+```
 
-## Requirements
+## Usage
 
-bust is tested on python 3.9, 3.10, 3.11, 3.12, 3.13 and 3.14.
+```bash
+bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i]] | [-a] | [-c | -e]]
+bust --version
+bust -h | --help
+```
 
-bust does NOT support python 2.7 and neither should you!
+A minimal register map with one control register:
 
-## Getting Started
+```json
+{
+  "bus": { "type": "axi", "addr_width": 32, "data_width": 32 },
+  "module": {
+    "name": "blinky",
+    "version": "1.0",
+    "description": "LED control.",
+    "register": [
+      {
+        "name": "ctrl", "sw": "rw", "hw": "r", "type": "fields",
+        "description": "LED control.",
+        "fields": [
+          { "name": "enable", "type": "bit", "description": "Turn the LED on." },
+          { "name": "rate", "type": "vector", "width": 4, "description": "Blink rate." }
+        ]
+      }
+    ]
+  }
+}
+```
 
-Install the latest release by using pip:
+```bash
+bust blinky.json -o out -p
+```
 
-`pip install bust`
+This writes `out/blinky/` with the VHDL in `hdl/`, the testbench in `tb/`, the
+headers in `header/` and the LaTeX documentation in `doc/`. Your logic reads
+`to_hw.ctrl.enable` and `to_hw.ctrl.rate` from the generated `blinky` entity.
 
-pip skips pre-releases (alpha, beta and release candidates) unless you ask for
-them. To try the newest pre-release:
+## Documentation
 
-`pip install --pre bust`
+The full documentation is at [bust.readthedocs.io](https://bust.readthedocs.io):
 
-### Usage
+- [Getting started](https://bust.readthedocs.io/en/latest/getting-started.html)
+- [Register map format](https://bust.readthedocs.io/en/latest/register-map-format.html)
+- [Access modes](https://bust.readthedocs.io/en/latest/access-modes.html)
+- [Buses](https://bust.readthedocs.io/en/latest/buses.html)
+- [Upgrading from 0.14](https://bust.readthedocs.io/en/latest/upgrading.html)
+- [Development](https://bust.readthedocs.io/en/latest/development.html)
 
-`bust FILE [-o DIR]`
-
-`bust --version`
-
-`bust -h | --help`
-
-## Examples
-
-The examples folder contains JSON files for the bus types supported.
-The files are human-readable to the point that you can create your own from this template alone.
-The folder also contains the output files generated based on the JSON files.
-
-### Simulation
-bust does not generate simulator-specific run scripts. There are too many simulators and flows to pick a one-size-fits-all approach, so compiling and running the output is left to you. The repository's own simulation (under `sim/`) exists only to verify that bust itself works and that the generated example designs simulate; it is not a user-facing flow.
-
-The generated testbenches use UVVM - which can be cloned from their [GitHub page](https://github.com/UVVM/UVVM) - and, for IPBus, the vip_ipbus VIP.
-
-### IPBus
-IPBus requires the bus package file from the [IPBus firmware repo](https://github.com/ipbus/ipbus-firmware) and the custom [IPBus BFM repo](https://github.com/olagrottvik/vip_ipbus).
-
-See the example files for how you point to the specific folders.
-
-## Latest Development Version (Bleeding Edge)
-
-To run bust from a clone of the repository, see the development setup in
-[CONTRIBUTING.md](CONTRIBUTING.md).
-
-
-## Release Notes
-
-Release notes are in [CHANGELOG.md](CHANGELOG.md), and each release is on the [Releases page](https://github.com/logvik-org/bust/releases).
-
-
-## Contributing
-
-If you have ideas on how to improve the project, please review [CONTRIBUTING.md](CONTRIBUTING.md) for details. Note that we also have a [Code of Conduct](CODE_OF_CONDUCT.md).
-
+Release notes are in the [changelog](https://github.com/logvik-org/bust/blob/master/CHANGELOG.md).
+Report bugs and ideas as [GitHub issues](https://github.com/logvik-org/bust/issues).
 
 ## License
 
-This project is licensed under the Apache License, Version 2.0 - see [LICENSE](LICENSE) for details.
+Licensed under the **Apache License 2.0**. See [LICENSE](https://github.com/logvik-org/bust/blob/master/LICENSE) and
+[NOTICE](https://github.com/logvik-org/bust/blob/master/NOTICE).
+
+## Author
+
+**Ola Groettvik** - [GitHub](https://github.com/olagrottvik)
+
+### AI assistance
+
+bust started as a hand-written tool. Most of the work on 1.0 was done with AI
+assistance, with all changes reviewed and tested by the author.

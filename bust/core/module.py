@@ -12,16 +12,31 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING, Dict, List, cast
 
 from bust.core.enums import RegisterMode
-from bust.exceptions import InvalidAddress, InvalidRegister
+from bust.exceptions import (
+    FormatError,
+    InvalidAddress,
+    InvalidRegister,
+    InvalidRegisterFormat,
+)
 from bust.core.register import Register
 from bust.utils.formatting import indent_string
-from bust.validation.vhdl_validator import is_valid_VHDL
-from bust.validation.config_validator import ConfigWrapper
+from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
+from bust.validation.config_validator import ConfigWrapper, warn_unknown_keys
 
 if TYPE_CHECKING:
     from bust.core.bus import Bus
     from bust.core.field import Field
     from bust.settings import Settings
+
+
+MODULE_KEYS = (
+    "name",
+    "description",
+    "version",
+    "git_hash",
+    "byte_addressable",
+    "register",
+)
 
 
 class Module:
@@ -88,6 +103,7 @@ class Module:
 
         self.name = self._config.require("name")
         is_valid_VHDL(self.name)
+        warn_unknown_keys(mod, MODULE_KEYS, "module")
 
         # Store some config values for easy access
         self.description: str = self._config.get("description")
@@ -111,38 +127,59 @@ class Module:
             reg: Dictionary containing register configuration (see Register.__init__).
 
         Raises:
+            FormatError: If the specified address is malformed, out of range or
+                unaligned.
             InvalidAddress: If specified address is already in use.
             InvalidRegister: If register configuration is invalid.
             RuntimeError: If address space is exhausted.
         """
         if "address" in reg:
-            addr = int(reg["address"], 16)
+            addr = self._explicit_address(reg)
             if not self.is_address_free(addr):
-                raise InvalidAddress(reg["name"], addr)
-            if self.is_address_out_of_range(addr):
-                raise RuntimeError(
-                    "Address " + hex(addr) + " is definitely out of range..."
-                )
+                raise InvalidAddress(reg.get("name", "<unknown>"), addr)
             self.addresses.append(addr)
-            try:
-                self.registers.append(Register(reg, addr, self.name, self.data_width))
-            except Exception as e:
-                self.logger.error(
-                    f"Failed to parse register {reg.get('name', '<unknown>')}: "
-                    f"{type(e).__name__}: {e}"
-                )
-                raise InvalidRegister(reg) from e
-
         else:
             addr = self.get_next_address()
-            try:
-                self.registers.append(Register(reg, addr, self.name, self.data_width))
-            except Exception as e:
-                self.logger.error(
-                    f"Failed to parse register {reg.get('name', '<unknown>')}: "
-                    f"{type(e).__name__}: {e}"
-                )
-                raise InvalidRegister(reg) from e
+        try:
+            register = Register(reg, addr, self.name, self.data_width)
+            self._check_register_name(register.name)
+        except Exception as e:
+            self.logger.debug(f"Register configuration: {reg}")
+            raise InvalidRegister(reg, e) from e
+        self.registers.append(register)
+
+    def _explicit_address(self, reg: Dict) -> int:
+        """Parse a register's `address` and check that the bus can reach it."""
+        name = reg.get("name", "<unknown>")
+        address = reg["address"]
+        try:
+            addr = int(address, 16)
+        except (TypeError, ValueError):
+            raise FormatError(
+                f"Address of register {name} must be a hex string such as "
+                f'"0x10" (got {address!r})'
+            ) from None
+        if self.is_address_out_of_range(addr):
+            raise FormatError(
+                f"Address {hex(addr)} of register {name} does not fit in "
+                f"addr_width {self.addr_width}"
+            )
+        stride = self.data_width // 8 if self.byte_addressable else 1
+        if addr % stride:
+            raise FormatError(
+                f"Address {hex(addr)} of register {name} is not a multiple of "
+                f"{stride}, the data width in bytes"
+            )
+        return addr
+
+    def _check_register_name(self, name: str) -> None:
+        """Reject names that would generate clashing VHDL declarations."""
+        if name.lower() == self.name.lower():
+            raise InvalidRegisterFormat(
+                f"Register {name} has the name of its module, so their VHDL "
+                "types would clash"
+            )
+        is_unique(name, [reg.name for reg in self.registers])
 
     def get_next_address(self) -> int:
         """Find next available register address.

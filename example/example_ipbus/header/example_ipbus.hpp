@@ -1,5 +1,5 @@
-#ifndef EXAMPLE_IPBUS_H
-#define EXAMPLE_IPBUS_H
+#ifndef EXAMPLE_IPBUS_HPP
+#define EXAMPLE_IPBUS_HPP
 
 #include <cstdint>
 #include <string>

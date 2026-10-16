@@ -21,13 +21,8 @@ class GeneratorFactory:
     """
 
     @staticmethod
-    def create_module_generator(module=None) -> ModuleGenerator:
+    def create_module_generator() -> ModuleGenerator:
         """Create the (stateless) local-bus VHDL generator.
-
-        Args:
-            module: Accepted for backward compatibility and ignored; the
-                generator holds no state and renders from the module passed to
-                each generate method.
 
         Returns:
             ModuleGenerator that renders a module's local-bus artifacts.

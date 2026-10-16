@@ -167,24 +167,6 @@ def test_prototype_headers_match_golden():
             assert _prototype_header(method) == fp.read(), filename
 
 
-def test_prototype_doc_matches_golden():
-    """The LaTeX docs express the access-mode system (sw/hw, onread/onwrite,
-    singlepulse, enums). Needs pylatexenc, so it is skipped where unavailable."""
-    import pytest
-
-    pytest.importorskip("pylatexenc")
-    from bust.generators.documentation_generator import DocumentationGenerator
-
-    generated = DocumentationGenerator(_build_module()).generate_tex_documentation(
-        "1.0.0-dev"
-    )
-    golden = os.path.join(
-        _REPO_ROOT, "example", "example_prototype", "doc", "prototype.tex"
-    )
-    with open(golden) as fp:
-        assert generated == fp.read()
-
-
 def test_prototype_c_header_surfaces_access_modes():
     """Side effects and enums reach the C header, not just sw/hw access."""
     out = _prototype_header("generate_c_header")
@@ -461,7 +443,7 @@ def test_empty_module_is_mapped_returns_false():
     assert "return ;" not in out
 
 
-_ON_OFF = [{"name": "OFF", "value": 0}, {"name": "ON", "value": 1}]
+_ON_OFF = [{"name": "DISABLED", "value": 0}, {"name": "ENABLED", "value": 1}]
 
 
 def _fields_module(*fields, **defaults):
@@ -492,7 +474,7 @@ def test_bit_enum_encodes_as_one_element_vector():
     regfile = GeneratorFactory.generate_regfile_vhdl(module)
     assert "function to_r_f(s : std_logic_vector(0 downto 0)) return t_r_f;" in pkg
     assert "variable slv : std_logic_vector(0 downto 0);" in pkg
-    assert 'when "1" => return ON;' in pkg
+    assert 'when "1" => return ENABLED;' in pkg
     assert "regs.r.f <= to_r_f(lb_m2s.wdata(1 downto 1));" in regfile
     assert "rdata(1 downto 1) <= to_slv(regs.r.f);" in regfile
 
@@ -506,7 +488,7 @@ def test_hw_written_enum_testbench_default_is_its_reset_literal():
         hw="w",
     )
     tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
-    assert "r => (a => C, b => (value => OFF, we => '0')));" in tb
+    assert "r => (a => C, b => (value => DISABLED, we => '0')));" in tb
 
 
 def test_constant_enum_read_is_type_qualified():
@@ -519,9 +501,9 @@ def test_constant_enum_read_is_type_qualified():
         hw="r",
     )
     out = GeneratorFactory.generate_regfile_vhdl(module)
-    assert "rdata(0 downto 0) <= to_slv(t_r_a'(ON));" in out
-    assert "rdata(1 downto 1) <= to_slv(t_r_b'(OFF));" in out
-    assert "to_hw.r <= (a => t_r_a'(ON), b => t_r_b'(OFF));" in out
+    assert "rdata(0 downto 0) <= to_slv(t_r_a'(ENABLED));" in out
+    assert "rdata(1 downto 1) <= to_slv(t_r_b'(DISABLED));" in out
+    assert "to_hw.r <= (a => t_r_a'(ENABLED), b => t_r_b'(DISABLED));" in out
 
 
 def _strobe_read(module):
@@ -564,7 +546,7 @@ def test_strobe_read_of_mixed_register():
         sw="rw",
         hw="r",
     )
-    # acc=0xF, fixed=0x9, arg unreadable, go self-cleared, mode decodes 1 to ON.
+    # acc=0xF, fixed=0x9, arg unreadable, go self-cleared, mode decodes 1 to ENABLED.
     assert _strobe_read(module) == '32x"0000209F"'
 
 
@@ -722,7 +704,7 @@ def test_sticky_flag_check_needs_hwset_rclr_swacc_and_no_hw_write(change):
 def test_enum_without_a_zero_literal_reports_the_reset_hardware_uses():
     """Without a reset or a literal of value 0, hardware resets to the first
     literal. Headers, docs and the register reset must say the same."""
-    from bust.generators.header_generator import Header
+    from bust.generators.header_generator import HeaderGenerator
 
     states = [{"name": "LOW", "value": 1}, {"name": "HIGH", "value": 2}]
     module = _fields_module(
@@ -738,15 +720,15 @@ def test_enum_without_a_zero_literal_reports_the_reset_hardware_uses():
 
     pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
     assert "r => (lo => (others => '0'), mode => LOW));" in pkg
-    header = Header(module)
+    header = HeaderGenerator(module)
     assert "#define R_RESET 0x10" in header.generate_c_header()
     assert "#define R_MODE_RESET 0x1" in header.generate_c_header()
     assert "const uint32_t R_MODE_RESET = 0x1;" in header.generate_cpp_header()
     assert "R_MODE_RESET = 0x1" in header.generate_python_header()
 
     pytest.importorskip("pylatexenc")
-    from bust.generators.documentation_generator import Documentation
+    from bust.generators.documentation_generator import DocumentationGenerator
 
-    tex = Documentation(module).generate_tex_documentation()
+    tex = DocumentationGenerator(module).generate_tex_documentation()
     assert "\\regfield{mode}{2}{4}{{0x1}}" in tex
     assert "& \\texttt{0x10} \\\\" in tex

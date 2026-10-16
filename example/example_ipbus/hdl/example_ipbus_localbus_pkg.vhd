@@ -20,7 +20,7 @@ use ieee.std_logic_1164.all;
 
 package example_ipbus_localbus_pkg is
 
-  constant C_LB_ADDR_WIDTH : natural := 32;
+  constant C_LB_ADDR_WIDTH : natural := 16;
   constant C_LB_DATA_WIDTH : natural := 32;
 
   type t_lb_m2s is record
