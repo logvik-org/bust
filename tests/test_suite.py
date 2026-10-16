@@ -1,12 +1,19 @@
-import unittest
 import logging.config
+import os
+import unittest
+
 from bust.utils.json_utils import json_parser
 from bust.core.module import Module
 from bust.core.bus import Bus
 from bust.settings import Settings
-from bust.generators.documentation_generator import Documentation
-from bust.generators.header_generator import Header
+from bust.generators.documentation_generator import DocumentationGenerator
+from bust.generators.header_generator import HeaderGenerator
 from bust.generators.factory import GeneratorFactory
+
+
+# BUST_UPDATE_GOLDENS=1 rewrites the committed example outputs from the current
+# generator instead of comparing against them. Review the diff before committing.
+_UPDATE_GOLDENS = os.environ.get("BUST_UPDATE_GOLDENS") == "1"
 
 
 class BusHolder:
@@ -24,8 +31,8 @@ class BusHolder:
         sett = Settings(json_file, json["settings"])
         bus = Bus(json["bus"])
         mod = Module(json["module"], bus, sett)
-        doc = Documentation(mod)
-        hdr = Header(mod)
+        doc = DocumentationGenerator(mod)
+        hdr = HeaderGenerator(mod)
         return sett, bus, mod, doc, hdr
 
     def __repr__(self):
@@ -41,14 +48,14 @@ def _load_prototype(bus_type):
     json = json_parser("example/example_prototype.json")
     bus = Bus(dict(json["bus"], type=bus_type))
     mod = Module(json["module"], bus, settings=None)
-    return bus, mod, Documentation(mod), Header(mod)
+    return bus, mod, DocumentationGenerator(mod), HeaderGenerator(mod)
 
 
 def _load_access_matrix():
     """The access-mode combination example, one register per combination class."""
     json = json_parser("example/example_access_matrix.json")
     mod = Module(json["module"], Bus(json["bus"]), settings=None)
-    return mod, Header(mod)
+    return mod, HeaderGenerator(mod)
 
 
 class Test_Suite(unittest.TestCase):
@@ -66,6 +73,10 @@ class Test_Suite(unittest.TestCase):
         self.logger = logging.getLogger(__name__)
 
     def _assert_matches(self, generated, path, label):
+        if _UPDATE_GOLDENS:
+            with open(path, "w") as f:
+                f.write(generated)
+            return
         with open(path) as f:
             self.assertEqual(generated, f.read(), label)
 
@@ -314,6 +325,14 @@ class Test_Suite(unittest.TestCase):
             hdr.generate_python_header(),
             base + ".py",
             "prototype python header must match",
+        )
+
+    def test_prototype_doc(self):
+        _, _, doc, _ = _load_prototype("axi")
+        self._assert_matches(
+            doc.generate_tex_documentation("1.0.0-dev"),
+            "example/example_prototype/doc/prototype.tex",
+            "prototype doc must match manual file",
         )
 
     ############## Access-mode combination matrix ##################

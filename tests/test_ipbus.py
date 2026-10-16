@@ -10,9 +10,9 @@ import pytest
 from bust.core.bus import Bus
 from bust.core.module import Module
 from bust.exceptions import FormatError
-from bust.generators.documentation_generator import Documentation
+from bust.generators.documentation_generator import DocumentationGenerator
 from bust.generators.factory import GeneratorFactory
-from bust.generators.header_generator import Header
+from bust.generators.header_generator import HeaderGenerator
 
 _ACCESS_REGISTERS = [
     {
@@ -56,7 +56,7 @@ def _ipbus_module(registers, addr_width=32):
 
 
 def _addr_table_nodes():
-    xml = Header(_ipbus_module(_ACCESS_REGISTERS)).generate_ipbus_addr_table()
+    xml = HeaderGenerator(_ipbus_module(_ACCESS_REGISTERS)).generate_ipbus_addr_table()
     return {node.get("id"): node for node in ET.fromstring(xml)}
 
 
@@ -97,19 +97,21 @@ def test_addr_table_omits_software_unreachable_fields():
 
 def test_headers_use_effective_register_access():
     module = _ipbus_module(_ACCESS_REGISTERS)
-    c_header = Header(module).generate_c_header()
+    c_header = HeaderGenerator(module).generate_c_header()
     assert '#define STATUS_SW "ro"' in c_header
     assert '#define STATUS_HW "w"' in c_header
     assert '#define MIXED_SW "rw"' in c_header
     assert '#define MIXED_HW "rw"' in c_header
     assert '#define HWONLY_SW "na"' in c_header
-    assert 'STATUS_SW = "ro"' in Header(module).generate_python_header()
-    assert 'STATUS_SW = "ro";' in Header(module).generate_cpp_header()
+    assert 'STATUS_SW = "ro"' in HeaderGenerator(module).generate_python_header()
+    assert 'STATUS_SW = "ro";' in HeaderGenerator(module).generate_cpp_header()
 
 
 def test_doc_uses_effective_register_access():
     pytest.importorskip("pylatexenc")
-    tex = Documentation(_ipbus_module(_ACCESS_REGISTERS)).generate_tex_documentation()
+    tex = DocumentationGenerator(
+        _ipbus_module(_ACCESS_REGISTERS)
+    ).generate_tex_documentation()
     assert "{status - RO/W}" in tex
     assert "{mixed - RW/RW}" in tex
 
@@ -143,3 +145,18 @@ def test_ipbus_data_width_other_than_32_rejected():
 
 def test_data_width_constraint_is_ipbus_only():
     assert Bus({"type": "axi", "addr_width": 32, "data_width": 64}).data_width == 64
+
+
+def test_address_table_escapes_descriptions():
+    registers = [
+        {
+            "name": "r",
+            "description": 'A & B < "C"',
+            "fields": [{"name": "f", "type": "bit", "description": "x > y & z"}],
+        }
+    ]
+    xml = HeaderGenerator(_ipbus_module(registers)).generate_ipbus_addr_table()
+
+    reg = ET.fromstring(xml.encode("utf-8")).find("node")
+    assert reg.get("description") == 'A & B < "C"'
+    assert reg.find("node").get("description") == "x > y & z"

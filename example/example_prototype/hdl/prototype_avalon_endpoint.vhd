@@ -12,8 +12,8 @@
 -- waitrequest=1 is "not ready"; the accept beat is one cycle of waitrequest=0 when
 -- the regfile answers (ack or err). With no command, ack/err are low so
 -- waitrequest defaults high. The optional Avalon-MM response signal is not used, so
--- a decode error completes as a normal beat with readdata forced to 0 (the regfile
--- leaves it unchanged). Avalon-MM's reset is sync active-high, passed straight to
+-- a decode error completes as a normal beat with readdata forced to 0.
+-- Avalon-MM's reset is sync active-high, passed straight to
 -- the regfile, and the master drives a byte address mapped directly onto the local
 -- bus.
 library ieee;

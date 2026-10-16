@@ -18,7 +18,7 @@ from bust.exceptions import (
     InvalidRegisterFormat,
     InvalidFieldFormat,
 )
-from bust.core.field import Field
+from bust.core.field import INHERITABLE_ACCESS, Field
 from bust.core.legacy_schema import (
     register_access_defaults,
     reject_unsupported_timing,
@@ -26,7 +26,7 @@ from bust.core.legacy_schema import (
 )
 from bust.utils.formatting import indent_string
 from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
-from bust.validation.config_validator import ConfigWrapper
+from bust.validation.config_validator import ConfigWrapper, warn_unknown_keys
 from bust.core.enums import OnRead, RegisterMode, RegisterType, SwAccess, HwAccess
 
 # Register-level access summarised from its fields, keyed by
@@ -42,6 +42,23 @@ _HW_BY_READ_WRITE = {
     (True, False): HwAccess.R,
     (False, True): HwAccess.W,
     (False, False): HwAccess.NA,
+}
+
+
+# pulse_cycles and stall_cycles are bust 0.14 keys, kept so that 0.14 files are
+# rejected with an explanation when they use values 1.0 cannot generate.
+REGISTER_KEYS = {
+    "name",
+    "description",
+    "address",
+    "type",
+    "width",
+    "reset",
+    "fields",
+    "mode",
+    "pulse_cycles",
+    "stall_cycles",
+    *INHERITABLE_ACCESS,
 }
 
 
@@ -106,7 +123,11 @@ class Register:
             defaults={
                 "description": "",
                 "mode": RegisterMode.RW.value,
-                "type": RegisterType.DEFAULT.value,
+                "type": (
+                    RegisterType.FIELDS.value
+                    if "fields" in reg
+                    else RegisterType.DEFAULT.value
+                ),
                 "width": module_data_width,
                 "reset": "0x0",
             },
@@ -114,6 +135,7 @@ class Register:
 
         self.name = self._config.require("name")
         is_valid_VHDL(self.name)
+        warn_unknown_keys(reg, REGISTER_KEYS, f"register {self.name}")
         reject_unsupported_timing(reg)
 
         self.description: str = self._config.get("description")
@@ -127,6 +149,11 @@ class Register:
                 "bust 1.0 access-mode keys (sw/hw/...); use one schema, not both"
             )
         self.type = RegisterType.from_string(self._config.get("type"))
+        if self._config.is_set("fields") and self.type != RegisterType.FIELDS:
+            raise InvalidRegisterFormat(
+                f"Register {self.name} has fields but type '{self.type.value}'. "
+                "Use type 'fields' or remove the fields."
+            )
         self.width = self._config.get(
             "width"
         )  # Width can be overridden depending on register type
@@ -159,7 +186,7 @@ class Register:
                 )
             self.width = 1
 
-        elif self.type == RegisterType.FIELDS or self._config.is_set("fields"):
+        elif self.type == RegisterType.FIELDS:
             self.width = 0
             self._init_fields()
 
@@ -199,6 +226,8 @@ class Register:
     def _init_fields(self) -> None:
         """Initialize fields from configuration for FIELDS type registers."""
         fields = self._config.require("fields")
+        if not fields:
+            raise InvalidRegisterFormat(f"Register {self.name} has no fields")
         for field in fields:
             self.add_field(field)
 

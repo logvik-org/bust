@@ -68,7 +68,10 @@ def _field_config(combo: Combo, name: str = "f") -> Dict:
         if props["sw_strobe"] in (key, "both"):
             cfg[key] = True
     if props["enum"]:
-        cfg["enums"] = [{"name": "OFF", "value": 0}, {"name": "ON", "value": 1}]
+        cfg["enums"] = [
+            {"name": "DISABLED", "value": 0},
+            {"name": "ENABLED", "value": 1},
+        ]
     return cfg
 
 

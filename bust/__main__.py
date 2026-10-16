@@ -2,7 +2,7 @@
 """bust register tool.
 
 Usage:
-  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i]] | [-a] | [-c | -e]]
+  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i]] | [-a [-F | -f]] | [-c | -e]]
   bust --version
   bust -h | --help
 
@@ -13,7 +13,7 @@ Options:
   -d             Do not generate documentation (neither LaTeX nor PDF)
   -p             Do not generate PDF from LaTeX
   -i             Do not generate the include header files (.h, .hpp & .py)
-  -a             Update register addresses and save JSON file
+  -a             Update register addresses and save JSON file (with -f, without asking)
   -e             Edit the JSON file
   -c             Create a new JSON file
   -h --help      HELP!
@@ -30,11 +30,12 @@ import logging
 from typing import Dict, Union
 
 from bust.utils.json_utils import json_parser
+from bust.validation.config_validator import warn_unknown_keys
 from bust.utils.file_utils import write_string_to_file
 from bust.core.module import Module
 from bust.core.bus import Bus
-from bust.generators.header_generator import Header
-from bust.generators.documentation_generator import Documentation
+from bust.generators.header_generator import HeaderGenerator
+from bust.generators.documentation_generator import DocumentationGenerator
 from bust.settings import Settings
 from bust.generation import generate_output
 from bust.exceptions import (
@@ -71,6 +72,13 @@ def main():
         if args["FILE"] is not None:
             json_file = args["FILE"]
 
+            # The editor's curses menus fail in a background thread without a
+            # terminal, which would leave bust exiting 0 with nothing saved.
+            is_terminal = sys.stdin.isatty() and sys.stdout.isatty()
+            if (args["-c"] or args["-e"]) and not is_terminal:
+                logger.error("The editor (-c, -e) needs an interactive terminal.")
+                exit(1)
+
             if args["-c"] and json_file is not None:
                 try:
                     e = Editor(False, json_file)
@@ -97,11 +105,12 @@ def main():
 
             try:
                 json_dict = json_parser(json_file)
-                settings = Settings(json_file, json_dict["settings"])
+                warn_unknown_keys(json_dict, ("settings", "bus", "module"), "the file")
+                settings = Settings(json_file, json_dict.get("settings"))
                 bus = Bus(json_dict["bus"])
                 module = Module(json_dict["module"], bus, settings)
-                header = Header(module)
-                documentation = Documentation(module)
+                header = HeaderGenerator(module)
+                documentation = DocumentationGenerator(module)
 
             except (
                 FormatError,
@@ -112,8 +121,6 @@ def main():
                 NotImplementedError,
             ) as e:
                 logger.error(str(e))
-                if hasattr(e, "__cause__") and isinstance(e.__cause__, ValueError):
-                    logger.error(str(e.__cause__))
                 logger.debug("Detailed traceback:", exc_info=True)
                 exit(1)
 
@@ -152,11 +159,10 @@ def main():
                 module.update_addresses()
                 json = module.to_json(True)
                 try:
-                    write_string_to_file(json, json_file, ".")
+                    write_string_to_file(json, json_file, ".", bool(gs["force_ow"]))
                 except Exception as e:
-                    print("Saving failed...")
-                    print(e)
-                    return
+                    logger.error(f"Saving {json_file} failed: {e}")
+                    exit(1)
             else:
                 try:
                     generate_output(settings, bus, module, header, documentation, gs)

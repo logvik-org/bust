@@ -33,8 +33,8 @@ package prototype_regfile_pkg is
   -- base address must be aligned to this register window.
   constant C_MODULE_ADDR_WIDTH : natural := 6;
 
-  -- Enumerated field type for reg11.field0: literal
-  -- positions are the field's encoded values.
+  -- Enumerated field type for reg11.field0. The
+  -- conversion functions map each literal to and from its encoded value.
   type t_reg11_field0 is (STATE0, STATE1, STATE2, STATE3);
   function to_slv(v : t_reg11_field0) return std_logic_vector;
   function to_reg11_field0(s : std_logic_vector(1 downto 0)) return t_reg11_field0;

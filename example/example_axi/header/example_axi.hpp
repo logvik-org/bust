@@ -1,5 +1,5 @@
-#ifndef EXAMPLE_AXI_H
-#define EXAMPLE_AXI_H
+#ifndef EXAMPLE_AXI_HPP
+#define EXAMPLE_AXI_HPP
 
 #include <cstdint>
 #include <string>

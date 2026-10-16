@@ -28,8 +28,8 @@ package {{ module.name }}_regfile_pkg is
   constant C_MODULE_ADDR_WIDTH : natural := {{ module.register_select_width }};
 {% for f in module.enum_fields %}
 
-  -- Enumerated field type for {{ f.parent_register_name }}.{{ f.name }}: literal
-  -- positions are the field's encoded values.
+  -- Enumerated field type for {{ f.parent_register_name }}.{{ f.name }}. The
+  -- conversion functions map each literal to and from its encoded value.
   type {{ f.enum_type_name }} is ({{ f.enums | map(attribute='name') | join(', ') }});
   function to_slv(v : {{ f.enum_type_name }}) return std_logic_vector;
   function to_{{ f.parent_register_name }}_{{ f.name }}(s : std_logic_vector({{ f.vector_range_vhdl }})) return {{ f.enum_type_name }};

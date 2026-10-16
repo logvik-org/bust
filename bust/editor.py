@@ -69,7 +69,7 @@ class Editor:
             # Load the specified JSON file
             try:
                 json = json_parser(jsonfile)
-                self.settings = Settings(jsonfile, json["settings"])
+                self.settings = Settings(jsonfile, json.get("settings"))
                 self.bus = Bus(json["bus"])
                 self.mod = Module(json["module"], self.bus, self.settings)
                 self.recently_saved = True
@@ -83,15 +83,12 @@ class Editor:
             bus_dic["type"] = get_list_choice("Choose a bus type: ", Bus.supported_bus)
             bus_dic["addr_width"] = 32
             bus_dic["data_width"] = 32
-            bus_dic["reset"] = "async"
             self.bus = Bus(bus_dic)
 
             # Get name, addr_width, data_width and description
             mod = OrderedDict()
             mod["name"] = get_identifier("Enter a module name: ")
 
-            mod["addr_width"] = 32
-            mod["data_width"] = 32
             mod["description"] = input("Enter a description for the module: ")
             mod["register"] = []
 

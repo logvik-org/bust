@@ -15,7 +15,7 @@ from typing import Dict, List, NamedTuple, Optional, Tuple
 from bust.core.enums import FieldType, SwAccess, HwAccess, OnRead, OnWrite
 from bust.exceptions import InvalidFieldFormat
 from bust.validation.vhdl_validator import is_valid_VHDL
-from bust.validation.config_validator import ConfigWrapper
+from bust.validation.config_validator import ConfigWrapper, warn_unknown_keys
 
 
 class EnumValue(NamedTuple):
@@ -40,6 +40,18 @@ INHERITABLE_ACCESS = (
     "swmod",
     "swacc",
 )
+
+
+FIELD_KEYS = {
+    "name",
+    "type",
+    "width",
+    "position",
+    "reset",
+    "description",
+    "enums",
+    *INHERITABLE_ACCESS,
+}
 
 
 class Field:
@@ -106,7 +118,13 @@ class Field:
         )
 
         self.name = self._config.require("name")
-        is_valid_VHDL(self.name)
+        # A register without fields is one field with the register's name, which
+        # the register has validated already.
+        if self.name != parent_register_name:
+            is_valid_VHDL(self.name)
+        warn_unknown_keys(
+            field, FIELD_KEYS, f"field {self.name} of register {parent_register_name}"
+        )
 
         self.type = FieldType.from_string(self._config.require("type"))
         self.width = self._config.get(
@@ -154,13 +172,13 @@ class Field:
         onwrite = self._resolve("onwrite", None)
         self.onwrite = OnWrite.from_string(onwrite) if onwrite is not None else None
 
-        self.singlepulse = bool(self._resolve("singlepulse", False))
-        self.we = bool(self._resolve("we", False))
-        self.wel = bool(self._resolve("wel", False))
-        self.hwset = bool(self._resolve("hwset", False))
-        self.hwclr = bool(self._resolve("hwclr", False))
-        self.swmod = bool(self._resolve("swmod", False))
-        self.swacc = bool(self._resolve("swacc", False))
+        self.singlepulse = self._resolve_flag("singlepulse")
+        self.we = self._resolve_flag("we")
+        self.wel = self._resolve_flag("wel")
+        self.hwset = self._resolve_flag("hwset")
+        self.hwclr = self._resolve_flag("hwclr")
+        self.swmod = self._resolve_flag("swmod")
+        self.swacc = self._resolve_flag("swacc")
 
         self.enums = self._parse_enums(field.get("enums"))
 
@@ -248,6 +266,19 @@ class Field:
             return self._inherited[key]
         return fallback
 
+    def _resolve_flag(self, key: str) -> bool:
+        """Resolve a true/false key. null counts as false."""
+        value = self._resolve(key, False)
+        if value is None:
+            return False
+        # bool("false") is True, so a quoted value would silently switch it on.
+        if not isinstance(value, bool):
+            raise InvalidFieldFormat(
+                f"{key} of field {self.name} in reg {self.parent_register_name} "
+                f"must be true or false (got {value!r})"
+            )
+        return value
+
     def _parse_enums(self, enums) -> List[EnumValue]:
         """Parse and validate the field's enumerated values, if any.
 
@@ -263,6 +294,9 @@ class Field:
         for entry in enums:
             name = entry["name"]
             is_valid_VHDL(name)
+            warn_unknown_keys(
+                entry, ("name", "value"), f"enum value {name} of field {self.name}"
+            )
             if name in seen_names:
                 raise InvalidFieldFormat(
                     f"Duplicate enum name '{name}' in field {self.name} "

@@ -12,6 +12,7 @@ from collections import OrderedDict
 from typing import Any, Dict
 
 from bust.exceptions import FormatError, InvalidBusType
+from bust.validation.config_validator import warn_unknown_keys
 
 
 class Bus:
@@ -22,51 +23,40 @@ class Bus:
     provides methods for generating bus-specific VHDL code.
 
     Supported bus types:
-        - axi: AXI4-Lite (async reset)
-        - ipbus: IPBus (sync reset)
-        - sbi: Simple Bus Interface (sync reset)
-        - avalon: Avalon-MM (sync reset)
-        - wishbone: Wishbone B4 classic (sync reset)
-        - apb: AMBA APB (async active-low reset)
+        - axi: AXI4-Lite
+        - ipbus: IPBus
+        - sbi: Simple Bus Interface
+        - avalon: Avalon-MM
+        - wishbone: Wishbone B4 classic
+        - apb: AMBA APB
 
     Attributes:
         bus_type: Bus standard identifier (one of supported_bus).
         data_width: Width of data bus in bits.
         addr_width: Width of address bus in bits.
-        comp_library: VHDL library name for bus components.
-        short_name: Abbreviated bus name for code generation.
-        bus_reset: Reset type ("async" or "sync").
         byte_addressable: Whether the bus addresses by byte (else by word).
         endpoint_suffix: File-name suffix for the generated endpoint VHDL.
+        ignored: The ignored bus keys the JSON file had, by name.
 
     Class Attributes:
-        BUS_CONFIG: Per-bus-type configuration (short name, reset convention,
-            forced component library, byte addressing, endpoint file suffix,
-            widest supported addr_width, fixed data_width).
+        BUS_CONFIG: Per-bus-type configuration (byte addressing, endpoint file
+            suffix, widest supported addr_width, fixed data_width).
         supported_bus: Supported bus type strings (the BUS_CONFIG keys).
-        default_comp_library: Default VHDL library ("work") used when no library
-            is forced by the bus or supplied in the JSON.
+        IGNORED_KEYS: bust 0.14 bus keys that bust 1.0 ignores.
     """
 
     # One row per supported bus. Adding a single-beat bus is a new entry here
     # plus its endpoint/testbench templates, not edits scattered across methods.
-    # comp_library None means "use the JSON value, else default_comp_library".
     # max_addr_width None means the protocol's address port follows addr_width.
     # fixed_data_width None means the protocol's data ports follow data_width.
     BUS_CONFIG: Dict[str, Dict[str, Any]] = {
         "axi": {
-            "short_name": "axi",
-            "bus_reset": "async",
-            "comp_library": None,
             "byte_addressable": True,
             "endpoint_suffix": "axi_endpoint",
             "max_addr_width": None,
             "fixed_data_width": None,
         },
         "ipbus": {
-            "short_name": "ipb",
-            "bus_reset": "sync",
-            "comp_library": "ipbus",
             "byte_addressable": False,
             "endpoint_suffix": "ipb_endpoint",
             # ipb_addr is a fixed 32-bit port that the endpoint slices to addr_width.
@@ -75,44 +65,35 @@ class Bus:
             "fixed_data_width": 32,
         },
         "sbi": {
-            "short_name": "sbi",
-            "bus_reset": "sync",
-            "comp_library": None,
             "byte_addressable": True,
             "endpoint_suffix": "sbi_endpoint",
             "max_addr_width": None,
             "fixed_data_width": None,
         },
         "avalon": {
-            "short_name": "avalon",
-            "bus_reset": "sync",
-            "comp_library": None,
             "byte_addressable": True,
             "endpoint_suffix": "avalon_endpoint",
             "max_addr_width": None,
             "fixed_data_width": None,
         },
         "wishbone": {
-            "short_name": "wishbone",
-            "bus_reset": "sync",
-            "comp_library": None,
             "byte_addressable": True,
             "endpoint_suffix": "wishbone_endpoint",
             "max_addr_width": None,
             "fixed_data_width": None,
         },
         "apb": {
-            "short_name": "apb",
-            "bus_reset": "async",
-            "comp_library": None,
             "byte_addressable": True,
             "endpoint_suffix": "apb_endpoint",
             "max_addr_width": None,
             "fixed_data_width": None,
         },
     }
-    default_comp_library = "work"
     supported_bus = list(BUS_CONFIG)
+    # Generated files refer to each other through `work`, so the library they
+    # are compiled into is the user's choice. The keys are kept as given so that
+    # saving the JSON file again (bust -a, the editor) does not drop them.
+    IGNORED_KEYS = ("comp_library", "reset")
 
     def __init__(self, bus: Dict) -> None:
         """Initialize a Bus instance.
@@ -122,7 +103,6 @@ class Bus:
                 - type: Bus type, must be a supported_bus value (required)
                 - data_width: Data bus width in bits (required)
                 - addr_width: Address bus width in bits (required)
-                - comp_library: VHDL component library (optional, defaults based on type)
 
         Raises:
             InvalidBusType: If bus type is not in supported_bus list.
@@ -130,13 +110,14 @@ class Bus:
         """
         if bus["type"] not in Bus.BUS_CONFIG:
             raise InvalidBusType(bus["type"])
+        warn_unknown_keys(
+            bus, ("type", "addr_width", "data_width", *Bus.IGNORED_KEYS), "bus"
+        )
         self.bus_type = bus["type"]
         config = Bus.BUS_CONFIG[self.bus_type]
 
         self.data_width = bus["data_width"]
         self.addr_width = bus["addr_width"]
-        self.short_name = config["short_name"]
-        self.bus_reset = config["bus_reset"]
         self.byte_addressable = config["byte_addressable"]
         self.endpoint_suffix = config["endpoint_suffix"]
 
@@ -148,6 +129,11 @@ class Bus:
                 f"(got {self.addr_width})"
             )
 
+        if self.data_width <= 0 or self.data_width % 8:
+            raise FormatError(
+                f"data_width must be a whole number of bytes (got {self.data_width})"
+            )
+
         fixed_data_width = config["fixed_data_width"]
         if fixed_data_width is not None and self.data_width != fixed_data_width:
             raise FormatError(
@@ -155,26 +141,20 @@ class Bus:
                 f"so data_width must be {fixed_data_width} (got {self.data_width})"
             )
 
-        forced_library = config["comp_library"]
-        if forced_library is not None:
-            self.comp_library = forced_library
-        elif "comp_library" in bus:
-            self.comp_library = bus["comp_library"]
-        else:
-            self.comp_library = Bus.default_comp_library
+        self.ignored = OrderedDict(
+            (key, bus[key]) for key in Bus.IGNORED_KEYS if key in bus
+        )
 
     def to_json(self) -> OrderedDict:
         """Export bus configuration as an ordered dictionary.
 
         Returns:
-            OrderedDict with bus configuration, omitting comp_library if it
-            matches the default value.
+            OrderedDict with the bus configuration, including any ignored keys
+            the JSON file had.
         """
         json = OrderedDict()
         json["type"] = self.bus_type
         json["addr_width"] = self.addr_width
         json["data_width"] = self.data_width
-        json["reset"] = self.bus_reset
-        if self.comp_library != Bus.default_comp_library:
-            json["comp_library"] = self.comp_library
+        json.update(self.ignored)
         return json
