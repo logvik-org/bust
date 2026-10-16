@@ -5,10 +5,10 @@
   <img class="only-dark" alt="bust: one register map, every bus" src="_static/logo-dark.svg" width="480">
 </p>
 
-**bust** generates the register file of an FPGA module from a JSON register
-map. From one file it writes the VHDL register file with its bus endpoint, a
-self-checking UVVM testbench, C, C++ and Python headers, an IPBus address table
-and LaTeX documentation.
+**bust** generates the register file of an FPGA or ASIC module from a JSON
+register map. From one file it writes the VHDL register file with its bus
+endpoint, a self-checking UVVM testbench, C, C++ and Python headers, an IPBus
+address table and LaTeX documentation.
 
 bust supports six buses: AXI4-Lite, IPBus, SBI, Avalon-MM, Wishbone and APB.
 
