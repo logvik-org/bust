@@ -3,8 +3,8 @@
 
 The letters are built like the logvik mark: a 40-unit stroke, a 60-unit outer
 corner radius with a concentric 20-unit inner one, and square ends, all on a
-20-unit grid. The teal square after the t is a terminal cursor. The tagline and
-the favicon are pixel art on the same grid.
+20-unit grid. The teal square in the counter of the b is one register bit. The
+tagline and the favicon are pixel art on the same grid.
 
 Run it from the repository root. The PNG files need CairoSVG:
 
@@ -30,26 +30,25 @@ r = R - S  # inner corner radius
 X = 200  # x-height
 A = 280  # ascender
 GAP = 40  # space between letters
-CURSOR = 60  # side of the cursor square, which sits on the baseline
-PIXEL = 5  # size of one tagline pixel
+BIT = (60, -120, 60, 60)  # x, y, width and height of the bit in the b
+PIXEL = 4.5  # size of one tagline pixel
 
-# The b and the cursor at one pixel per 20-unit cell, for the favicon: ink (#)
-# and cursor (o).
+# The b at one pixel per 20-unit cell, for the favicon: ink (#) and bit (o).
 FAVICON = [
-    "##............",
-    "##............",
-    "##............",
-    "##............",
-    "#######.......",
-    "#########.....",
-    "##.....##.....",
-    "##......##....",
-    "##......##....",
-    "##......##....",
-    "##......##....",
-    "##......##.ooo",
-    "##########.ooo",
-    ".#########.ooo",
+    "##........",
+    "##........",
+    "##........",
+    "##........",
+    "#######...",
+    "#########.",
+    "##.....##.",
+    "##......##",
+    "##.ooo..##",
+    "##.ooo..##",
+    "##.ooo..##",
+    "##......##",
+    "##########",
+    ".#########",
 ]
 
 # 5x7 pixel capitals for the tagline, plus narrow punctuation.
@@ -159,19 +158,19 @@ def letter_t(w: float = 160, top: float = -260) -> tuple[str, float]:
 
 
 def wordmark(theme: str) -> tuple[str, float]:
-    """The letters and the cursor, with the baseline at y=0. Returns SVG and width."""
+    """The letters and the bit, with the baseline at y=0. Returns SVG and width."""
     colours = THEMES[theme]
     paths, x = [], 0.0
     for draw in (letter_b, letter_u, letter_s, letter_t):
         d, w = draw()
         paths.append(f'<path transform="translate({num(x)} 0)" d="{d}"/>')
         x += w + GAP
+    bx, by, bw, bh = BIT
     body = (
         f'<g fill="{colours["ink"]}" fill-rule="evenodd">{"".join(paths)}</g>'
-        f'<rect x="{num(x)}" y="{-CURSOR}" width="{CURSOR}" height="{CURSOR}" '
-        f'fill="{colours["teal"]}"/>'
+        f'<rect x="{bx}" y="{by}" width="{bw}" height="{bh}" fill="{colours["teal"]}"/>'
     )
-    return body, x + CURSOR
+    return body, x - GAP
 
 
 def tagline(text: str, width: float, colour: str) -> tuple[str, float]:
@@ -223,7 +222,7 @@ def wordmark_svg(theme: str) -> str:
 
 
 def favicon() -> str:
-    """The pixel b and cursor on a paper tile, 16 units square."""
+    """The pixel b on a paper tile, 16 units square."""
     colours = THEMES["light"]
     ox, oy = (16 - len(FAVICON[0])) // 2, (16 - len(FAVICON)) // 2
     body = f'<rect width="16" height="16" rx="3" fill="{PAPER}"/>'
