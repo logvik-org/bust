@@ -3,3 +3,18 @@ body .highlight,
 body .highlight pre {
   background: var(--color-code-background);
 }
+
+/* The front page shows the logo instead of its title, but keeps the heading for
+   screen readers, the browser tab and search. */
+section#bust > h1 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.sidebar-logo {
+  width: 8rem;
+}
