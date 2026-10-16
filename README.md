@@ -2,7 +2,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.png">
     <source media="(prefers-color-scheme: light)" srcset="docs/images/logo-light.png">
-    <img alt="bust: one register map, every bus" src="https://raw.githubusercontent.com/logvik-org/bust/master/docs/images/logo-light.png" width="480">
+    <img alt="bust: single source of truth" src="https://raw.githubusercontent.com/logvik-org/bust/master/docs/images/logo-light.png" width="480">
   </picture>
 </p>
 
