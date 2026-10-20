@@ -54,7 +54,8 @@ begin
   DUT : entity work.{{ module.name }}
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true,
+      G_MODULE_ADDR_WIDTH  => {{ module.tb_window_width }})
     port map (
       clk     => clk,
       reset   => reset,
@@ -88,6 +89,20 @@ begin
     begin
       sbi_check(addr, data, msg, clk, sbi_if, error, C_SCOPE,
                 shared_msg_id_panel, sbi_bfm_config);
+    end procedure;
+
+    -- SBI has no error line, so an unmapped offset completes normally and reads 0.
+    procedure bus_write_unmapped(constant addr : in unsigned;
+                                 constant data : in std_logic_vector;
+                                 constant msg  : in string) is
+    begin
+      bus_write(addr, data, msg);
+    end procedure;
+
+    procedure bus_check_unmapped(constant addr : in unsigned;
+                                 constant msg  : in string) is
+    begin
+      bus_check(addr, {{ module.data_width }}x"0", msg);
     end procedure;
 {% include "vhdl/testbench/localbus_tb/snapshot_vars.j2" %}
 

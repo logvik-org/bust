@@ -14,9 +14,9 @@ simulation flow.
 
 The testbench entity is `<module>_tb`, with no ports or generics. It runs a
 10 ns clock, holds the module in reset for 500 ns, and sets the base address
-to 0 with `G_BASE_ADDRESS` and the address check on with
-`G_CHECK_BASE_ADDRESS`. It then runs one group of checks for each kind of
-register below. A register that fits a row gets that row's checks.
+to 0 with `G_BASE_ADDRESS`, the address check on with `G_CHECK_BASE_ADDRESS`,
+and a window two bits wider than the registers need with `G_MODULE_ADDR_WIDTH`.
+It then runs one group of checks for each kind of register below. A register that fits a row gets that row's checks.
 
 | Register                                                                                                     | Checks                                                                                                                                                                                       |
 |--------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -29,6 +29,13 @@ register below. A register that fits a row gets that row's checks.
 | `we`, `hwset` or `hwclr` on read-write fields that hardware reads                                            | Up to four steps, each ending with a read: a software write, also checked on `to_hw`, then a hardware write with `we`, then `hwset`, then `hwclr` together with `hwset`, where `hwclr` must win. |
 | `swmod`, `swacc` or `singlepulse`                                                                            | Counts the strobe pulses on `to_hw` during a write and a read: `swmod` must pulse once, `swacc` twice, and a `singlepulse` field must hold the written value for exactly one clock cycle.    |
 | One field with `hwset`, `onread: rclr` and `swacc`                                                           | Holds `hwset` through a read and checks that the field is still set afterwards, since hardware wins over the read clear. Once `hwset` is released, a read clears it.                        |
+
+Last, the testbench writes and reads addresses where no register sits: an
+unused offset among the registers if there is one, an offset in the window
+above the registers, and one above the window. Each access must get an
+[error response](buses.md#errors), or read 0 on SBI and Avalon-MM, which have
+none. A plain read-write register is then read again to check that none of
+these writes reached it.
 
 The groups run in the order of the table, not in register order. A register
 can be in more than one group. A read-write register with a `swmod` field, for

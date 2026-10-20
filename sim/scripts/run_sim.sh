@@ -271,7 +271,7 @@ case "${TARGET}" in
             nvc ${NVC_OPTS} -a "${WORK_ROOT}/hdl/prototype/prototype_localbus_pkg.vhd"
         }
         COMPILE_ORDER=(
-            "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile_pkg.vhd"
+            "${WORK_ROOT}/example/example_prototype/hdl/prototype_ipbus_regfile_pkg.vhd"
             "${WORK_ROOT}/example/example_prototype/hdl/prototype_regfile.vhd"
             "${WORK_ROOT}/example/example_prototype/hdl/prototype_ipb_endpoint.vhd"
             "${WORK_ROOT}/example/example_prototype/hdl/prototype_ipbus.vhd"

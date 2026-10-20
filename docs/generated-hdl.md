@@ -182,6 +182,10 @@ entity timer_regfile is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
+    -- Address bits the module decodes. An address in this window that hits no
+    -- register gets an error response. The default is the smallest window
+    -- that holds the registers.
+    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
     -- Reset polarity. The regfile normalizes internally so the rest of the
     -- logic is polarity-agnostic.
     G_RESET_ACTIVE_LOW   : boolean := false
@@ -212,7 +216,7 @@ use work.timer_regfile_pkg.all;
 | Name | What it is |
 |------|------------|
 | `C_ADDR_<REG>` | The address of each register within the module, `addr_width` bits wide. |
-| `C_MODULE_ADDR_WIDTH` | The number of low address bits that select a register. |
+| `C_MODULE_ADDR_WIDTH` | The number of low address bits that select a register, and the default of `G_MODULE_ADDR_WIDTH`. |
 | `t_<reg>_<field>` | The enumeration type of an enumerated field. |
 | `to_slv`, `to_<reg>_<field>` | Conversions between an enumeration type and its bits. |
 | `t_<module>_to_hw` | Everything the hardware reads, one member per register. |
@@ -221,7 +225,7 @@ use work.timer_regfile_pkg.all;
 | `t_<module>_from_hw` | Everything the hardware drives, one member per register. |
 | `t_<reg>_from_hw` | The fields of one register that the hardware drives. |
 | `t_<reg>_<field>_in` | One field's value together with its `we`, `wel`, `set` or `clr` input. |
-| `t_<module>_regs`, `t_<reg>_regs`, `C_<MODULE>_REGS_RESET`, `base_match`, `sel_is`, `is_mapped` | The register file's internal storage, its reset value and its address decoding. Your design does not need them. |
+| `t_<module>_regs`, `t_<reg>_regs`, `C_<MODULE>_REGS_RESET`, `in_window`, `sel_is`, `is_mapped` | The register file's internal storage, its reset value and its address decoding. Your design does not need them. |
 
 Register and field names keep the case you gave them in the JSON. The
 `C_ADDR_` constants use the register name in upper case.
@@ -397,35 +401,45 @@ undriven stays `'U'` in simulation.
 
 ## Base address
 
-The top wrapper, the endpoint and the register file have the same two
+The top wrapper, the endpoint and the register file have the same three
 generics:
 
 ```vhdl
 entity timer is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
-    G_CHECK_BASE_ADDRESS : boolean := true
+    G_CHECK_BASE_ADDRESS : boolean := true;
+    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH
   );
 ```
 
-`G_BASE_ADDRESS` is `addr_width` bits wide. The register file splits each
-address in two. The low `C_MODULE_ADDR_WIDTH` bits select the register. With
-`G_CHECK_BASE_ADDRESS` set to `true`, the bits above must equal the same bits
-of `G_BASE_ADDRESS`, and any other address gets an
-[error response](buses.md#errors).
+The module answers for a window of `2**G_MODULE_ADDR_WIDTH` addresses.
+`G_MODULE_ADDR_WIDTH` defaults to `C_MODULE_ADDR_WIDTH`, the smallest window
+that holds the registers, and cannot be smaller. The register file splits each
+address in three:
 
-The base address must be aligned to the module's window of
-`2**C_MODULE_ADDR_WIDTH` addresses, so its low `C_MODULE_ADDR_WIDTH` bits must
-be zero. Otherwise the register file stops the simulation with an assertion
-failure. The timer has `C_MODULE_ADDR_WIDTH = 4`, a window of 16 bytes, so
-`x"4000_1000"` works and puts `load` at `0x4000_1004`. Accesses to
-`0x4000_1010` and to `0x0000_1004` both get an error.
+- The low `C_MODULE_ADDR_WIDTH` bits select the register.
+- The bits from `C_MODULE_ADDR_WIDTH` up to `G_MODULE_ADDR_WIDTH` must be zero.
+- With `G_CHECK_BASE_ADDRESS` set to `true`, the bits above
+  `G_MODULE_ADDR_WIDTH` must equal the same bits of `G_BASE_ADDRESS`.
+
+Any other address gets an [error response](buses.md#errors), and so does an
+address in the window where no register sits.
+
+`G_BASE_ADDRESS` is `addr_width` bits wide and must be aligned to the window,
+so its low `G_MODULE_ADDR_WIDTH` bits must be zero. Otherwise the register file
+stops the simulation with an assertion failure. The timer has
+`C_MODULE_ADDR_WIDTH = 4`, a window of 16 bytes, so `x"4000_1000"` works and
+puts `load` at `0x4000_1004`. Accesses to `0x4000_1010` and to `0x0000_1004`
+both get an error.
 
 With `G_CHECK_BASE_ADDRESS` set to `false`, the register file ignores
-`G_BASE_ADDRESS` and the upper address bits. The module then answers at every
-address whose low bits select a register, so `0x0000_1004` and `0x4000_1004`
-both reach `load`. Use this when your interconnect already decodes the
-module's address range and forwards only accesses meant for it.
+`G_BASE_ADDRESS` and the address bits above the window. Use this when your
+interconnect already decodes the module's address range and forwards only
+accesses meant for it. Then set `G_MODULE_ADDR_WIDTH` to the size of that
+range. If the interconnect gives the timer 4 KiB, `G_MODULE_ADDR_WIDTH => 12`
+makes `0x4000_1014` an error. With the default of 4, the register file looks
+only at the low 4 bits, so `0x4000_1014` reaches `load`.
 
 The base address is a generic, not a key in the JSON, because it describes
 where you place the module, not the module itself. You can instantiate one

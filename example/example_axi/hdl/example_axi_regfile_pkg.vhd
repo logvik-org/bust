@@ -29,8 +29,8 @@ package example_axi_regfile_pkg is
   constant C_ADDR_REG10 : std_logic_vector(31 downto 0) := 32x"28";
   constant C_ADDR_REG11 : std_logic_vector(31 downto 0) := 32x"2C";
 
-  -- Register-select width. base_match compares the bits above this width, so the
-  -- base address must be aligned to this register window.
+  -- Register-select width: the address bits that pick a register. The register
+  -- file decodes a window of G_MODULE_ADDR_WIDTH bits, at least this many.
   constant C_MODULE_ADDR_WIDTH : natural := 6;
 
   -- Internal storage, one record per register, each member a field that holds
@@ -179,9 +179,13 @@ package example_axi_regfile_pkg is
     reg8 : t_reg8_from_hw;
   end record;
 
-  function base_match(addr  : std_logic_vector(31 downto 0);
-                      base  : unsigned(31 downto 0);
-                      check : boolean) return boolean;
+  -- True when addr is inside the module window of `window` bits: the bits
+  -- between the register select and the window width are zero, and with check
+  -- set the bits above the window match base.
+  function in_window(addr   : std_logic_vector(31 downto 0);
+                     base   : unsigned(31 downto 0);
+                     check  : boolean;
+                     window : natural) return boolean;
 
   function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
                   reg_addr : std_logic_vector(31 downto 0)) return boolean;
@@ -192,16 +196,22 @@ end package example_axi_regfile_pkg;
 
 package body example_axi_regfile_pkg is
 
-  function base_match(addr  : std_logic_vector(31 downto 0);
-                      base  : unsigned(31 downto 0);
-                      check : boolean) return boolean is
+  function in_window(addr   : std_logic_vector(31 downto 0);
+                     base   : unsigned(31 downto 0);
+                     check  : boolean;
+                     window : natural) return boolean is
     constant base_slv : std_logic_vector(31 downto 0) := std_logic_vector(base);
   begin
+    for i in C_MODULE_ADDR_WIDTH to window - 1 loop
+      if addr(i) /= '0' then
+        return false;
+      end if;
+    end loop;
     if not check then
       return true;
     end if;
-    return addr(31 downto C_MODULE_ADDR_WIDTH)
-         = base_slv(31 downto C_MODULE_ADDR_WIDTH);
+    return addr(31 downto window)
+         = base_slv(31 downto window);
   end function;
 
   function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);

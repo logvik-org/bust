@@ -31,7 +31,8 @@ use work.prototype_regfile_pkg.all;
 entity prototype_avalon_endpoint is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := x"00000000";
-    G_CHECK_BASE_ADDRESS : boolean               := true
+    G_CHECK_BASE_ADDRESS : boolean               := true;
+    G_MODULE_ADDR_WIDTH  : natural               := C_MODULE_ADDR_WIDTH
   );
   port (
     clk         : in  std_logic;
@@ -63,6 +64,7 @@ begin
     generic map (
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
+      G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
       G_RESET_ACTIVE_LOW   => false)      -- Avalon-MM reset is sync active-high
     port map (
       clk     => clk,

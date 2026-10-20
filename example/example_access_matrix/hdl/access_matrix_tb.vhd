@@ -84,7 +84,8 @@ begin
   DUT : entity work.access_matrix
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true,
+      G_MODULE_ADDR_WIDTH  => 9)
     port map (
       clk      => clk,
       areset_n => areset_n,
@@ -167,6 +168,26 @@ begin
     begin
       axilite_check(addr, data, msg, clk, axilite_if, error, C_SCOPE,
                     shared_msg_id_panel, axilite_bfm_config);
+    end procedure;
+
+    -- An unmapped offset answers SLVERR and reads 0.
+    procedure bus_write_unmapped(constant addr : in unsigned;
+                                 constant data : in std_logic_vector;
+                                 constant msg  : in string) is
+      variable v_config : t_axilite_bfm_config := axilite_bfm_config;
+    begin
+      v_config.expected_response := SLVERR;
+      axilite_write(addr, data, msg, clk, axilite_if, C_SCOPE,
+                    shared_msg_id_panel, v_config);
+    end procedure;
+
+    procedure bus_check_unmapped(constant addr : in unsigned;
+                                 constant msg  : in string) is
+      variable v_config : t_axilite_bfm_config := axilite_bfm_config;
+    begin
+      v_config.expected_response := SLVERR;
+      axilite_check(addr, 32x"0", msg, clk, axilite_if, error, C_SCOPE,
+                    shared_msg_id_panel, v_config);
     end procedure;
     variable v_hw_set_clear_clr_only_swacc : natural;
     variable v_pulses_kick_swmod : natural;
@@ -371,6 +392,17 @@ begin
     check_value(irq_status_pending_at_swacc, '1', error, "irq_status.pending still set in the cycle after the read clear", C_SCOPE);
     bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"00000001", "irq_status still set after that read");
     bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"0", "irq_status cleared by a read without hwset");
+
+    -- An unmapped offset gets an error response where the bus has one, reads
+    -- as 0, and a write to it changes no register.
+    log(ID_LOG_HDR, "unmapped offsets get an error and change nothing", C_SCOPE);
+    bus_write_unmapped(f_addr(32x"4C"), 32x"0", "write 0x4C, an unused offset");
+    bus_check_unmapped(f_addr(32x"4C"), "read 0x4C, an unused offset");
+    bus_write_unmapped(f_addr(32x"80"), 32x"0", "write 0x80, in the window, above the registers");
+    bus_check_unmapped(f_addr(32x"80"), "read 0x80, in the window, above the registers");
+    bus_write_unmapped(f_addr(32x"200"), 32x"0", "write 0x200, above the window");
+    bus_check_unmapped(f_addr(32x"200"), "read 0x200, above the window");
+    bus_check(f_addr(C_ADDR_PLAIN), 32x"000000FF", "plain unchanged by the unmapped writes");
 
     wait for 10*C_CLK_PERIOD;
     report_alert_counters(FINAL);
