@@ -63,7 +63,7 @@ A minimal register map with one control register:
     "description": "LED control.",
     "register": [
       {
-        "name": "ctrl", "sw": "rw", "hw": "r", "type": "fields",
+        "name": "ctrl", "address": "0x0", "sw": "rw", "hw": "r", "type": "fields",
         "description": "LED control.",
         "fields": [
           { "name": "enable", "type": "bit", "description": "Turn the LED on." },
