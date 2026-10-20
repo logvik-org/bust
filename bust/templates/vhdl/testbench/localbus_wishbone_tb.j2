@@ -55,7 +55,7 @@ begin
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
-      G_MODULE_ADDR_WIDTH  => {{ module.tb_module_addr_width }})
+      G_MODULE_ADDR_WIDTH  => {{ tb.module_addr_width }})
     port map (
       clk_i   => clk,
       rst_i   => reset,
