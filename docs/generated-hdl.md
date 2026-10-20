@@ -21,7 +21,7 @@ is bust's output for this register map, trimmed:
     "name": "timer",
     "register": [
       {
-        "name": "ctrl", "sw": "rw", "hw": "r", "type": "fields",
+        "name": "ctrl", "address": "0x0", "sw": "rw", "hw": "r", "type": "fields",
         "fields": [
           {"name": "enable", "type": "bit"},
           {"name": "mode", "type": "vector", "width": 2,
@@ -29,16 +29,19 @@ is bust's output for this register map, trimmed:
           {"name": "start", "type": "bit", "singlepulse": true}
         ]
       },
-      {"name": "load", "sw": "rw", "hw": "r", "type": "default", "swmod": true},
       {
-        "name": "status", "sw": "ro", "hw": "w", "type": "fields",
+        "name": "load", "address": "0x4", "sw": "rw", "hw": "r",
+        "type": "default", "swmod": true
+      },
+      {
+        "name": "status", "address": "0x8", "sw": "ro", "hw": "w", "type": "fields",
         "fields": [
           {"name": "count", "type": "vector", "width": 16, "we": true},
           {"name": "running", "type": "bit"}
         ]
       },
       {
-        "name": "irq", "sw": "rw", "hw": "r", "type": "fields",
+        "name": "irq", "address": "0xc", "sw": "rw", "hw": "r", "type": "fields",
         "fields": [
           {"name": "expired", "type": "bit", "hwset": true, "onwrite": "woclr"}
         ]
