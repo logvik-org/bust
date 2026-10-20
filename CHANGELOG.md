@@ -13,6 +13,13 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 ### Added
 - A logo, shown in the README and the documentation.
 
+### Changed
+- Each name in the C header starts with the module name, such as
+  `TIMER_CTRL_OFFSET` instead of `CTRL_OFFSET`, so one source file can include
+  the headers of two modules that have a register of the same name. The C++
+  and Python headers already kept their names in a namespace and a class
+  named after the module, and are unchanged.
+
 ## [1.0.0a1] - 2026-10-16
 
 Second pre-release of bust 1.0.0, for testing. Install it with

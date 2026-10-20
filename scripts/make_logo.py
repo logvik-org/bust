@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Draw the bust logo, wordmark and favicon into docs/images.
+"""Draw the bust logo, wordmark, favicon and social preview into docs/images.
 
 The letters are built like the logvik mark: a 40-unit stroke, a 60-unit outer
 corner radius with a concentric 20-unit inner one, and square ends, all on a
@@ -205,14 +205,31 @@ def svg(view_box: str, body: str, label: str, extra: str = "") -> str:
     )
 
 
-def logo(theme: str, text: str = TAGLINE) -> str:
-    """The wordmark over the tagline."""
+def logo_body(theme: str, text: str = TAGLINE) -> tuple[str, tuple[float, ...]]:
+    """The wordmark over the tagline. Returns SVG and the x, y, width and height
+    of the box around it."""
     body, width = wordmark(theme)
     line, height = tagline(text, width, THEMES[theme]["muted"])
     body += f'<g transform="translate(0 80)">{line}</g>'
     m = 40
-    box = f"{-m} {-A - m} {num(width + 2 * m)} {num(A + 80 + height + 2 * m)}"
-    return svg(box, body, f"bust: {text.lower()}")
+    return body, (-m, -A - m, width + 2 * m, A + 80 + height + 2 * m)
+
+
+def logo(theme: str, text: str = TAGLINE) -> str:
+    body, box = logo_body(theme, text)
+    return svg(" ".join(num(v) for v in box), body, f"bust: {text.lower()}")
+
+
+def social_preview() -> str:
+    """The light logo on a paper card of the size GitHub asks for, 1280 by 640."""
+    w, h, logo_width = 1280, 640, 760
+    body, (x, y, bw, bh) = logo_body("light")
+    scale = logo_width / bw
+    tx, ty = (w - bw * scale) / 2 - x * scale, (h - bh * scale) / 2 - y * scale
+    place = f"translate({num(tx)} {num(ty)}) scale({num(scale)})"
+    card = f'<rect width="{w}" height="{h}" fill="{PAPER}"/>'
+    card += f'<g transform="{place}">{body}</g>'
+    return svg(f"0 0 {w} {h}", card, f"bust: {TAGLINE.lower()}")
 
 
 def wordmark_svg(theme: str) -> str:
@@ -254,7 +271,12 @@ def main() -> None:
         write_to=str(OUT / "favicon.png"),
         output_width=64,
     )
-    print(f"Wrote {len(files) + 3} files to {OUT}")
+    cairosvg.svg2png(
+        bytestring=social_preview().encode(),
+        write_to=str(OUT / "social-preview.png"),
+        output_width=1280,
+    )
+    print(f"Wrote {len(files) + 4} files to {OUT}")
 
 
 if __name__ == "__main__":

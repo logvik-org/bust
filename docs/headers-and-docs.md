@@ -24,7 +24,10 @@ output directory of the module described in
 
 The C, C++ and Python headers define the same constants. Each name starts with
 the register name in upper case, followed by the field name for a field
-property:
+property. In the C header, every name also starts with the module name, as
+`<MODULE>_<REG>_OFFSET`, because C has no namespaces. The C++ and Python
+headers put the names in a namespace and a class named after the module
+instead.
 
 | Constant                     | Value                                                                                                                                                  |
 |------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -44,7 +47,8 @@ property:
 
 A register without fields has no field constants. Its `ONREAD`, `ONWRITE` and
 `SINGLEPULSE` constants are named after the register alone, as in
-`REG9_SINGLEPULSE` in the AXI4-Lite example of the repository.
+`REG9_SINGLEPULSE` in the AXI4-Lite example of the repository
+(`EXAMPLE_AXI_REG9_SINGLEPULSE` in C).
 
 `_OFFSET` is an address for a register and a bit position for a field. The
 hardware modifiers (`we`, `wel`, `hwset`, `hwclr`, `swmod`, `swacc`) only
@@ -66,47 +70,47 @@ named after the module:
 #define PROTOTYPE_H
 
 /* Register: reg11 */
-#define REG11_SW "rw"
-#define REG11_HW "r"
-#define REG11_WIDTH 2
-#define REG11_OFFSET 0x2c
-#define REG11_RESET 0x0
+#define PROTOTYPE_REG11_SW "rw"
+#define PROTOTYPE_REG11_HW "r"
+#define PROTOTYPE_REG11_WIDTH 2
+#define PROTOTYPE_REG11_OFFSET 0x2c
+#define PROTOTYPE_REG11_RESET 0x0
 
 /* Field: field0 */
-#define REG11_FIELD0_OFFSET 0
-#define REG11_FIELD0_WIDTH 2
-#define REG11_FIELD0_RESET 0x0
-#define REG11_FIELD0_MASK 0x3
-#define REG11_FIELD0_SW "rw"
-#define REG11_FIELD0_HW "r"
-#define REG11_FIELD0_STATE0 0
-#define REG11_FIELD0_STATE1 1
-#define REG11_FIELD0_STATE2 2
-#define REG11_FIELD0_STATE3 3
+#define PROTOTYPE_REG11_FIELD0_OFFSET 0
+#define PROTOTYPE_REG11_FIELD0_WIDTH 2
+#define PROTOTYPE_REG11_FIELD0_RESET 0x0
+#define PROTOTYPE_REG11_FIELD0_MASK 0x3
+#define PROTOTYPE_REG11_FIELD0_SW "rw"
+#define PROTOTYPE_REG11_FIELD0_HW "r"
+#define PROTOTYPE_REG11_FIELD0_STATE0 0
+#define PROTOTYPE_REG11_FIELD0_STATE1 1
+#define PROTOTYPE_REG11_FIELD0_STATE2 2
+#define PROTOTYPE_REG11_FIELD0_STATE3 3
 
 #endif
 ```
 
-Add `<REG>_OFFSET` to the base address of the module to get the address of a
-register. Use `_MASK` and `_OFFSET` of a field to read or change it:
+Add `<MODULE>_<REG>_OFFSET` to the base address of the module to get the
+address of a register. Use `_MASK` and `_OFFSET` of a field to read or change it:
 
 ```c
 #include <stdint.h>
 #include "prototype.h"
 
-uint32_t value = read32(PROTOTYPE_BASE + REG11_OFFSET);
-uint32_t state = (value & REG11_FIELD0_MASK) >> REG11_FIELD0_OFFSET;
+uint32_t value = read32(PROTOTYPE_BASE + PROTOTYPE_REG11_OFFSET);
+uint32_t state = (value & PROTOTYPE_REG11_FIELD0_MASK) >> PROTOTYPE_REG11_FIELD0_OFFSET;
 
-if (state == REG11_FIELD0_STATE0) {
-    value = (value & ~REG11_FIELD0_MASK) | (REG11_FIELD0_STATE2 << REG11_FIELD0_OFFSET);
-    write32(PROTOTYPE_BASE + REG11_OFFSET, value);
+if (state == PROTOTYPE_REG11_FIELD0_STATE0) {
+    value = (value & ~PROTOTYPE_REG11_FIELD0_MASK)
+            | (PROTOTYPE_REG11_FIELD0_STATE2 << PROTOTYPE_REG11_FIELD0_OFFSET);
+    write32(PROTOTYPE_BASE + PROTOTYPE_REG11_OFFSET, value);
 }
 ```
 
 `read32`, `write32` and `PROTOTYPE_BASE` stand for whatever your platform uses.
-
-The C names do not include the module name. If two modules have a register of
-the same name, include their headers in different source files.
+The module name in each constant keeps the headers of two modules apart, so
+one source file can include both.
 
 ### C++
 
