@@ -31,6 +31,7 @@ Arguments:
 from docopt import docopt
 import sys
 import logging
+import logging.handlers
 from typing import Dict, Union
 
 from bust.utils.json_utils import json_parser
@@ -63,22 +64,49 @@ _IGNORED_0_14_OPTIONS = {
 }
 
 
+class _DebugLog(logging.handlers.BufferingHandler):
+    """Keeps every log record of the run, so that a run that fails can write
+    them to debug.log. A run that succeeds leaves no file behind."""
+
+    def __init__(self) -> None:
+        super().__init__(capacity=0)
+
+    def shouldFlush(self, record: logging.LogRecord) -> bool:
+        return False
+
+    def write(self, path: str = "debug.log") -> None:
+        handler = logging.FileHandler(path, mode="w")
+        handler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
+                datefmt="%a, %d %b %Y %H:%M:%S",
+            )
+        )
+        for record in self.buffer:
+            handler.handle(record)
+        handler.close()
+
+
 def main():
     args = docopt(__doc__, help=True, version="bust " + __VERSION__)
-    logging.basicConfig(
-        filename="debug.log",
-        filemode="w",
-        datefmt="%a, %d %b %Y %H:%M:%S",
-        format="%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
-        level=logging.DEBUG,
-    )
-    # Define a handler which writes INFO or higher to sys.stderr
+    root = logging.getLogger("")
+    root.setLevel(logging.DEBUG)
+    # Messages of level INFO and above go to standard error.
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
-    # Define a simpler format for sys.stderr
-    formatter = logging.Formatter("%(message)s")
-    console.setFormatter(formatter)
-    logging.getLogger("").addHandler(console)
+    console.setFormatter(logging.Formatter("%(message)s"))
+    root.addHandler(console)
+    debug_log = _DebugLog()
+    root.addHandler(debug_log)
+    try:
+        _run(args)
+    except SystemExit as stop:
+        if stop.code not in (None, 0):
+            debug_log.write()
+        raise
+
+
+def _run(args):
     logger = logging.getLogger(__name__)
 
     for option, reason in _IGNORED_0_14_OPTIONS.items():

@@ -304,12 +304,12 @@ When specifying address for register reg1, address 0x0 is already assigned to ot
 Bus type is not valid: pci
 ```
 
-Each run that reads a JSON file also writes `debug.log` in the directory you
-run bust from, replacing the one from the previous run. It holds the same
-messages with a timestamp, a line for each file written, and the full Python
-traceback of any error. Look there when a message is not enough, and attach it
-when you report a problem. `--version`, `--help` and a usage error do not write
-it.
+A run that stops with an error also writes `debug.log` in the directory you
+run bust from, replacing any earlier one. It holds the same messages with a
+timestamp, a line for each file written, and the full Python traceback of the
+error. Look there when a message is not enough, and attach it when you report a
+problem. A run that succeeds writes no `debug.log`, and neither do `--version`,
+`--help` and a usage error.
 
 ## Exit codes
 

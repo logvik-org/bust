@@ -35,6 +35,8 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   Such a register no longer gets a `t_<reg>_to_hw` or `t_<reg>_from_hw` type.
   This is the shape of the 0.14 records, so `ipb_rw_regs.<reg>` becomes
   `to_hw.<reg>`.
+- bust writes `debug.log` only when a run stops with an error, so a run that
+  succeeds no longer leaves the file in the working directory.
 - The error for a `pulse_cycles` other than 1 points to a new section of
   Access modes, Pulses into another clock domain, which shows how to cross a
   clock domain without stretching pulses in the register file.
