@@ -51,6 +51,26 @@ given in [Generated HDL](generated-hdl.md). The generated VHDL needs VHDL-2008.
 bust no longer writes simulator scripts. [Testbenches](testbenches.md) describes
 what the testbench needs, so you can add it to your own simulation flow.
 
+## Update the instantiations
+
+The generics of `<module>` have new names and types:
+
+| bust 0.14 | bust 1.0 |
+|---|---|
+| `g_ipb_baseaddr` or `g_axi_baseaddr`, a 32-bit `std_logic_vector` | `G_BASE_ADDRESS`, an `unsigned` of `addr_width` bits |
+| `g_check_baseaddr` | `G_CHECK_BASE_ADDRESS` |
+| `g_module_addr_width` | `G_MODULE_ADDR_WIDTH` |
+
+VHDL names are not case-sensitive, so `g_module_addr_width => 16` connects to
+`G_MODULE_ADDR_WIDTH` as it is. Its default is the smallest window that holds
+the registers, as 0 was in 0.14. A value below that width, 0 included, stops
+the simulation, so leave the generic out to get the default.
+[Base address](generated-hdl.md#base-address) describes the three generics.
+
+The IPBus ports `ipb_clk` and `ipb_reset` are now `clk` and `reset`, and
+`ipb_in` and `ipb_out` keep their names. The register records give way to the
+`to_hw` and `from_hw` ports.
+
 ## Check your JSON files
 
 The old `mode` key still works. bust translates it to software (`sw`) and

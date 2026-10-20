@@ -180,6 +180,39 @@ def test_prototype_c_header_surfaces_access_modes():
     assert "_MODE" not in out  # legacy mode macro is gone
 
 
+def test_module_addr_width_generic_reaches_the_regfile():
+    """G_MODULE_ADDR_WIDTH is declared on the top wrapper, the endpoint and the
+    regfile, defaults to the register span and widens the decoded window."""
+    module = _build_module()
+    default = "G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH"
+    for generate in (
+        GeneratorFactory.generate_module_top_vhdl,
+        GeneratorFactory.generate_axi_endpoint_vhdl,
+        GeneratorFactory.generate_regfile_vhdl,
+    ):
+        hdl = generate(module)
+        assert default in hdl
+    assert "G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH" in (
+        GeneratorFactory.generate_module_top_vhdl(module)
+    )
+    regfile = GeneratorFactory.generate_regfile_vhdl(module)
+    assert "G_MODULE_ADDR_WIDTH);" in regfile
+    assert "if hit and is_mapped(sel) then" in regfile
+
+
+def test_testbench_checks_unmapped_offsets():
+    """The prototype spans 0x00..0x2C (6 select bits), so the testbench widens the
+    window to 8 bits and checks 0x30, the alias 0x40 of reg0, and 0x100."""
+    module = _build_module()
+    assert module.tb_window_width == 8
+    assert [u["hex"] for u in module.tb_unmapped_offsets] == ["0x30", "0x40", "0x100"]
+    tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
+    assert "G_MODULE_ADDR_WIDTH  => 8)" in tb
+    assert 'bus_write_unmapped(f_addr(32x"40"), 32x"0"' in tb
+    assert "v_config.expected_response := SLVERR;" in tb
+    assert "unchanged by the unmapped writes" in tb
+
+
 def test_example_c_headers_compile_in_one_file(tmp_path):
     """Each C name starts with the module name, so the example headers, which
     share register names such as reg0, can be included in one source file."""

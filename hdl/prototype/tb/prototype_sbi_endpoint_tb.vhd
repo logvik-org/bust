@@ -26,7 +26,7 @@ architecture tb of prototype_sbi_endpoint_tb is
   constant C_SCOPE      : string := C_TB_SCOPE_DEFAULT;
   constant C_CLK_PERIOD : time   := 10 ns;
 
-  -- 64-byte aligned base (low C_MODULE_ADDR_WIDTH bits zero) so base_match holds.
+  -- 64-byte aligned base (low C_MODULE_ADDR_WIDTH bits zero) so in_window holds.
   constant C_BASE : std_logic_vector(31 downto 0) := 32x"FFAA0000";
 
   signal clk   : std_logic := '0';

@@ -60,7 +60,8 @@ the same apart from the handshake.
 
 Only an address that does not decode produces an error:
 
-- an address inside the module's window that is not a register address, or
+- an address inside the module's window that is not a register address. The
+  window is `2**G_MODULE_ADDR_WIDTH` addresses, or
 - with `G_CHECK_BASE_ADDRESS` set to `true`, an address whose bits above the
   window differ from `G_BASE_ADDRESS`.
 
@@ -87,8 +88,9 @@ handshake state also resets asynchronously.
 
 ### Base address
 
-All endpoints have the generics `G_BASE_ADDRESS` and `G_CHECK_BASE_ADDRESS`.
-[Base address](generated-hdl.md#base-address) describes them.
+All endpoints have the generics `G_BASE_ADDRESS`, `G_CHECK_BASE_ADDRESS` and
+`G_MODULE_ADDR_WIDTH`. [Base address](generated-hdl.md#base-address) describes
+them.
 
 ### Testbenches
 
