@@ -27,7 +27,14 @@ from bust.core.legacy_schema import (
 from bust.utils.formatting import indent_string
 from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
 from bust.validation.config_validator import ConfigWrapper, warn_unknown_keys
-from bust.core.enums import OnRead, RegisterMode, RegisterType, SwAccess, HwAccess
+from bust.core.enums import (
+    HwAccess,
+    OnRead,
+    RegisterMode,
+    RegisterType,
+    SwAccess,
+    current_type_name,
+)
 
 # Register-level access summarised from its fields, keyed by
 # (any field readable, any field writable).
@@ -148,7 +155,11 @@ class Register:
                 f"Register {self.name} sets the legacy 'mode' key together with "
                 "bust 1.0 access-mode keys (sw/hw/...); use one schema, not both"
             )
-        self.type = RegisterType.from_string(self._config.get("type"))
+        type_name = self._config.get("type")
+        self.legacy_type_name = (
+            type_name if current_type_name(type_name) != type_name else None
+        )
+        self.type = RegisterType.from_string(current_type_name(type_name))
         if self._config.is_set("fields") and self.type != RegisterType.FIELDS:
             raise InvalidRegisterFormat(
                 f"Register {self.name} has fields but type '{self.type.value}'. "

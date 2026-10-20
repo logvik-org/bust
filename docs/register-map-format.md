@@ -452,10 +452,21 @@ instead of access keys, and bust translates it:
 | `pulse` | `"sw": "wo", "hw": "r", "singlepulse": true` |
 
 A `pulse` register therefore returns to its reset value one clock cycle after
-a software write. The register types `default`, `vector`, `bit` and `fields`
-are the same in both versions. The fields of a `mode` register can set their
-own access keys, but a register cannot have `mode` together with access keys
-of its own:
+a software write.
+
+bust 0.14 called the `bit` and `vector` types `sl` and `slv`, for registers and
+fields. bust 1.0 still reads these names and warns once per file that they are
+deprecated:
+
+```text
+The bust 0.14 type names 'sl' and 'slv' are deprecated. Use 'bit' and 'vector' instead (17 registers and fields).
+```
+
+`bust FILE -a` saves the file with the new names. The types `default` and
+`fields` are the same in both versions.
+
+The fields of a `mode` register can set their own access keys, but a register
+cannot have `mode` together with access keys of its own:
 
 ```text
 Could not parse register baud_div: Invalid register format: Register baud_div sets the legacy 'mode' key together with bust 1.0 access-mode keys (sw/hw/...); use one schema, not both

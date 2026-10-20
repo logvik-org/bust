@@ -12,7 +12,14 @@ import logging
 from collections import OrderedDict
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
-from bust.core.enums import FieldType, SwAccess, HwAccess, OnRead, OnWrite
+from bust.core.enums import (
+    FieldType,
+    HwAccess,
+    OnRead,
+    OnWrite,
+    SwAccess,
+    current_type_name,
+)
 from bust.exceptions import InvalidFieldFormat
 from bust.validation.vhdl_validator import is_valid_VHDL
 from bust.validation.config_validator import ConfigWrapper, warn_unknown_keys
@@ -126,7 +133,11 @@ class Field:
             field, FIELD_KEYS, f"field {self.name} of register {parent_register_name}"
         )
 
-        self.type = FieldType.from_string(self._config.require("type"))
+        type_name = self._config.require("type")
+        self.legacy_type_name = (
+            type_name if current_type_name(type_name) != type_name else None
+        )
+        self.type = FieldType.from_string(current_type_name(type_name))
         self.width = self._config.get(
             "width"
         )  # Width can be overridden depending on register type

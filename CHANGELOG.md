@@ -28,6 +28,10 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   named after the module, and are unchanged.
 
 ### Fixed
+- bust reads the bust 0.14 type names `sl` and `slv` again, for registers and
+  fields, as `bit` and `vector`. It warns once per file that they are
+  deprecated, and `bust FILE -a` saves the file with the new names. Without
+  this, no register map written for 0.14 could be read.
 - With `G_CHECK_BASE_ADDRESS => false`, the register file looked only at the
   address bits that select a register. An access to an unmapped offset above
   the registers reached a register instead of getting an error, so a mistyped
