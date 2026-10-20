@@ -5,7 +5,7 @@
 {%- endmacro -%}
 {% macro field_chain(reg, f) -%}
 {% set lhs = "regs." ~ reg.name ~ "." ~ f.name -%}
-{% set fin = "from_hw." ~ reg.name ~ "." ~ f.name -%}
+{% set fin = "from_hw." ~ f.hw_path -%}
 {% set ns = namespace(branches=[]) %}
 {% if f.hwclr %}{% set ns.branches = ns.branches + [(fin ~ ".clr = '1'", lhs ~ " <= " ~ f.zeros_literal)] %}{% endif %}
 {% if f.hwset %}{% set ns.branches = ns.branches + [(fin ~ ".set = '1'", lhs ~ " <= " ~ f.ones_literal)] %}{% endif %}
@@ -29,7 +29,7 @@
 {% if f.singlepulse %}
       regs.{{ reg.name }}.{{ f.name }} <= {{ f.reset_value_vhdl }};
 {% elif f.hw_writes_continuously %}
-      regs.{{ reg.name }}.{{ f.name }} <= from_hw.{{ reg.name }}.{{ f.name }}{{ ".value" if f.from_hw_is_record else "" }};
+      regs.{{ reg.name }}.{{ f.name }} <= from_hw.{{ f.hw_path }}{{ ".value" if f.from_hw_is_record else "" }};
 {% endif %}
 {% endfor %}
 {% set onread_fields = reg.effective_fields | selectattr('onread') | list %}
@@ -60,6 +60,9 @@
 {%- endmacro -%}
 {# A constant enum is qualified because enum literal names (e.g. IDLE/BUSY) may be
    shared by several enum types, which would make to_slv(<literal>) ambiguous. #}
+{% macro to_hw_value(reg, f) -%}
+{%- if f.to_hw_is_record -%}(value => {{ field_value(reg, f) }}{% if f.swmod %}, swmod => swmod_{{ reg.name }}_{{ f.name }}{% endif %}{% if f.swacc %}, swacc => swacc_{{ reg.name }}_{{ f.name }}{% endif %}){%- else -%}{{ field_value(reg, f) }}{%- endif -%}
+{%- endmacro -%}
 {% macro field_value(reg, f) -%}
 {%- if f.holds_state -%}regs.{{ reg.name }}.{{ f.name }}{%- elif f.is_enum -%}{{ f.enum_type_name }}'({{ f.reset_value_vhdl }}){%- else -%}{{ f.reset_value_vhdl }}{%- endif -%}
 {%- endmacro -%}
@@ -265,7 +268,11 @@ begin
 {% if module.to_hw_registers %}
   -- Hardware-side outputs, one aggregate per register.
 {% for reg in module.to_hw_registers %}
-  to_hw.{{ reg.name }} <= ({% for f in reg.to_hw_fields %}{{ f.name }} => {% if f.to_hw_is_record %}(value => {{ field_value(reg, f) }}{% if f.swmod %}, swmod => swmod_{{ reg.name }}_{{ f.name }}{% endif %}{% if f.swacc %}, swacc => swacc_{{ reg.name }}_{{ f.name }}{% endif %}){% else %}{{ field_value(reg, f) }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %});
+{% if reg.fields %}
+  to_hw.{{ reg.name }} <= ({% for f in reg.to_hw_fields %}{{ f.name }} => {{ to_hw_value(reg, f) }}{% if not loop.last %}, {% endif %}{% endfor %});
+{% else %}
+  to_hw.{{ reg.name }} <= {{ to_hw_value(reg, reg.to_hw_fields[0]) }};
+{% endif %}
 {% endfor %}
 
 {% endif %}

@@ -94,19 +94,19 @@ begin
         regs.reg1.reg1 <= lb_m2s.wdata(0);
       end if;
 
-      regs.reg2.reg2 <= from_hw.reg2.reg2;
+      regs.reg2.reg2 <= from_hw.reg2;
 
       if sw_write and sel_is(sel, C_ADDR_REG3) then
         regs.reg3.reg3 <= lb_m2s.wdata(7 downto 0);
       end if;
 
-      regs.reg4.reg4 <= from_hw.reg4.reg4;
+      regs.reg4.reg4 <= from_hw.reg4;
 
       if sw_write and sel_is(sel, C_ADDR_REG5) then
         regs.reg5.reg5 <= lb_m2s.wdata(31 downto 0);
       end if;
 
-      regs.reg6.reg6 <= from_hw.reg6.reg6;
+      regs.reg6.reg6 <= from_hw.reg6;
 
       if sw_write and sel_is(sel, C_ADDR_REG7) then
         regs.reg7.field0 <= lb_m2s.wdata(0);
@@ -223,13 +223,13 @@ begin
   end process p_read;
 
   -- Hardware-side outputs, one aggregate per register.
-  to_hw.reg0 <= (reg0 => regs.reg0.reg0);
-  to_hw.reg1 <= (reg1 => regs.reg1.reg1);
-  to_hw.reg3 <= (reg3 => regs.reg3.reg3);
-  to_hw.reg5 <= (reg5 => regs.reg5.reg5);
+  to_hw.reg0 <= regs.reg0.reg0;
+  to_hw.reg1 <= regs.reg1.reg1;
+  to_hw.reg3 <= regs.reg3.reg3;
+  to_hw.reg5 <= regs.reg5.reg5;
   to_hw.reg7 <= (field0 => regs.reg7.field0, field1 => regs.reg7.field1, field2 => regs.reg7.field2, field3 => regs.reg7.field3);
-  to_hw.reg9 <= (reg9 => regs.reg9.reg9);
-  to_hw.reg10 <= (reg10 => regs.reg10.reg10);
+  to_hw.reg9 <= regs.reg9.reg9;
+  to_hw.reg10 <= regs.reg10.reg10;
   to_hw.reg11 <= (field0 => regs.reg11.field0, field1 => regs.reg11.field1);
 
   lb_s2m.rdata <= rdata;

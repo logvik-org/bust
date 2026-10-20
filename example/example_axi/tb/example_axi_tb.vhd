@@ -34,9 +34,9 @@ architecture tb of example_axi_tb is
 
   signal to_hw    : t_example_axi_to_hw;
   signal from_hw  : t_example_axi_from_hw := (
-    reg2 => (reg2 => '0'),
-    reg4 => (reg4 => (others => '0')),
-    reg6 => (reg6 => (others => '0')),
+    reg2 => '0',
+    reg4 => (others => '0'),
+    reg6 => (others => '0'),
     reg8 => (field0 => '0', field1 => (others => '0'), field2 => '0', field3 => (others => '0')));
 
   constant C_DATA_W : natural := 32;
@@ -98,13 +98,13 @@ begin
   p_strobe_monitor : process (clk) is
   begin
     if rising_edge(clk) then
-      if to_hw.reg9.reg9 /= '1' then
+      if to_hw.reg9 /= '1' then
         reg9_reg9_sp_count <= reg9_reg9_sp_count + 1;
-        reg9_reg9_sp_value <= to_hw.reg9.reg9;
+        reg9_reg9_sp_value <= to_hw.reg9;
       end if;
-      if to_hw.reg10.reg10 /= 4x"A" then
+      if to_hw.reg10 /= 4x"A" then
         reg10_reg10_sp_count <= reg10_reg10_sp_count + 1;
-        reg10_reg10_sp_value <= to_hw.reg10.reg10;
+        reg10_reg10_sp_value <= to_hw.reg10;
       end if;
       if to_hw.reg11.field0 /= 15x"0003" then
         reg11_field0_sp_count <= reg11_field0_sp_count + 1;
@@ -170,22 +170,22 @@ begin
     log(ID_LOG_HDR, "reg0: software read-write round-trip", C_SCOPE);
     bus_write(f_addr(C_ADDR_REG0), 32x"00000001", "write reg0");
     bus_check(f_addr(C_ADDR_REG0), 32x"00000001", "reg0 reads back");
-    check_value(to_hw.reg0.reg0, '1', error, "reg0.reg0 exposed to hw", C_SCOPE);
+    check_value(to_hw.reg0, '1', error, "reg0.reg0 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg1: software read-write round-trip", C_SCOPE);
     bus_write(f_addr(C_ADDR_REG1), 32x"00000001", "write reg1");
     bus_check(f_addr(C_ADDR_REG1), 32x"00000001", "reg1 reads back");
-    check_value(to_hw.reg1.reg1, '1', error, "reg1.reg1 exposed to hw", C_SCOPE);
+    check_value(to_hw.reg1, '1', error, "reg1.reg1 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg3: software read-write round-trip", C_SCOPE);
     bus_write(f_addr(C_ADDR_REG3), 32x"000000FF", "write reg3");
     bus_check(f_addr(C_ADDR_REG3), 32x"000000FF", "reg3 reads back");
-    check_value(to_hw.reg3.reg3, 8x"FF", error, "reg3.reg3 exposed to hw", C_SCOPE);
+    check_value(to_hw.reg3, 8x"FF", error, "reg3.reg3 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg5: software read-write round-trip", C_SCOPE);
     bus_write(f_addr(C_ADDR_REG5), 32x"FFFFFFFF", "write reg5");
     bus_check(f_addr(C_ADDR_REG5), 32x"FFFFFFFF", "reg5 reads back");
-    check_value(to_hw.reg5.reg5, 32x"FFFFFFFF", error, "reg5.reg5 exposed to hw", C_SCOPE);
+    check_value(to_hw.reg5, 32x"FFFFFFFF", error, "reg5.reg5 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg7: software read-write round-trip", C_SCOPE);
     bus_write(f_addr(C_ADDR_REG7), 32x"001FFFFF", "write reg7");
@@ -209,19 +209,19 @@ begin
 
     log(ID_LOG_HDR, "reg2: hardware-driven status read back over the bus", C_SCOPE);
     wait until falling_edge(clk);
-    from_hw.reg2.reg2 <= '1';
+    from_hw.reg2 <= '1';
     wait until falling_edge(clk);
     bus_check(f_addr(C_ADDR_REG2), 32x"00000001", "reg2 reflects hardware inputs");
 
     log(ID_LOG_HDR, "reg4: hardware-driven status read back over the bus", C_SCOPE);
     wait until falling_edge(clk);
-    from_hw.reg4.reg4 <= 14x"1555";
+    from_hw.reg4 <= 14x"1555";
     wait until falling_edge(clk);
     bus_check(f_addr(C_ADDR_REG4), 32x"00001555", "reg4 reflects hardware inputs");
 
     log(ID_LOG_HDR, "reg6: hardware-driven status read back over the bus", C_SCOPE);
     wait until falling_edge(clk);
-    from_hw.reg6.reg6 <= 32x"55555555";
+    from_hw.reg6 <= 32x"55555555";
     wait until falling_edge(clk);
     bus_check(f_addr(C_ADDR_REG6), 32x"55555555", "reg6 reflects hardware inputs");
 

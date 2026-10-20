@@ -26,6 +26,13 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   the headers of two modules that have a register of the same name. The C++
   and Python headers already kept their names in a namespace and a class
   named after the module, and are unchanged.
+- A register without fields is now a member of `to_hw` and `from_hw` by
+  itself, as `to_hw.<reg>` instead of `to_hw.<reg>.<reg>`. When it has
+  `swmod`, `swacc`, `we`, `wel`, `hwset` or `hwclr`, the member is the record
+  of its value and strobes, such as `to_hw.load.value` and `to_hw.load.swmod`.
+  Such a register no longer gets a `t_<reg>_to_hw` or `t_<reg>_from_hw` type.
+  This is the shape of the 0.14 records, so `ipb_rw_regs.<reg>` becomes
+  `to_hw.<reg>`.
 - The error for a `pulse_cycles` other than 1 points to a new section of
   Access modes, Pulses into another clock domain, which shows how to cross a
   clock domain without stretching pulses in the register file.
