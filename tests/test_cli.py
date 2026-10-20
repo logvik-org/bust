@@ -143,3 +143,27 @@ def test_editor_without_terminal_fails(tmp_path):
 
     assert code == 1
     assert "needs an interactive terminal" in output
+
+
+def test_bust_0_14_options_are_ignored_with_a_warning(tmp_path):
+    path = _write_register_map(tmp_path)
+
+    code, output = _run_bust(
+        tmp_path, str(path), "-o", "out", "-d", "-u", "-b", "-t", "-m"
+    )
+
+    assert code == 0, output
+    for option in ("-u", "-b", "-t", "-m"):
+        assert f"Ignoring {option}, a bust 0.14 option" in output
+    assert (tmp_path / "out/timer/tb/timer_tb.vhd").is_file()
+
+
+def test_empty_version_leaves_no_version_label_in_the_latex(tmp_path):
+    path = _write_register_map(tmp_path)
+
+    code, output = _run_bust(tmp_path, str(path), "-o", "out", "-p")
+
+    assert code == 0, output
+    tex = (tmp_path / "out/timer/doc/timer.tex").read_text()
+    assert "\\author{}" in tex
+    assert "Version:" not in tex
