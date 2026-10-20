@@ -19,6 +19,8 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   that holds the registers.
 - The generated testbench checks that addresses where no register sits get an
   error response and that writes to them change no register.
+- The bust 0.14 options `-u`, `-b`, `-t` and `-m` are accepted again and
+  ignored with a warning, so 0.14 command lines in Makefiles keep working.
 
 ### Changed
 - Each name in the C header starts with the module name, such as
@@ -38,6 +40,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   clock domain without stretching pulses in the register file.
 
 ### Fixed
+- A module without a `version` no longer gets an empty `Version:` on the title
+  page and in the footer of its documentation. The version is now escaped for
+  LaTeX.
 - bust reads the bust 0.14 type names `sl` and `slv` again, for registers and
   fields, as `bit` and `vector`. It warns once per file that they are
   deprecated, and `bust FILE -a` saves the file with the new names. Without

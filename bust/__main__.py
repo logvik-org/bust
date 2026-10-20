@@ -2,7 +2,7 @@
 """bust register tool.
 
 Usage:
-  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i]] | [-a [-F | -f]] | [-c | -e]]
+  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i] [-u] [-b] [-t] [-m]] | [-a [-F | -f]] | [-c | -e]]
   bust --version
   bust -h | --help
 
@@ -13,6 +13,10 @@ Options:
   -d             Do not generate documentation (neither LaTeX nor PDF)
   -p             Do not generate PDF from LaTeX
   -i             Do not generate the include header files (.h, .hpp & .py)
+  -u             Ignored with a warning, a bust 0.14 option
+  -b             Ignored with a warning, a bust 0.14 option
+  -t             Ignored with a warning, a bust 0.14 option
+  -m             Ignored with a warning, a bust 0.14 option
   -a             Update register addresses and save JSON file (with -f, without asking)
   -e             Edit the JSON file
   -c             Create a new JSON file
@@ -49,6 +53,16 @@ from bust.editor import Editor
 from bust._version import __VERSION__
 
 
+# bust 0.14 options that bust 1.0 accepts and ignores, so that old command lines
+# and Makefiles keep working during the switch. Each maps to the reason.
+_IGNORED_0_14_OPTIONS = {
+    "-u": "bust 1.0 always regenerates the top-level file",
+    "-b": "bust 1.0 always writes the local-bus package",
+    "-t": "bust 1.0 always writes the testbench",
+    "-m": "bust 1.0 always writes the module VHDL",
+}
+
+
 def main():
     args = docopt(__doc__, help=True, version="bust " + __VERSION__)
     logging.basicConfig(
@@ -66,6 +80,10 @@ def main():
     console.setFormatter(formatter)
     logging.getLogger("").addHandler(console)
     logger = logging.getLogger(__name__)
+
+    for option, reason in _IGNORED_0_14_OPTIONS.items():
+        if args.get(option):
+            logger.warning(f"Ignoring {option}, a bust 0.14 option: {reason}.")
 
     try:
 

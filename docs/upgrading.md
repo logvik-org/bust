@@ -139,9 +139,11 @@ Code that includes the generated headers needs these changes:
 
 ## Command-line options
 
-The options `-u`, `-b`, `-t` and `-m` are gone. They controlled files that bust
-1.0 no longer generates or always generates. `-F` is kept as another name for
-`-f`. [Command line](command-line.md) lists the options.
+The options `-u`, `-b`, `-t` and `-m` have no effect any more. They controlled
+files that bust 1.0 no longer generates or always generates. bust accepts them
+with a warning, so a 0.14 command line in a Makefile still runs, but remove them
+when you can. `-F` is kept as another name for `-f`.
+[Command line](command-line.md) lists the options.
 
 ## Python imports
 
