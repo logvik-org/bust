@@ -26,6 +26,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   the headers of two modules that have a register of the same name. The C++
   and Python headers already kept their names in a namespace and a class
   named after the module, and are unchanged.
+- The error for a `pulse_cycles` other than 1 points to a new section of
+  Access modes, Pulses into another clock domain, which shows how to cross a
+  clock domain without stretching pulses in the register file.
 
 ### Fixed
 - bust reads the bust 0.14 type names `sl` and `slv` again, for registers and

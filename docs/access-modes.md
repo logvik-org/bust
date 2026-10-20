@@ -170,6 +170,42 @@ A `singlepulse` field needs software write access (`sw` `rw` or `wo`) and
 hardware read access (`hw` `r` or `rw`). It cannot have `onwrite` or `onread`,
 and hardware cannot write it on every cycle, so `hw: rw` needs `we` or `wel`.
 
+### Pulses into another clock domain
+
+A `singlepulse` field lasts one cycle of the register file's clock, and logic on
+another clock can miss a pulse that short. bust does not stretch pulses. A
+stretched pulse only crosses safely when it covers enough cycles of the other
+clock, and bust does not know how the two clocks compare. Cross the clock
+domain in your own logic instead, where the clocks are known:
+
+- For a reset or another level, use a plain read-write field instead of a
+  pulse. Software sets it and clears it again, so software decides how long it
+  lasts, and the other clock domain synchronizes the level.
+- For an event, toggle a flip-flop on each pulse and synchronize the toggle in
+  the other clock domain, where each change of level marks one event. This
+  works whatever the two clocks are.
+- When the other clock is known to be fast enough, stretch the pulse to a
+  number of cycles that covers it:
+
+```vhdl
+-- Holds go_stretched high for G_CYCLES cycles of clk after each pulse on go.
+p_stretch : process (clk) is
+  variable count : natural range 0 to G_CYCLES := 0;
+begin
+  if rising_edge(clk) then
+    if to_hw.ctrl.go = '1' then
+      count := G_CYCLES;
+    elsif count > 0 then
+      count := count - 1;
+    end if;
+    go_stretched <= '1' when count > 0 else '0';
+  end if;
+end process p_stretch;
+```
+
+bust 0.14 had `pulse_cycles` for this. bust 1.0 rejects a `pulse_cycles` other
+than 1 with an error that points here.
+
 ## Hardware modifiers
 
 | Key | The field needs | Member | Effect |
