@@ -42,7 +42,8 @@ logic to the register file.
 | `na` | none | none |
 
 The records are nested by register and then by field, so a field is
-`to_hw.<register>.<field>` or `from_hw.<register>.<field>`. A `bit` field is a
+`to_hw.<register>.<field>` or `from_hw.<register>.<field>`. A register without
+fields is `to_hw.<register>` or `from_hw.<register>` itself. A `bit` field is a
 `std_logic`, a `vector` field a `std_logic_vector`, and an enumerated field has
 its own type. Here are `reg0` (`sw rw`, `hw r`) and `reg1` (`sw ro`, `hw w`)
 of the prototype:

@@ -53,6 +53,7 @@ architecture rtl of access_matrix_regfile is
   signal swacc_mixed_history_toggle : std_logic;
   signal swacc_hw_status_swacc_level : std_logic;
   signal swacc_irq_status_pending : std_logic;
+  signal swmod_flat_strobe_flat_strobe : std_logic;
 
 begin
 
@@ -222,6 +223,30 @@ begin
         regs.irq_status.pending <= '1';
       end if;
 
+      if sw_write and sel_is(sel, C_ADDR_FLAT_LEVEL) then
+        regs.flat_level.flat_level <= lb_m2s.wdata(7 downto 0);
+      end if;
+
+      if sw_write and sel_is(sel, C_ADDR_FLAT_STROBE) then
+        regs.flat_strobe.flat_strobe <= lb_m2s.wdata(3 downto 0);
+      end if;
+
+      if from_hw.flat_override.we = '1' then
+        regs.flat_override.flat_override <= from_hw.flat_override.value;
+      elsif sw_write and sel_is(sel, C_ADDR_FLAT_OVERRIDE) then
+        regs.flat_override.flat_override <= lb_m2s.wdata(7 downto 0);
+      end if;
+
+      regs.flat_status.flat_status <= from_hw.flat_status;
+
+      if from_hw.flat_flag.clr = '1' then
+        regs.flat_flag.flat_flag <= '0';
+      elsif from_hw.flat_flag.set = '1' then
+        regs.flat_flag.flat_flag <= '1';
+      elsif sw_write and sel_is(sel, C_ADDR_FLAT_FLAG) then
+        regs.flat_flag.flat_flag <= lb_m2s.wdata(0);
+      end if;
+
       -- hw_set_clear software-access strobes (swmod on write, swacc on any access).
       swacc_hw_set_clear_clr_only <= '0';
       if sw_write and sel_is(sel, C_ADDR_HW_SET_CLEAR) then
@@ -286,6 +311,12 @@ begin
         swacc_irq_status_pending <= '1';
       end if;
 
+      -- flat_strobe software-access strobes (swmod on write, swacc on any access).
+      swmod_flat_strobe_flat_strobe <= '0';
+      if sw_write and sel_is(sel, C_ADDR_FLAT_STROBE) then
+        swmod_flat_strobe_flat_strobe <= '1';
+      end if;
+
       -- Write response: ack any mapped register, err an unmapped/out-of-range
       -- address.
       if lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' then
@@ -309,6 +340,7 @@ begin
         swacc_mixed_history_toggle <= '0';
         swacc_hw_status_swacc_level <= '0';
         swacc_irq_status_pending <= '0';
+        swmod_flat_strobe_flat_strobe <= '0';
       end if;
     end if;
   end process p_write;
@@ -408,6 +440,21 @@ begin
         elsif sel_is(sel, C_ADDR_IRQ_STATUS) then
           rdata(0) <= regs.irq_status.pending;
           rd_ack <= '1';
+        elsif sel_is(sel, C_ADDR_FLAT_LEVEL) then
+          rdata(7 downto 0) <= regs.flat_level.flat_level;
+          rd_ack <= '1';
+        elsif sel_is(sel, C_ADDR_FLAT_STROBE) then
+          rdata(3 downto 0) <= regs.flat_strobe.flat_strobe;
+          rd_ack <= '1';
+        elsif sel_is(sel, C_ADDR_FLAT_OVERRIDE) then
+          rdata(7 downto 0) <= regs.flat_override.flat_override;
+          rd_ack <= '1';
+        elsif sel_is(sel, C_ADDR_FLAT_STATUS) then
+          rdata(5 downto 0) <= regs.flat_status.flat_status;
+          rd_ack <= '1';
+        elsif sel_is(sel, C_ADDR_FLAT_FLAG) then
+          rdata(0) <= regs.flat_flag.flat_flag;
+          rd_ack <= '1';
         else
           rd_err <= '1';
         end if;
@@ -440,6 +487,10 @@ begin
   to_hw.hw_status_swacc <= (level => (value => regs.hw_status_swacc.level, swacc => swacc_hw_status_swacc_level), latched => regs.hw_status_swacc.latched);
   to_hw.hw_only <= (shadow => regs.hw_only.shadow, enable => regs.hw_only.enable);
   to_hw.irq_status <= (pending => (value => regs.irq_status.pending, swacc => swacc_irq_status_pending));
+  to_hw.flat_level <= regs.flat_level.flat_level;
+  to_hw.flat_strobe <= (value => regs.flat_strobe.flat_strobe, swmod => swmod_flat_strobe_flat_strobe);
+  to_hw.flat_override <= regs.flat_override.flat_override;
+  to_hw.flat_flag <= regs.flat_flag.flat_flag;
 
   lb_s2m.rdata <= rdata;
   lb_s2m.ack   <= wr_ack or rd_ack;

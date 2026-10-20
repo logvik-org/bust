@@ -112,6 +112,9 @@ class Field:
         self.logger = logging.getLogger(__name__)
 
         self.parent_register_name = parent_register_name
+        # True for the one field a register without fields stands for. Its value
+        # sits directly in to_hw/from_hw under the register name.
+        self.implicit = False
         self._inherited = inherited or {}
 
         self._config = ConfigWrapper(
@@ -671,6 +674,14 @@ class Field:
         if not self.is_enum:
             return self.reset_val_vhdl
         return self._decoded_enum(int(self.reset, 16)).name
+
+    @property
+    def hw_path(self) -> str:
+        """Where the field sits below to_hw and from_hw: `<reg>.<field>`, or
+        `<reg>` for the field of a register without fields."""
+        if self.implicit:
+            return self.parent_register_name
+        return f"{self.parent_register_name}.{self.name}"
 
     @property
     def to_hw_is_record(self) -> bool:

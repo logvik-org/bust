@@ -62,6 +62,8 @@ package {{ module.name }}_regfile_pkg is
 
   -- regfile -> hardware: only fields the hardware can read (hw r / rw). Fields
   -- with a software-access pulse (swmod/swacc) pair the value with the strobe.
+  -- A register without fields has no record of its own: its value, or its
+  -- value-and-strobe record, is the register's member of the bundle.
 {% for reg in module.to_hw_registers %}
 {% for f in reg.to_hw_fields if f.to_hw_is_record %}
   type {{ f.to_hw_record_name }} is record
@@ -71,18 +73,20 @@ package {{ module.name }}_regfile_pkg is
   end record;
 
 {% endfor %}
+{% if reg.fields %}
   type t_{{ reg.name }}_to_hw is record
 {% for f in reg.to_hw_fields %}
     {{ f.name }} : {{ f.to_hw_record_name if f.to_hw_is_record else f.value_type_vhdl }};
 {% endfor %}
   end record;
+{% endif %}
 {% endfor %}
 
 {% if module.to_hw_registers %}
   -- Whole-module regfile -> hardware bundle.
   type t_{{ module.name }}_to_hw is record
 {% for reg in module.to_hw_registers %}
-    {{ reg.name }} : t_{{ reg.name }}_to_hw;
+    {{ reg.name }} : {{ reg.to_hw_type_name }};
 {% endfor %}
   end record;
 {% endif %}
@@ -99,18 +103,20 @@ package {{ module.name }}_regfile_pkg is
   end record;
 
 {% endfor %}
+{% if reg.fields %}
   type t_{{ reg.name }}_from_hw is record
 {% for f in reg.from_hw_fields %}
     {{ f.name }} : {{ f.from_hw_record_name if f.from_hw_is_record else f.value_type_vhdl }};
 {% endfor %}
   end record;
+{% endif %}
 {% endfor %}
 
 {% if module.from_hw_registers %}
   -- Whole-module hardware -> regfile bundle.
   type t_{{ module.name }}_from_hw is record
 {% for reg in module.from_hw_registers %}
-    {{ reg.name }} : t_{{ reg.name }}_from_hw;
+    {{ reg.name }} : {{ reg.from_hw_type_name }};
 {% endfor %}
   end record;
 {% endif %}
