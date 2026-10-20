@@ -74,7 +74,8 @@ begin
   DUT : entity work.prototype
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true,
+      G_MODULE_ADDR_WIDTH  => 6)
     port map (
       clk     => clk,
       reset   => reset,
@@ -115,6 +116,27 @@ begin
       ipbus_read(addr, v_data, msg, clk, ipbus_if, C_SCOPE,
                  shared_msg_id_panel, ipbus_bfm_config);
       check_value(v_data, data, error, msg, C_SCOPE);
+    end procedure;
+
+    -- An unmapped offset answers ipb_err.
+    procedure bus_write_unmapped(constant addr : in unsigned;
+                                 constant data : in std_logic_vector;
+                                 constant msg  : in string) is
+      variable v_config : t_ipbus_bfm_config := ipbus_bfm_config;
+    begin
+      v_config.expected_response := ERR;
+      ipbus_write(addr, data, msg, clk, ipbus_if, C_SCOPE,
+                  shared_msg_id_panel, v_config);
+    end procedure;
+
+    procedure bus_check_unmapped(constant addr : in unsigned;
+                                 constant msg  : in string) is
+      variable v_config : t_ipbus_bfm_config := ipbus_bfm_config;
+      variable v_data   : std_logic_vector(C_DATA_W-1 downto 0);
+    begin
+      v_config.expected_response := ERR;
+      ipbus_read(addr, v_data, msg, clk, ipbus_if, C_SCOPE,
+                 shared_msg_id_panel, v_config);
     end procedure;
     variable v_reg9_field0_swmod : natural;
     variable v_reg9_field1_swacc : natural;
@@ -233,6 +255,17 @@ begin
     wait until rising_edge(clk);
     check_value(reg10_field0_sp_count - v_reg10_field0_sp, 1, error, "reg10.field0 singlepulse lasts exactly one cycle", C_SCOPE);
     check_value(reg10_field0_sp_value, 4x"F", error, "reg10.field0 hw saw the pulse value", C_SCOPE);
+
+    -- An unmapped offset gets an error response where the bus has one, reads
+    -- as 0, and a write to it changes no register.
+    log(ID_LOG_HDR, "unmapped offsets get an error and change nothing", C_SCOPE);
+    bus_write_unmapped(f_addr(32x"C"), 32x"0", "write 0xC, an unused offset");
+    bus_check_unmapped(f_addr(32x"C"), "read 0xC, an unused offset");
+    bus_write_unmapped(f_addr(32x"10"), 32x"0", "write 0x10, in the window, above the registers");
+    bus_check_unmapped(f_addr(32x"10"), "read 0x10, in the window, above the registers");
+    bus_write_unmapped(f_addr(32x"40"), 32x"0", "write 0x40, above the window");
+    bus_check_unmapped(f_addr(32x"40"), "read 0x40, above the window");
+    bus_check(f_addr(C_ADDR_REG0), 32x"00000007", "reg0 unchanged by the unmapped writes");
 
     wait for 10*C_CLK_PERIOD;
     report_alert_counters(FINAL);

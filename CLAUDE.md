@@ -62,7 +62,8 @@ Each module becomes `<module>_localbus_pkg`, `<module>_regfile_pkg`,
 
 - Generated HDL and its testbench change together, in the same PR.
 - The base address is the `G_BASE_ADDRESS` generic (with
-  `G_CHECK_BASE_ADDRESS`), never a JSON key.
+  `G_CHECK_BASE_ADDRESS` and the window `G_MODULE_ADDR_WIDTH`), never a JSON
+  key.
 - Hardware connects through the `to_hw` and `from_hw` records. Enumerated fields
   are VHDL enumeration types.
 - Same-cycle precedence is fixed: `hwclr` > `hwset` > hardware write with

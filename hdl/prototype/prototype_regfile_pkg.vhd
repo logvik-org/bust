@@ -62,9 +62,9 @@ package prototype_regfile_pkg is
   constant C_ADDR_REG10 : std_logic_vector(31 downto 0) := 32x"28";
   constant C_ADDR_REG11 : std_logic_vector(31 downto 0) := 32x"2C";
 
-  -- Register-select width. 6 bits decode a 64-byte window (0x00..0x3F); the
-  -- registers occupy 0x00..0x2C. base_match compares the bits above this width,
-  -- so the base address must be aligned to this 64-byte window.
+  -- Register-select width. 6 bits select within a 64-byte span (0x00..0x3F); the
+  -- registers occupy 0x00..0x2C. The regfile decodes a window of
+  -- G_MODULE_ADDR_WIDTH bits, at least this many.
   constant C_MODULE_ADDR_WIDTH : natural := 6;
 
   -- Enumerated field type for reg11.field0: hardware and software see named
@@ -320,13 +320,16 @@ package prototype_regfile_pkg is
     reg4 : t_reg4_from_hw;
   end record;
 
-  -- True when addr falls inside this module's window. With check disabled the
-  -- instantiator owns decode and every address is accepted. The compared bits
-  -- are above the module window, so base must be aligned to that window (the
-  -- regfile asserts this).
-  function base_match(addr  : std_logic_vector(31 downto 0);
-                      base  : unsigned(31 downto 0);
-                      check : boolean) return boolean;
+  -- True when addr falls inside this module's window of `window` bits: the bits
+  -- between the register select and the window width must be zero, so an
+  -- unmapped offset cannot alias onto a register. With check disabled the
+  -- instantiator owns the decode above the window. The bits above the window
+  -- are compared with base, so base must be aligned to the window (the regfile
+  -- asserts this).
+  function in_window(addr   : std_logic_vector(31 downto 0);
+                     base   : unsigned(31 downto 0);
+                     check  : boolean;
+                     window : natural) return boolean;
 
   -- True when the register-select bits match a register's byte offset.
   function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
@@ -340,16 +343,22 @@ end package prototype_regfile_pkg;
 
 package body prototype_regfile_pkg is
 
-  function base_match(addr  : std_logic_vector(31 downto 0);
-                      base  : unsigned(31 downto 0);
-                      check : boolean) return boolean is
+  function in_window(addr   : std_logic_vector(31 downto 0);
+                     base   : unsigned(31 downto 0);
+                     check  : boolean;
+                     window : natural) return boolean is
     constant base_slv : std_logic_vector(31 downto 0) := std_logic_vector(base);
   begin
+    for i in C_MODULE_ADDR_WIDTH to window - 1 loop
+      if addr(i) /= '0' then
+        return false;
+      end if;
+    end loop;
     if not check then
       return true;
     end if;
-    return addr(31 downto C_MODULE_ADDR_WIDTH)
-         = base_slv(31 downto C_MODULE_ADDR_WIDTH);
+    return addr(31 downto window)
+         = base_slv(31 downto window);
   end function;
 
   function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
