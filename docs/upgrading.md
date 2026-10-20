@@ -69,7 +69,16 @@ the simulation, so leave the generic out to get the default.
 
 The IPBus ports `ipb_clk` and `ipb_reset` are now `clk` and `reset`, and
 `ipb_in` and `ipb_out` keep their names. The register records give way to the
-`to_hw` and `from_hw` ports.
+`to_hw` and `from_hw` ports, and the names in your logic map one to one:
+
+| bust 0.14 | bust 1.0 |
+|---|---|
+| `ipb_rw_regs.<reg>` or `axi_rw_regs.<reg>` | `to_hw.<reg>` |
+| `ipb_pulse_regs.<reg>` or `axi_pulse_regs.<reg>` | `to_hw.<reg>` |
+| `ipb_ro_regs.<reg>` or `axi_ro_regs.<reg>` | `from_hw.<reg>` |
+
+A field keeps its name below its register, as in `to_hw.<reg>.<field>`.
+[Generated HDL](generated-hdl.md) describes the records.
 
 ## Check your JSON files
 

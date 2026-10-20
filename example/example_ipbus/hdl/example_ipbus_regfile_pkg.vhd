@@ -111,29 +111,13 @@ package example_ipbus_regfile_pkg is
 
   -- regfile -> hardware: only fields the hardware can read (hw r / rw). Fields
   -- with a software-access pulse (swmod/swacc) pair the value with the strobe.
-  type t_reg0_to_hw is record
-    reg0 : std_logic;
-  end record;
-  type t_reg1_to_hw is record
-    reg1 : std_logic;
-  end record;
-  type t_reg3_to_hw is record
-    reg3 : std_logic_vector(7 downto 0);
-  end record;
-  type t_reg5_to_hw is record
-    reg5 : std_logic_vector(31 downto 0);
-  end record;
+  -- A register without fields has no record of its own: its value, or its
+  -- value-and-strobe record, is the register's member of the bundle.
   type t_reg7_to_hw is record
     field0 : std_logic;
     field1 : std_logic_vector(3 downto 0);
     field2 : std_logic;
     field3 : std_logic_vector(14 downto 0);
-  end record;
-  type t_reg9_to_hw is record
-    reg9 : std_logic;
-  end record;
-  type t_reg10_to_hw is record
-    reg10 : std_logic_vector(3 downto 0);
   end record;
   type t_reg11_to_hw is record
     field0 : std_logic_vector(14 downto 0);
@@ -142,28 +126,19 @@ package example_ipbus_regfile_pkg is
 
   -- Whole-module regfile -> hardware bundle.
   type t_example_ipbus_to_hw is record
-    reg0 : t_reg0_to_hw;
-    reg1 : t_reg1_to_hw;
-    reg3 : t_reg3_to_hw;
-    reg5 : t_reg5_to_hw;
+    reg0 : std_logic;
+    reg1 : std_logic;
+    reg3 : std_logic_vector(7 downto 0);
+    reg5 : std_logic_vector(31 downto 0);
     reg7 : t_reg7_to_hw;
-    reg9 : t_reg9_to_hw;
-    reg10 : t_reg10_to_hw;
+    reg9 : std_logic;
+    reg10 : std_logic_vector(3 downto 0);
     reg11 : t_reg11_to_hw;
   end record;
 
   -- hardware -> regfile: per-field input records pairing each value with the
   -- modifier strobes that gate it. A field gets its own record only when it
   -- carries a strobe (we/wel/set/clr); a plain continuous input is a bare member.
-  type t_reg2_from_hw is record
-    reg2 : std_logic;
-  end record;
-  type t_reg4_from_hw is record
-    reg4 : std_logic_vector(13 downto 0);
-  end record;
-  type t_reg6_from_hw is record
-    reg6 : std_logic_vector(31 downto 0);
-  end record;
   type t_reg8_from_hw is record
     field0 : std_logic;
     field1 : std_logic_vector(18 downto 0);
@@ -173,9 +148,9 @@ package example_ipbus_regfile_pkg is
 
   -- Whole-module hardware -> regfile bundle.
   type t_example_ipbus_from_hw is record
-    reg2 : t_reg2_from_hw;
-    reg4 : t_reg4_from_hw;
-    reg6 : t_reg6_from_hw;
+    reg2 : std_logic;
+    reg4 : std_logic_vector(13 downto 0);
+    reg6 : std_logic_vector(31 downto 0);
     reg8 : t_reg8_from_hw;
   end record;
 

@@ -180,6 +180,57 @@ def test_prototype_c_header_surfaces_access_modes():
     assert "_MODE" not in out  # legacy mode macro is gone
 
 
+def test_register_without_fields_is_a_bare_member_of_to_hw_and_from_hw():
+    """A register without fields has no record of its own: to_hw.<reg> is its
+    value, or its value-and-strobe record when it has strobes."""
+    bus = Bus({"type": "axi", "addr_width": 32, "data_width": 32})
+    module = Module(
+        {
+            "name": "m",
+            "register": [
+                {"name": "level", "type": "vector", "width": 8, "sw": "rw", "hw": "r"},
+                {"name": "kick", "type": "bit", "sw": "rw", "hw": "r", "swmod": True},
+                {"name": "count", "type": "vector", "width": 4, "sw": "ro", "hw": "w"},
+                {
+                    "name": "load",
+                    "type": "vector",
+                    "width": 4,
+                    "sw": "rw",
+                    "hw": "rw",
+                    "we": True,
+                },
+                {
+                    "name": "ctrl",
+                    "type": "fields",
+                    "sw": "rw",
+                    "hw": "r",
+                    "fields": [{"name": "go", "type": "bit"}],
+                },
+            ],
+        },
+        bus,
+        settings=None,
+    )
+    pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
+    assert "    level : std_logic_vector(7 downto 0);" in pkg
+    assert "    kick : t_kick_kick_out;" in pkg
+    assert "    count : std_logic_vector(3 downto 0);" in pkg
+    assert "    load : t_load_load_in;" in pkg
+    assert "    ctrl : t_ctrl_to_hw;" in pkg
+    assert "type t_level_to_hw" not in pkg
+    assert "type t_count_from_hw" not in pkg
+
+    regfile = GeneratorFactory.generate_regfile_vhdl(module)
+    assert "  to_hw.level <= regs.level.level;" in regfile
+    assert (
+        "  to_hw.kick <= (value => regs.kick.kick, swmod => swmod_kick_kick);"
+        in regfile
+    )
+    assert "  to_hw.ctrl <= (go => regs.ctrl.go);" in regfile
+    assert "regs.count.count <= from_hw.count;" in regfile
+    assert "if from_hw.load.we = '1' then" in regfile
+
+
 def test_module_addr_width_generic_reaches_the_regfile():
     """G_MODULE_ADDR_WIDTH is declared on the top wrapper, the endpoint and the
     regfile, defaults to the register span and widens the decoded window."""

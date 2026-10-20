@@ -121,6 +121,8 @@ package prototype_regfile_pkg is
 
   -- regfile -> hardware: only fields the hardware can read (hw r / rw). Fields
   -- with a software-access pulse (swmod/swacc) pair the value with the strobe.
+  -- A register without fields has no record of its own: its value, or its
+  -- value-and-strobe record, is the register's member of the bundle.
   type t_reg0_to_hw is record
     field0 : std_logic;
     field1 : std_logic_vector(1 downto 0);

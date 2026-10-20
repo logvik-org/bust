@@ -173,17 +173,16 @@ Each entry in `register` is one register.
 | `bit` | one `std_logic`, at bit 0 |
 | `fields` | the fields listed under `fields` |
 
-A register without fields counts as one field with the same name as the
-register. It takes the register's `reset` and access keys. bust generated this
-record for `baud_div` in the example:
+A register without fields works like one field that spans the register. It
+takes the register's `reset` and access keys, and `to_hw` and `from_hw` hold
+its value directly, with no record of its own. bust generated this member of
+`to_hw` for `baud_div` in the example:
 
 ```vhdl
-type t_baud_div_to_hw is record
-  baud_div : std_logic_vector(15 downto 0);
-end record;
+baud_div : std_logic_vector(15 downto 0);
 ```
 
-Your logic reads it as `to_hw.baud_div.baud_div`.
+Your logic reads it as `to_hw.baud_div`.
 
 bust ignores a `width` on a `default` or `bit` register and prints a warning:
 

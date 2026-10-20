@@ -120,7 +120,7 @@ record ports, `to_hw` and `from_hw`, that carry every field by name:
 ```vhdl
 type t_timer_to_hw is record
   ctrl : t_ctrl_to_hw;     -- enable, mode (t_ctrl_mode), start
-  load : t_load_to_hw;     -- load.value, load.swmod
+  load : t_load_load_out;  -- value, swmod
   irq  : t_irq_to_hw;      -- expired
 end record;
 

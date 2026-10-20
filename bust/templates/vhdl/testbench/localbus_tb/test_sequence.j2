@@ -6,7 +6,7 @@
     bus_write(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "write {{ reg.name }}");
     bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "{{ reg.name }} reads back");
 {% for f in reg.to_hw_fields %}
-    check_value(to_hw.{{ reg.name }}.{{ f.name }}{{ ".value" if f.to_hw_is_record else "" }}, {{ f.all_ones_literal }}, error, "{{ reg.name }}.{{ f.name }} exposed to hw", C_SCOPE);
+    check_value(to_hw.{{ f.hw_path }}{{ ".value" if f.to_hw_is_record else "" }}, {{ f.all_ones_literal }}, error, "{{ reg.name }}.{{ f.name }} exposed to hw", C_SCOPE);
 {% endfor %}
 {% endfor %}
 {% for reg in module.registers if reg.is_enum_readback %}
@@ -39,19 +39,19 @@
     log(ID_LOG_HDR, "{{ reg.name }}: hardware-driven status read back over the bus", C_SCOPE);
     wait until falling_edge(clk);
 {% for s in reg.hw_drive_steps %}
-    from_hw.{{ reg.name }}.{{ s.field }}{{ ("." ~ s.member) if s.member else "" }} <= {{ s.literal }};
+    from_hw.{{ s.path }}{{ ("." ~ s.member) if s.member else "" }} <= {{ s.literal }};
 {% if s.enable == 'we' %}
-    from_hw.{{ reg.name }}.{{ s.field }}.we <= '1';
+    from_hw.{{ s.path }}.we <= '1';
 {% elif s.enable == 'wel' %}
-    from_hw.{{ reg.name }}.{{ s.field }}.wel <= '0';
+    from_hw.{{ s.path }}.wel <= '0';
 {% endif %}
 {% endfor %}
     wait until falling_edge(clk);
 {% for s in reg.hw_drive_steps if s.enable %}
 {% if s.enable == 'we' %}
-    from_hw.{{ reg.name }}.{{ s.field }}.we <= '0';
+    from_hw.{{ s.path }}.we <= '0';
 {% else %}
-    from_hw.{{ reg.name }}.{{ s.field }}.wel <= '1';
+    from_hw.{{ s.path }}.wel <= '1';
 {% endif %}
 {% endfor %}
     bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.hw_driven_expected_value_vhdl }}, "{{ reg.name }} reflects hardware inputs");
@@ -66,19 +66,19 @@
 {% if step.drives or step.strobes %}
     wait until falling_edge(clk);
 {% for d in step.drives %}
-    from_hw.{{ reg.name }}.{{ d.target }} <= {{ d.literal }};
+    from_hw.{{ d.target }} <= {{ d.literal }};
 {% endfor %}
 {% for s in step.strobes %}
-    from_hw.{{ reg.name }}.{{ s.target }} <= {{ s.on }};
+    from_hw.{{ s.target }} <= {{ s.on }};
 {% endfor %}
     wait until falling_edge(clk);
 {% for s in step.strobes %}
-    from_hw.{{ reg.name }}.{{ s.target }} <= {{ s.off }};
+    from_hw.{{ s.target }} <= {{ s.off }};
 {% endfor %}
 {% endif %}
     bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ step.expected }}, "{{ step.expected_msg }}");
 {% for c in step.to_hw_checks %}
-    check_value(to_hw.{{ reg.name }}.{{ c.target }}, {{ c.literal }}, error, "{{ reg.name }}.{{ c.name }} exposed to hw", C_SCOPE);
+    check_value(to_hw.{{ c.target }}, {{ c.literal }}, error, "{{ reg.name }}.{{ c.name }} exposed to hw", C_SCOPE);
 {% endfor %}
 {% endfor %}
 {% endfor %}
@@ -118,11 +118,11 @@
     -- cycle. The value sampled with the swacc strobe shows which one won.
     log(ID_LOG_HDR, "{{ reg.name }}: hwset beats a read clear in the same cycle", C_SCOPE);
     wait until falling_edge(clk);
-    from_hw.{{ reg.name }}.{{ f.name }}.set <= '1';
+    from_hw.{{ f.hw_path }}.set <= '1';
     wait until falling_edge(clk);
     bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "{{ reg.name }} read while hwset is held");
     wait until falling_edge(clk);
-    from_hw.{{ reg.name }}.{{ f.name }}.set <= '0';
+    from_hw.{{ f.hw_path }}.set <= '0';
     check_value({{ reg.name }}_{{ f.name }}_at_swacc, {{ f.all_ones_literal }}, error, "{{ reg.name }}.{{ f.name }} still set in the cycle after the read clear", C_SCOPE);
     bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "{{ reg.name }} still set after that read");
     bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ module.data_width }}x"0", "{{ reg.name }} cleared by a read without hwset");

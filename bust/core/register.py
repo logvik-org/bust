@@ -227,7 +227,9 @@ class Register:
         cfg: Dict = {"name": self.name, "type": field_type, "reset": self.reset}
         if field_type == "vector":
             cfg["width"] = self.width
-        return Field(cfg, 0, self.name, inherited=self.access_defaults)
+        field = Field(cfg, 0, self.name, inherited=self.access_defaults)
+        field.implicit = True
+        return field
 
     @property
     def effective_fields(self) -> List["Field"]:
@@ -419,6 +421,24 @@ class Register:
     def from_hw_fields(self) -> List[Field]:
         """Fields the hardware drives or strobes (members of t_<reg>_from_hw)."""
         return [f for f in self.effective_fields if f.driven_by_hw]
+
+    @property
+    def to_hw_type_name(self) -> str:
+        """Type of this register's member of to_hw: the t_<reg>_to_hw record, or
+        for a register without fields the type of its value."""
+        if self.fields:
+            return f"t_{self.name}_to_hw"
+        f = self._implicit_field
+        return f.to_hw_record_name if f.to_hw_is_record else f.value_type_vhdl
+
+    @property
+    def from_hw_type_name(self) -> str:
+        """Type of this register's member of from_hw: the t_<reg>_from_hw record,
+        or for a register without fields the type of its value."""
+        if self.fields:
+            return f"t_{self.name}_from_hw"
+        f = self._implicit_field
+        return f.from_hw_record_name if f.from_hw_is_record else f.value_type_vhdl
 
     @property
     def swmod_fields(self) -> List[Field]:
@@ -678,7 +698,7 @@ class Register:
         for f in self.from_hw_fields:
             steps.append(
                 {
-                    "field": f.name,
+                    "path": f.hw_path,
                     "member": "value" if f.from_hw_is_record else None,
                     "enable": "we" if f.we else ("wel" if f.wel else None),
                     "literal": f.value_literal(self._alternating_bits(f.width)),
@@ -820,7 +840,7 @@ class Register:
                 "expected_msg": f"{self.name} reads back the software value",
                 "to_hw_checks": [
                     {
-                        "target": f.name + (".value" if f.to_hw_is_record else ""),
+                        "target": f.hw_path + (".value" if f.to_hw_is_record else ""),
                         "literal": f.value_literal(state[f.name]),
                         "name": f.name,
                     }
@@ -842,13 +862,13 @@ class Register:
                     "sw_write": None,
                     "drives": [
                         {
-                            "target": f.name + ".value",
+                            "target": f.hw_path + ".value",
                             "literal": f.value_literal(state[f.name]),
                         }
                         for f in we_fields
                     ],
                     "strobes": [
-                        {"target": f.name + ".we", "on": "'1'", "off": "'0'"}
+                        {"target": f.hw_path + ".we", "on": "'1'", "off": "'0'"}
                         for f in we_fields
                     ],
                     "expected": self._data_width_literal(self._compose(state)),
@@ -867,7 +887,7 @@ class Register:
                     "sw_write": None,
                     "drives": [],
                     "strobes": [
-                        {"target": f.name + ".set", "on": "'1'", "off": "'0'"}
+                        {"target": f.hw_path + ".set", "on": "'1'", "off": "'0'"}
                         for f in hwset_fields
                     ],
                     "expected": self._data_width_literal(self._compose(state)),
@@ -883,9 +903,11 @@ class Register:
                 state[f.name] = 0
                 if f.hwset:  # assert set in the same cycle: clr must win
                     strobes.append(
-                        {"target": f.name + ".set", "on": "'1'", "off": "'0'"}
+                        {"target": f.hw_path + ".set", "on": "'1'", "off": "'0'"}
                     )
-                strobes.append({"target": f.name + ".clr", "on": "'1'", "off": "'0'"})
+                strobes.append(
+                    {"target": f.hw_path + ".clr", "on": "'1'", "off": "'0'"}
+                )
             steps.append(
                 {
                     "log": f"{self.name}: hwclr clears fields (and beats hwset)",

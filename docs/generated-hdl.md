@@ -220,10 +220,10 @@ use work.timer_regfile_pkg.all;
 | `t_<reg>_<field>` | The enumeration type of an enumerated field. |
 | `to_slv`, `to_<reg>_<field>` | Conversions between an enumeration type and its bits. |
 | `t_<module>_to_hw` | Everything the hardware reads, one member per register. |
-| `t_<reg>_to_hw` | The fields of one register that the hardware reads. |
+| `t_<reg>_to_hw` | The fields of one register that the hardware reads. A register without fields has none. |
 | `t_<reg>_<field>_out` | One field's value together with its `swmod` or `swacc` strobe. |
 | `t_<module>_from_hw` | Everything the hardware drives, one member per register. |
-| `t_<reg>_from_hw` | The fields of one register that the hardware drives. |
+| `t_<reg>_from_hw` | The fields of one register that the hardware drives. A register without fields has none. |
 | `t_<reg>_<field>_in` | One field's value together with its `we`, `wel`, `set` or `clr` input. |
 | `t_<module>_regs`, `t_<reg>_regs`, `C_<MODULE>_REGS_RESET`, `in_window`, `sel_is`, `is_mapped` | The register file's internal storage, its reset value and its address decoding. Your design does not need them. |
 
@@ -248,7 +248,9 @@ The timer's addresses and its enumeration type:
 ### Hardware reads: `to_hw`
 
 `to_hw` has one member per register that has at least one field with `hw: r`
-or `hw: rw`, and that member has one member per such field:
+or `hw: rw`. For a register with fields, that member is a record with one member
+per such field. A register without fields has no record of its own, and its
+member is its value:
 
 ```vhdl
   type t_ctrl_to_hw is record
@@ -261,16 +263,13 @@ or `hw: rw`, and that member has one member per such field:
     swmod : std_logic;
   end record;
 
-  type t_load_to_hw is record
-    load : t_load_load_out;
-  end record;
   type t_irq_to_hw is record
     expired : std_logic;
   end record;
 
   type t_timer_to_hw is record
     ctrl : t_ctrl_to_hw;
-    load : t_load_to_hw;
+    load : t_load_load_out;
     irq : t_irq_to_hw;
   end record;
 ```
@@ -280,17 +279,20 @@ or `hw: rw`, and that member has one member per such field:
 | A bit field | `std_logic` |
 | A vector field | `std_logic_vector(width - 1 downto 0)` |
 | An enumerated field | Its enumeration type, such as `t_ctrl_mode` |
-| A field with `swmod` or `swacc` | A record with `value` and the strobe, such as `to_hw.load.load.swmod` |
+| A field with `swmod` or `swacc` | A record with `value` and the strobe, such as `to_hw.<reg>.<field>.swmod` |
 
-A register without fields, such as `load` of type `default`, counts as one
-field with the register's name, so its value is `to_hw.load.load`. Here it is
-`to_hw.load.load.value`, because the field has `swmod`. `status` is missing
-because hardware cannot read it.
+A register without fields, such as `load` of type `default`, is read as
+`to_hw.load`, with the same types as a field. Here it is a record with `value`
+and `swmod`, because `load` has `swmod`, so the hardware reads
+`to_hw.load.value` and `to_hw.load.swmod`. Without `swmod` it would be the
+`std_logic_vector` itself. `status` is missing because hardware cannot read
+it.
 
 ### Hardware drives: `from_hw`
 
 `from_hw` has one member per register that has at least one field the hardware
-writes (`hw: w` or `hw: rw`) or sets or clears (`hwset`, `hwclr`):
+writes (`hw: w` or `hw: rw`) or sets or clears (`hwset`, `hwclr`). As in
+`to_hw`, a register without fields is driven directly, as `from_hw.<reg>`:
 
 ```vhdl
   type t_status_count_in is record
@@ -376,13 +378,13 @@ and by name:
   p_count : process (clk) is
   begin
     if rising_edge(clk) then
-      if timer_to_hw.ctrl.start = '1' or timer_to_hw.load.load.swmod = '1' then
-        count <= unsigned(timer_to_hw.load.load.value(15 downto 0));
+      if timer_to_hw.ctrl.start = '1' or timer_to_hw.load.swmod = '1' then
+        count <= unsigned(timer_to_hw.load.value(15 downto 0));
       elsif timer_to_hw.ctrl.enable = '1' then
         if count /= 0 then
           count <= count - 1;
         elsif timer_to_hw.ctrl.mode = PERIODIC then
-          count <= unsigned(timer_to_hw.load.load.value(15 downto 0));
+          count <= unsigned(timer_to_hw.load.value(15 downto 0));
         end if;
       end if;
     end if;
