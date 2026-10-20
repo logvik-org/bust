@@ -18,6 +18,7 @@ headers and the documentation from it.
     "register": [
       {
         "name": "ctrl",
+        "address": "0x0",
         "type": "fields",
         "sw": "rw",
         "hw": "r",
@@ -47,6 +48,7 @@ headers and the documentation from it.
       },
       {
         "name": "baud_div",
+        "address": "0x4",
         "type": "vector",
         "width": 16,
         "reset": "0x1b2",
@@ -56,6 +58,7 @@ headers and the documentation from it.
       },
       {
         "name": "status",
+        "address": "0x8",
         "type": "fields",
         "sw": "ro",
         "hw": "w",
@@ -85,7 +88,9 @@ The file has up to three sections:
 - `module`: the module's name and its registers.
 - `settings` (optional): where bust writes its output.
 
-This page describes every key. The access keys (`sw`, `hw`, `onread` and the
+This page describes every key. In the tables, the Default column says
+`required` for a key that must be present. Every other key is optional, and
+bust uses the default when the key is left out. The access keys (`sw`, `hw`, `onread` and the
 others) decide what software and hardware can do with each field.
 [Access modes](access-modes.md) describes what each of them does in hardware.
 
@@ -157,7 +162,7 @@ Each entry in `register` is one register.
 |---|---|---|---|
 | `name` | string | required | Register name. See [Names](#names). |
 | `type` | string | `"default"` | `default`, `vector`, `bit` or `fields`. See [Register types](#register-types). |
-| `address` | string | next free address | Hexadecimal address. See [Addresses](#addresses). |
+| `address` | string | next free address | Hexadecimal register offset. See [Addresses](#addresses). |
 | `width` | integer | `data_width` | Width of a `vector` register. |
 | `reset` | string | `"0x0"` | Hexadecimal reset value of a register without fields. See [Reset values](#reset-values). |
 | `description` | string | `""` | Shown in the LaTeX documentation and the IPBus address table. |
@@ -196,25 +201,49 @@ of another type stops bust.
 
 ### Addresses
 
-`address` is a hexadecimal string such as `"0x1c"`. The `0x` is optional, so
-`"10"` means 0x10. A JSON number is not accepted. The address must fit in
-`addr_width` bits.
+`address` is the register offset, the register's distance from the module's
+base address. See [Base address and address range](addressing.md). It is a
+hexadecimal string such as `"0x1c"`. The `0x` is optional, so `"10"` means
+0x10. A JSON number is not accepted. The address must fit in `addr_width` bits.
 
-A register without an `address` gets the lowest free address. bust goes
-through the list in order and places each such register at the first address
-that no earlier register uses. It steps by `data_width / 8` on byte-addressed
-buses and by 1 on IPBus. With AXI4-Lite and 32-bit data, the registers of the
-example land at 0x0, 0x4 and 0x8.
+Give every register an address when you can. The register map then says where
+each register is, and adding, removing or reordering registers does not move
+the others.
 
-You can give some registers an address and leave it out on others. A register
-with an address that an earlier register already took stops bust:
+`address` is optional, though. A register without an `address` gets the lowest
+free address. bust goes through the list in order and places each such
+register at the first address that no earlier register uses. It steps by
+`data_width / 8` on byte-addressed buses and by 1 on IPBus. With AXI4-Lite and
+32-bit data, these registers get the addresses in the table:
 
-```text
-When specifying address for register status, address 0x4 is already assigned to other register
+```json
+"register": [
+  { "name": "ctrl", "address": "0x0" },
+  { "name": "status" },
+  { "name": "irq", "address": "0x10" },
+  { "name": "debug" }
+]
 ```
 
-So either give every register an address, or list the registers with fixed
-addresses first.
+| Register | `address` | Address |
+|---|---|---|
+| `ctrl` | `"0x0"` | 0x0 |
+| `status` | left out | 0x4 |
+| `irq` | `"0x10"` | 0x10 |
+| `debug` | left out | 0x8 |
+
+`debug` comes after `irq` in the list, but 0x8 is the lowest address that no
+earlier register uses.
+
+A register with an address that an earlier register already took stops bust.
+With `"address": "0x4"` on `irq`, `status` would already have taken 0x4:
+
+```text
+When specifying address for register irq, address 0x4 is already assigned to other register
+```
+
+So either give every register an address, or list the registers with an
+address before the registers without one.
 
 `bust -a` gives every register a new address, in list order, and writes the
 addresses into the JSON file. It replaces addresses you set by hand. See

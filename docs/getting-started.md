@@ -29,7 +29,7 @@ Save this one as `timer.json`:
     "name": "timer",
     "register": [
       {
-        "name": "ctrl", "sw": "rw", "hw": "r", "type": "fields",
+        "name": "ctrl", "address": "0x0", "sw": "rw", "hw": "r", "type": "fields",
         "fields": [
           {"name": "enable", "type": "bit"},
           {"name": "mode", "type": "vector", "width": 2,
@@ -37,16 +37,19 @@ Save this one as `timer.json`:
           {"name": "start", "type": "bit", "singlepulse": true}
         ]
       },
-      {"name": "load", "sw": "rw", "hw": "r", "type": "default", "swmod": true},
       {
-        "name": "status", "sw": "ro", "hw": "w", "type": "fields",
+        "name": "load", "address": "0x4", "sw": "rw", "hw": "r",
+        "type": "default", "swmod": true
+      },
+      {
+        "name": "status", "address": "0x8", "sw": "ro", "hw": "w", "type": "fields",
         "fields": [
           {"name": "count", "type": "vector", "width": 16, "we": true},
           {"name": "running", "type": "bit"}
         ]
       },
       {
-        "name": "irq", "sw": "rw", "hw": "r", "type": "fields",
+        "name": "irq", "address": "0xc", "sw": "rw", "hw": "r", "type": "fields",
         "fields": [
           {"name": "expired", "type": "bit", "hwset": true, "onwrite": "woclr"}
         ]
@@ -69,9 +72,10 @@ with it (`hw`):
 - `irq.expired` is a sticky flag. Hardware sets it with `hwset`, and software
   clears it by writing 1 (`onwrite: woclr`).
 
-The registers have no addresses, so bust places them one after another from
-address 0. [Register map format](register-map-format.md) lists every key, and
-[Access modes](access-modes.md) describes what each access mode does.
+`address` is the register offset, the register's distance from the module's
+base address. You can leave it out, and bust then places the register at the
+next free address. [Register map format](register-map-format.md) lists every
+key, and [Access modes](access-modes.md) describes what each access mode does.
 
 ## Generate
 
