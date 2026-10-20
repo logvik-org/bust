@@ -477,7 +477,7 @@ configurable stall. `pulse_cycles: 1` and `stall_cycles: 0` are accepted and
 have no effect. Other values stop bust:
 
 ```text
-Could not parse register go: Invalid register format: Register 'go': pulse_cycles=2 is not supported in bust 1.0. A pulse register drives the written value for one clock cycle and then returns to its reset value. Remove pulse_cycles.
+Could not parse register go: Invalid register format: Register 'go': pulse_cycles=2 is not supported in bust 1.0. A pulse register drives the written value for one clock cycle and then returns to its reset value. Remove pulse_cycles. To reach logic on another clock, see https://bust.readthedocs.io/en/latest/access-modes.html#pulses-into-another-clock-domain
 Could not parse register st: Invalid register format: Register 'st': stall_cycles is not supported in bust 1.0, because registers live in the generated register file and always answer in one cycle. Remove stall_cycles.
 ```
 
