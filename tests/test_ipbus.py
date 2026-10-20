@@ -98,11 +98,11 @@ def test_addr_table_omits_software_unreachable_fields():
 def test_headers_use_effective_register_access():
     module = _ipbus_module(_ACCESS_REGISTERS)
     c_header = HeaderGenerator(module).generate_c_header()
-    assert '#define STATUS_SW "ro"' in c_header
-    assert '#define STATUS_HW "w"' in c_header
-    assert '#define MIXED_SW "rw"' in c_header
-    assert '#define MIXED_HW "rw"' in c_header
-    assert '#define HWONLY_SW "na"' in c_header
+    assert '#define M_STATUS_SW "ro"' in c_header
+    assert '#define M_STATUS_HW "w"' in c_header
+    assert '#define M_MIXED_SW "rw"' in c_header
+    assert '#define M_MIXED_HW "rw"' in c_header
+    assert '#define M_HWONLY_SW "na"' in c_header
     assert 'STATUS_SW = "ro"' in HeaderGenerator(module).generate_python_header()
     assert 'STATUS_SW = "ro";' in HeaderGenerator(module).generate_cpp_header()
 

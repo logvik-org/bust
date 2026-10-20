@@ -4,9 +4,12 @@ Two guards: a golden-file comparison against the committed reference (regression
 and a structural comparison against the hand-written, simulation-verified prototype
 package in `hdl/prototype/` (the generator must reproduce the verified HDL)."""
 
+import glob
 import json
 import os
 import re
+import shutil
+import subprocess
 
 import pytest
 
@@ -170,11 +173,34 @@ def test_prototype_headers_match_golden():
 def test_prototype_c_header_surfaces_access_modes():
     """Side effects and enums reach the C header, not just sw/hw access."""
     out = _prototype_header("generate_c_header")
-    assert '#define REG5_FIELD0_ONREAD "rclr"' in out
-    assert '#define REG6_FIELD0_ONWRITE "woset"' in out
-    assert "#define REG10_FIELD0_SINGLEPULSE 1" in out
-    assert "#define REG11_FIELD0_STATE3 3" in out
+    assert '#define PROTOTYPE_REG5_FIELD0_ONREAD "rclr"' in out
+    assert '#define PROTOTYPE_REG6_FIELD0_ONWRITE "woset"' in out
+    assert "#define PROTOTYPE_REG10_FIELD0_SINGLEPULSE 1" in out
+    assert "#define PROTOTYPE_REG11_FIELD0_STATE3 3" in out
     assert "_MODE" not in out  # legacy mode macro is gone
+
+
+def test_example_c_headers_compile_in_one_file(tmp_path):
+    """Each C name starts with the module name, so the example headers, which
+    share register names such as reg0, can be included in one source file."""
+    cc = shutil.which("cc")
+    if cc is None:
+        pytest.skip("no C compiler")
+    headers = sorted(
+        glob.glob(os.path.join(_REPO_ROOT, "example", "*", "header", "*.h"))
+    )
+    assert len(headers) > 1
+    source = tmp_path / "all_headers.c"
+    source.write_text(
+        "".join(f'#include "{header}"\n' for header in headers)
+        + "int main(void) { return EXAMPLE_AXI_REG0_OFFSET + PROTOTYPE_REG0_OFFSET; }\n"
+    )
+    result = subprocess.run(
+        [cc, "-Wall", "-Werror", "-fsyntax-only", str(source)],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def test_axi_and_ipbus_testbenches_share_the_test_body():
@@ -721,8 +747,8 @@ def test_enum_without_a_zero_literal_reports_the_reset_hardware_uses():
     pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
     assert "r => (lo => (others => '0'), mode => LOW));" in pkg
     header = HeaderGenerator(module)
-    assert "#define R_RESET 0x10" in header.generate_c_header()
-    assert "#define R_MODE_RESET 0x1" in header.generate_c_header()
+    assert "#define M_R_RESET 0x10" in header.generate_c_header()
+    assert "#define M_R_MODE_RESET 0x1" in header.generate_c_header()
     assert "const uint32_t R_MODE_RESET = 0x1;" in header.generate_cpp_header()
     assert "R_MODE_RESET = 0x1" in header.generate_python_header()
 
