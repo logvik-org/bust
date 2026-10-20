@@ -87,7 +87,9 @@ A few keys need changes:
   every access is answered in one cycle. Remove both keys. bust rejects
   `pulse_cycles` other than 1 and `stall_cycles` other than 0 with an error
   that names the register. A `pulse` register still returns to its reset value
-  after the pulse, as in 0.14.
+  after the pulse, as in 0.14. If a pulse crosses into another clock domain,
+  [Pulses into another clock domain](access-modes.md#pulses-into-another-clock-domain)
+  shows what to use instead.
 - **IPBus widths.** An IPBus module needs `data_width` 32 and an `addr_width` of
   at most 32.
 - **Keys that no longer do anything.** bust ignores the settings
