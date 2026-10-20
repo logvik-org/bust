@@ -80,6 +80,9 @@ are, or move to `sw` and `hw` to use the new [access modes](access-modes.md).
 
 A few keys need changes:
 
+- **`sl` and `slv`.** The types `sl` and `slv` are now `bit` and `vector`, for
+  registers and fields. bust reads the old names and warns that they are
+  deprecated, and `bust FILE -a` saves the file with the new names.
 - **`pulse_cycles` and `stall_cycles`.** A pulse now lasts one clock cycle, and
   every access is answered in one cycle. Remove both keys. bust rejects
   `pulse_cycles` other than 1 and `stall_cycles` other than 0 with an error
