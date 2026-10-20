@@ -320,11 +320,10 @@ package prototype_regfile_pkg is
     reg4 : t_reg4_from_hw;
   end record;
 
-  -- The module answers for an address range of 2**module_addr_width addresses
-  -- from its base address. module_addr_width is the register file's
-  -- G_MODULE_ADDR_WIDTH generic: the low module_addr_width bits of an address
-  -- give its place in the range, and the bits above them the base address. The
-  -- low C_MODULE_ADDR_WIDTH bits select the register.
+  -- base_match and above_registers get the register file's G_MODULE_ADDR_WIDTH
+  -- as module_addr_width. In an address, bits 0 to C_MODULE_ADDR_WIDTH - 1
+  -- select a register, bits C_MODULE_ADDR_WIDTH to module_addr_width - 1 must
+  -- be 0, and bit module_addr_width and up are the base address.
 
   -- True when check is false, or when the base address bits of addr equal the
   -- same bits of base.
@@ -333,10 +332,10 @@ package prototype_regfile_pkg is
                       check             : boolean;
                       module_addr_width : natural) return boolean;
 
-  -- True when a bit of addr from C_MODULE_ADDR_WIDTH up to module_addr_width is
-  -- set, so the address is above the registers in the address range. Such an
-  -- address gets an error response instead of reaching a register through its
-  -- low bits.
+  -- True when any of bits C_MODULE_ADDR_WIDTH to module_addr_width - 1 of addr
+  -- is set. The address is then in the module's address range but above the
+  -- registers, and the register file answers it with an error, so that it
+  -- cannot reach a register through its low bits.
   function above_registers(addr              : std_logic_vector(31 downto 0);
                            module_addr_width : natural) return boolean;
 

@@ -310,10 +310,10 @@ class Module:
 
     @property
     def register_select_width(self) -> int:
-        """Address bits that select a register (C_MODULE_ADDR_WIDTH).
+        """C_MODULE_ADDR_WIDTH: the number of low address bits that select a register.
 
-        Covers the register offsets from 0 to the last register plus one stride.
-        It is the smallest module address width that holds the registers.
+        Enough bits for every address from 0 to the end of the last register. It
+        is the smallest module address width that holds the registers.
         """
         stride = self.data_width // 8 if self.byte_addressable else 1
         top = max((reg.address for reg in self.registers), default=0) + stride

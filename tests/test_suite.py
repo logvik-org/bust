@@ -290,9 +290,10 @@ class Test_Suite(unittest.TestCase):
             hdl + "/prototype_ipbus_tb.vhd",
             "prototype ipbus testbench must match manual file",
         )
-        # IPBus addresses words, so the IPBus build has its own register
-        # addresses. The IPBus sim target compiles this package with the
-        # testbench above. The register file itself is the same for every bus.
+        # IPBus counts addresses in 32-bit words, so the IPBus build of the
+        # prototype has other register offsets than the AXI build. The IPBus sim
+        # target compiles this package with the IPBus testbench above. The
+        # register file itself is the same for every bus.
         self._assert_matches(
             GeneratorFactory.generate_regfile_package_vhdl(ipbus_mod),
             hdl + "/prototype_ipbus_regfile_pkg.vhd",

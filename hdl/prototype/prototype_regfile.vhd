@@ -63,8 +63,8 @@ begin
            & natural'image(C_MODULE_ADDR_WIDTH) & ") to 32"
     severity failure;
 
-  -- base_match compares only the base address bits, above the address range,
-  -- so the base address must be a multiple of 2**G_MODULE_ADDR_WIDTH.
+  -- base_match compares only the bits above the address range, so the low
+  -- G_MODULE_ADDR_WIDTH bits of the base address must be 0.
   assert (not G_CHECK_BASE_ADDRESS)
       or (G_BASE_ADDRESS(G_MODULE_ADDR_WIDTH-1 downto 0) = 0)
     report "G_BASE_ADDRESS must be aligned to 2**G_MODULE_ADDR_WIDTH bytes"
@@ -77,11 +77,11 @@ begin
   --   hwclr > hwset > hardware we/wel write > software write.
   p_write : process (clk) is
     variable sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-    variable hit      : boolean;       -- base address matches, not above the registers
-    variable sw_write : boolean;       -- a fresh software write that hits
+    variable hit      : boolean;       -- the address passes the base and range checks
+    variable sw_write : boolean;       -- a new software write that passes them
     -- p_write is the single driver of `regs`, so the onread side effects (which
     -- modify storage on a software read) are applied here too; this flags a
-    -- freshly serviced software read that hits.
+    -- new software read that passes the base and range checks.
     variable rd_service : boolean;
   begin
     if rising_edge(clk) then
@@ -230,7 +230,7 @@ begin
   -- for address-decode failures, matching SystemRDL and the legacy bus PIFs.
   p_read : process (clk) is
     variable sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-    variable hit : boolean;            -- base address matches, not above the registers
+    variable hit : boolean;            -- the address passes the base and range checks
   begin
     if rising_edge(clk) then
       rd_ack <= '0';

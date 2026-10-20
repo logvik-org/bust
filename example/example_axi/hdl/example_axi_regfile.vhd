@@ -55,8 +55,8 @@ begin
            & natural'image(C_MODULE_ADDR_WIDTH) & ") to 32"
     severity failure;
 
-  -- base_match compares only the base address bits, above the address range,
-  -- so the base address must be a multiple of 2**G_MODULE_ADDR_WIDTH.
+  -- base_match compares only the bits above the address range, so the low
+  -- G_MODULE_ADDR_WIDTH bits of the base address must be 0.
   assert (not G_CHECK_BASE_ADDRESS)
       or (G_BASE_ADDRESS(G_MODULE_ADDR_WIDTH-1 downto 0) = 0)
     report "G_BASE_ADDRESS must be a multiple of 2**G_MODULE_ADDR_WIDTH"
@@ -70,9 +70,9 @@ begin
   -- hwclr, hwset or a we/wel write in the same cycle as a read wins over them.
   p_write : process (clk) is
     variable sel        : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-    variable hit        : boolean;     -- base address matches, not above the registers
-    variable sw_write   : boolean;     -- a fresh software write that hits
-    variable rd_service : boolean;     -- a fresh software read that hits
+    variable hit        : boolean;     -- the address passes the base and range checks
+    variable sw_write   : boolean;     -- a new software write that passes them
+    variable rd_service : boolean;     -- a new software read that passes them
   begin
     if rising_edge(clk) then
       wr_ack <= '0';
@@ -161,7 +161,7 @@ begin
   -- return 0 and ack; err is reserved for address-decode failures.
   p_read : process (clk) is
     variable sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-    variable hit : boolean;            -- base address matches, not above the registers
+    variable hit : boolean;            -- the address passes the base and range checks
   begin
     if rising_edge(clk) then
       rd_ack <= '0';
