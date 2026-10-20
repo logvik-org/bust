@@ -10,7 +10,7 @@ files go, and what bust does when they already exist.
 
 ```text
 Usage:
-  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i]] | [-a [-F | -f]] | [-c | -e]]
+  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i] [-u] [-b] [-t] [-m]] | [-a [-F | -f]] | [-c | -e]]
   bust --version
   bust -h | --help
 ```
@@ -22,7 +22,8 @@ options go together:
 - `-o` combines with everything else, but only a run that generates files
   uses it.
 - `-f` (or `-F`), one of `-d` and `-p`, and `-i` combine with each other. They
-  control a normal run that generates files.
+  control a normal run that generates files. So do `-u`, `-b`, `-t` and `-m`,
+  which bust ignores.
 - `-a` saves the JSON file instead of generating files. It takes `-f` (or `-F`)
   to save without asking.
 - `-c` and `-e` open the editor, so they stand alone.
@@ -40,6 +41,7 @@ and exit with status 1.
 | `-d`           | Do not write the documentation, neither the `.tex` file nor the PDF.                                                                                                    |
 | `-p`           | Write the `.tex` file, but do not run `pdflatex` to make the PDF.                                                                                                       |
 | `-i`           | Do not write the headers: the `.h`, `.hpp` and `.py` files, and for IPBus the `.xml` address table.                                                                     |
+| `-u`, `-b`, `-t`, `-m` | Ignored, with a warning. These bust 0.14 options are accepted so that old command lines and Makefiles keep working. Remove them when you can.                    |
 | `-a`           | Give every register a new address and save the JSON file. Generates nothing. With `-f`, saves without asking. See [Renumber addresses](#renumber-addresses).          |
 | `-c`           | Create `FILE` with the interactive editor. See [Interactive editor](#interactive-editor).                                                                               |
 | `-e`           | Open `FILE` in the interactive editor.                                                                                                                                  |
