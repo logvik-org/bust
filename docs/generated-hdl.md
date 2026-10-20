@@ -182,9 +182,10 @@ entity timer_regfile is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    -- Address bits the module decodes. An address in this window that hits no
-    -- register gets an error response. The default is the smallest window
-    -- that holds the registers.
+    -- Module address width: the module answers for 2**G_MODULE_ADDR_WIDTH
+    -- addresses from its base address. An address in that range where no
+    -- register sits gets an error response. The default is the smallest
+    -- width that holds the registers.
     G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
     -- Reset polarity. The regfile normalizes internally so the rest of the
     -- logic is polarity-agnostic.
@@ -225,7 +226,7 @@ use work.timer_regfile_pkg.all;
 | `t_<module>_from_hw` | Everything the hardware drives, one member per register. |
 | `t_<reg>_from_hw` | The fields of one register that the hardware drives. A register without fields has none. |
 | `t_<reg>_<field>_in` | One field's value together with its `we`, `wel`, `set` or `clr` input. |
-| `t_<module>_regs`, `t_<reg>_regs`, `C_<MODULE>_REGS_RESET`, `in_window`, `sel_is`, `is_mapped` | The register file's internal storage, its reset value and its address decoding. Your design does not need them. |
+| `t_<module>_regs`, `t_<reg>_regs`, `C_<MODULE>_REGS_RESET`, `base_match`, `in_register_span`, `sel_is`, `is_mapped` | The register file's internal storage, its reset value and its address decoding. Your design does not need them. |
 
 Register and field names keep the case you gave them in the JSON. The
 `C_ADDR_` constants use the register name in upper case.
@@ -347,7 +348,8 @@ begin
   i_timer : entity work.timer
     generic map (
       G_BASE_ADDRESS       => x"4000_1000",
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true,
+      G_MODULE_ADDR_WIDTH  => 12)
     port map (
       clk      => clk,
       areset_n => areset_n,
@@ -415,39 +417,12 @@ entity timer is
   );
 ```
 
-The module answers for a window of `2**G_MODULE_ADDR_WIDTH` addresses.
-`G_MODULE_ADDR_WIDTH` defaults to `C_MODULE_ADDR_WIDTH`, the smallest window
-that holds the registers, and cannot be smaller. The register file splits each
-address in three:
-
-- The low `C_MODULE_ADDR_WIDTH` bits select the register.
-- The bits from `C_MODULE_ADDR_WIDTH` up to `G_MODULE_ADDR_WIDTH` must be zero.
-- With `G_CHECK_BASE_ADDRESS` set to `true`, the bits above
-  `G_MODULE_ADDR_WIDTH` must equal the same bits of `G_BASE_ADDRESS`.
-
-Any other address gets an [error response](buses.md#errors), and so does an
-address in the window where no register sits.
-
-`G_BASE_ADDRESS` is `addr_width` bits wide and must be aligned to the window,
-so its low `G_MODULE_ADDR_WIDTH` bits must be zero. Otherwise the register file
-stops the simulation with an assertion failure. The timer has
-`C_MODULE_ADDR_WIDTH = 4`, a window of 16 bytes, so `x"4000_1000"` works and
-puts `load` at `0x4000_1004`. Accesses to `0x4000_1010` and to `0x0000_1004`
-both get an error.
-
-With `G_CHECK_BASE_ADDRESS` set to `false`, the register file ignores
-`G_BASE_ADDRESS` and the address bits above the window. Use this when your
-interconnect already decodes the module's address range and forwards only
-accesses meant for it. Then set `G_MODULE_ADDR_WIDTH` to the size of that
-range. If the interconnect gives the timer 4 KiB, `G_MODULE_ADDR_WIDTH => 12`
-makes `0x4000_1014` an error. With the default of 4, the register file looks
-only at the low 4 bits, so `0x4000_1014` reaches `load`.
-
-The base address is a generic, not a key in the JSON, because it describes
-where you place the module, not the module itself. You can instantiate one
-register map several times at different addresses, and you can move a module
-without generating it again. The C, C++ and Python headers give register
-offsets for the same reason, and your software adds the base address.
+`G_BASE_ADDRESS` sets where the module sits on the bus. `G_CHECK_BASE_ADDRESS`
+sets whether the module checks the base address of each access, and
+`G_MODULE_ADDR_WIDTH` sets how many low address bits the module decodes, so
+the module answers for `2**G_MODULE_ADDR_WIDTH` addresses from its base
+address. [Base address and address range](addressing.md)
+shows how the register file decodes an address with each setting.
 
 ## Several modules in one design
 

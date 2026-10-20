@@ -126,18 +126,19 @@ def test_endpoint_slices_ipbus_address_to_module_width():
     localbus_pkg = GeneratorFactory.generate_localbus_package_vhdl(module)
     assert "C_LB_ADDR_WIDTH : natural := 16;" in localbus_pkg
     regfile_pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
-    assert "return addr(15 downto window)" in regfile_pkg
+    assert "return addr(15 downto module_addr_width)" in regfile_pkg
 
 
 def test_unmapped_offsets_follow_the_ipbus_word_addresses():
     module = _ipbus_module(
         [{"name": "a", "type": "default"}, {"name": "b", "type": "default"}]
     )
-    # Two word-addressed registers: a 1-bit register select, a 3-bit testbench
-    # window, so 0x2 is above the registers and 0x8 above the window.
+    # Two word-addressed registers: a 1-bit register select and a 3-bit
+    # testbench module address width, so 0x2 is above the registers and 0x8 has
+    # another base address.
     assert module.register_select_width == 1
-    assert module.tb_window_width == 3
-    assert [u["hex"] for u in module.tb_unmapped_offsets] == ["0x2", "0x8"]
+    assert module.tb_module_addr_width == 3
+    assert [u["hex"] for u in module.tb_unmapped_addresses] == ["0x2", "0x8"]
 
 
 def test_ipbus_addr_width_above_32_rejected():

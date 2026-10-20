@@ -177,7 +177,7 @@ begin
                     shared_msg_id_panel, axilite_bfm_config);
     end procedure;
 
-    -- An unmapped offset answers SLVERR and reads 0.
+    -- An address without a register answers SLVERR and reads 0.
     procedure bus_write_unmapped(constant addr : in unsigned;
                                  constant data : in std_logic_vector;
                                  constant msg  : in string) is
@@ -458,15 +458,15 @@ begin
     bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"00000001", "irq_status still set after that read");
     bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"0", "irq_status cleared by a read without hwset");
 
-    -- An unmapped offset gets an error response where the bus has one, reads
-    -- as 0, and a write to it changes no register.
-    log(ID_LOG_HDR, "unmapped offsets get an error and change nothing", C_SCOPE);
-    bus_write_unmapped(f_addr(32x"60"), 32x"0", "write 0x60, an unused offset");
-    bus_check_unmapped(f_addr(32x"60"), "read 0x60, an unused offset");
-    bus_write_unmapped(f_addr(32x"80"), 32x"0", "write 0x80, in the window, above the registers");
-    bus_check_unmapped(f_addr(32x"80"), "read 0x80, in the window, above the registers");
-    bus_write_unmapped(f_addr(32x"200"), 32x"0", "write 0x200, above the window");
-    bus_check_unmapped(f_addr(32x"200"), "read 0x200, above the window");
+    -- An address where no register sits gets an error response where the bus
+    -- has one, reads as 0, and a write to it changes no register.
+    log(ID_LOG_HDR, "addresses without a register get an error and change nothing", C_SCOPE);
+    bus_write_unmapped(f_addr(32x"60"), 32x"0", "write 0x60, an unused register offset");
+    bus_check_unmapped(f_addr(32x"60"), "read 0x60, an unused register offset");
+    bus_write_unmapped(f_addr(32x"80"), 32x"0", "write 0x80, an address above the registers");
+    bus_check_unmapped(f_addr(32x"80"), "read 0x80, an address above the registers");
+    bus_write_unmapped(f_addr(32x"200"), 32x"0", "write 0x200, another base address");
+    bus_check_unmapped(f_addr(32x"200"), "read 0x200, another base address");
     bus_check(f_addr(C_ADDR_PLAIN), 32x"000000FF", "plain unchanged by the unmapped writes");
 
     wait for 10*C_CLK_PERIOD;

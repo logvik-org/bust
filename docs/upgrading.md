@@ -62,10 +62,11 @@ The generics of `<module>` have new names and types:
 | `g_module_addr_width` | `G_MODULE_ADDR_WIDTH` |
 
 VHDL names are not case-sensitive, so `g_module_addr_width => 16` connects to
-`G_MODULE_ADDR_WIDTH` as it is. Its default is the smallest window that holds
-the registers, as 0 was in 0.14. A value below that width, 0 included, stops
-the simulation, so leave the generic out to get the default.
-[Base address](generated-hdl.md#base-address) describes the three generics.
+`G_MODULE_ADDR_WIDTH` as it is. Its default decodes just the bits the
+registers need, as 0 did in 0.14, but a value below that width, 0 included,
+stops the simulation. Replace a 0 with the width of the module's address range,
+such as 12 for 4 KiB.
+[Base address and address range](addressing.md) describes the three generics.
 
 The IPBus ports `ipb_clk` and `ipb_reset` are now `clk` and `reset`, and
 `ipb_in` and `ipb_out` keep their names. The register records give way to the

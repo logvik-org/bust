@@ -13,10 +13,14 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 ### Added
 - A logo, shown in the README and the documentation.
 - The generic `G_MODULE_ADDR_WIDTH` on the top wrapper, the endpoints and the
-  register file sets the address window the module decodes, as
-  `g_module_addr_width` did in 0.14. An address in the window where no
-  register sits gets an error response. The default is the smallest window
-  that holds the registers.
+  register file sets how many low address bits the module decodes, as
+  `g_module_addr_width` did in 0.14. The module answers for
+  `2**G_MODULE_ADDR_WIDTH` addresses from its base address, and an access to
+  one of them where no register sits gets an error response. The default
+  decodes just the bits the registers need.
+- A new page, Base address and address range, shows how a module decodes an
+  address with each setting of `G_BASE_ADDRESS`, `G_CHECK_BASE_ADDRESS` and
+  `G_MODULE_ADDR_WIDTH`.
 - The generated testbench checks that addresses where no register sits get an
   error response and that writes to them change no register.
 - The bust 0.14 options `-u`, `-b`, `-t` and `-m` are accepted again and
@@ -50,10 +54,10 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   deprecated, and `bust FILE -a` saves the file with the new names. Without
   this, no register map written for 0.14 could be read.
 - With `G_CHECK_BASE_ADDRESS => false`, the register file looked only at the
-  address bits that select a register. An access to an unmapped offset above
-  the registers reached a register instead of getting an error, so a mistyped
-  offset could hit a pulse register. Set `G_MODULE_ADDR_WIDTH` to the window
-  your interconnect gives the module.
+  address bits that select a register. An access to an address above the
+  registers reached a register instead of getting an error, so a mistyped
+  address could hit a pulse register. Set `G_MODULE_ADDR_WIDTH` to the size of
+  the address range your interconnect gives the module.
 
 ## [1.0.0a1] - 2026-10-16
 

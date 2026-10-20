@@ -1,7 +1,7 @@
 -- UVVM handshake-conformance testbench for prototype_ipb_endpoint.
 -- Drives the IPBus interface with the stock vip_ipbus VIP and checks that the
 -- wrapper bridges correctly to the local-bus regfile. The wrapper forwards the
--- address unchanged and the regfile slices the module window from it, so the VIP
+-- address unchanged and the regfile takes the offset from it, so the VIP
 -- drives the register byte offsets directly (zero base). Full access-mode
 -- coverage lives in prototype_regfile_tb; this only proves the protocol translation.
 library ieee;
