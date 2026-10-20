@@ -47,7 +47,7 @@ LEGACY_TYPE_NAMES = {"sl": "bit", "slv": "vector"}
 
 
 def current_type_name(value):
-    """Return the bust 1.0 name for a bust 0.14 type name, or the value as it is."""
+    """Return `bit` for `sl` and `vector` for `slv`, and any other value as it is."""
     if isinstance(value, str):
         return LEGACY_TYPE_NAMES.get(value.lower(), value)
     return value

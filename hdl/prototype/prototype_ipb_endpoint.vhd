@@ -12,7 +12,7 @@
 -- registered cycle is the whole latency: ipb_ack/ipb_err assert exactly one clock
 -- after a strobe. The regfile's own response guard (it acks a held request only
 -- once) provides transaction separation, so no FSM is needed here. The address is
--- forwarded unchanged; the regfile takes the offset from it. IPBus's sync
+-- forwarded unchanged and the regfile decodes it. IPBus's sync
 -- active-high reset passes straight to the regfile.
 library ieee;
 use ieee.std_logic_1164.all;

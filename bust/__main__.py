@@ -55,7 +55,8 @@ from bust._version import __VERSION__
 
 
 # bust 0.14 options that bust 1.0 accepts and ignores, so that old command lines
-# and Makefiles keep working during the switch. Each maps to the reason.
+# and Makefiles keep working during the switch. The value is the reason the
+# warning gives.
 _IGNORED_0_14_OPTIONS = {
     "-u": "bust 1.0 always regenerates the top-level file",
     "-b": "bust 1.0 always writes the local-bus package",
