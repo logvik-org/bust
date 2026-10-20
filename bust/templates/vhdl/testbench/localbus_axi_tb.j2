@@ -57,7 +57,7 @@ begin
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
-      G_MODULE_ADDR_WIDTH  => {{ module.tb_window_width }})
+      G_MODULE_ADDR_WIDTH  => {{ module.tb_module_addr_width }})
     port map (
       clk      => clk,
       areset_n => areset_n,
@@ -102,7 +102,7 @@ begin
                     shared_msg_id_panel, axilite_bfm_config);
     end procedure;
 
-    -- An unmapped offset answers SLVERR and reads 0.
+    -- An address without a register answers SLVERR and reads 0.
     procedure bus_write_unmapped(constant addr : in unsigned;
                                  constant data : in std_logic_vector;
                                  constant msg  : in string) is

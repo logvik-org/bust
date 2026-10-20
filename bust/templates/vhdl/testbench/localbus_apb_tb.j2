@@ -55,7 +55,7 @@ begin
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
-      G_MODULE_ADDR_WIDTH  => {{ module.tb_window_width }})
+      G_MODULE_ADDR_WIDTH  => {{ module.tb_module_addr_width }})
     port map (
       pclk    => clk,
       presetn => presetn,
@@ -142,7 +142,7 @@ begin
       check_value(v_data, data, error, msg, C_SCOPE);
     end procedure;
 
-    -- An unmapped offset completes with pslverr.
+    -- An address without a register completes with pslverr.
     procedure bus_write_unmapped(constant addr : in unsigned;
                                  constant data : in std_logic_vector;
                                  constant msg  : in string) is

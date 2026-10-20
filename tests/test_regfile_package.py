@@ -232,8 +232,8 @@ def test_register_without_fields_is_a_bare_member_of_to_hw_and_from_hw():
 
 
 def test_module_addr_width_generic_reaches_the_regfile():
-    """G_MODULE_ADDR_WIDTH is declared on the top wrapper, the endpoint and the
-    regfile, defaults to the register span and widens the decoded window."""
+    """G_MODULE_ADDR_WIDTH, the module address width, is declared on the top
+    wrapper, the endpoint and the regfile, and defaults to C_MODULE_ADDR_WIDTH."""
     module = _build_module()
     default = "G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH"
     for generate in (
@@ -252,11 +252,12 @@ def test_module_addr_width_generic_reaches_the_regfile():
 
 
 def test_testbench_checks_unmapped_offsets():
-    """The prototype spans 0x00..0x2C (6 select bits), so the testbench widens the
-    window to 8 bits and checks 0x30, the alias 0x40 of reg0, and 0x100."""
+    """The prototype's registers use offsets 0x00..0x2C (6 select bits), so the
+    testbench sets G_MODULE_ADDR_WIDTH to 8 and checks 0x30, 0x40, which aliases
+    reg0 by its low bits, and 0x100, which has another base address."""
     module = _build_module()
-    assert module.tb_window_width == 8
-    assert [u["hex"] for u in module.tb_unmapped_offsets] == ["0x30", "0x40", "0x100"]
+    assert module.tb_module_addr_width == 8
+    assert [u["hex"] for u in module.tb_unmapped_addresses] == ["0x30", "0x40", "0x100"]
     tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
     assert "G_MODULE_ADDR_WIDTH  => 8)" in tb
     assert 'bus_write_unmapped(f_addr(32x"40"), 32x"0"' in tb

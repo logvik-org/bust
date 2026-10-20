@@ -18,3 +18,57 @@ section#bust > h1 {
 .sidebar-logo {
   width: 8rem;
 }
+
+/* The figure on the Base address and address range page. Its colours come
+   from the theme, so it follows the light and dark modes. */
+.addr-fig {
+  display: block;
+  width: 100%;
+  max-width: 36rem;
+  height: auto;
+  margin: 1.5rem 0;
+}
+.addr-fig text {
+  font-family: var(--font-stack);
+  font-size: 12px;
+  fill: var(--color-foreground-primary);
+}
+.addr-fig .code,
+.addr-fig .bits {
+  font-family: var(--font-stack--monospace);
+  font-size: 11px;
+}
+.addr-fig .bits {
+  font-size: 10px;
+  fill: var(--color-foreground-muted);
+}
+.addr-fig .t-reg {
+  font-weight: 600;
+  fill: var(--color-background-primary);
+}
+.addr-fig .f-base {
+  fill: var(--color-brand-primary);
+  fill-opacity: 0.18;
+  stroke: var(--color-brand-primary);
+}
+.addr-fig .f-zero {
+  fill: var(--color-foreground-muted);
+  fill-opacity: 0.18;
+  stroke: var(--color-foreground-muted);
+}
+.addr-fig .f-reg {
+  fill: var(--color-foreground-primary);
+  stroke: var(--color-foreground-primary);
+}
+.addr-fig .f-ignore {
+  fill: none;
+  stroke: var(--color-foreground-muted);
+  stroke-dasharray: 4 3;
+}
+.addr-fig .brace {
+  stroke: var(--color-foreground-muted);
+  stroke-width: 1;
+}
+.addr-fig .row {
+  font-weight: 700;
+}

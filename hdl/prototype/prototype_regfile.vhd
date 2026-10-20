@@ -21,9 +21,10 @@ entity prototype_regfile is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := x"00000000";
     G_CHECK_BASE_ADDRESS : boolean               := true;
-    -- Address bits the module decodes. An address in this window that hits no
-    -- register gets an error response. The default is the smallest window that
-    -- holds the registers.
+    -- Module address width: the module answers for 2**G_MODULE_ADDR_WIDTH
+    -- addresses from its base address. An address in that range where no
+    -- register sits gets an error response. The default is the smallest
+    -- width that holds the registers.
     G_MODULE_ADDR_WIDTH  : natural               := C_MODULE_ADDR_WIDTH;
     -- Reset polarity. Some FPGA families prefer active-low resets; the regfile
     -- normalizes internally so the rest of the logic is polarity-agnostic.
@@ -62,9 +63,8 @@ begin
            & natural'image(C_MODULE_ADDR_WIDTH) & ") to 32"
     severity failure;
 
-  -- in_window compares only the bits above the module window with the base, so
-  -- the base must be aligned to that window or it would match a whole
-  -- 2**G_MODULE_ADDR_WIDTH span.
+  -- base_match compares only the base address bits, above the address range,
+  -- so the base address must be a multiple of 2**G_MODULE_ADDR_WIDTH.
   assert (not G_CHECK_BASE_ADDRESS)
       or (G_BASE_ADDRESS(G_MODULE_ADDR_WIDTH-1 downto 0) = 0)
     report "G_BASE_ADDRESS must be aligned to 2**G_MODULE_ADDR_WIDTH bytes"
@@ -77,11 +77,11 @@ begin
   --   hwclr > hwset > hardware we/wel write > software write.
   p_write : process (clk) is
     variable sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-    variable hit      : boolean;       -- the address is inside the module window
-    variable sw_write : boolean;       -- a fresh, in-window software write
+    variable hit      : boolean;       -- base address matches, not above the registers
+    variable sw_write : boolean;       -- a fresh software write that hits
     -- p_write is the single driver of `regs`, so the onread side effects (which
     -- modify storage on a software read) are applied here too; this flags a
-    -- freshly serviced, in-window software read.
+    -- freshly serviced software read that hits.
     variable rd_service : boolean;
   begin
     if rising_edge(clk) then
@@ -92,8 +92,9 @@ begin
       -- (wr_ack/rd_err/... still low). The master holds the request until it
       -- observes the response, so these guards keep the effect single-shot.
       sel      := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
-      hit      := in_window(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
-                            G_MODULE_ADDR_WIDTH);
+      hit      := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
+                             G_MODULE_ADDR_WIDTH)
+                  and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH);
       sw_write := lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' and hit;
       rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' and hit;
 
@@ -229,6 +230,7 @@ begin
   -- for address-decode failures, matching SystemRDL and the legacy bus PIFs.
   p_read : process (clk) is
     variable sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+    variable hit : boolean;            -- base address matches, not above the registers
   begin
     if rising_edge(clk) then
       rd_ack <= '0';
@@ -237,8 +239,10 @@ begin
       if lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' then
         rdata <= (others => '0');
         sel   := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
-        if not in_window(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
-                         G_MODULE_ADDR_WIDTH) then
+        hit   := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
+                            G_MODULE_ADDR_WIDTH)
+                 and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH);
+        if not hit then
           rd_err <= '1';
         elsif sel_is(sel, C_ADDR_REG0) then
           rdata(0)          <= regs.reg0.field0;

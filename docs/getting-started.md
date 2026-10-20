@@ -140,7 +140,8 @@ signal timer_from_hw : t_timer_from_hw;
 
 i_timer : entity work.timer
   generic map (
-    G_BASE_ADDRESS => x"4000_1000")
+    G_BASE_ADDRESS      => x"4000_1000",
+    G_MODULE_ADDR_WIDTH => 12)
   port map (
     clk      => clk,
     areset_n => areset_n,
@@ -161,7 +162,10 @@ timer_from_hw.irq.expired.set    <= '1' when count = 1 else '0';
 ```
 
 The base address is a generic, so the same module can sit at different
-addresses in different designs. [Generated HDL](generated-hdl.md) shows the
+addresses in different designs. `G_MODULE_ADDR_WIDTH => 12` gives the timer a
+4 KiB address range, and any address in it without a register gets an error.
+[Base address and address range](addressing.md) shows how to choose these
+generics for your interconnect. [Generated HDL](generated-hdl.md) shows the
 complete timer logic and describes the files and records in detail, and
 [Buses](buses.md) covers the ports of each bus.
 
