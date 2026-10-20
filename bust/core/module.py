@@ -116,6 +116,7 @@ class Module:
 
         for reg in mod["register"]:
             self.add_register(reg)
+        self._warn_legacy_type_names()
 
     def add_register(self, reg: Dict) -> None:
         """Add a register to the module.
@@ -147,6 +148,19 @@ class Module:
             self.logger.debug(f"Register configuration: {reg}")
             raise InvalidRegister(reg, e) from e
         self.registers.append(register)
+
+    def _warn_legacy_type_names(self) -> None:
+        """Warn once about the bust 0.14 type names sl and slv."""
+        count = sum(
+            (reg.legacy_type_name is not None)
+            + sum(f.legacy_type_name is not None for f in reg.fields)
+            for reg in self.registers
+        )
+        if count:
+            self.logger.warning(
+                "The bust 0.14 type names 'sl' and 'slv' are deprecated. Use "
+                f"'bit' and 'vector' instead ({count} registers and fields)."
+            )
 
     def _explicit_address(self, reg: Dict) -> int:
         """Parse a register's `address` and check that the bus can reach it."""
