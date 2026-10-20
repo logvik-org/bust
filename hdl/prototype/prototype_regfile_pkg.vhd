@@ -62,9 +62,9 @@ package prototype_regfile_pkg is
   constant C_ADDR_REG10 : std_logic_vector(31 downto 0) := 32x"28";
   constant C_ADDR_REG11 : std_logic_vector(31 downto 0) := 32x"2C";
 
-  -- Register-select width. 6 bits select within a 64-byte span (0x00..0x3F); the
-  -- registers occupy 0x00..0x2C. The regfile decodes a window of
-  -- G_MODULE_ADDR_WIDTH bits, at least this many.
+  -- Register-select width. 6 bits select within 64 bytes (0x00..0x3F); the
+  -- registers occupy 0x00..0x2C. It is the smallest module address width that
+  -- holds the registers, and the default of the G_MODULE_ADDR_WIDTH generic.
   constant C_MODULE_ADDR_WIDTH : natural := 6;
 
   -- Enumerated field type for reg11.field0: hardware and software see named
@@ -320,16 +320,25 @@ package prototype_regfile_pkg is
     reg4 : t_reg4_from_hw;
   end record;
 
-  -- True when addr falls inside this module's window of `window` bits: the bits
-  -- between the register select and the window width must be zero, so an
-  -- unmapped offset cannot alias onto a register. With check disabled the
-  -- instantiator owns the decode above the window. The bits above the window
-  -- are compared with base, so base must be aligned to the window (the regfile
-  -- asserts this).
-  function in_window(addr   : std_logic_vector(31 downto 0);
-                     base   : unsigned(31 downto 0);
-                     check  : boolean;
-                     window : natural) return boolean;
+  -- The module answers for an address range of 2**module_addr_width addresses
+  -- from its base address. module_addr_width is the register file's
+  -- G_MODULE_ADDR_WIDTH generic: the low module_addr_width bits of an address
+  -- give its place in the range, and the bits above them the base address. The
+  -- low C_MODULE_ADDR_WIDTH bits select the register.
+
+  -- True when check is false, or when the base address bits of addr equal the
+  -- same bits of base.
+  function base_match(addr              : std_logic_vector(31 downto 0);
+                      base              : unsigned(31 downto 0);
+                      check             : boolean;
+                      module_addr_width : natural) return boolean;
+
+  -- True when a bit of addr from C_MODULE_ADDR_WIDTH up to module_addr_width is
+  -- set, so the address is above the registers in the address range. Such an
+  -- address gets an error response instead of reaching a register through its
+  -- low bits.
+  function above_registers(addr              : std_logic_vector(31 downto 0);
+                           module_addr_width : natural) return boolean;
 
   -- True when the register-select bits match a register's byte offset.
   function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
@@ -343,22 +352,28 @@ end package prototype_regfile_pkg;
 
 package body prototype_regfile_pkg is
 
-  function in_window(addr   : std_logic_vector(31 downto 0);
-                     base   : unsigned(31 downto 0);
-                     check  : boolean;
-                     window : natural) return boolean is
+  function base_match(addr              : std_logic_vector(31 downto 0);
+                      base              : unsigned(31 downto 0);
+                      check             : boolean;
+                      module_addr_width : natural) return boolean is
     constant base_slv : std_logic_vector(31 downto 0) := std_logic_vector(base);
   begin
-    for i in C_MODULE_ADDR_WIDTH to window - 1 loop
-      if addr(i) /= '0' then
-        return false;
-      end if;
-    end loop;
     if not check then
       return true;
     end if;
-    return addr(31 downto window)
-         = base_slv(31 downto window);
+    return addr(31 downto module_addr_width)
+         = base_slv(31 downto module_addr_width);
+  end function;
+
+  function above_registers(addr              : std_logic_vector(31 downto 0);
+                           module_addr_width : natural) return boolean is
+  begin
+    for i in C_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
+      if addr(i) /= '0' then
+        return true;
+      end if;
+    end loop;
+    return false;
   end function;
 
   function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);

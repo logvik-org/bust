@@ -29,8 +29,9 @@ package example_axi_regfile_pkg is
   constant C_ADDR_REG10 : std_logic_vector(31 downto 0) := 32x"28";
   constant C_ADDR_REG11 : std_logic_vector(31 downto 0) := 32x"2C";
 
-  -- Register-select width: the address bits that pick a register. The register
-  -- file decodes a window of G_MODULE_ADDR_WIDTH bits, at least this many.
+  -- Register-select width: the low address bits that pick a register. It is the
+  -- smallest module address width that holds the registers, and the default of
+  -- the G_MODULE_ADDR_WIDTH generic.
   constant C_MODULE_ADDR_WIDTH : natural := 6;
 
   -- Internal storage, one record per register, each member a field that holds
@@ -154,13 +155,25 @@ package example_axi_regfile_pkg is
     reg8 : t_reg8_from_hw;
   end record;
 
-  -- True when addr is inside the module window of `window` bits: the bits
-  -- between the register select and the window width are zero, and with check
-  -- set the bits above the window match base.
-  function in_window(addr   : std_logic_vector(31 downto 0);
-                     base   : unsigned(31 downto 0);
-                     check  : boolean;
-                     window : natural) return boolean;
+  -- The module answers for an address range of 2**module_addr_width addresses
+  -- from its base address. module_addr_width is the register file's
+  -- G_MODULE_ADDR_WIDTH generic: the low module_addr_width bits of an address
+  -- give its place in the range, and the bits above them the base address. The
+  -- low C_MODULE_ADDR_WIDTH bits select the register.
+
+  -- True when check is false, or when the base address bits of addr equal the
+  -- same bits of base.
+  function base_match(addr              : std_logic_vector(31 downto 0);
+                      base              : unsigned(31 downto 0);
+                      check             : boolean;
+                      module_addr_width : natural) return boolean;
+
+  -- True when a bit of addr from C_MODULE_ADDR_WIDTH up to module_addr_width is
+  -- set, so the address is above the registers in the address range. Such an
+  -- address gets an error response instead of reaching a register through its
+  -- low bits.
+  function above_registers(addr              : std_logic_vector(31 downto 0);
+                           module_addr_width : natural) return boolean;
 
   function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
                   reg_addr : std_logic_vector(31 downto 0)) return boolean;
@@ -171,22 +184,28 @@ end package example_axi_regfile_pkg;
 
 package body example_axi_regfile_pkg is
 
-  function in_window(addr   : std_logic_vector(31 downto 0);
-                     base   : unsigned(31 downto 0);
-                     check  : boolean;
-                     window : natural) return boolean is
+  function base_match(addr              : std_logic_vector(31 downto 0);
+                      base              : unsigned(31 downto 0);
+                      check             : boolean;
+                      module_addr_width : natural) return boolean is
     constant base_slv : std_logic_vector(31 downto 0) := std_logic_vector(base);
   begin
-    for i in C_MODULE_ADDR_WIDTH to window - 1 loop
-      if addr(i) /= '0' then
-        return false;
-      end if;
-    end loop;
     if not check then
       return true;
     end if;
-    return addr(31 downto window)
-         = base_slv(31 downto window);
+    return addr(31 downto module_addr_width)
+         = base_slv(31 downto module_addr_width);
+  end function;
+
+  function above_registers(addr              : std_logic_vector(31 downto 0);
+                           module_addr_width : natural) return boolean is
+  begin
+    for i in C_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
+      if addr(i) /= '0' then
+        return true;
+      end if;
+    end loop;
+    return false;
   end function;
 
   function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);

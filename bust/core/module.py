@@ -310,32 +310,32 @@ class Module:
 
     @property
     def register_select_width(self) -> int:
-        """Bits needed to decode this module's register window (C_MODULE_ADDR_WIDTH).
+        """Address bits that select a register (C_MODULE_ADDR_WIDTH).
 
-        Covers the span from offset 0 to the last register plus one stride, so the
-        window is a power-of-two byte range the base address must align to.
+        Covers the register offsets from 0 to the last register plus one stride.
+        It is the smallest module address width that holds the registers.
         """
         stride = self.data_width // 8 if self.byte_addressable else 1
         top = max((reg.address for reg in self.registers), default=0) + stride
         return max(1, (top - 1).bit_length())
 
     @property
-    def tb_window_width(self) -> int:
-        """G_MODULE_ADDR_WIDTH of the generated testbench: two bits wider than the
-        register span, so it can check offsets in the window above the registers,
-        and no wider than the address."""
+    def tb_module_addr_width(self) -> int:
+        """G_MODULE_ADDR_WIDTH of the generated testbench: two bits more than the
+        registers need, so it can check addresses above the registers, and no
+        more than the address width."""
         return min(self.register_select_width + 2, int(self.addr_width))
 
     @property
     def tb_alias_register(self) -> Optional[Register]:
         """A register the testbench writes and reads back, so it can check that a
-        write to an unmapped offset does not reach it."""
+        write to an address without a register does not reach it."""
         return next((reg for reg in self.registers if reg.is_simple_readback), None)
 
     @property
-    def tb_unmapped_offsets(self) -> List[Dict[str, str]]:
-        """Offsets the generated testbench expects an error for, each with the VHDL
-        literal and the reason it is unmapped."""
+    def tb_unmapped_addresses(self) -> List[Dict[str, str]]:
+        """Addresses the generated testbench expects an error for, each with the
+        VHDL literal and the reason no register answers there."""
         stride = self.data_width // 8 if self.byte_addressable else 1
         span = 1 << self.register_select_width
         used = {reg.address for reg in self.registers}
@@ -344,12 +344,12 @@ class Module:
         offsets = []
         gap = next((a for a in range(0, span, stride) if a not in used), None)
         if gap is not None:
-            offsets.append((gap, "an unused offset"))
-        if self.tb_window_width > self.register_select_width:
-            offsets.append((span + alias_offset, "in the window, above the registers"))
-        if self.tb_window_width < self.addr_width:
-            window_end = 1 << self.tb_window_width
-            offsets.append((window_end + alias_offset, "above the window"))
+            offsets.append((gap, "an unused register offset"))
+        if self.tb_module_addr_width > self.register_select_width:
+            offsets.append((span + alias_offset, "an address above the registers"))
+        if self.tb_module_addr_width < self.addr_width:
+            next_base = 1 << self.tb_module_addr_width
+            offsets.append((next_base + alias_offset, "another base address"))
         return [
             {
                 "literal": f'{self.addr_width}x"{offset:X}"',

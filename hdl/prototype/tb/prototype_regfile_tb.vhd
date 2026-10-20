@@ -3,11 +3,11 @@
 -- access-mode matrix, the we/wel/hwset/hwclr modifiers, the documented
 -- hardware/software write precedence, the onread/onwrite software side effects,
 -- the swmod/swacc/singlepulse pulse behaviours, enumerated-value field types,
--- and the err response for both unmapped offsets and wrong-base-address
+-- and the err response for both unused register offsets and wrong-base-address
 -- transactions. A second instance with the base check off and an 8-bit
--- G_MODULE_ADDR_WIDTH checks that an unmapped offset in the window gets an err
--- instead of aliasing onto a register. Registers/fields use generic names (reg0..reg11, field0..); see
--- prototype_regfile_pkg.vhd.
+-- G_MODULE_ADDR_WIDTH checks that an address above the registers gets an err
+-- instead of aliasing onto a register. Registers/fields use generic names
+-- (reg0..reg11, field0..); see prototype_regfile_pkg.vhd.
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -35,10 +35,10 @@ architecture tb of prototype_regfile_tb is
   signal lb_s2m  : t_lb_s2m;
   signal to_hw   : t_prototype_to_hw;
 
-  -- The windowed instance: base check off, 8-bit window.
-  signal lb_m2s_win : t_lb_m2s := C_LB_M2S_IDLE;
-  signal lb_s2m_win : t_lb_s2m;
-  signal to_hw_win  : t_prototype_to_hw;
+  -- The second instance: base check off, 8-bit module address width.
+  signal lb_m2s_wide : t_lb_m2s := C_LB_M2S_IDLE;
+  signal lb_s2m_wide : t_lb_s2m;
+  signal to_hw_wide  : t_prototype_to_hw;
   signal from_hw : t_prototype_from_hw := (
     reg1 => (field0 => (value => (others => '0'), we => '0'),
              field1 => '0',
@@ -70,7 +70,7 @@ begin
       to_hw   => to_hw,
       from_hw => from_hw);
 
-  dut_win : entity work.prototype_regfile
+  dut_wide : entity work.prototype_regfile
     generic map (
       G_BASE_ADDRESS       => x"00000000",
       G_CHECK_BASE_ADDRESS => false,
@@ -79,9 +79,9 @@ begin
     port map (
       clk     => clk,
       reset   => reset,
-      lb_m2s  => lb_m2s_win,
-      lb_s2m  => lb_s2m_win,
-      to_hw   => to_hw_win,
+      lb_m2s  => lb_m2s_wide,
+      lb_s2m  => lb_s2m_wide,
+      to_hw   => to_hw_wide,
       from_hw => from_hw);
 
   p_monitor : process (clk) is
@@ -210,22 +210,22 @@ begin
     localbus_check(C_ADDR_REG11, x"00000002", "reg11 reads back the encoded value", clk, lb_m2s, lb_s2m);
     check_value(to_hw.reg11.field0 = STATE2, error, "reg11.field0 is STATE2 to hw", C_SCOPE);
 
-    log(ID_LOG_HDR, "err: unmapped offset and wrong base address", C_SCOPE);
-    localbus_check_err(x"0000003C", false, "read unmapped offset", clk, lb_m2s, lb_s2m);
-    localbus_check_err(x"0000003C", true,  "write unmapped offset", clk, lb_m2s, lb_s2m);
+    log(ID_LOG_HDR, "err: unused register offset and wrong base address", C_SCOPE);
+    localbus_check_err(x"0000003C", false, "read unused register offset", clk, lb_m2s, lb_s2m);
+    localbus_check_err(x"0000003C", true,  "write unused register offset", clk, lb_m2s, lb_s2m);
     localbus_check_err(x"10000000", false, "read wrong base", clk, lb_m2s, lb_s2m);
     localbus_check_err(x"10000000", true,  "write wrong base", clk, lb_m2s, lb_s2m);
 
-    log(ID_LOG_HDR, "window: base check off, 8-bit G_MODULE_ADDR_WIDTH", C_SCOPE);
-    localbus_write(C_ADDR_REG3, x"000000A5", "reg3=0xA5", clk, lb_m2s_win, lb_s2m_win);
-    localbus_check_err(x"0000004C", true,  "write 0x4C, in the window above the registers",
-                       clk, lb_m2s_win, lb_s2m_win);
-    localbus_check_err(x"0000004C", false, "read 0x4C, in the window above the registers",
-                       clk, lb_m2s_win, lb_s2m_win);
+    log(ID_LOG_HDR, "address range: base check off, 8-bit G_MODULE_ADDR_WIDTH", C_SCOPE);
+    localbus_write(C_ADDR_REG3, x"000000A5", "reg3=0xA5", clk, lb_m2s_wide, lb_s2m_wide);
+    localbus_check_err(x"0000004C", true,  "write 0x4C, an address above the registers",
+                       clk, lb_m2s_wide, lb_s2m_wide);
+    localbus_check_err(x"0000004C", false, "read 0x4C, an address above the registers",
+                       clk, lb_m2s_wide, lb_s2m_wide);
     localbus_check(C_ADDR_REG3, x"000000A5", "reg3 unchanged by the write to 0x4C",
-                   clk, lb_m2s_win, lb_s2m_win);
-    localbus_check(x"1000000C", x"000000A5", "bits above the window are left to the interconnect",
-                   clk, lb_m2s_win, lb_s2m_win);
+                   clk, lb_m2s_wide, lb_s2m_wide);
+    localbus_check(x"1000000C", x"000000A5", "base address bits are left to the interconnect",
+                   clk, lb_m2s_wide, lb_s2m_wide);
 
     wait for 10*C_PERIOD;
 

@@ -16,9 +16,10 @@ entity example_axi_regfile is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    -- Address bits the module decodes. An address in this window that hits no
-    -- register gets an error response. The default is the smallest window
-    -- that holds the registers.
+    -- Module address width: the module answers for 2**G_MODULE_ADDR_WIDTH
+    -- addresses from its base address. An address in that range where no
+    -- register sits gets an error response. The default is the smallest
+    -- width that holds the registers.
     G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
     -- Reset polarity. The regfile normalizes internally so the rest of the
     -- logic is polarity-agnostic.
@@ -54,8 +55,8 @@ begin
            & natural'image(C_MODULE_ADDR_WIDTH) & ") to 32"
     severity failure;
 
-  -- in_window compares only the bits above the module window with the base, so
-  -- the base must be aligned to that window.
+  -- base_match compares only the base address bits, above the address range,
+  -- so the base address must be a multiple of 2**G_MODULE_ADDR_WIDTH.
   assert (not G_CHECK_BASE_ADDRESS)
       or (G_BASE_ADDRESS(G_MODULE_ADDR_WIDTH-1 downto 0) = 0)
     report "G_BASE_ADDRESS must be a multiple of 2**G_MODULE_ADDR_WIDTH"
@@ -69,9 +70,9 @@ begin
   -- hwclr, hwset or a we/wel write in the same cycle as a read wins over them.
   p_write : process (clk) is
     variable sel        : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-    variable hit        : boolean;     -- the address is inside the module window
-    variable sw_write   : boolean;     -- a fresh, in-window software write
-    variable rd_service : boolean;     -- a fresh, in-window software read
+    variable hit        : boolean;     -- base address matches, not above the registers
+    variable sw_write   : boolean;     -- a fresh software write that hits
+    variable rd_service : boolean;     -- a fresh software read that hits
   begin
     if rising_edge(clk) then
       wr_ack <= '0';
@@ -81,8 +82,9 @@ begin
       -- (response still low); the master holds the request until it observes
       -- the response, so these guards keep the effect single-shot.
       sel        := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
-      hit        := in_window(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
-                              G_MODULE_ADDR_WIDTH);
+      hit        := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
+                               G_MODULE_ADDR_WIDTH)
+                    and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH);
       sw_write   := lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' and hit;
       rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' and hit;
 
@@ -159,6 +161,7 @@ begin
   -- return 0 and ack; err is reserved for address-decode failures.
   p_read : process (clk) is
     variable sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+    variable hit : boolean;            -- base address matches, not above the registers
   begin
     if rising_edge(clk) then
       rd_ack <= '0';
@@ -167,8 +170,10 @@ begin
       if lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' then
         rdata <= (others => '0');
         sel   := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
-        if not in_window(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
-                         G_MODULE_ADDR_WIDTH) then
+        hit   := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
+                            G_MODULE_ADDR_WIDTH)
+                 and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH);
+        if not hit then
           rd_err <= '1';
         elsif sel_is(sel, C_ADDR_REG0) then
           rdata(0) <= regs.reg0.reg0;

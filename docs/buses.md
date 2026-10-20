@@ -60,12 +60,14 @@ the same apart from the handshake.
 
 Only an address that does not decode produces an error:
 
-- an address inside the module's window that is not a register address. The
-  window is `2**G_MODULE_ADDR_WIDTH` addresses, or
-- with `G_CHECK_BASE_ADDRESS` set to `true`, an address whose bits above the
-  window differ from `G_BASE_ADDRESS`.
+- a register offset where no register sits, or an address above the
+  registers in the module's address range when `G_MODULE_ADDR_WIDTH` is larger
+  than `C_MODULE_ADDR_WIDTH`, or
+- with `G_CHECK_BASE_ADDRESS` set to `true`, an address whose base address
+  bits differ from `G_BASE_ADDRESS`.
 
-A write that fails changes nothing, and a read that fails returns 0. Every
+[Base address and address range](addressing.md) shows which bits are which. A write
+that fails changes nothing, and a read that fails returns 0. Every
 access to a register address completes normally, whatever the access mode.
 Writing a read-only field has no effect, and reading a write-only field returns
 0. See [Access modes](access-modes.md).
@@ -89,7 +91,7 @@ handshake state also resets asynchronously.
 ### Base address
 
 All endpoints have the generics `G_BASE_ADDRESS`, `G_CHECK_BASE_ADDRESS` and
-`G_MODULE_ADDR_WIDTH`. [Base address](generated-hdl.md#base-address) describes
+`G_MODULE_ADDR_WIDTH`. [Base address and address range](addressing.md) describes
 them.
 
 ### Testbenches

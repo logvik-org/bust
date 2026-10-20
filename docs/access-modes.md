@@ -367,11 +367,12 @@ elsif sel_is(sel, C_ADDR_REG2) then
 
 ### Unmapped addresses
 
-An access to an address where no register sits gets an error response. So
-does an access outside the module's address window, unless the module was
-instantiated with `G_CHECK_BASE_ADDRESS => false`. A write to such an address
-has no effect, and a read returns 0. How the error reaches the bus master
-depends on the bus:
+An access to a register offset where no register sits gets an error response.
+So does an address above the registers in the module's address range, and an
+address with another base address, unless the module was instantiated with
+`G_CHECK_BASE_ADDRESS => false`. A write to such an address has no effect, and
+a read returns 0. [Base address and address range](addressing.md) explains these
+checks. How the error reaches the bus master depends on the bus:
 
 | Bus | Error response |
 |---|---|

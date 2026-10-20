@@ -13,7 +13,8 @@ Avalon-MM (`avalon`), Wishbone (`wishbone`) and APB (`apb`). It runs on Python
 
 The user documentation in `docs/` (published on Read the Docs) is the reference
 for behaviour: the JSON format (`register-map-format.md`), the access modes
-(`access-modes.md`), the buses, the generated HDL and the command line. A change
+(`access-modes.md`), the buses, addressing (`addressing.md`), the generated HDL
+and the command line. A change
 to behaviour updates the matching page in the same PR.
 
 ## Commands
@@ -62,8 +63,11 @@ Each module becomes `<module>_localbus_pkg`, `<module>_regfile_pkg`,
 
 - Generated HDL and its testbench change together, in the same PR.
 - The base address is the `G_BASE_ADDRESS` generic (with
-  `G_CHECK_BASE_ADDRESS` and the window `G_MODULE_ADDR_WIDTH`), never a JSON
-  key.
+  `G_CHECK_BASE_ADDRESS` and the module address width `G_MODULE_ADDR_WIDTH`),
+  never a JSON key. Use the terms of `docs/addressing.md`: a module answers for
+  an address range that starts at its base address, and a register sits at its
+  register offset in that range. "Offset" alone is ambiguous, so write
+  "register offset".
 - Hardware connects through the `to_hw` and `from_hw` records. Enumerated fields
   are VHDL enumeration types.
 - Same-cycle precedence is fixed: `hwclr` > `hwset` > hardware write with
@@ -117,5 +121,6 @@ AXI-Stream) would get native implementations, not the local bus.
 - black formats everything except `example/`. Docstrings use the Google
   convention.
 - Docs and changelog prose: plain sentences, no em-dashes, no semicolons.
-- The images in `docs/images/` come from `scripts/make_logo.py`. Change the
-  script and rerun it rather than editing the files.
+- The images in `docs/images/` come from `scripts/make_logo.py`, and the
+  address figure in `docs/addressing.md` from `scripts/make_address_figure.py`.
+  Change the script and rerun it rather than editing the output.
