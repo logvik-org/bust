@@ -133,8 +133,8 @@ def test_unmapped_offsets_follow_the_ipbus_word_addresses():
     module = _ipbus_module(
         [{"name": "a", "type": "default"}, {"name": "b", "type": "default"}]
     )
-    # Two word-addressed registers: a 1-bit register select and a 3-bit
-    # testbench module address width, so 0x2 is above the registers and 0x8 has
+    # Two registers at word addresses 0 and 1 need one select bit. The testbench
+    # sets G_MODULE_ADDR_WIDTH to 3, so 0x2 is above the registers and 0x8 has
     # another base address.
     assert module.register_select_width == 1
     assert module.tb_module_addr_width == 3

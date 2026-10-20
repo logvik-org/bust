@@ -112,8 +112,10 @@ class Field:
         self.logger = logging.getLogger(__name__)
 
         self.parent_register_name = parent_register_name
-        # True for the one field a register without fields stands for. Its value
-        # sits directly in to_hw/from_hw under the register name.
+        # bust handles a register without fields as if it had one field with
+        # the register's name that spans the whole register. implicit is True
+        # for that generated field. Its value goes straight into to_hw.<reg>
+        # and from_hw.<reg>, with no record of fields around it.
         self.implicit = False
         self._inherited = inherited or {}
 
@@ -677,8 +679,8 @@ class Field:
 
     @property
     def hw_path(self) -> str:
-        """Where the field sits below to_hw and from_hw: `<reg>.<field>`, or
-        `<reg>` for the field of a register without fields."""
+        """The path to the field in to_hw and from_hw: `<reg>.<field>`, or
+        `<reg>` alone for the generated field of a register without fields."""
         if self.implicit:
             return self.parent_register_name
         return f"{self.parent_register_name}.{self.name}"

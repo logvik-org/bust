@@ -14,7 +14,8 @@ from pathlib import Path
 PAGE = Path(__file__).resolve().parent.parent / "docs" / "addressing.md"
 
 X0 = 8  # left margin
-W_BASE, W_MID, W_REG = 212, 152, 76  # base address, above the registers, select
+# Drawn widths of the three parts: base address, above the registers, select.
+W_BASE, W_MID, W_REG = 212, 152, 76
 BAR_H = 30
 
 # One row per setting: name, G_CHECK_BASE_ADDRESS, G_MODULE_ADDR_WIDTH, fields.

@@ -424,8 +424,8 @@ class Register:
 
     @property
     def to_hw_type_name(self) -> str:
-        """Type of this register's member of to_hw: the t_<reg>_to_hw record, or
-        for a register without fields the type of its value."""
+        """The type of to_hw.<reg>: the record type t_<reg>_to_hw, or for a
+        register without fields the type of its value."""
         if self.fields:
             return f"t_{self.name}_to_hw"
         f = self._implicit_field
@@ -433,8 +433,8 @@ class Register:
 
     @property
     def from_hw_type_name(self) -> str:
-        """Type of this register's member of from_hw: the t_<reg>_from_hw record,
-        or for a register without fields the type of its value."""
+        """The type of from_hw.<reg>: the record type t_<reg>_from_hw, or for a
+        register without fields the type of its value."""
         if self.fields:
             return f"t_{self.name}_from_hw"
         f = self._implicit_field
