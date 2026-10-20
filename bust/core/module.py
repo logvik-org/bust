@@ -9,7 +9,7 @@ and coordination with bus interface code generation.
 import logging
 import json
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Dict, List, cast
 
 from bust.core.enums import RegisterMode
 from bust.exceptions import (
@@ -318,46 +318,6 @@ class Module:
         stride = self.data_width // 8 if self.byte_addressable else 1
         top = max((reg.address for reg in self.registers), default=0) + stride
         return max(1, (top - 1).bit_length())
-
-    @property
-    def tb_module_addr_width(self) -> int:
-        """G_MODULE_ADDR_WIDTH of the generated testbench: two bits more than the
-        registers need, so it can check addresses above the registers, and no
-        more than the address width."""
-        return min(self.register_select_width + 2, int(self.addr_width))
-
-    @property
-    def tb_alias_register(self) -> Optional[Register]:
-        """A register the testbench writes and reads back, so it can check that a
-        write to an address without a register does not reach it."""
-        return next((reg for reg in self.registers if reg.is_simple_readback), None)
-
-    @property
-    def tb_unmapped_addresses(self) -> List[Dict[str, str]]:
-        """Addresses the generated testbench expects an error for, each with the
-        VHDL literal and the reason no register answers there."""
-        stride = self.data_width // 8 if self.byte_addressable else 1
-        span = 1 << self.register_select_width
-        used = {reg.address for reg in self.registers}
-        alias = self.tb_alias_register
-        alias_offset = alias.address if alias is not None else 0
-        offsets = []
-        gap = next((a for a in range(0, span, stride) if a not in used), None)
-        if gap is not None:
-            offsets.append((gap, "an unused register offset"))
-        if self.tb_module_addr_width > self.register_select_width:
-            offsets.append((span + alias_offset, "an address above the registers"))
-        if self.tb_module_addr_width < self.addr_width:
-            next_base = 1 << self.tb_module_addr_width
-            offsets.append((next_base + alias_offset, "another base address"))
-        return [
-            {
-                "literal": f'{self.addr_width}x"{offset:X}"',
-                "hex": f"0x{offset:X}",
-                "why": why,
-            }
-            for offset, why in offsets
-        ]
 
     @property
     def num_ro_regs(self) -> int:

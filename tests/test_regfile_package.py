@@ -16,6 +16,7 @@ import pytest
 from bust.core.bus import Bus
 from bust.core.module import Module
 from bust.generators.factory import GeneratorFactory
+from bust.generators.vhdl.address_checks import AddressChecks
 from bust.generation import generate_output
 from bust.settings import Settings
 from bust.utils.json_utils import json_parser
@@ -256,8 +257,9 @@ def test_testbench_checks_unmapped_offsets():
     testbench sets G_MODULE_ADDR_WIDTH to 8 and checks 0x30, 0x40, which aliases
     reg0 by its low bits, and 0x100, which has another base address."""
     module = _build_module()
-    assert module.tb_module_addr_width == 8
-    assert [u["hex"] for u in module.tb_unmapped_addresses] == ["0x30", "0x40", "0x100"]
+    checks = AddressChecks(module)
+    assert checks.module_addr_width == 8
+    assert [u.hex for u in checks.unmapped_addresses] == ["0x30", "0x40", "0x100"]
     tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
     assert "G_MODULE_ADDR_WIDTH  => 8)" in tb
     assert 'bus_write_unmapped(f_addr(32x"40"), 32x"0"' in tb

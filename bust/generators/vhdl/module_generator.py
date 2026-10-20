@@ -8,7 +8,13 @@ no state.
 
 import re
 
+from bust.generators.vhdl.address_checks import AddressChecks
 from bust.jinja_utils.environment import render_template
+
+
+def _testbench_context(module) -> dict:
+    """The render context of a testbench: the module and its address checks."""
+    return {"module": module, "tb": AddressChecks(module)}
 
 
 class ModuleGenerator:
@@ -61,30 +67,36 @@ class ModuleGenerator:
 
     def generate_localbus_axi_testbench_vhdl(self, module) -> str:
         """Generate the UVVM AXI testbench driving the module's top wrapper."""
-        return render_template("vhdl/testbench/localbus_axi_tb.j2", {"module": module})
+        return render_template(
+            "vhdl/testbench/localbus_axi_tb.j2", _testbench_context(module)
+        )
 
     def generate_localbus_ipbus_testbench_vhdl(self, module) -> str:
         """Generate the UVVM IPBus testbench driving the module's top wrapper."""
         return render_template(
-            "vhdl/testbench/localbus_ipbus_tb.j2", {"module": module}
+            "vhdl/testbench/localbus_ipbus_tb.j2", _testbench_context(module)
         )
 
     def generate_localbus_sbi_testbench_vhdl(self, module) -> str:
         """Generate the UVVM SBI testbench driving the module's top wrapper."""
-        return render_template("vhdl/testbench/localbus_sbi_tb.j2", {"module": module})
+        return render_template(
+            "vhdl/testbench/localbus_sbi_tb.j2", _testbench_context(module)
+        )
 
     def generate_localbus_avalon_testbench_vhdl(self, module) -> str:
         """Generate the UVVM Avalon-MM testbench driving the module's top wrapper."""
         return render_template(
-            "vhdl/testbench/localbus_avalon_tb.j2", {"module": module}
+            "vhdl/testbench/localbus_avalon_tb.j2", _testbench_context(module)
         )
 
     def generate_localbus_wishbone_testbench_vhdl(self, module) -> str:
         """Generate the Wishbone testbench (inlined master BFM) for the top wrapper."""
         return render_template(
-            "vhdl/testbench/localbus_wishbone_tb.j2", {"module": module}
+            "vhdl/testbench/localbus_wishbone_tb.j2", _testbench_context(module)
         )
 
     def generate_localbus_apb_testbench_vhdl(self, module) -> str:
         """Generate the APB testbench (inlined master BFM) for the top wrapper."""
-        return render_template("vhdl/testbench/localbus_apb_tb.j2", {"module": module})
+        return render_template(
+            "vhdl/testbench/localbus_apb_tb.j2", _testbench_context(module)
+        )

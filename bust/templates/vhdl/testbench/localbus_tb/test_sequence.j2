@@ -127,13 +127,13 @@
     bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "{{ reg.name }} still set after that read");
     bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ module.data_width }}x"0", "{{ reg.name }} cleared by a read without hwset");
 {% endfor %}
-{% if module.tb_unmapped_addresses %}
-{% set alias = module.tb_alias_register %}
+{% if tb.unmapped_addresses %}
+{% set alias = tb.alias_register %}
 
     -- An address where no register sits gets an error response where the bus
     -- has one, reads as 0, and a write to it changes no register.
     log(ID_LOG_HDR, "addresses without a register get an error and change nothing", C_SCOPE);
-{% for u in module.tb_unmapped_addresses %}
+{% for u in tb.unmapped_addresses %}
     bus_write_unmapped(f_addr({{ u.literal }}), {{ module.data_width }}x"0", "write {{ u.hex }}, {{ u.why }}");
     bus_check_unmapped(f_addr({{ u.literal }}), "read {{ u.hex }}, {{ u.why }}");
 {% endfor %}

@@ -13,6 +13,7 @@ from bust.exceptions import FormatError
 from bust.generators.documentation_generator import DocumentationGenerator
 from bust.generators.factory import GeneratorFactory
 from bust.generators.header_generator import HeaderGenerator
+from bust.generators.vhdl.address_checks import AddressChecks
 
 _ACCESS_REGISTERS = [
     {
@@ -137,8 +138,9 @@ def test_unmapped_offsets_follow_the_ipbus_word_addresses():
     # sets G_MODULE_ADDR_WIDTH to 3, so 0x2 is above the registers and 0x8 has
     # another base address.
     assert module.register_select_width == 1
-    assert module.tb_module_addr_width == 3
-    assert [u["hex"] for u in module.tb_unmapped_addresses] == ["0x2", "0x8"]
+    checks = AddressChecks(module)
+    assert checks.module_addr_width == 3
+    assert [u.hex for u in checks.unmapped_addresses] == ["0x2", "0x8"]
 
 
 def test_ipbus_addr_width_above_32_rejected():
