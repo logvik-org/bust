@@ -1,18 +1,20 @@
 """Output file generation module for bust.
 
 This module handles the creation of all output files: the local-bus VHDL stack
-(regfile package, regfile, bus endpoint, top wrapper) and its UVVM testbench,
-language headers, and documentation. It manages the directory structure and
+(regfile package, regfile, bus endpoint), the starter top level the user owns,
+the UVVM testbench, language headers, and documentation. It manages the directory structure and
 coordinates file generation from the Module, Bus, Header, and Documentation
 instances.
 """
 
 import os
 import logging
+import shutil
 import subprocess
+import sys
 
-from bust.exceptions import LegacyTopLevelFile
 from bust.generators.factory import GeneratorFactory
+from bust.interaction import ConsoleInteractionHandler
 from bust.utils.file_utils import write_string_to_file
 
 logger = logging.getLogger(__name__)
@@ -44,13 +46,57 @@ _LEGACY_USER_MARKERS = frozenset(
 )
 
 
-def _refuse_to_replace_legacy_top(top_path):
-    """Raise LegacyTopLevelFile if `top_path` is a 0.14 top that may hold user logic."""
-    if not os.path.isfile(top_path):
-        return
-    with open(top_path) as top:
-        if any(line.strip() in _LEGACY_USER_MARKERS for line in top):
-            raise LegacyTopLevelFile(top_path)
+def _is_legacy_top(top_path):
+    """True if `top_path` is a bust 0.14 top level, with its user-edited regions."""
+    with open(top_path, encoding="utf-8") as top:
+        return any(line.strip() in _LEGACY_USER_MARKERS for line in top)
+
+
+def _write_top(module, mod_hdl, gen_settings):
+    """Write the starter <module>.vhd if it is missing, or replace it if asked.
+
+    <module>.vhd is the user's file. bust writes a starter once and does not
+    change the file again, not even with -f. With replace_top it writes a fresh
+    starter and keeps the old file as <module>.vhd.bak.
+    """
+    filename = f"{module.name}.vhd"
+    path = os.path.join(mod_hdl, filename)
+    starter = GeneratorFactory.generate_module_top_vhdl(module)
+    if not os.path.isfile(path):
+        write_string_to_file(starter, filename, mod_hdl, True)
+        logger.info(
+            f"Wrote {path}, a starting point that is yours to edit. "
+            "bust will not change it again."
+        )
+    elif gen_settings.get("replace_top"):
+        backup = path + ".bak"
+        if not gen_settings["force_ow"]:
+            if not sys.stdin.isatty():
+                raise FileExistsError(
+                    f"There is no terminal to ask whether to replace {path}. "
+                    "Run bust with --replace-top -f to replace it."
+                )
+            answer = ConsoleInteractionHandler()(
+                f"Replace {path} with a fresh starter and keep the old file as "
+                f"{backup}? (y/N):"
+            )
+            if answer.upper() != "Y":
+                logger.warning(f"Did not replace {path}")
+                return
+        shutil.copyfile(path, backup)
+        write_string_to_file(starter, filename, mod_hdl, True)
+        logger.info(f"Replaced {path} with a fresh starter. The old file is {backup}.")
+    elif _is_legacy_top(path):
+        logger.warning(
+            f"{path} is a bust 0.14 top level, so bust leaves it alone. Connect "
+            f"its logic to {module.name}_{module.bus.endpoint_suffix} as "
+            "described in Upgrading from 0.14."
+        )
+    elif gen_settings["force_ow"]:
+        logger.info(
+            f"{path} is yours, so -f did not replace it. To replace it with a "
+            "fresh starter, run bust with --replace-top."
+        )
 
 
 def generate_output(settings, bus, module, header, documentation, gen_settings):
@@ -68,14 +114,13 @@ def generate_output(settings, bus, module, header, documentation, gen_settings):
         gen_settings: Dictionary with generation options:
             - dir: Output directory path
             - force_ow: Force overwrite without prompting
+            - replace_top: Replace the user's <module>.vhd with a fresh starter
             - gen_localbus: Generate the local-bus VHDL stack and testbench
             - gen_header: Generate language headers
             - gen_doc: Generate documentation
             - gen_pdf: Generate PDF from LaTeX
 
     Raises:
-        LegacyTopLevelFile: If the top-level VHDL file to regenerate is a bust
-            0.14 top with user-edited regions. Checked before anything is written.
         Exception: If file generation fails.
     """
 
@@ -91,9 +136,6 @@ def generate_output(settings, bus, module, header, documentation, gen_settings):
     mod_tb = os.path.join(mod_dir, settings.tb_dir)
     mod_doc = os.path.join(mod_dir, settings.doc_dir)
     mod_header = os.path.join(mod_dir, settings.header_dir)
-
-    if gen_settings.get("gen_localbus"):
-        _refuse_to_replace_legacy_top(os.path.join(mod_hdl, f"{module.name}.vhd"))
 
     logger.debug("Creating all output directories")
     try:
@@ -142,13 +184,7 @@ def generate_output(settings, bus, module, header, documentation, gen_settings):
                 write_string_to_file(
                     endpoint, filename, mod_hdl, gen_settings["force_ow"]
                 )
-                filename = f"{module.name}.vhd"
-                write_string_to_file(
-                    GeneratorFactory.generate_module_top_vhdl(module),
-                    filename,
-                    mod_hdl,
-                    gen_settings["force_ow"],
-                )
+                _write_top(module, mod_hdl, gen_settings)
                 testbench_generator = _TESTBENCH_GENERATORS.get(bus.bus_type)
                 if testbench_generator is not None:
                     testbench = testbench_generator(module)

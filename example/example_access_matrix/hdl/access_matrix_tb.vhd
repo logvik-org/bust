@@ -85,7 +85,7 @@ begin
 
   clock_generator(clk, C_CLK_PERIOD);
 
-  DUT : entity work.access_matrix
+  DUT : entity work.access_matrix_axi_endpoint
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
