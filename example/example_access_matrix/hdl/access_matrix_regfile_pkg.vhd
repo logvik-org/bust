@@ -85,7 +85,6 @@ package access_matrix_regfile_pkg is
     scratch : std_logic_vector(3 downto 0);
   end record;
   type t_status_regs is record
-    busy : std_logic;
     count : std_logic_vector(3 downto 0);
     fault : std_logic;
   end record;
@@ -125,7 +124,6 @@ package access_matrix_regfile_pkg is
     power : t_enum_bit_power;
   end record;
   type t_enum_hw_regs is record
-    state : t_enum_hw_state;
     supply : t_enum_hw_supply;
   end record;
   type t_enum_swacc_regs is record
@@ -164,9 +162,6 @@ package access_matrix_regfile_pkg is
   type t_flat_override_regs is record
     flat_override : std_logic_vector(7 downto 0);
   end record;
-  type t_flat_status_regs is record
-    flat_status : std_logic_vector(5 downto 0);
-  end record;
   type t_flat_flag_regs is record
     flat_flag : std_logic;
   end record;
@@ -193,13 +188,12 @@ package access_matrix_regfile_pkg is
     flat_level : t_flat_level_regs;
     flat_strobe : t_flat_strobe_regs;
     flat_override : t_flat_override_regs;
-    flat_status : t_flat_status_regs;
     flat_flag : t_flat_flag_regs;
   end record;
 
   constant C_ACCESS_MATRIX_REGS_RESET : t_access_matrix_regs := (
     plain => (flag => '0', level => (others => '0'), scratch => (others => '0')),
-    status => (busy => '0', count => (others => '0'), fault => '0'),
+    status => (count => (others => '0'), fault => '0'),
     command => (opcode => (others => '0')),
     hw_modify => (override => (others => '0'), sticky => '0'),
     hw_set_clear => (set_only => (others => '0'), clr_only => '0'),
@@ -209,7 +203,7 @@ package access_matrix_regfile_pkg is
     strobes => (modified => (others => '0'), accessed => (others => '0')),
     enum_vector => (mode => MODE_SLOW),
     enum_bit => (power => PWR_OFF),
-    enum_hw => (state => ST_HALT, supply => PWR_OFF),
+    enum_hw => (supply => PWR_OFF),
     enum_swacc => (phase => PH_IDLE),
     mixed_swacc => (clear_bits => (others => '0'), toggle_bits => (others => '0'), arg => (others => '0'), go => '0', power => PWR_OFF),
     mixed_history => (toggle => (others => '0'), set_on_zero => (others => '0'), clear_on_zero => 4X"F", toggle_on_zero => (others => '0')),
@@ -219,7 +213,6 @@ package access_matrix_regfile_pkg is
     flat_level => (flat_level => (others => '0')),
     flat_strobe => (flat_strobe => (others => '0')),
     flat_override => (flat_override => (others => '0')),
-    flat_status => (flat_status => (others => '0')),
     flat_flag => (flat_flag => '0'));
 
   type t_plain_to_hw is record

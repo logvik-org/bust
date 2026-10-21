@@ -64,7 +64,7 @@
 {%- if f.to_hw_is_record -%}(value => {{ field_value(reg, f) }}{% if f.swmod %}, swmod => swmod_{{ reg.name }}_{{ f.name }}{% endif %}{% if f.swacc %}, swacc => swacc_{{ reg.name }}_{{ f.name }}{% endif %}){%- else -%}{{ field_value(reg, f) }}{%- endif -%}
 {%- endmacro -%}
 {% macro field_value(reg, f) -%}
-{%- if f.holds_state -%}regs.{{ reg.name }}.{{ f.name }}{%- elif f.is_enum -%}{{ f.enum_type_name }}'({{ f.reset_value_vhdl }}){%- else -%}{{ f.reset_value_vhdl }}{%- endif -%}
+{%- if f.holds_state -%}regs.{{ reg.name }}.{{ f.name }}{%- elif f.hw_wire -%}from_hw.{{ f.hw_path }}{%- elif f.is_enum -%}{{ f.enum_type_name }}'({{ f.reset_value_vhdl }}){%- else -%}{{ f.reset_value_vhdl }}{%- endif -%}
 {%- endmacro -%}
 -- {{ generated_by() }}
 -- Protocol-agnostic register file for the {{ module.name }} module.

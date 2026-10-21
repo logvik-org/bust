@@ -33,7 +33,6 @@ package prototype_regfile_pkg is
   end record;
   type t_reg1_regs is record
     field0 : std_logic_vector(3 downto 0);
-    field1 : std_logic;
     field2 : std_logic;
   end record;
   type t_reg2_regs is record
@@ -92,7 +91,7 @@ package prototype_regfile_pkg is
 
   constant C_PROTOTYPE_REGS_RESET : t_prototype_regs := (
     reg0 => (field0 => '0', field1 => (others => '0')),
-    reg1 => (field0 => (others => '0'), field1 => '0', field2 => '0'),
+    reg1 => (field0 => (others => '0'), field2 => '0'),
     reg2 => (field0 => '0'),
     reg3 => (field0 => (others => '0')),
     reg4 => (field0 => (others => '0'), field1 => '0'),

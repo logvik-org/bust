@@ -40,6 +40,12 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 - The bust 0.14 bus keys `comp_library` and `reset` are unknown keys now. bust
   warns about them, and `bust -a` no longer writes them back (#227).
 
+### Fixed
+- A status field, which software only reads and hardware writes every cycle
+  without `we` or `wel`, is no longer stored in the register file. A read takes
+  the value from `from_hw` directly, so it no longer lags by one clock cycle,
+  and the flip-flops are gone, as in bust 0.14.
+
 ## [1.0.0a2] - 2026-10-21
 
 Third pre-release of bust 1.0.0, for testing. Install it with

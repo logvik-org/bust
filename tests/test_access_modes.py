@@ -85,10 +85,16 @@ class TestFieldAccessModes:
     def test_modifiable_fields_hold_state(self):
         assert make_field({"sw": "rw", "hw": "r"}).holds_state
         assert make_field({"sw": "wo", "hw": "r"}).holds_state
-        assert make_field({"sw": "ro", "hw": "w"}).holds_state
+        assert make_field({"sw": "ro", "hw": "w", "we": True}).holds_state
         assert make_field({"sw": "ro", "hw": "r", "hwset": True}).holds_state
         assert make_field({"sw": "ro", "hw": "r", "hwclr": True}).holds_state
         assert make_field({"sw": "rw", "hw": "r", "onread": "rclr"}).holds_state
+
+    def test_status_field_is_read_from_hardware(self):
+        status = make_field({"sw": "ro", "hw": "w"})
+        assert status.hw_wire and not status.holds_state
+        assert not make_field({"sw": "ro", "hw": "w", "we": True}).hw_wire
+        assert not make_field({"sw": "ro", "hw": "w", "onread": "rclr"}).hw_wire
 
 
 class TestFieldEnums:

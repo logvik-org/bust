@@ -28,32 +28,17 @@ package example_ipbus_regfile_pkg is
   type t_reg1_regs is record
     reg1 : std_logic;
   end record;
-  type t_reg2_regs is record
-    reg2 : std_logic;
-  end record;
   type t_reg3_regs is record
     reg3 : std_logic_vector(7 downto 0);
   end record;
-  type t_reg4_regs is record
-    reg4 : std_logic_vector(13 downto 0);
-  end record;
   type t_reg5_regs is record
     reg5 : std_logic_vector(31 downto 0);
-  end record;
-  type t_reg6_regs is record
-    reg6 : std_logic_vector(31 downto 0);
   end record;
   type t_reg7_regs is record
     field0 : std_logic;
     field1 : std_logic_vector(3 downto 0);
     field2 : std_logic;
     field3 : std_logic_vector(14 downto 0);
-  end record;
-  type t_reg8_regs is record
-    field0 : std_logic;
-    field1 : std_logic_vector(18 downto 0);
-    field2 : std_logic;
-    field3 : std_logic_vector(2 downto 0);
   end record;
   type t_reg9_regs is record
     reg9 : std_logic;
@@ -69,13 +54,9 @@ package example_ipbus_regfile_pkg is
   type t_example_ipbus_regs is record
     reg0 : t_reg0_regs;
     reg1 : t_reg1_regs;
-    reg2 : t_reg2_regs;
     reg3 : t_reg3_regs;
-    reg4 : t_reg4_regs;
     reg5 : t_reg5_regs;
-    reg6 : t_reg6_regs;
     reg7 : t_reg7_regs;
-    reg8 : t_reg8_regs;
     reg9 : t_reg9_regs;
     reg10 : t_reg10_regs;
     reg11 : t_reg11_regs;
@@ -84,13 +65,9 @@ package example_ipbus_regfile_pkg is
   constant C_EXAMPLE_IPBUS_REGS_RESET : t_example_ipbus_regs := (
     reg0 => (reg0 => '0'),
     reg1 => (reg1 => '1'),
-    reg2 => (reg2 => '0'),
     reg3 => (reg3 => 8X"3"),
-    reg4 => (reg4 => (others => '0')),
     reg5 => (reg5 => 32X"FFFFFFFF"),
-    reg6 => (reg6 => (others => '0')),
     reg7 => (field0 => '1', field1 => 4X"B", field2 => '0', field3 => 15X"2B"),
-    reg8 => (field0 => '0', field1 => (others => '0'), field2 => '0', field3 => (others => '0')),
     reg9 => (reg9 => '1'),
     reg10 => (reg10 => 4X"A"),
     reg11 => (field0 => 15X"3", field1 => '0'));

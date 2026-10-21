@@ -232,7 +232,8 @@ def test_register_without_fields_is_a_bare_member_of_to_hw_and_from_hw():
         in regfile
     )
     assert "  to_hw.ctrl <= (go => regs.ctrl.go);" in regfile
-    assert "regs.count.count <= from_hw.count;" in regfile
+    assert "rdata(3 downto 0) <= from_hw.count;" in regfile
+    assert "regs.count" not in regfile
     assert "if from_hw.load.we = '1' then" in regfile
 
 

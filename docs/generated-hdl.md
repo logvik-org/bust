@@ -327,7 +327,7 @@ writes (`hw: w` or `hw: rw`) or sets or clears (`hwset`, `hwclr`). As in
 
 | Field | Member in `from_hw.<reg>.<field>` |
 |-------|-----------------------------------|
-| `hw: w` or `rw` without modifiers | The value itself. The register file stores it every clock cycle. |
+| `hw: w` or `rw` without modifiers | The value itself. The register file stores it every clock cycle, except for a status field (`sw: r`, `hw: w`, no `onread`), which a read takes from `from_hw` directly. |
 | With `we` or `wel` | A record with `value` and `we` or `wel`. |
 | With `hwset` or `hwclr` | A record with `set` or `clr`, after `value` if the hardware also writes the field. |
 
