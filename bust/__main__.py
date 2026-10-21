@@ -2,7 +2,7 @@
 """bust register tool.
 
 Usage:
-  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i] [--replace-top] [-u] [-b] [-t] [-m]] | [-a [-F | -f]] | [-c | -e]]
+  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i] [--replace-top] [-u] [-b] [-t] [-m]] | [-a [-F | -f]] | [--migrate [-F | -f]] | [-c | -e]]
   bust --version
   bust -h | --help
 
@@ -19,6 +19,7 @@ Options:
   -t             Ignored with a warning, a bust 0.14 option
   -m             Ignored with a warning, a bust 0.14 option
   -a             Update register addresses and save JSON file (with -f, without asking)
+  --migrate      Migrate a bust 0.14 JSON file and <module>.vhd (with -f, without asking)
   -e             Edit the JSON file
   -c             Create a new JSON file
   -h --help      HELP!
@@ -53,6 +54,7 @@ from bust.exceptions import (
     InvalidBusType,
     InvalidResetMode,
 )
+from bust.migrate import migrate
 from bust.editor import Editor
 from bust._version import __VERSION__
 
@@ -149,6 +151,16 @@ def _run(args):
                 except Exception as e:
                     logger.error("Failed to open editor for " + json_file)
                     logger.error(f"{type(e).__name__}: {e}")
+                    logger.debug("Detailed traceback:", exc_info=True)
+                    exit(1)
+                exit()
+
+            # Before the normal parse, which a bust 0.14 file may not pass.
+            if args["--migrate"]:
+                try:
+                    migrate(json_file, args["-o"], bool(args["-F"] or args["-f"]))
+                except Exception as e:
+                    logger.error(str(e))
                     logger.debug("Detailed traceback:", exc_info=True)
                     exit(1)
                 exit()
