@@ -96,7 +96,7 @@ class _DebugLog(logging.handlers.BufferingHandler):
 
 
 def main():
-    args = docopt(__doc__, help=True, version="bust " + __VERSION__)
+    args = docopt(__doc__, help=True, version="bust v" + __VERSION__)
     root = logging.getLogger("")
     root.setLevel(logging.DEBUG)
     # Messages of level INFO and above go to standard error.
