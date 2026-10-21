@@ -57,9 +57,12 @@ cd sim && make build && make sim-axi            # nvc + UVVM in Docker
 ## Generated VHDL
 
 Each module becomes `<module>_localbus_pkg`, `<module>_regfile_pkg`,
-`<module>_regfile`, `<module>_<bus>_endpoint`, the `<module>` top wrapper and
-`<module>_tb`. Every bus is a thin endpoint over one local bus (`t_lb_m2s` /
-`t_lb_s2m`), so the register logic exists once, in `regfile.j2`.
+`<module>_regfile`, `<module>_<bus>_endpoint` and `<module>_tb`, which bust
+regenerates on every run, and the `<module>` top level, which belongs to the
+user. bust writes a starter `<module>.vhd` only when it is missing and replaces
+it only for `--replace-top`. Every bus is a thin endpoint over one local bus
+(`t_lb_m2s` / `t_lb_s2m`), so the register logic exists once, in `regfile.j2`.
+The generated testbench drives `<module>_<bus>_endpoint`.
 
 - Generated HDL and its testbench change together, in the same PR.
 - The base address is the `G_BASE_ADDRESS` generic (with
