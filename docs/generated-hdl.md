@@ -223,7 +223,7 @@ use work.timer_regfile_pkg.all;
 | `t_<module>_from_hw` | Everything the hardware drives, one member per register. |
 | `t_<reg>_from_hw` | The fields of one register that the hardware drives. A register without fields has none. |
 | `t_<reg>_<field>_in` | One field's value together with its `we`, `wel`, `set` or `clr` input. |
-| `t_<module>_regs`, `t_<reg>_regs`, `C_<MODULE>_REGS_RESET`, `base_match`, `in_register_span`, `sel_is`, `is_mapped` | The register file's internal storage, its reset value and its address decoding. Your design does not need them. |
+| `t_<module>_regs`, `t_<reg>_regs`, `C_<MODULE>_REGS_RESET`, `base_match`, `above_registers`, `reg_addr_match`, `is_mapped` | The register file's internal storage, its reset value and its address decoding. Your design does not need them. |
 
 Register and field names keep the case you gave them in the JSON. The
 `C_ADDR_` constants use the register name in upper case.

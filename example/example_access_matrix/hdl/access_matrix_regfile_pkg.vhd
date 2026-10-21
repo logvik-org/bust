@@ -521,10 +521,14 @@ package access_matrix_regfile_pkg is
   function above_registers(addr              : std_logic_vector(31 downto 0);
                            module_addr_width : natural) return boolean;
 
-  function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-                  reg_addr : std_logic_vector(31 downto 0)) return boolean;
+  -- True when reg_offset, the low address bits of an access, equals the
+  -- register offset in reg_addr. Every bit counts, so an address between two
+  -- registers, or inside one, matches no register.
+  function reg_addr_match(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+                          reg_addr   : std_logic_vector(31 downto 0)) return boolean;
 
-  function is_mapped(sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+  -- True when a register sits at reg_offset.
+  function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
 
 end package access_matrix_regfile_pkg;
 
@@ -554,15 +558,15 @@ package body access_matrix_regfile_pkg is
     return false;
   end function;
 
-  function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-                  reg_addr : std_logic_vector(31 downto 0)) return boolean is
+  function reg_addr_match(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+                          reg_addr   : std_logic_vector(31 downto 0)) return boolean is
   begin
-    return sel = reg_addr(C_MODULE_ADDR_WIDTH-1 downto 0);
+    return reg_offset = reg_addr(C_MODULE_ADDR_WIDTH-1 downto 0);
   end function;
 
-  function is_mapped(sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
   begin
-    return sel_is(sel, C_ADDR_PLAIN) or sel_is(sel, C_ADDR_STATUS) or sel_is(sel, C_ADDR_COMMAND) or sel_is(sel, C_ADDR_IDENTITY) or sel_is(sel, C_ADDR_HW_MODIFY) or sel_is(sel, C_ADDR_HW_SET_CLEAR) or sel_is(sel, C_ADDR_READ_EFFECTS) or sel_is(sel, C_ADDR_WRITE_EFFECTS) or sel_is(sel, C_ADDR_PULSES) or sel_is(sel, C_ADDR_STROBES) or sel_is(sel, C_ADDR_ENUM_VECTOR) or sel_is(sel, C_ADDR_ENUM_BIT) or sel_is(sel, C_ADDR_ENUM_HW) or sel_is(sel, C_ADDR_ENUM_SWACC) or sel_is(sel, C_ADDR_MIXED_SWACC) or sel_is(sel, C_ADDR_MIXED_HISTORY) or sel_is(sel, C_ADDR_HW_STATUS_SWACC) or sel_is(sel, C_ADDR_HW_ONLY) or sel_is(sel, C_ADDR_IRQ_STATUS) or sel_is(sel, C_ADDR_FLAT_LEVEL) or sel_is(sel, C_ADDR_FLAT_STROBE) or sel_is(sel, C_ADDR_FLAT_OVERRIDE) or sel_is(sel, C_ADDR_FLAT_STATUS) or sel_is(sel, C_ADDR_FLAT_FLAG);
+    return reg_addr_match(reg_offset, C_ADDR_PLAIN) or reg_addr_match(reg_offset, C_ADDR_STATUS) or reg_addr_match(reg_offset, C_ADDR_COMMAND) or reg_addr_match(reg_offset, C_ADDR_IDENTITY) or reg_addr_match(reg_offset, C_ADDR_HW_MODIFY) or reg_addr_match(reg_offset, C_ADDR_HW_SET_CLEAR) or reg_addr_match(reg_offset, C_ADDR_READ_EFFECTS) or reg_addr_match(reg_offset, C_ADDR_WRITE_EFFECTS) or reg_addr_match(reg_offset, C_ADDR_PULSES) or reg_addr_match(reg_offset, C_ADDR_STROBES) or reg_addr_match(reg_offset, C_ADDR_ENUM_VECTOR) or reg_addr_match(reg_offset, C_ADDR_ENUM_BIT) or reg_addr_match(reg_offset, C_ADDR_ENUM_HW) or reg_addr_match(reg_offset, C_ADDR_ENUM_SWACC) or reg_addr_match(reg_offset, C_ADDR_MIXED_SWACC) or reg_addr_match(reg_offset, C_ADDR_MIXED_HISTORY) or reg_addr_match(reg_offset, C_ADDR_HW_STATUS_SWACC) or reg_addr_match(reg_offset, C_ADDR_HW_ONLY) or reg_addr_match(reg_offset, C_ADDR_IRQ_STATUS) or reg_addr_match(reg_offset, C_ADDR_FLAT_LEVEL) or reg_addr_match(reg_offset, C_ADDR_FLAT_STROBE) or reg_addr_match(reg_offset, C_ADDR_FLAT_OVERRIDE) or reg_addr_match(reg_offset, C_ADDR_FLAT_STATUS) or reg_addr_match(reg_offset, C_ADDR_FLAT_FLAG);
   end function;
 
   -- case over the literals so the encoding follows each enum's declared value,
