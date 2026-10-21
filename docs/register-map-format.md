@@ -175,7 +175,7 @@ the timing of each protocol.
 | `register` | list | required | The registers, see [Registers](#registers). |
 | `version` | string | `""` | Shown in the LaTeX documentation. |
 | `description` | string | `""` | Shown in the LaTeX documentation. |
-| `byte_addressable` | boolean | from the bus | How far apart bust places registers that have no address. See [Addresses](#addresses). |
+| `byte_addressable` | boolean | from the bus | `true` if an address counts bytes, `false` if it counts data words. See [Byte and word addresses](#byte-and-word-addresses). |
 | `git_hash` | string | none | Accepted and ignored. |
 
 ## Registers
@@ -237,8 +237,9 @@ the others.
 `address` is optional, though. A register without an `address` gets the lowest
 free address. bust goes through the list in order and places each such
 register at the first address that no earlier register uses. It steps by
-`data_width / 8` on byte-addressed buses and by 1 on IPBus. With AXI4-Lite and
-32-bit data, these registers get the addresses in the table:
+`data_width / 8` when addresses count bytes and by 1 when they count data
+words. See [Byte and word addresses](#byte-and-word-addresses). With AXI4-Lite
+and 32-bit data, these registers get the addresses in the table:
 
 ```json
 "register": [
@@ -273,16 +274,6 @@ address before the registers without one.
 addresses into the JSON file. It replaces addresses you set by hand. See
 [Command line](command-line.md).
 
-`byte_addressable` in `module` overrides the step: `false` steps by 1 and
-`true` by `data_width / 8`. It only changes the addresses bust picks. The bus
-endpoint still compares the address exactly as the bus master drives it.
-
-On a byte-addressed bus, an address must be a multiple of `data_width / 8`:
-
-```text
-Address 0x6 of register baud_div is not a multiple of 4, the data width in bytes
-```
-
 The generated register file compares the whole address, so software has to use
 the exact address of each register. An access to any other address, including
 a byte address inside a register, gets the bus's error response. See
@@ -291,6 +282,30 @@ a byte address inside a register, gets the bus's error response. See
 The base address of the module is not part of the register map. You set it
 with the `G_BASE_ADDRESS` generic when you instantiate the module. See
 [Generated HDL](generated-hdl.md).
+
+### Byte and word addresses
+
+An address counts either bytes or data words. `byte_addressable` in `module`
+says which:
+
+| `byte_addressable` | An address counts | bust places registers | An address you set |
+|---|---|---|---|
+| `true` | bytes | `data_width / 8` apart | must be a multiple of `data_width / 8` |
+| `false` | data words | 1 apart | can be any address |
+
+The default follows the bus: `false` on IPBus, whose addresses count 32-bit
+words, and `true` on every other bus. Set `false` on another bus when the
+master or the interconnect drives word addresses, as many Wishbone designs and
+some bridges from IPBus do. The endpoint compares the address exactly as the
+master drives it, so `byte_addressable` must match what the master drives.
+With 32-bit data, the third register of a module is at `0x8` with `true` and
+at `0x2` with `false`.
+
+With `true`, an address that is not a multiple of `data_width / 8` stops bust:
+
+```text
+Address 0x6 of register baud_div is not a multiple of 4, the data width in bytes
+```
 
 ### Reset values
 
@@ -515,6 +530,14 @@ The bust 0.14 type names 'sl' and 'slv' are deprecated. Use 'bit' and 'vector' i
 
 `bust FILE -a` saves the file with the new names. The types `default` and
 `fields` are the same in both versions.
+
+bust 0.14 wrote `byte_addressable` as the string `"True"` or `"False"`. bust
+1.0 reads both and warns that they are deprecated, and `bust FILE -a` saves
+`true` or `false`:
+
+```text
+byte_addressable "False" is the deprecated bust 0.14 form. Use false, without quotes.
+```
 
 bust 0.14 read an `address` or a `reset` as hexadecimal even without `0x`, so
 `"10"` meant 0x10. bust 1.0 reads a string without a prefix as decimal, so

@@ -93,6 +93,10 @@ A few keys need changes:
 - **`sl` and `slv`.** The types `sl` and `slv` are now `bit` and `vector`, for
   registers and fields. bust reads the old names and warns that they are
   deprecated, and `bust FILE -a` saves the file with the new names.
+- **`byte_addressable`.** bust 0.14 wrote it as the string `"True"` or
+  `"False"`. bust 1.0 reads both and warns that they are deprecated, and
+  `bust FILE -a` saves `true` or `false`. A word-addressed AXI4-Lite module
+  from 0.14 stays word-addressed.
 - **Hexadecimal values without `0x`.** bust 0.14 read an `address` or a
   `reset` as hexadecimal even without `0x`, so `"10"` meant 0x10. bust 1.0
   reads a string without a prefix as decimal, so `"10"` is now 10. Add `0x` to

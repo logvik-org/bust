@@ -80,6 +80,7 @@ class Module:
             settings: Project-wide settings.
 
         Raises:
+            FormatError: If byte_addressable is not a boolean.
             InvalidAddress: If register addresses conflict.
             InvalidRegister: If register configuration is invalid.
             ValueError: If module name is not a valid VHDL identifier.
@@ -113,7 +114,7 @@ class Module:
         self.description: str = self._config.get("description")
         self.version = self._config.get("version")
         self.git_hash = self._config.get("git_hash")  # Currently not used
-        self.byte_addressable = self._config.get("byte_addressable")
+        self.byte_addressable = self._read_byte_addressable()
 
         self.addr_width = bus.addr_width
         self.data_width = bus.data_width
@@ -152,6 +153,19 @@ class Module:
             self.logger.debug(f"Register configuration: {reg}")
             raise InvalidRegister(reg, e) from e
         self.registers.append(register)
+
+    def _read_byte_addressable(self) -> bool:
+        """Read byte_addressable, which bust 0.14 wrote as "True" or "False"."""
+        value = self._config.get("byte_addressable")
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str) and value in ("True", "False"):
+            self.logger.warning(
+                f'byte_addressable "{value}" is the deprecated bust 0.14 form. '
+                f"Use {value.lower()}, without quotes."
+            )
+            return value == "True"
+        raise FormatError(f"byte_addressable must be true or false (got {value!r})")
 
     def _warn_legacy_type_names(self) -> None:
         """Warn once about the bust 0.14 type names sl and slv."""
