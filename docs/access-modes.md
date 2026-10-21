@@ -42,7 +42,8 @@ logic to the register file.
 | `na` | none | none |
 
 The records are nested by register and then by field, so a field is
-`to_hw.<register>.<field>` or `from_hw.<register>.<field>`. A `bit` field is a
+`to_hw.<register>.<field>` or `from_hw.<register>.<field>`. A register without
+fields is `to_hw.<register>` or `from_hw.<register>` itself. A `bit` field is a
 `std_logic`, a `vector` field a `std_logic_vector`, and an enumerated field has
 its own type. Here are `reg0` (`sw rw`, `hw r`) and `reg1` (`sw ro`, `hw w`)
 of the prototype:
@@ -111,7 +112,7 @@ The field needs software read access, `sw` `rw` or `ro`. The prototype's
 
 ```vhdl
 -- reg5 onread effects, applied when the software read is serviced.
-if rd_service and sel_is(sel, C_ADDR_REG5) then
+if rd_service and reg_addr_match(reg_offset, C_ADDR_REG5) then
   regs.reg5.field0 <= (others => '0');
   regs.reg5.field1 <= (others => '1');
 end if;
@@ -137,7 +138,7 @@ The field needs software write access, `sw` `rw` or `wo`. The prototype's
 `reg6`:
 
 ```vhdl
-if sw_write and sel_is(sel, C_ADDR_REG6) then
+if sw_write and reg_addr_match(reg_offset, C_ADDR_REG6) then
   regs.reg6.field0 <= regs.reg6.field0 or lb_m2s.wdata(3 downto 0);
   regs.reg6.field1 <= regs.reg6.field1 and not lb_m2s.wdata(7 downto 4);
   regs.reg6.field2 <= regs.reg6.field2 xor lb_m2s.wdata(11 downto 8);
@@ -157,7 +158,7 @@ cycle. Use it for commands such as start or flush. The prototype's `reg10`:
 
 ```vhdl
 regs.reg10.field0 <= (others => '0');
-if sw_write and sel_is(sel, C_ADDR_REG10) then
+if sw_write and reg_addr_match(reg_offset, C_ADDR_REG10) then
   regs.reg10.field0 <= lb_m2s.wdata(3 downto 0);
 end if;
 ```
@@ -296,7 +297,7 @@ if from_hw.reg4.field1.clr = '1' then
   regs.reg4.field1 <= '0';
 elsif from_hw.reg4.field1.set = '1' then
   regs.reg4.field1 <= '1';
-elsif sw_write and sel_is(sel, C_ADDR_REG4) then
+elsif sw_write and reg_addr_match(reg_offset, C_ADDR_REG4) then
   regs.reg4.field1 <= lb_m2s.wdata(8);
 end if;
 ```
@@ -324,17 +325,20 @@ sits, see [Unmapped addresses](#unmapped-addresses). The prototype's `reg2` has
 a single `wo` field, so a read of it returns 0:
 
 ```vhdl
-elsif sel_is(sel, C_ADDR_REG2) then
+elsif reg_addr_match(reg_offset, C_ADDR_REG2) then
   rd_ack <= '1';
 ```
 
 ### Unmapped addresses
 
-An access to an address where no register sits gets an error response. So
-does an access outside the module's address window, unless the module was
-instantiated with `G_CHECK_BASE_ADDRESS => false`. A write to such an address
-has no effect, and a read returns 0. How the error reaches the bus master
-depends on the bus:
+An access to a register offset where no register sits gets an error response.
+That includes an address inside a register, such as `0x1` when a register sits
+at `0x0` on a bus whose addresses count bytes. So does an address above the
+registers in the module's address range, and an address with another base
+address, unless the module was instantiated with
+`G_CHECK_BASE_ADDRESS => false`. A write to such an address has no effect, and
+a read returns 0. [Base address and address range](addressing.md) explains these
+checks. How the error reaches the bus master depends on the bus:
 
 | Bus | Error response |
 |---|---|

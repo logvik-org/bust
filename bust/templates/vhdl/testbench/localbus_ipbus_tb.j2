@@ -63,7 +63,8 @@ begin
   DUT : entity work.{{ module.name }}
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true,
+      G_MODULE_ADDR_WIDTH  => {{ tb.module_addr_width }})
     port map (
       clk     => clk,
       reset   => reset,
@@ -94,6 +95,27 @@ begin
       ipbus_read(addr, v_data, msg, clk, ipbus_if, C_SCOPE,
                  shared_msg_id_panel, ipbus_bfm_config);
       check_value(v_data, data, error, msg, C_SCOPE);
+    end procedure;
+
+    -- An address without a register answers ipb_err.
+    procedure bus_write_unmapped(constant addr : in unsigned;
+                                 constant data : in std_logic_vector;
+                                 constant msg  : in string) is
+      variable v_config : t_ipbus_bfm_config := ipbus_bfm_config;
+    begin
+      v_config.expected_response := ERR;
+      ipbus_write(addr, data, msg, clk, ipbus_if, C_SCOPE,
+                  shared_msg_id_panel, v_config);
+    end procedure;
+
+    procedure bus_check_unmapped(constant addr : in unsigned;
+                                 constant msg  : in string) is
+      variable v_config : t_ipbus_bfm_config := ipbus_bfm_config;
+      variable v_data   : std_logic_vector(C_DATA_W-1 downto 0);
+    begin
+      v_config.expected_response := ERR;
+      ipbus_read(addr, v_data, msg, clk, ipbus_if, C_SCOPE,
+                 shared_msg_id_panel, v_config);
     end procedure;
 {% include "vhdl/testbench/localbus_tb/snapshot_vars.j2" %}
 

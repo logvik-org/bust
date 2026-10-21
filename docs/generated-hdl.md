@@ -21,7 +21,7 @@ is bust's output for this register map, trimmed:
     "name": "timer",
     "register": [
       {
-        "name": "ctrl", "sw": "rw", "hw": "r", "type": "fields",
+        "name": "ctrl", "address": "0x0", "sw": "rw", "hw": "r", "type": "fields",
         "fields": [
           {"name": "enable", "type": "bit"},
           {"name": "mode", "type": "vector", "width": 2,
@@ -29,16 +29,19 @@ is bust's output for this register map, trimmed:
           {"name": "start", "type": "bit", "singlepulse": true}
         ]
       },
-      {"name": "load", "sw": "rw", "hw": "r", "type": "default", "swmod": true},
       {
-        "name": "status", "sw": "ro", "hw": "w", "type": "fields",
+        "name": "load", "address": "0x4", "sw": "rw", "hw": "r",
+        "type": "default", "swmod": true
+      },
+      {
+        "name": "status", "address": "0x8", "sw": "ro", "hw": "w", "type": "fields",
         "fields": [
           {"name": "count", "type": "vector", "width": 16, "we": true},
           {"name": "running", "type": "bit"}
         ]
       },
       {
-        "name": "irq", "sw": "rw", "hw": "r", "type": "fields",
+        "name": "irq", "address": "0xc", "sw": "rw", "hw": "r", "type": "fields",
         "fields": [
           {"name": "expired", "type": "bit", "hwset": true, "onwrite": "woclr"}
         ]
@@ -153,7 +156,7 @@ The widths are the `addr_width` and `data_width` of the register map.
 
 | Member | Direction | Meaning |
 |--------|-----------|---------|
-| `address` | endpoint to register file | The address the bus master drove, unchanged. A byte address on every bus except IPBus, where it is a word address. |
+| `address` | endpoint to register file | The address the bus master drove: the base address plus the register offset. |
 | `wdata` | endpoint to register file | Write data. |
 | `wen` | endpoint to register file | Write request. |
 | `ren` | endpoint to register file | Read request. |
@@ -182,8 +185,7 @@ entity timer_regfile is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    -- Reset polarity. The regfile normalizes internally so the rest of the
-    -- logic is polarity-agnostic.
+    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
     G_RESET_ACTIVE_LOW   : boolean := false
   );
   port (
@@ -212,16 +214,16 @@ use work.timer_regfile_pkg.all;
 | Name | What it is |
 |------|------------|
 | `C_ADDR_<REG>` | The address of each register within the module, `addr_width` bits wide. |
-| `C_MODULE_ADDR_WIDTH` | The number of low address bits that select a register. |
+| `C_MODULE_ADDR_WIDTH` | The number of low address bits that select a register, and the default of `G_MODULE_ADDR_WIDTH`. |
 | `t_<reg>_<field>` | The enumeration type of an enumerated field. |
 | `to_slv`, `to_<reg>_<field>` | Conversions between an enumeration type and its bits. |
 | `t_<module>_to_hw` | Everything the hardware reads, one member per register. |
-| `t_<reg>_to_hw` | The fields of one register that the hardware reads. |
+| `t_<reg>_to_hw` | The fields of one register that the hardware reads. A register without fields has none. |
 | `t_<reg>_<field>_out` | One field's value together with its `swmod` or `swacc` strobe. |
 | `t_<module>_from_hw` | Everything the hardware drives, one member per register. |
-| `t_<reg>_from_hw` | The fields of one register that the hardware drives. |
+| `t_<reg>_from_hw` | The fields of one register that the hardware drives. A register without fields has none. |
 | `t_<reg>_<field>_in` | One field's value together with its `we`, `wel`, `set` or `clr` input. |
-| `t_<module>_regs`, `t_<reg>_regs`, `C_<MODULE>_REGS_RESET`, `base_match`, `sel_is`, `is_mapped` | The register file's internal storage, its reset value and its address decoding. Your design does not need them. |
+| `t_<module>_regs`, `t_<reg>_regs`, `C_<MODULE>_REGS_RESET`, `base_match`, `above_registers`, `reg_addr_match`, `is_mapped` | The register file's internal storage, its reset value and its address decoding. Your design does not need them. |
 
 Register and field names keep the case you gave them in the JSON. The
 `C_ADDR_` constants use the register name in upper case.
@@ -244,7 +246,9 @@ The timer's addresses and its enumeration type:
 ### Hardware reads: `to_hw`
 
 `to_hw` has one member per register that has at least one field with `hw: r`
-or `hw: rw`, and that member has one member per such field:
+or `hw: rw`. For a register with fields, that member is a record with one member
+per such field. A register without fields has no record of its own, and its
+member is its value:
 
 ```vhdl
   type t_ctrl_to_hw is record
@@ -257,16 +261,13 @@ or `hw: rw`, and that member has one member per such field:
     swmod : std_logic;
   end record;
 
-  type t_load_to_hw is record
-    load : t_load_load_out;
-  end record;
   type t_irq_to_hw is record
     expired : std_logic;
   end record;
 
   type t_timer_to_hw is record
     ctrl : t_ctrl_to_hw;
-    load : t_load_to_hw;
+    load : t_load_load_out;
     irq : t_irq_to_hw;
   end record;
 ```
@@ -276,17 +277,20 @@ or `hw: rw`, and that member has one member per such field:
 | A bit field | `std_logic` |
 | A vector field | `std_logic_vector(width - 1 downto 0)` |
 | An enumerated field | Its enumeration type, such as `t_ctrl_mode` |
-| A field with `swmod` or `swacc` | A record with `value` and the strobe, such as `to_hw.load.load.swmod` |
+| A field with `swmod` or `swacc` | A record with `value` and the strobe, such as `to_hw.<reg>.<field>.swmod` |
 
-A register without fields, such as `load` of type `default`, counts as one
-field with the register's name, so its value is `to_hw.load.load`. Here it is
-`to_hw.load.load.value`, because the field has `swmod`. `status` is missing
-because hardware cannot read it.
+A register without fields, such as `load` of type `default`, is read as
+`to_hw.load`, with the same types as a field. Here it is a record with `value`
+and `swmod`, because `load` has `swmod`, so the hardware reads
+`to_hw.load.value` and `to_hw.load.swmod`. Without `swmod` it would be the
+`std_logic_vector` itself. `status` is missing because hardware cannot read
+it.
 
 ### Hardware drives: `from_hw`
 
 `from_hw` has one member per register that has at least one field the hardware
-writes (`hw: w` or `hw: rw`) or sets or clears (`hwset`, `hwclr`):
+writes (`hw: w` or `hw: rw`) or sets or clears (`hwset`, `hwclr`). As in
+`to_hw`, a register without fields is driven directly, as `from_hw.<reg>`:
 
 ```vhdl
   type t_status_count_in is record
@@ -341,7 +345,8 @@ begin
   i_timer : entity work.timer
     generic map (
       G_BASE_ADDRESS       => x"4000_1000",
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true,
+      G_MODULE_ADDR_WIDTH  => 12)
     port map (
       clk      => clk,
       areset_n => areset_n,
@@ -372,13 +377,13 @@ and by name:
   p_count : process (clk) is
   begin
     if rising_edge(clk) then
-      if timer_to_hw.ctrl.start = '1' or timer_to_hw.load.load.swmod = '1' then
-        count <= unsigned(timer_to_hw.load.load.value(15 downto 0));
+      if timer_to_hw.ctrl.start = '1' or timer_to_hw.load.swmod = '1' then
+        count <= unsigned(timer_to_hw.load.value(15 downto 0));
       elsif timer_to_hw.ctrl.enable = '1' then
         if count /= 0 then
           count <= count - 1;
         elsif timer_to_hw.ctrl.mode = PERIODIC then
-          count <= unsigned(timer_to_hw.load.load.value(15 downto 0));
+          count <= unsigned(timer_to_hw.load.value(15 downto 0));
         end if;
       end if;
     end if;
@@ -397,41 +402,24 @@ undriven stays `'U'` in simulation.
 
 ## Base address
 
-The top wrapper, the endpoint and the register file have the same two
+The top wrapper, the endpoint and the register file have the same three
 generics:
 
 ```vhdl
 entity timer is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
-    G_CHECK_BASE_ADDRESS : boolean := true
+    G_CHECK_BASE_ADDRESS : boolean := true;
+    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH
   );
 ```
 
-`G_BASE_ADDRESS` is `addr_width` bits wide. The register file splits each
-address in two. The low `C_MODULE_ADDR_WIDTH` bits select the register. With
-`G_CHECK_BASE_ADDRESS` set to `true`, the bits above must equal the same bits
-of `G_BASE_ADDRESS`, and any other address gets an
-[error response](buses.md#errors).
-
-The base address must be aligned to the module's window of
-`2**C_MODULE_ADDR_WIDTH` addresses, so its low `C_MODULE_ADDR_WIDTH` bits must
-be zero. Otherwise the register file stops the simulation with an assertion
-failure. The timer has `C_MODULE_ADDR_WIDTH = 4`, a window of 16 bytes, so
-`x"4000_1000"` works and puts `load` at `0x4000_1004`. Accesses to
-`0x4000_1010` and to `0x0000_1004` both get an error.
-
-With `G_CHECK_BASE_ADDRESS` set to `false`, the register file ignores
-`G_BASE_ADDRESS` and the upper address bits. The module then answers at every
-address whose low bits select a register, so `0x0000_1004` and `0x4000_1004`
-both reach `load`. Use this when your interconnect already decodes the
-module's address range and forwards only accesses meant for it.
-
-The base address is a generic, not a key in the JSON, because it describes
-where you place the module, not the module itself. You can instantiate one
-register map several times at different addresses, and you can move a module
-without generating it again. The C, C++ and Python headers give register
-offsets for the same reason, and your software adds the base address.
+`G_BASE_ADDRESS` sets where the module sits on the bus. `G_CHECK_BASE_ADDRESS`
+sets whether the module checks the base address of each access, and
+`G_MODULE_ADDR_WIDTH` sets how many low address bits the module decodes, so
+the module answers for `2**G_MODULE_ADDR_WIDTH` addresses from its base
+address. [Base address and address range](addressing.md)
+shows how the register file decodes an address with each setting.
 
 ## Several modules in one design
 

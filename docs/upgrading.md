@@ -51,6 +51,36 @@ given in [Generated HDL](generated-hdl.md). The generated VHDL needs VHDL-2008.
 bust no longer writes simulator scripts. [Testbenches](testbenches.md) describes
 what the testbench needs, so you can add it to your own simulation flow.
 
+## Update the instantiations
+
+The generics of `<module>` have new names and types:
+
+| bust 0.14 | bust 1.0 |
+|---|---|
+| `g_ipb_baseaddr` or `g_axi_baseaddr`, a 32-bit `std_logic_vector` | `G_BASE_ADDRESS`, an `unsigned` of `addr_width` bits |
+| `g_check_baseaddr` | `G_CHECK_BASE_ADDRESS` |
+| `g_module_addr_width` | `G_MODULE_ADDR_WIDTH` |
+
+VHDL names are not case-sensitive, so `g_module_addr_width => 16` connects to
+`G_MODULE_ADDR_WIDTH` as it is. Its default decodes just the bits the
+registers need, as 0 did in 0.14, but a value below that width, 0 included,
+stops the simulation. Replace a 0 with the width of the module's address range,
+such as 12 for 4 KiB.
+[Base address and address range](addressing.md) describes the three generics.
+
+The IPBus ports `ipb_clk` and `ipb_reset` are now `clk` and `reset`, and
+`ipb_in` and `ipb_out` keep their names. The register records give way to the
+`to_hw` and `from_hw` ports, and the names in your logic map one to one:
+
+| bust 0.14 | bust 1.0 |
+|---|---|
+| `ipb_rw_regs.<reg>` or `axi_rw_regs.<reg>` | `to_hw.<reg>` |
+| `ipb_pulse_regs.<reg>` or `axi_pulse_regs.<reg>` | `to_hw.<reg>` |
+| `ipb_ro_regs.<reg>` or `axi_ro_regs.<reg>` | `from_hw.<reg>` |
+
+A field keeps its name below its register, as in `to_hw.<reg>.<field>`.
+[Generated HDL](generated-hdl.md) describes the records.
+
 ## Check your JSON files
 
 The old `mode` key still works. bust translates it to software (`sw`) and
@@ -60,6 +90,20 @@ are, or move to `sw` and `hw` to use the new [access modes](access-modes.md).
 
 A few keys need changes:
 
+- **`sl` and `slv`.** The types `sl` and `slv` are now `bit` and `vector`, for
+  registers and fields. bust reads the old names and warns that they are
+  deprecated, and `bust FILE -a` saves the file with the new names.
+- **`byte_addressable`.** bust 0.14 wrote it as the string `"True"` or
+  `"False"`. bust 1.0 reads both and warns that they are deprecated, and
+  `bust FILE -a` saves `true` or `false`. A word-addressed AXI4-Lite module
+  from 0.14 stays word-addressed.
+- **Hexadecimal values without `0x`.** bust 0.14 read an `address` or a
+  `reset` as hexadecimal even without `0x`, so `"10"` meant 0x10. bust 1.0
+  reads a string without a prefix as decimal, so `"10"` is now 10. Add `0x` to
+  such values. The values 0 to 9 are the same either way, and a value with a
+  letter, such as `"1c"`, stops bust with a message that suggests `"0x1c"`.
+  bust 0.14 and its editor wrote `0x` themselves, so only values typed by hand
+  can lack it. [Numbers](register-map-format.md#numbers) gives the rule.
 - **`pulse_cycles` and `stall_cycles`.** A pulse now lasts one clock cycle, and
   every access is answered in one cycle. Remove both keys. bust rejects
   `pulse_cycles` other than 1 and `stall_cycles` other than 0 with an error
@@ -105,9 +149,11 @@ Code that includes the generated headers needs these changes:
 
 ## Command-line options
 
-The options `-u`, `-b`, `-t` and `-m` are gone. They controlled files that bust
-1.0 no longer generates or always generates. `-F` is kept as another name for
-`-f`. [Command line](command-line.md) lists the options.
+The options `-u`, `-b`, `-t` and `-m` have no effect any more. They controlled
+files that bust 1.0 no longer generates or always generates. bust accepts them
+with a warning, so a 0.14 command line in a Makefile still runs, but remove them
+when you can. `-F` is kept as another name for `-f`.
+[Command line](command-line.md) lists the options.
 
 ## Python imports
 

@@ -12,10 +12,21 @@ import logging
 from collections import OrderedDict
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
-from bust.core.enums import FieldType, SwAccess, HwAccess, OnRead, OnWrite
+from bust.core.enums import (
+    FieldType,
+    HwAccess,
+    OnRead,
+    OnWrite,
+    SwAccess,
+    current_type_name,
+)
 from bust.exceptions import InvalidFieldFormat
 from bust.validation.vhdl_validator import is_valid_VHDL
-from bust.validation.config_validator import ConfigWrapper, warn_unknown_keys
+from bust.validation.config_validator import (
+    ConfigWrapper,
+    parse_number,
+    warn_unknown_keys,
+)
 
 
 class EnumValue(NamedTuple):
@@ -105,6 +116,11 @@ class Field:
         self.logger = logging.getLogger(__name__)
 
         self.parent_register_name = parent_register_name
+        # bust handles a register without fields as if it had one field with
+        # the register's name that spans the whole register. implicit is True
+        # for that generated field. Its value goes straight into to_hw.<reg>
+        # and from_hw.<reg>, with no record of fields around it.
+        self.implicit = False
         self._inherited = inherited or {}
 
         self._config = ConfigWrapper(
@@ -126,17 +142,23 @@ class Field:
             field, FIELD_KEYS, f"field {self.name} of register {parent_register_name}"
         )
 
-        self.type = FieldType.from_string(self._config.require("type"))
-        self.width = self._config.get(
-            "width"
-        )  # Width can be overridden depending on register type
-        self.reset = self._config.get("reset")
+        type_name = self._config.require("type")
+        self.legacy_type_name = (
+            type_name if current_type_name(type_name) != type_name else None
+        )
+        self.type = FieldType.from_string(current_type_name(type_name))
+        where = f"field {self.name} in register {parent_register_name}"
+        # Width can be overridden depending on register type
+        self.width = parse_number(self._config.get("width"), f"Width of {where}")
+        # The parsed reset as 0x and lower-case hexadecimal digits, the form the
+        # headers, the documentation and the IPBus address table print.
+        self.reset = hex(parse_number(self._config.get("reset"), f"Reset of {where}"))
         self.description = self._config.get("description")
 
         # Assign width
         if self.type == FieldType.BIT:
             # Check if the width was explicitly set in the config, and if it matches the module data width
-            if self._config.is_set("width") and self._config.get("width") != 1:
+            if self._config.is_set("width") and self.width != 1:
                 self.logger.warning(
                     f"Field '{self.name}' in register '{self.parent_register_name}' "
                     "has width != 1 for bit type. Forcing width to 1."
@@ -302,8 +324,10 @@ class Field:
                     f"Duplicate enum name '{name}' in field {self.name} "
                     f"in reg {self.parent_register_name}"
                 )
-            value = int(entry["value"])
-            if value < 0 or value > maxvalue:
+            value = parse_number(
+                entry["value"], f"Value of enum {name} in field {self.name}"
+            )
+            if value > maxvalue:
                 raise InvalidFieldFormat(
                     f"Enum '{name}' value {value} does not fit field "
                     f"{self.name} (width {self.width}) in reg "
@@ -660,6 +684,14 @@ class Field:
         if not self.is_enum:
             return self.reset_val_vhdl
         return self._decoded_enum(int(self.reset, 16)).name
+
+    @property
+    def hw_path(self) -> str:
+        """The path to the field in to_hw and from_hw: `<reg>.<field>`, or
+        `<reg>` alone for the generated field of a register without fields."""
+        if self.implicit:
+            return self.parent_register_name
+        return f"{self.parent_register_name}.{self.name}"
 
     @property
     def to_hw_is_record(self) -> bool:

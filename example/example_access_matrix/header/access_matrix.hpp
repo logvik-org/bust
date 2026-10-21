@@ -93,7 +93,7 @@ const uint32_t IDENTITY_RESET = 0x1a5;
 /* Field: id */
 const uint32_t IDENTITY_ID_OFFSET = 0;
 const uint32_t IDENTITY_ID_WIDTH = 8;
-const uint32_t IDENTITY_ID_RESET = 0xA5;
+const uint32_t IDENTITY_ID_RESET = 0xa5;
 const uint32_t IDENTITY_ID_MASK = 0xff;
 const std::string IDENTITY_ID_SW = "ro";
 const std::string IDENTITY_ID_HW = "r";
@@ -208,7 +208,7 @@ const std::string WRITE_EFFECTS_SET_BITS_ONWRITE = "woset";
 /* Field: clear_bits */
 const uint32_t WRITE_EFFECTS_CLEAR_BITS_OFFSET = 4;
 const uint32_t WRITE_EFFECTS_CLEAR_BITS_WIDTH = 4;
-const uint32_t WRITE_EFFECTS_CLEAR_BITS_RESET = 0xF;
+const uint32_t WRITE_EFFECTS_CLEAR_BITS_RESET = 0xf;
 const uint32_t WRITE_EFFECTS_CLEAR_BITS_MASK = 0xf0;
 const std::string WRITE_EFFECTS_CLEAR_BITS_SW = "rw";
 const std::string WRITE_EFFECTS_CLEAR_BITS_HW = "r";
@@ -458,7 +458,7 @@ const std::string MIXED_HISTORY_SET_ON_ZERO_ONWRITE = "wzs";
 /* Field: clear_on_zero */
 const uint32_t MIXED_HISTORY_CLEAR_ON_ZERO_OFFSET = 8;
 const uint32_t MIXED_HISTORY_CLEAR_ON_ZERO_WIDTH = 4;
-const uint32_t MIXED_HISTORY_CLEAR_ON_ZERO_RESET = 0xF;
+const uint32_t MIXED_HISTORY_CLEAR_ON_ZERO_RESET = 0xf;
 const uint32_t MIXED_HISTORY_CLEAR_ON_ZERO_MASK = 0xf00;
 const std::string MIXED_HISTORY_CLEAR_ON_ZERO_SW = "rw";
 const std::string MIXED_HISTORY_CLEAR_ON_ZERO_HW = "r";
@@ -534,6 +534,41 @@ const uint32_t IRQ_STATUS_PENDING_MASK = 0x1;
 const std::string IRQ_STATUS_PENDING_SW = "ro";
 const std::string IRQ_STATUS_PENDING_HW = "r";
 const std::string IRQ_STATUS_PENDING_ONREAD = "rclr";
+
+/* Register: flat_level */
+const std::string FLAT_LEVEL_SW = "rw";
+const std::string FLAT_LEVEL_HW = "r";
+const uint32_t FLAT_LEVEL_WIDTH = 8;
+const uint32_t FLAT_LEVEL_OFFSET = 0x4c;
+const uint32_t FLAT_LEVEL_RESET = 0x0;
+
+/* Register: flat_strobe */
+const std::string FLAT_STROBE_SW = "rw";
+const std::string FLAT_STROBE_HW = "r";
+const uint32_t FLAT_STROBE_WIDTH = 4;
+const uint32_t FLAT_STROBE_OFFSET = 0x50;
+const uint32_t FLAT_STROBE_RESET = 0x0;
+
+/* Register: flat_override */
+const std::string FLAT_OVERRIDE_SW = "rw";
+const std::string FLAT_OVERRIDE_HW = "rw";
+const uint32_t FLAT_OVERRIDE_WIDTH = 8;
+const uint32_t FLAT_OVERRIDE_OFFSET = 0x54;
+const uint32_t FLAT_OVERRIDE_RESET = 0x0;
+
+/* Register: flat_status */
+const std::string FLAT_STATUS_SW = "ro";
+const std::string FLAT_STATUS_HW = "w";
+const uint32_t FLAT_STATUS_WIDTH = 6;
+const uint32_t FLAT_STATUS_OFFSET = 0x58;
+const uint32_t FLAT_STATUS_RESET = 0x0;
+
+/* Register: flat_flag */
+const std::string FLAT_FLAG_SW = "rw";
+const std::string FLAT_FLAG_HW = "r";
+const uint32_t FLAT_FLAG_WIDTH = 1;
+const uint32_t FLAT_FLAG_OFFSET = 0x5c;
+const uint32_t FLAT_FLAG_RESET = 0x0;
 
 };
 

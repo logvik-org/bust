@@ -12,6 +12,19 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ### Added
 - A logo, shown in the README and the documentation.
+- The generic `G_MODULE_ADDR_WIDTH` on the top wrapper, the endpoints and the
+  register file sets how many low address bits the module decodes, as
+  `g_module_addr_width` did in 0.14. The module answers for
+  `2**G_MODULE_ADDR_WIDTH` addresses from its base address, and an access to
+  one of them where no register sits gets an error response. The default
+  decodes just the bits the registers need.
+- A new page, Base address and address range, shows how a module decodes an
+  address with each setting of `G_BASE_ADDRESS`, `G_CHECK_BASE_ADDRESS` and
+  `G_MODULE_ADDR_WIDTH`.
+- The generated testbench checks that addresses where no register sits get an
+  error response and that writes to them change no register.
+- The bust 0.14 options `-u`, `-b`, `-t` and `-m` are accepted again and
+  ignored with a warning, so 0.14 command lines in Makefiles keep working.
 
 ### Changed
 - Each name in the C header starts with the module name, such as
@@ -19,6 +32,52 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   the headers of two modules that have a register of the same name. The C++
   and Python headers already kept their names in a namespace and a class
   named after the module, and are unchanged.
+- A register without fields is now a member of `to_hw` and `from_hw` by
+  itself, as `to_hw.<reg>` instead of `to_hw.<reg>.<reg>`. When it has
+  `swmod`, `swacc`, `we`, `wel`, `hwset` or `hwclr`, the member is the record
+  of its value and strobes, such as `to_hw.load.value` and `to_hw.load.swmod`.
+  Such a register no longer gets a `t_<reg>_to_hw` or `t_<reg>_from_hw` type.
+  This is the shape of the 0.14 records, so `ipb_rw_regs.<reg>` becomes
+  `to_hw.<reg>`.
+- bust writes `debug.log` only when a run stops with an error, so a run that
+  succeeds no longer leaves the file in the working directory. A failed run
+  adds to the file under a line with the time and the command line, instead
+  of replacing it.
+- One rule for every number in the register map: a JSON number is decimal,
+  and a string is hexadecimal after `0x`, binary after `0b` and decimal
+  without a prefix. `address` and `reset` used to read a string without a
+  prefix as hexadecimal, so `"10"` meant 0x10 and now means 10. `address` and
+  `reset` now take JSON numbers, and `width`, `position`, enum values and the
+  bus widths take strings. A string with hexadecimal digits but no `0x`, such
+  as `"1B2"`, stops bust with a message that suggests `"0x1B2"`. A value of the
+  wrong type is reported with the key and the register instead of a Python
+  error.
+
+### Fixed
+- `"byte_addressable": "False"`, as bust 0.14 wrote it, was read as true, so a
+  word-addressed module from 0.14 became byte-addressed. Its registers without
+  an address moved to multiples of the data width in bytes, and addresses set
+  by hand that were not such multiples were rejected. bust reads `"True"` and
+  `"False"` again, warns that they are deprecated, and `bust FILE -a` saves a
+  JSON boolean. Any other value is an error.
+- The headers, the LaTeX documentation and the IPBus address table printed a
+  `reset` as the JSON file wrote it. A reset without `0x` gave a C header that
+  does not compile, such as `1B2`, or a value that differs from the hardware,
+  such as `10` for a register that resets to 0x10. They now print the value
+  bust parsed, in the headers as `0x` and lower-case digits like the offsets
+  and masks.
+- A module without a `version` no longer gets an empty `Version:` on the title
+  page and in the footer of its documentation. The version is now escaped for
+  LaTeX.
+- bust reads the bust 0.14 type names `sl` and `slv` again, for registers and
+  fields, as `bit` and `vector`. It warns once per file that they are
+  deprecated, and `bust FILE -a` saves the file with the new names. Without
+  this, no register map written for 0.14 could be read.
+- With `G_CHECK_BASE_ADDRESS => false`, the register file looked only at the
+  address bits that select a register. An access to an address above the
+  registers reached a register instead of getting an error, so a mistyped
+  address could hit a pulse register. Set `G_MODULE_ADDR_WIDTH` to the size of
+  the address range your interconnect gives the module.
 
 ## [1.0.0a1] - 2026-10-16
 

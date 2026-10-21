@@ -143,3 +143,68 @@ def test_editor_without_terminal_fails(tmp_path):
 
     assert code == 1
     assert "needs an interactive terminal" in output
+
+
+def test_bust_0_14_options_are_ignored_with_a_warning(tmp_path):
+    path = _write_register_map(tmp_path)
+
+    code, output = _run_bust(
+        tmp_path, str(path), "-o", "out", "-d", "-u", "-b", "-t", "-m"
+    )
+
+    assert code == 0, output
+    for option in ("-u", "-b", "-t", "-m"):
+        assert f"Ignoring {option}, a bust 0.14 option" in output
+    assert (tmp_path / "out/timer/tb/timer_tb.vhd").is_file()
+
+
+def test_empty_version_leaves_no_version_label_in_the_latex(tmp_path):
+    path = _write_register_map(tmp_path)
+
+    code, output = _run_bust(tmp_path, str(path), "-o", "out", "-p")
+
+    assert code == 0, output
+    tex = (tmp_path / "out/timer/doc/timer.tex").read_text()
+    assert "\\author{}" in tex
+    assert "Version:" not in tex
+
+
+def test_successful_run_writes_no_debug_log(tmp_path):
+    path = _write_register_map(tmp_path)
+
+    code, output = _run_bust(tmp_path, str(path), "-o", "out", "-p")
+
+    assert code == 0, output
+    assert not (tmp_path / "debug.log").exists()
+
+
+def test_failed_run_writes_debug_log(tmp_path):
+    register_map = json.loads(json.dumps(_REGISTER_MAP))
+    register_map["bus"]["type"] = "pci"
+    path = _write_register_map(tmp_path, register_map)
+
+    code, output = _run_bust(tmp_path, str(path), "-o", "out")
+
+    assert code == 1
+    log = (tmp_path / "debug.log").read_text()
+    assert "Bus type is not valid: pci" in log
+    assert "Traceback" in log
+    assert f"bust {path} -o out" in log.splitlines()[0]
+
+
+def test_failed_runs_append_to_debug_log(tmp_path):
+    register_map = json.loads(json.dumps(_REGISTER_MAP))
+    register_map["bus"]["type"] = "pci"
+    path = _write_register_map(tmp_path, register_map)
+
+    for out in ("first", "second"):
+        code, output = _run_bust(tmp_path, str(path), "-o", out)
+        assert code == 1, output
+
+    runs = [
+        line
+        for line in (tmp_path / "debug.log").read_text().splitlines()
+        if line.startswith("=== ")
+    ]
+    assert len(runs) == 2
+    assert runs[0].endswith("-o first") and runs[1].endswith("-o second")
