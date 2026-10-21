@@ -45,6 +45,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   without `we` or `wel`, is no longer stored in the register file. A read takes
   the value from `from_hw` directly, so it no longer lags by one clock cycle,
   and the flip-flops are gone, as in bust 0.14.
+- The response signals of the register file have initial values, so a
+  simulation that reads before the first reset gets an answer instead of
+  waiting forever, as in bust 0.14.
 
 ## [1.0.0a2] - 2026-10-21
 

@@ -32,11 +32,11 @@ architecture rtl of example_ipbus_regfile is
   signal regs : t_example_ipbus_regs := C_EXAMPLE_IPBUS_REGS_RESET;
 
   signal rst    : std_logic;            -- reset normalized to active high
-  signal rdata  : std_logic_vector(31 downto 0);
-  signal wr_ack : std_logic;
-  signal wr_err : std_logic;
-  signal rd_ack : std_logic;
-  signal rd_err : std_logic;
+  signal rdata  : std_logic_vector(31 downto 0) := (others => '0');
+  signal wr_ack : std_logic := '0';
+  signal wr_err : std_logic := '0';
+  signal rd_ack : std_logic := '0';
+  signal rd_err : std_logic := '0';
 
 begin
 
