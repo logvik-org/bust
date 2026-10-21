@@ -20,10 +20,9 @@ in the `bus` object of the register map:
 | `wishbone` | [Wishbone](#wishbone) | `<module>_wishbone_endpoint` | `rst_i`, active high |
 | `apb` | [APB](#apb) | `<module>_apb_endpoint` | `presetn`, active low |
 
-You instantiate the top wrapper `<module>`, which has the same generics and
-ports as its endpoint. Besides the bus ports listed below, both also have the
-`to_hw` and `from_hw` ports of the register file. See
-[Generated HDL](generated-hdl.md).
+Besides the bus ports listed below, the endpoint has the `to_hw` and `from_hw`
+ports of the register file. The starter top level `<module>` that bust writes
+has the same generics and ports. See [Generated HDL](generated-hdl.md).
 
 ## Common behaviour
 
@@ -169,8 +168,8 @@ is `<module>_ipb_endpoint`.
 | `ipb_out` | out | `ipb_rbus` |
 
 `ipb_wbus` and `ipb_rbus` are the records of the IPBus package. The endpoint
-and the top wrapper use it as `library ipbus; use ipbus.ipbus.all;`, so compile
-`components/ipbus_core/firmware/hdl/ipbus_package.vhd` from the
+and the starter top level use it as `library ipbus; use ipbus.ipbus.all;`, so
+compile `components/ipbus_core/firmware/hdl/ipbus_package.vhd` from the
 [IPBus firmware](https://github.com/ipbus/ipbus-firmware) into a library called
 `ipbus` before the module. The endpoint uses these members:
 

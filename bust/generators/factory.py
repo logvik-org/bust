@@ -152,10 +152,13 @@ class GeneratorFactory:
 
     @staticmethod
     def generate_module_top_vhdl(module: "Module") -> str:
-        """Generate the thin top-level wrapper VHDL for a module.
+        """Generate the starter top level for a module.
+
+        bust writes it as <module>.vhd only when that file is missing, since the
+        file belongs to the user from then on.
 
         Args:
-            module: Module instance to generate the top-level wrapper for.
+            module: Module instance to generate the starter top level for.
 
         Returns:
             VHDL entity/architecture instantiating the bus endpoint, exposing the
@@ -166,13 +169,13 @@ class GeneratorFactory:
 
     @staticmethod
     def generate_localbus_axi_testbench_vhdl(module: "Module") -> str:
-        """Generate the UVVM AXI testbench for a module's local-bus top wrapper.
+        """Generate the UVVM AXI testbench for a module's bus endpoint.
 
         Args:
             module: Module instance to generate the testbench for.
 
         Returns:
-            VHDL UVVM testbench that drives the top wrapper over the AXI-Lite VIP
+            VHDL UVVM testbench that drives the bus endpoint over the AXI-Lite VIP
             and self-checks the plain read-write registers.
         """
         generator = GeneratorFactory.create_module_generator()
@@ -180,13 +183,13 @@ class GeneratorFactory:
 
     @staticmethod
     def generate_localbus_ipbus_testbench_vhdl(module: "Module") -> str:
-        """Generate the UVVM IPBus testbench for a module's local-bus top wrapper.
+        """Generate the UVVM IPBus testbench for a module's bus endpoint.
 
         Args:
             module: Module instance to generate the testbench for.
 
         Returns:
-            VHDL UVVM testbench that drives the top wrapper over the vip_ipbus VIP
+            VHDL UVVM testbench that drives the bus endpoint over the vip_ipbus VIP
             and self-checks the register-map access modes.
         """
         generator = GeneratorFactory.create_module_generator()
@@ -194,13 +197,13 @@ class GeneratorFactory:
 
     @staticmethod
     def generate_localbus_sbi_testbench_vhdl(module: "Module") -> str:
-        """Generate the UVVM SBI testbench for a module's local-bus top wrapper.
+        """Generate the UVVM SBI testbench for a module's bus endpoint.
 
         Args:
             module: Module instance to generate the testbench for.
 
         Returns:
-            VHDL UVVM testbench that drives the top wrapper over the Bitvis SBI
+            VHDL UVVM testbench that drives the bus endpoint over the Bitvis SBI
             VIP and self-checks the register-map access modes.
         """
         generator = GeneratorFactory.create_module_generator()
@@ -208,13 +211,13 @@ class GeneratorFactory:
 
     @staticmethod
     def generate_localbus_avalon_testbench_vhdl(module: "Module") -> str:
-        """Generate the UVVM Avalon-MM testbench for a module's top wrapper.
+        """Generate the UVVM Avalon-MM testbench for a module's bus endpoint.
 
         Args:
             module: Module instance to generate the testbench for.
 
         Returns:
-            VHDL UVVM testbench that drives the top wrapper over the Bitvis
+            VHDL UVVM testbench that drives the bus endpoint over the Bitvis
             Avalon-MM VIP and self-checks the register-map access modes.
         """
         generator = GeneratorFactory.create_module_generator()
@@ -222,13 +225,13 @@ class GeneratorFactory:
 
     @staticmethod
     def generate_localbus_wishbone_testbench_vhdl(module: "Module") -> str:
-        """Generate the Wishbone testbench for a module's top wrapper.
+        """Generate the Wishbone testbench for a module's bus endpoint.
 
         Args:
             module: Module instance to generate the testbench for.
 
         Returns:
-            VHDL UVVM testbench that drives the top wrapper over an inlined
+            VHDL UVVM testbench that drives the bus endpoint over an inlined
             hand-written Wishbone B4 classic master BFM (UVVM ships no Wishbone
             VIP) and self-checks the register-map access modes.
         """
@@ -237,13 +240,13 @@ class GeneratorFactory:
 
     @staticmethod
     def generate_localbus_apb_testbench_vhdl(module: "Module") -> str:
-        """Generate the APB testbench for a module's top wrapper.
+        """Generate the APB testbench for a module's bus endpoint.
 
         Args:
             module: Module instance to generate the testbench for.
 
         Returns:
-            VHDL UVVM testbench that drives the top wrapper over an inlined
+            VHDL UVVM testbench that drives the bus endpoint over an inlined
             hand-written APB master BFM (UVVM ships no APB VIP) and self-checks
             the register-map access modes.
         """

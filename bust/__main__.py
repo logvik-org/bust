@@ -2,17 +2,18 @@
 """bust register tool.
 
 Usage:
-  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i] [-u] [-b] [-t] [-m]] | [-a [-F | -f]] | [-c | -e]]
+  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i] [--replace-top] [-u] [-b] [-t] [-m]] | [-a [-F | -f]] | [-c | -e]]
   bust --version
   bust -h | --help
 
 Options:
   -o DIR         Specify output directory. Overrides settings (either JSON dir, or specified project dir in JSON)
-  -f             Force overwrite of existing files (the top-level wrapper is a fixed, regenerated file)
+  -f             Force overwrite of existing files, except <module>.vhd, which is yours
   -F             Alias for -f, kept for compatibility
   -d             Do not generate documentation (neither LaTeX nor PDF)
   -p             Do not generate PDF from LaTeX
   -i             Do not generate the include header files (.h, .hpp & .py)
+  --replace-top  Replace <module>.vhd with a fresh starter, keeping the old file as <module>.vhd.bak
   -u             Ignored with a warning, a bust 0.14 option
   -b             Ignored with a warning, a bust 0.14 option
   -t             Ignored with a warning, a bust 0.14 option
@@ -191,6 +192,7 @@ def _run(args):
 
             # Check if force overwrite is set
             gs["force_ow"] = bool(args["-F"] or args["-f"])
+            gs["replace_top"] = bool(args["--replace-top"])
 
             gs["gen_doc"] = True
             gs["gen_pdf"] = True

@@ -77,7 +77,7 @@ begin
   ipbus_if.ack      <= ipb_out.ipb_ack;
   ipbus_if.err      <= ipb_out.ipb_err;
 
-  DUT : entity work.example_ipbus
+  DUT : entity work.example_ipbus_ipb_endpoint
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,

@@ -116,7 +116,7 @@ class Test_Suite(unittest.TestCase):
                 self._assert_matches(
                     GeneratorFactory.generate_module_top_vhdl(mod),
                     base + ".vhd",
-                    "top wrapper must match manual file",
+                    "starter top level must match manual file",
                 )
 
     ############## Local-bus Testbench Testing ##################
@@ -243,32 +243,32 @@ class Test_Suite(unittest.TestCase):
         self._assert_matches(
             GeneratorFactory.generate_module_top_vhdl(axi_mod),
             hdl + "/prototype.vhd",
-            "prototype axi top must match manual file",
+            "prototype axi starter must match manual file",
         )
         self._assert_matches(
             GeneratorFactory.generate_module_top_vhdl(ipbus_mod),
             hdl + "/prototype_ipbus.vhd",
-            "prototype ipbus top must match manual file",
+            "prototype ipbus starter must match manual file",
         )
         self._assert_matches(
             GeneratorFactory.generate_module_top_vhdl(sbi_mod),
             hdl + "/prototype_sbi.vhd",
-            "prototype sbi top must match manual file",
+            "prototype sbi starter must match manual file",
         )
         self._assert_matches(
             GeneratorFactory.generate_module_top_vhdl(avalon_mod),
             hdl + "/prototype_avalon.vhd",
-            "prototype avalon top must match manual file",
+            "prototype avalon starter must match manual file",
         )
         self._assert_matches(
             GeneratorFactory.generate_module_top_vhdl(wishbone_mod),
             hdl + "/prototype_wishbone.vhd",
-            "prototype wishbone top must match manual file",
+            "prototype wishbone starter must match manual file",
         )
         self._assert_matches(
             GeneratorFactory.generate_module_top_vhdl(apb_mod),
             hdl + "/prototype_apb.vhd",
-            "prototype apb top must match manual file",
+            "prototype apb starter must match manual file",
         )
 
     def test_prototype_tb(self):
