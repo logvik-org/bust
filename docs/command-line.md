@@ -178,16 +178,6 @@ bust example_axi.json -o out --replace-top -f
 Replaced out/example_axi/hdl/example_axi.vhd with a fresh starter. The old file is out/example_axi/hdl/example_axi.vhd.bak.
 ```
 
-In bust 0.14, `<module>.vhd` held your own logic between `-- User ... Start`
-and `-- User ... End` comments. bust leaves such a file alone, generates the
-other files, and warns:
-
-```text
-out/example_axi/hdl/example_axi.vhd is a bust 0.14 top level, so bust leaves it alone. Connect its logic to example_axi_axi_endpoint as described in Upgrading from 0.14.
-```
-
-[Upgrading from 0.14](upgrading.md) explains how.
-
 ## Renumber addresses
 
 `-a` reads `FILE`, gives every register a new address, and writes the result
@@ -343,4 +333,4 @@ the file when you no longer need it.
 | Code | Meaning                                                                                                                                                                                                                      |
 |------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 0    | Success. Also when you answered no to an overwrite question, when the PDF could not be made, and for `--version` and `--help`.                                                                                               |
-| 1    | Any error: invalid command-line arguments, a JSON file that is missing or not valid JSON, a register map that fails validation, a 0.14 top-level file in the way, a file that could not be written (including an existing file with no terminal to ask), or the editor without a terminal. |
+| 1    | Any error: invalid command-line arguments, a JSON file that is missing or not valid JSON, a register map that fails validation, a file that could not be written (including an existing file with no terminal to ask), or the editor without a terminal. |
