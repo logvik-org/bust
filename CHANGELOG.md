@@ -10,6 +10,11 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+## [1.0.0a3] - 2026-10-21
+
+Fourth pre-release of bust 1.0.0, for testing. Install it with
+`pip install --pre bust` or `pip install bust==1.0.0a3`.
+
 ### Added
 - bust reads register maps written in JSON5, with comments, trailing commas and
   hexadecimal numbers without quotes such as `0x1c`. `bust -a` refuses to
@@ -296,7 +301,8 @@ First pre-release of bust 1.0.0, for testing. Install it with
   packages. The wheel also left out the Jinja2 templates, without which an
   installed bust cannot generate anything.
 
-[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0a2...HEAD
+[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0a3...HEAD
+[1.0.0a3]: https://github.com/logvik-org/bust/compare/v1.0.0a2...v1.0.0a3
 [1.0.0a2]: https://github.com/logvik-org/bust/compare/v1.0.0a1...v1.0.0a2
 [1.0.0a1]: https://github.com/logvik-org/bust/compare/v1.0.0a0...v1.0.0a1
 [1.0.0a0]: https://github.com/logvik-org/bust/compare/0d2a394f4710dd007be031b2b05c1bce4f35d56b...v1.0.0a0
