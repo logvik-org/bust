@@ -1,11 +1,5 @@
--- Generated UVVM testbench for the {{ module.name }} module (AXI4-Lite).
--- Drives the {{ module.name }} top entity with the stock Bitvis AXI-Lite VIP and
--- self-checks every register of the module, by kind: plain
--- read-write, enumerated, write-only/singlepulse (reads back 0), onread/onwrite
--- software side effects, software-readonly registers driven from from_hw
--- (we/wel), the hardware we override / hwset / hwclr modifiers, the to_hw values
--- the hardware sees, and the swmod/swacc/singlepulse to_hw strobe pulses (counted
--- by a monitor process, since they are single-cycle).
+-- {{ generated_by() }}
+-- UVVM testbench for the {{ module.name }} module (AXI4-Lite).
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
