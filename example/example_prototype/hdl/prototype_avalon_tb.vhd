@@ -65,7 +65,7 @@ begin
 
   clock_generator(clk, C_CLK_PERIOD);
 
-  DUT : entity work.prototype
+  DUT : entity work.prototype_avalon_endpoint
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
