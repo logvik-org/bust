@@ -396,7 +396,7 @@ class Editor:
             elif "width" in reg:
                 table_width = reg["width"]
             else:
-                table_width = self.mod.bus.data_width
+                table_width = str(self.mod.bus.data_width)
 
             if reg["type"] == "fields":
                 table_reset = "auto"

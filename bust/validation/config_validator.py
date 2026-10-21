@@ -6,8 +6,52 @@ access patterns with clear error reporting.
 """
 
 import logging
+import re
+from typing import Any
+
+from bust.exceptions import FormatError
 
 logger = logging.getLogger(__name__)
+
+
+def parse_number(value: Any, what: str) -> int:
+    """Read a whole number from the register map.
+
+    A JSON number is decimal. A string is hexadecimal after `0x`, binary after
+    `0b` and decimal without a prefix.
+
+    Args:
+        value: The value from the JSON file.
+        what (str): The key and where it is, for the message (for example
+            "Address of register ctrl").
+
+    Returns:
+        int: The number, never negative.
+
+    Raises:
+        FormatError: If the value is not a whole number of 0 or more.
+    """
+    if isinstance(value, int) and not isinstance(value, bool):
+        if value < 0:
+            raise FormatError(f"{what} must not be negative (got {value})")
+        return value
+    if isinstance(value, str):
+        text = value.lower()
+        if re.fullmatch(r"0x[0-9a-f]+", text):
+            return int(text[2:], 16)
+        if re.fullmatch(r"0b[01]+", text):
+            return int(text[2:], 2)
+        if re.fullmatch(r"[0-9]+", text):
+            return int(text)
+        if not text.startswith(("0x", "0b")) and re.fullmatch(r"[0-9a-f]+", text):
+            raise FormatError(
+                f'{what} "{value}" has hexadecimal digits but no 0x. Write '
+                f'"0x{value}" for a hexadecimal number.'
+            )
+    raise FormatError(
+        f'{what} must be a whole number such as 16, "0x10" or "0b10000" '
+        f"(got {value!r})"
+    )
 
 
 def warn_unknown_keys(config, known_keys, where):

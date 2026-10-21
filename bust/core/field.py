@@ -22,7 +22,11 @@ from bust.core.enums import (
 )
 from bust.exceptions import InvalidFieldFormat
 from bust.validation.vhdl_validator import is_valid_VHDL
-from bust.validation.config_validator import ConfigWrapper, warn_unknown_keys
+from bust.validation.config_validator import (
+    ConfigWrapper,
+    parse_number,
+    warn_unknown_keys,
+)
 
 
 class EnumValue(NamedTuple):
@@ -143,16 +147,18 @@ class Field:
             type_name if current_type_name(type_name) != type_name else None
         )
         self.type = FieldType.from_string(current_type_name(type_name))
-        self.width = self._config.get(
-            "width"
-        )  # Width can be overridden depending on register type
-        self.reset = self._config.get("reset")
+        where = f"field {self.name} in register {parent_register_name}"
+        # Width can be overridden depending on register type
+        self.width = parse_number(self._config.get("width"), f"Width of {where}")
+        # The parsed reset as 0x and lower-case hexadecimal digits, the form the
+        # headers, the documentation and the IPBus address table print.
+        self.reset = hex(parse_number(self._config.get("reset"), f"Reset of {where}"))
         self.description = self._config.get("description")
 
         # Assign width
         if self.type == FieldType.BIT:
             # Check if the width was explicitly set in the config, and if it matches the module data width
-            if self._config.is_set("width") and self._config.get("width") != 1:
+            if self._config.is_set("width") and self.width != 1:
                 self.logger.warning(
                     f"Field '{self.name}' in register '{self.parent_register_name}' "
                     "has width != 1 for bit type. Forcing width to 1."
@@ -318,8 +324,10 @@ class Field:
                     f"Duplicate enum name '{name}' in field {self.name} "
                     f"in reg {self.parent_register_name}"
                 )
-            value = int(entry["value"])
-            if value < 0 or value > maxvalue:
+            value = parse_number(
+                entry["value"], f"Value of enum {name} in field {self.name}"
+            )
+            if value > maxvalue:
                 raise InvalidFieldFormat(
                     f"Enum '{name}' value {value} does not fit field "
                     f"{self.name} (width {self.width}) in reg "

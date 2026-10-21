@@ -93,7 +93,7 @@ const uint32_t IDENTITY_RESET = 0x1a5;
 /* Field: id */
 const uint32_t IDENTITY_ID_OFFSET = 0;
 const uint32_t IDENTITY_ID_WIDTH = 8;
-const uint32_t IDENTITY_ID_RESET = 0xA5;
+const uint32_t IDENTITY_ID_RESET = 0xa5;
 const uint32_t IDENTITY_ID_MASK = 0xff;
 const std::string IDENTITY_ID_SW = "ro";
 const std::string IDENTITY_ID_HW = "r";
@@ -208,7 +208,7 @@ const std::string WRITE_EFFECTS_SET_BITS_ONWRITE = "woset";
 /* Field: clear_bits */
 const uint32_t WRITE_EFFECTS_CLEAR_BITS_OFFSET = 4;
 const uint32_t WRITE_EFFECTS_CLEAR_BITS_WIDTH = 4;
-const uint32_t WRITE_EFFECTS_CLEAR_BITS_RESET = 0xF;
+const uint32_t WRITE_EFFECTS_CLEAR_BITS_RESET = 0xf;
 const uint32_t WRITE_EFFECTS_CLEAR_BITS_MASK = 0xf0;
 const std::string WRITE_EFFECTS_CLEAR_BITS_SW = "rw";
 const std::string WRITE_EFFECTS_CLEAR_BITS_HW = "r";
@@ -458,7 +458,7 @@ const std::string MIXED_HISTORY_SET_ON_ZERO_ONWRITE = "wzs";
 /* Field: clear_on_zero */
 const uint32_t MIXED_HISTORY_CLEAR_ON_ZERO_OFFSET = 8;
 const uint32_t MIXED_HISTORY_CLEAR_ON_ZERO_WIDTH = 4;
-const uint32_t MIXED_HISTORY_CLEAR_ON_ZERO_RESET = 0xF;
+const uint32_t MIXED_HISTORY_CLEAR_ON_ZERO_RESET = 0xf;
 const uint32_t MIXED_HISTORY_CLEAR_ON_ZERO_MASK = 0xf00;
 const std::string MIXED_HISTORY_CLEAR_ON_ZERO_SW = "rw";
 const std::string MIXED_HISTORY_CLEAR_ON_ZERO_HW = "r";
