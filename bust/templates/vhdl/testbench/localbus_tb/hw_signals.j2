@@ -5,6 +5,10 @@
 {% macro fhw_idle(f) -%}
 {%- if f.from_hw_is_record -%}({% for m in f.from_hw_members %}{{ m }} => {{ fhw_default(m, f) }}{% if not loop.last %}, {% endif %}{% endfor %}){%- else -%}{{ fhw_default('value', f) }}{%- endif -%}
 {%- endmacro -%}
+{% set unmapped = ("DEADBEEF" * (module.data_width // 32 + 1))[:module.data_width // 4] %}
+
+  -- What a read gets where no register sits (G_UNMAPPED_READ_DATA).
+  constant C_UNMAPPED_READ_DATA : std_logic_vector({{ module.data_width - 1 }} downto 0) := {{ module.data_width }}x"{{ unmapped }}";
 {% if module.to_hw_registers %}
 
   signal to_hw    : t_{{ module.name }}_to_hw;

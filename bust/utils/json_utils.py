@@ -7,9 +7,13 @@ particularly for module configuration files.
 import json
 from typing import Any
 
+import json5
+
 
 def json_parser(filename: str = "module.json") -> Any:
-    """Parse JSON file and return contents.
+    """Parse a JSON or JSON5 file and return its contents.
+
+    JSON5 adds comments, trailing commas and hexadecimal numbers such as 0x1c.
 
     Args:
         filename: Path to JSON file (default: "module.json").
@@ -17,9 +21,23 @@ def json_parser(filename: str = "module.json") -> Any:
     Returns:
         Parsed JSON data as Python object.
     """
-    with open(filename) as json_data:
-        d = json.load(json_data)
-        return d
+    with open(filename, encoding="utf-8") as fp:
+        text = fp.read()
+    try:
+        return json.loads(text)
+    except ValueError:
+        return json5.loads(text)
+
+
+def uses_json5(filename: str) -> bool:
+    """True if the file is JSON5 but not plain JSON."""
+    with open(filename, encoding="utf-8") as fp:
+        text = fp.read()
+    try:
+        json.loads(text)
+    except ValueError:
+        return True
+    return False
 
 
 def compare_JSON(json1: str, json2: str, raise_error: bool = False) -> bool:

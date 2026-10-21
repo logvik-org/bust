@@ -532,7 +532,8 @@ class Field:
 
         A field needs storage only if something can modify it: a software or
         hardware write, a hardware set/clear, or an onread side effect. A pure
-        read-only constant (sw ro, hw r with no side effects) does not.
+        read-only constant (sw ro, hw r with no side effects) does not, and
+        neither does a status field (see hw_wire).
         """
         return (
             self.sw_writable
@@ -540,6 +541,21 @@ class Field:
             or self.hwset
             or self.hwclr
             or self.onread is not None
+        ) and not self.hw_wire
+
+    @property
+    def hw_wire(self) -> bool:
+        """True for a status field: hardware writes it every cycle, software only reads it.
+
+        The register file reads it from from_hw directly instead of storing it,
+        as bust 0.14 did, so a read takes no extra cycle.
+        """
+        return (
+            self.hw_writes_continuously
+            and not self.hw_readable
+            and not self.sw_writable
+            and not (self.hwset or self.hwclr)
+            and self.onread is None
         )
 
     @property

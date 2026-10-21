@@ -113,7 +113,6 @@ begin
       if from_hw.reg1.field0.we = '1' then          -- field0: hw w, we
         regs.reg1.field0 <= from_hw.reg1.field0.value;
       end if;
-      regs.reg1.field1 <= from_hw.reg1.field1;       -- field1: hw w, continuous
       if from_hw.reg1.field2.wel = '0' then          -- field2: hw w, active-low we
         regs.reg1.field2 <= from_hw.reg1.field2.value;
       end if;
@@ -246,7 +245,7 @@ begin
           rd_ack <= '1';
         elsif reg_addr_match(reg_offset, C_ADDR_REG1) then
           rdata(3 downto 0) <= regs.reg1.field0;
-          rdata(4)          <= regs.reg1.field1;
+          rdata(4)          <= from_hw.reg1.field1;  -- status field, not stored
           rdata(5)          <= regs.reg1.field2;
           rd_ack <= '1';
         elsif reg_addr_match(reg_offset, C_ADDR_REG2) then

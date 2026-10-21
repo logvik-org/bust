@@ -36,13 +36,11 @@ class Bus:
         addr_width: Width of address bus in bits.
         byte_addressable: Whether the bus addresses by byte (else by word).
         endpoint_suffix: File-name suffix for the generated endpoint VHDL.
-        ignored: The ignored bus keys the JSON file had, by name.
 
     Class Attributes:
         BUS_CONFIG: Per-bus-type configuration (byte addressing, endpoint file
             suffix, widest supported addr_width, fixed data_width).
         supported_bus: Supported bus type strings (the BUS_CONFIG keys).
-        IGNORED_KEYS: bust 0.14 bus keys that bust 1.0 ignores.
     """
 
     # One row per supported bus. Adding a single-beat bus is a new entry here
@@ -90,10 +88,6 @@ class Bus:
         },
     }
     supported_bus = list(BUS_CONFIG)
-    # Generated files refer to each other through `work`, so the library they
-    # are compiled into is the user's choice. The keys are kept as given so that
-    # saving the JSON file again (bust -a, the editor) does not drop them.
-    IGNORED_KEYS = ("comp_library", "reset")
 
     def __init__(self, bus: Dict) -> None:
         """Initialize a Bus instance.
@@ -110,9 +104,7 @@ class Bus:
         """
         if bus["type"] not in Bus.BUS_CONFIG:
             raise InvalidBusType(bus["type"])
-        warn_unknown_keys(
-            bus, ("type", "addr_width", "data_width", *Bus.IGNORED_KEYS), "bus"
-        )
+        warn_unknown_keys(bus, ("type", "addr_width", "data_width"), "bus")
         self.bus_type = bus["type"]
         config = Bus.BUS_CONFIG[self.bus_type]
 
@@ -141,20 +133,14 @@ class Bus:
                 f"so data_width must be {fixed_data_width} (got {self.data_width})"
             )
 
-        self.ignored = OrderedDict(
-            (key, bus[key]) for key in Bus.IGNORED_KEYS if key in bus
-        )
-
     def to_json(self) -> OrderedDict:
         """Export bus configuration as an ordered dictionary.
 
         Returns:
-            OrderedDict with the bus configuration, including any ignored keys
-            the JSON file had.
+            OrderedDict with the bus configuration.
         """
         json = OrderedDict()
         json["type"] = self.bus_type
         json["addr_width"] = self.addr_width
         json["data_width"] = self.data_width
-        json.update(self.ignored)
         return json
