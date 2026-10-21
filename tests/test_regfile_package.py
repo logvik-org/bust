@@ -248,8 +248,9 @@ def test_module_addr_width_generic_reaches_the_regfile():
         GeneratorFactory.generate_module_top_vhdl(module)
     )
     regfile = GeneratorFactory.generate_regfile_vhdl(module)
-    assert "G_MODULE_ADDR_WIDTH);" in regfile
-    assert "if hit and is_mapped(sel) then" in regfile
+    assert "above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)" in regfile
+    assert "and is_mapped(sel);" in regfile
+    assert "if mapped then" in regfile
 
 
 def test_testbench_checks_unmapped_offsets():
