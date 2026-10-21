@@ -1,6 +1,7 @@
 """bust FILE --migrate, on a module written by bust 0.14.1 with user logic added."""
 
 import json
+import logging
 import os
 import shutil
 
@@ -33,7 +34,7 @@ def test_register_map():
 
     migrate_register_map(cfg)
 
-    assert cfg["settings"] == {"mod_subdir": True}
+    assert "settings" not in cfg
     assert "reset" not in cfg["bus"]
     assert cfg["module"]["byte_addressable"] is False
     a, b = cfg["module"]["register"]
@@ -63,3 +64,18 @@ def test_top_level(tmp_path, kind):
     assert (tmp_path / kind / "blinky" / "hdl" / "blinky.vhd.0_14").read_text() == old
     registers = json.loads(json_file.read_text())["module"]["register"]
     assert registers[2]["address"] == "0x10"
+
+
+def test_output_without_module_directory(tmp_path, caplog):
+    """A 0.14 file with "mod_subdir": false kept its output beside the JSON file."""
+    shutil.copytree(os.path.join(_DATA, "ipbus", "blinky"), str(tmp_path / "blinky"))
+    json_file = tmp_path / "blinky" / "blinky.json"
+    cfg = json.loads(open(os.path.join(_DATA, "ipbus", "blinky.json")).read())
+    cfg["settings"] = {"mod_subdir": False}
+    json_file.write_text(json.dumps(cfg))
+
+    with caplog.at_level(logging.INFO):
+        migrate(str(json_file), None, force=True)
+
+    assert "to_hw" in (tmp_path / "blinky" / "hdl" / "blinky.vhd").read_text()
+    assert f"Now run bust {json_file} -o {tmp_path}." in caplog.text
