@@ -108,17 +108,17 @@ architecture rtl of {{ module.name }}_regfile is
 
 {% endif %}
   signal rst    : std_logic;            -- reset normalized to active high
-  signal rdata  : std_logic_vector({{ module.data_width - 1 }} downto 0);
-  signal wr_ack : std_logic;
-  signal wr_err : std_logic;
-  signal rd_ack : std_logic;
-  signal rd_err : std_logic;
+  signal rdata  : std_logic_vector({{ module.data_width - 1 }} downto 0) := (others => '0');
+  signal wr_ack : std_logic := '0';
+  signal wr_err : std_logic := '0';
+  signal rd_ack : std_logic := '0';
+  signal rd_err : std_logic := '0';
 {% for reg in module.registers %}
 {% for f in reg.effective_fields if f.swmod %}
-  signal swmod_{{ reg.name }}_{{ f.name }} : std_logic;
+  signal swmod_{{ reg.name }}_{{ f.name }} : std_logic := '0';
 {% endfor %}
 {% for f in reg.effective_fields if f.swacc %}
-  signal swacc_{{ reg.name }}_{{ f.name }} : std_logic;
+  signal swacc_{{ reg.name }}_{{ f.name }} : std_logic := '0';
 {% endfor %}
 {% endfor %}
 

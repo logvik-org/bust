@@ -32,21 +32,21 @@ architecture rtl of access_matrix_regfile is
   signal regs : t_access_matrix_regs := C_ACCESS_MATRIX_REGS_RESET;
 
   signal rst    : std_logic;            -- reset normalized to active high
-  signal rdata  : std_logic_vector(31 downto 0);
-  signal wr_ack : std_logic;
-  signal wr_err : std_logic;
-  signal rd_ack : std_logic;
-  signal rd_err : std_logic;
-  signal swacc_hw_set_clear_clr_only : std_logic;
-  signal swmod_pulses_kick : std_logic;
-  signal swmod_strobes_modified : std_logic;
-  signal swacc_strobes_accessed : std_logic;
-  signal swacc_enum_swacc_phase : std_logic;
-  signal swacc_mixed_swacc_clear_bits : std_logic;
-  signal swacc_mixed_history_toggle : std_logic;
-  signal swacc_hw_status_swacc_level : std_logic;
-  signal swacc_irq_status_pending : std_logic;
-  signal swmod_flat_strobe_flat_strobe : std_logic;
+  signal rdata  : std_logic_vector(31 downto 0) := (others => '0');
+  signal wr_ack : std_logic := '0';
+  signal wr_err : std_logic := '0';
+  signal rd_ack : std_logic := '0';
+  signal rd_err : std_logic := '0';
+  signal swacc_hw_set_clear_clr_only : std_logic := '0';
+  signal swmod_pulses_kick : std_logic := '0';
+  signal swmod_strobes_modified : std_logic := '0';
+  signal swacc_strobes_accessed : std_logic := '0';
+  signal swacc_enum_swacc_phase : std_logic := '0';
+  signal swacc_mixed_swacc_clear_bits : std_logic := '0';
+  signal swacc_mixed_history_toggle : std_logic := '0';
+  signal swacc_hw_status_swacc_level : std_logic := '0';
+  signal swacc_irq_status_pending : std_logic := '0';
+  signal swmod_flat_strobe_flat_strobe : std_logic := '0';
 
 begin
 
