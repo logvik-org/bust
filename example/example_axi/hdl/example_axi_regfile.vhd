@@ -87,19 +87,13 @@ begin
           regs.reg1.reg1 <= lb_m2s.wdata(0);
         end if;
 
-        regs.reg2.reg2 <= from_hw.reg2;
-
         if sw_write and reg_addr_match(reg_offset, C_ADDR_REG3) then
           regs.reg3.reg3 <= lb_m2s.wdata(7 downto 0);
         end if;
 
-        regs.reg4.reg4 <= from_hw.reg4;
-
         if sw_write and reg_addr_match(reg_offset, C_ADDR_REG5) then
           regs.reg5.reg5 <= lb_m2s.wdata(31 downto 0);
         end if;
-
-        regs.reg6.reg6 <= from_hw.reg6;
 
         if sw_write and reg_addr_match(reg_offset, C_ADDR_REG7) then
           regs.reg7.field0 <= lb_m2s.wdata(0);
@@ -107,11 +101,6 @@ begin
           regs.reg7.field2 <= lb_m2s.wdata(5);
           regs.reg7.field3 <= lb_m2s.wdata(20 downto 6);
         end if;
-
-        regs.reg8.field0 <= from_hw.reg8.field0;
-        regs.reg8.field1 <= from_hw.reg8.field1;
-        regs.reg8.field2 <= from_hw.reg8.field2;
-        regs.reg8.field3 <= from_hw.reg8.field3;
 
         regs.reg9.reg9 <= '1';
         if sw_write and reg_addr_match(reg_offset, C_ADDR_REG9) then
@@ -173,19 +162,19 @@ begin
             rdata(0) <= regs.reg1.reg1;
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_ADDR_REG2) then
-            rdata(0) <= regs.reg2.reg2;
+            rdata(0) <= from_hw.reg2;
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_ADDR_REG3) then
             rdata(7 downto 0) <= regs.reg3.reg3;
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_ADDR_REG4) then
-            rdata(13 downto 0) <= regs.reg4.reg4;
+            rdata(13 downto 0) <= from_hw.reg4;
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_ADDR_REG5) then
             rdata(31 downto 0) <= regs.reg5.reg5;
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_ADDR_REG6) then
-            rdata(31 downto 0) <= regs.reg6.reg6;
+            rdata(31 downto 0) <= from_hw.reg6;
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_ADDR_REG7) then
             rdata(0) <= regs.reg7.field0;
@@ -194,10 +183,10 @@ begin
             rdata(20 downto 6) <= regs.reg7.field3;
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_ADDR_REG8) then
-            rdata(0) <= regs.reg8.field0;
-            rdata(19 downto 1) <= regs.reg8.field1;
-            rdata(20) <= regs.reg8.field2;
-            rdata(23 downto 21) <= regs.reg8.field3;
+            rdata(0) <= from_hw.reg8.field0;
+            rdata(19 downto 1) <= from_hw.reg8.field1;
+            rdata(20) <= from_hw.reg8.field2;
+            rdata(23 downto 21) <= from_hw.reg8.field3;
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_ADDR_REG9) then
             rd_ack <= '1';

@@ -88,7 +88,6 @@ begin
           regs.reg0.field1 <= lb_m2s.wdata(2 downto 1);
         end if;
 
-        regs.reg1.field1 <= from_hw.reg1.field1;
         if from_hw.reg1.field0.we = '1' then
           regs.reg1.field0 <= from_hw.reg1.field0.value;
         end if;
@@ -213,7 +212,7 @@ begin
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_ADDR_REG1) then
             rdata(3 downto 0) <= regs.reg1.field0;
-            rdata(4) <= regs.reg1.field1;
+            rdata(4) <= from_hw.reg1.field1;
             rdata(5) <= regs.reg1.field2;
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_ADDR_REG2) then

@@ -111,6 +111,11 @@ def test_enum_field_typing(prototype):
 
 
 def test_stored_fields_cover_all_demo_fields(prototype):
-    # Every field in the demo holds state.
+    # Every field in the demo holds state, except the status field reg1.field1,
+    # which the register file reads from from_hw.
     for register in prototype.registers:
-        assert register.stored_fields == register.fields
+        status = [f for f in register.fields if f.hw_wire]
+        assert [f.name for f in status] == (
+            ["field1"] if register.name == "reg1" else []
+        )
+        assert register.stored_fields == [f for f in register.fields if not f.hw_wire]

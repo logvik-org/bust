@@ -105,7 +105,6 @@ begin
           regs.plain.scratch <= lb_m2s.wdata(7 downto 4);
         end if;
 
-        regs.status.busy <= from_hw.status.busy;
         if from_hw.status.count.we = '1' then
           regs.status.count <= from_hw.status.count.value;
         end if;
@@ -182,7 +181,6 @@ begin
           regs.enum_bit.power <= to_enum_bit_power(lb_m2s.wdata(0 downto 0));
         end if;
 
-        regs.enum_hw.state <= from_hw.enum_hw.state;
         if from_hw.enum_hw.supply.we = '1' then
           regs.enum_hw.supply <= from_hw.enum_hw.supply.value;
         end if;
@@ -239,8 +237,6 @@ begin
         elsif sw_write and reg_addr_match(reg_offset, C_ADDR_FLAT_OVERRIDE) then
           regs.flat_override.flat_override <= lb_m2s.wdata(7 downto 0);
         end if;
-
-        regs.flat_status.flat_status <= from_hw.flat_status;
 
         if from_hw.flat_flag.clr = '1' then
           regs.flat_flag.flat_flag <= '0';
@@ -362,7 +358,7 @@ begin
             rdata(7 downto 4) <= regs.plain.scratch;
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_ADDR_STATUS) then
-            rdata(0) <= regs.status.busy;
+            rdata(0) <= from_hw.status.busy;
             rdata(4 downto 1) <= regs.status.count;
             rdata(5) <= regs.status.fault;
             rd_ack <= '1';
@@ -406,7 +402,7 @@ begin
             rdata(0 downto 0) <= to_slv(regs.enum_bit.power);
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_ADDR_ENUM_HW) then
-            rdata(1 downto 0) <= to_slv(regs.enum_hw.state);
+            rdata(1 downto 0) <= to_slv(from_hw.enum_hw.state);
             rdata(2 downto 2) <= to_slv(regs.enum_hw.supply);
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_ADDR_ENUM_SWACC) then
@@ -446,7 +442,7 @@ begin
             rdata(7 downto 0) <= regs.flat_override.flat_override;
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_ADDR_FLAT_STATUS) then
-            rdata(5 downto 0) <= regs.flat_status.flat_status;
+            rdata(5 downto 0) <= from_hw.flat_status;
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_ADDR_FLAT_FLAG) then
             rdata(0) <= regs.flat_flag.flat_flag;

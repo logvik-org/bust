@@ -170,6 +170,10 @@ A few keys need changes:
 - For an enumerated field without a `reset` and without a value 0, the headers
   and the documentation now give the reset that the hardware uses, which is
   the first value.
+- A `pulse` register drives its pulse in the clock cycle of the bus response,
+  together with the new values of read-write registers. In bust 0.14 the pulse
+  came one cycle later. A design that depends on the old timing can delay
+  `to_hw.<reg>` by one register.
 - On IPBus, bust 0.14 returned `0xDEADBEEF` with the error for a read where no
   register sits. bust 1.0 returns the generic `G_UNMAPPED_READ_DATA`, which is
   0 unless you set it, on every bus.
