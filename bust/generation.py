@@ -15,6 +15,7 @@ import sys
 
 from bust.generators.factory import GeneratorFactory
 from bust.interaction import ConsoleInteractionHandler
+from bust.migrate import is_legacy_top
 from bust.utils.file_utils import write_string_to_file
 
 logger = logging.getLogger(__name__)
@@ -38,18 +39,11 @@ _TESTBENCH_GENERATORS = {
     "apb": GeneratorFactory.generate_localbus_apb_testbench_vhdl,
 }
 
-# Comment lines bust 0.14 wrapped around the user-edited regions of the top level.
-_LEGACY_USER_MARKERS = frozenset(
-    f"-- User {region} {edge}"
-    for region in ("Libraries", "Generics", "Ports", "Architecture", "Logic")
-    for edge in ("Start", "End")
-)
-
 
 def _is_legacy_top(top_path):
-    """True if `top_path` is a bust 0.14 top level, with its user-edited regions."""
+    """True if `top_path` is a bust 0.14 top level that --migrate has not migrated."""
     with open(top_path, encoding="utf-8") as top:
-        return any(line.strip() in _LEGACY_USER_MARKERS for line in top)
+        return is_legacy_top(top.read())
 
 
 def _write_top(module, mod_hdl, gen_settings):
@@ -88,9 +82,9 @@ def _write_top(module, mod_hdl, gen_settings):
         logger.info(f"Replaced {path} with a fresh starter. The old file is {backup}.")
     elif _is_legacy_top(path):
         logger.warning(
-            f"{path} is a bust 0.14 top level, so bust leaves it alone. Connect "
-            f"its logic to {module.name}_{module.bus.endpoint_suffix} as "
-            "described in Upgrading from 0.14."
+            f"{path} is a bust 0.14 top level, so bust leaves it alone. To "
+            f"connect it to {module.name}_{module.bus.endpoint_suffix}, run bust "
+            "with --migrate."
         )
     elif gen_settings["force_ow"]:
         logger.info(

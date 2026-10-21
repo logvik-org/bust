@@ -1,0 +1,47 @@
+{
+    "settings": {
+        "mod_subdir": true,
+        "coverage": true
+    },
+    "bus": {
+        "type": "ipbus",
+        "addr_width": 32,
+        "data_width": 32,
+        "comp_library": "ipbus"
+    },
+    "module": {
+        "name": "blinky",
+        "version": "1.0",
+        "description": "LED blinker for the bust 0.14 migration test.",
+        "register": [
+            {
+                "name": "ctrl",
+                "mode": "rw",
+                "type": "fields",
+                "address": "0",
+                "description": "Control.",
+                "fields": [
+                    {"name": "enable", "type": "sl", "reset": "0", "description": "Count when 1."},
+                    {"name": "rate", "type": "slv", "width": 4, "reset": "3", "description": "Count step."}
+                ]
+            },
+            {
+                "name": "count",
+                "mode": "ro",
+                "type": "slv",
+                "width": 16,
+                "address": "1",
+                "reset": "0",
+                "description": "Counter value."
+            },
+            {
+                "name": "clear",
+                "mode": "pulse",
+                "type": "sl",
+                "address": "10",
+                "reset": "0",
+                "description": "Write 1 to clear the counter."
+            }
+        ]
+    }
+}

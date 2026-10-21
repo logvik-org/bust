@@ -1,7 +1,7 @@
 """<module>.vhd belongs to the user. bust writes a starter only when the file is
 missing, does not replace it with -f, and replaces it with --replace-top, keeping
-the old file. A bust 0.14 top level, with user logic between marker comments,
-is left alone."""
+the old file. A bust 0.14 top level, with user logic between marker comments
+and an instance of the 0.14 _pif entity, is left alone."""
 
 import logging
 import os
@@ -33,6 +33,9 @@ begin
   -- User Logic Start
   counter <= counter + 1 when rising_edge(clk);
   -- User Logic End
+
+  i_example_axi_axi_pif : entity work.example_axi_axi_pif
+    port map (clk => clk);
 end architecture rtl;
 """
 
@@ -164,5 +167,7 @@ def test_cli_leaves_a_legacy_top_alone(tmp_path):
     )
 
     assert result.returncode == 0, result.stderr
-    assert "example_axi_axi_endpoint as described in Upgrading" in result.stderr
+    assert "connect it to example_axi_axi_endpoint, run bust with --migrate" in (
+        result.stderr
+    )
     assert _read(top) == _LEGACY_TOP
