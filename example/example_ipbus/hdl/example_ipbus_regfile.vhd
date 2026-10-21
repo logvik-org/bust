@@ -17,6 +17,7 @@ entity example_ipbus_regfile is
     G_BASE_ADDRESS       : unsigned(15 downto 0) := 16x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
     G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
+    G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0');
     G_RESET_ACTIVE_LOW   : boolean := false
   );
   port (
@@ -153,7 +154,8 @@ begin
   end process p_write;
 
   -- Read mux and read response. Reads of non-readable fields (sw wo / na)
-  -- return 0 and ack; err is reserved for address-decode failures.
+  -- return 0 and ack; err is reserved for address-decode failures, which
+  -- return G_UNMAPPED_READ_DATA.
   p_read : process (clk) is
     variable reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
     variable mapped     : boolean;     -- a register sits at this address
@@ -176,6 +178,7 @@ begin
                         and is_mapped(reg_offset);
           if not mapped then
             rd_err <= '1';
+            rdata  <= G_UNMAPPED_READ_DATA;
           elsif reg_addr_match(reg_offset, C_ADDR_REG0) then
             rdata(0) <= regs.reg0.reg0;
             rd_ack <= '1';

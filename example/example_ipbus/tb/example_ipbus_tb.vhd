@@ -37,6 +37,9 @@ architecture tb of example_ipbus_tb is
   signal ipb_in  : ipb_wbus;
   signal ipb_out : ipb_rbus;
 
+  -- What a read gets where no register sits (G_UNMAPPED_READ_DATA).
+  constant C_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := 32x"DEADBEEF";
+
   signal to_hw    : t_example_ipbus_to_hw;
   signal from_hw  : t_example_ipbus_from_hw := (
     reg2 => '0',
@@ -81,7 +84,8 @@ begin
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
-      G_MODULE_ADDR_WIDTH  => 8)
+      G_MODULE_ADDR_WIDTH  => 8,
+      G_UNMAPPED_READ_DATA => C_UNMAPPED_READ_DATA)
     port map (
       clk     => clk,
       reset   => reset,
@@ -149,6 +153,7 @@ begin
       v_config.expected_response := ERR;
       ipbus_read(addr, v_data, msg, clk, ipbus_if, C_SCOPE,
                  shared_msg_id_panel, v_config);
+      check_value(v_data, C_UNMAPPED_READ_DATA, error, msg, C_SCOPE);
     end procedure;
     variable v_reg9_reg9_sp : natural;
     variable v_reg10_reg10_sp : natural;
@@ -259,7 +264,7 @@ begin
     check_value(reg11_field1_sp_value, '1', error, "reg11.field1 hw saw the pulse value", C_SCOPE);
 
     -- An address where no register sits gets an error response where the bus
-    -- has one, reads as 0, and a write to it changes no register.
+    -- has one, reads as G_UNMAPPED_READ_DATA, and a write to it changes no register.
     log(ID_LOG_HDR, "addresses without a register get an error and change nothing", C_SCOPE);
     bus_write_unmapped(f_addr(16x"1"), 32x"0", "write 0x1, an unused register offset");
     bus_check_unmapped(f_addr(16x"1"), "read 0x1, an unused register offset");

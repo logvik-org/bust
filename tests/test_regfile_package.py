@@ -272,7 +272,7 @@ def test_testbench_checks_unmapped_offsets():
         "0x100",
     ]
     tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
-    assert "G_MODULE_ADDR_WIDTH  => 8)" in tb
+    assert "G_MODULE_ADDR_WIDTH  => 8," in tb
     assert 'bus_write_unmapped(f_addr(32x"40"), 32x"0"' in tb
     assert "v_config.expected_response := SLVERR;" in tb
     assert "unchanged by the unmapped writes" in tb

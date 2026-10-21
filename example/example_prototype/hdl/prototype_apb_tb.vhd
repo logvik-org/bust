@@ -31,6 +31,9 @@ architecture tb of prototype_tb is
   signal clk     : std_logic := '0';
   signal presetn : std_logic := '1';   -- active-low; gen_pulse asserts it low
 
+  -- What a read gets where no register sits (G_UNMAPPED_READ_DATA).
+  constant C_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := 32x"DEADBEEF";
+
   signal to_hw    : t_prototype_to_hw;
   signal from_hw  : t_prototype_from_hw := (
     reg1 => (field0 => (value => (others => '0'), we => '0'), field1 => '0', field2 => (value => '0', wel => '1')),
@@ -66,7 +69,8 @@ begin
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
-      G_MODULE_ADDR_WIDTH  => 8)
+      G_MODULE_ADDR_WIDTH  => 8,
+      G_UNMAPPED_READ_DATA => C_UNMAPPED_READ_DATA)
     port map (
       pclk    => clk,
       presetn => presetn,
@@ -178,6 +182,7 @@ begin
     begin
       bus_read(addr, v_data, v_got_err);
       check_value(v_got_err, true, error, msg & " (terminated on pslverr)", C_SCOPE);
+      check_value(v_data, C_UNMAPPED_READ_DATA, error, msg, C_SCOPE);
     end procedure;
     variable v_reg9_field0_swmod : natural;
     variable v_reg9_field1_swacc : natural;
@@ -295,7 +300,7 @@ begin
     check_value(reg10_field0_sp_value, 4x"F", error, "reg10.field0 hw saw the pulse value", C_SCOPE);
 
     -- An address where no register sits gets an error response where the bus
-    -- has one, reads as 0, and a write to it changes no register.
+    -- has one, reads as G_UNMAPPED_READ_DATA, and a write to it changes no register.
     log(ID_LOG_HDR, "addresses without a register get an error and change nothing", C_SCOPE);
     bus_write_unmapped(f_addr(32x"30"), 32x"0", "write 0x30, an unused register offset");
     bus_check_unmapped(f_addr(32x"30"), "read 0x30, an unused register offset");
