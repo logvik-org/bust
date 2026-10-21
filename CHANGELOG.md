@@ -12,8 +12,8 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ### Added
 - A logo, shown in the README and the documentation.
-- The generic `G_MODULE_ADDR_WIDTH` on the top wrapper, the endpoints and the
-  register file sets how many low address bits the module decodes, as
+- The generic `G_MODULE_ADDR_WIDTH` on the endpoint, the register file and the
+  starter top level sets how many low address bits the module decodes, as
   `g_module_addr_width` did in 0.14. The module answers for
   `2**G_MODULE_ADDR_WIDTH` addresses from its base address, and an access to
   one of them where no register sits gets an error response. The default
@@ -25,8 +25,21 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   error response and that writes to them change no register.
 - The bust 0.14 options `-u`, `-b`, `-t` and `-m` are accepted again and
   ignored with a warning, so 0.14 command lines in Makefiles keep working.
+- `--replace-top` replaces `<module>.vhd` with a fresh starter and keeps the
+  old file as `<module>.vhd.bak`. It asks first unless `-f` is given.
 
 ### Changed
+- `<module>.vhd` belongs to the user again, as in bust 0.14. bust writes a
+  starter when the file is missing and does not replace it after that, not
+  even with `-f`, which says how to replace it instead. The starter has the
+  generics and ports of the 1.0.0a1 top wrapper, so existing instantiations
+  keep working. Add your own ports and logic to it.
+- The generated testbench drives the bus endpoint, such as
+  `<module>_axi_endpoint`, instead of `<module>`, which is yours now.
+- A bust 0.14 `<module>.vhd`, with user logic between `-- User` comments, no
+  longer stops bust with an error. bust leaves it alone, generates the other
+  files and warns. Upgrading from 0.14 describes how to connect it to the bus
+  endpoint.
 - Each name in the C header starts with the module name, such as
   `TIMER_CTRL_OFFSET` instead of `CTRL_OFFSET`, so one source file can include
   the headers of two modules that have a register of the same name. The C++

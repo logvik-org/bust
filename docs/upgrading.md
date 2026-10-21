@@ -1,76 +1,62 @@
 # Upgrading from 0.14
 
 bust 1.0 reads your 0.14 JSON files, but it generates a different set of VHDL
-files and the top-level file no longer holds your logic. This page lists what
-you need to change. The [changelog](https://github.com/logvik-org/bust/blob/master/CHANGELOG.md)
+files. This page lists what you need to change. The [changelog](https://github.com/logvik-org/bust/blob/master/CHANGELOG.md)
 has the full list of changes.
 
 ```bash
 pip install --upgrade bust
 ```
 
-## Move your logic out of the top-level file
+## Connect your top-level file
 
-In 0.14, `<module>.vhd` held your own logic between `-- User ... Start` and
-`-- User ... End` comments, and `bust -f` left the file alone. In 1.0,
-`<module>.vhd` is a fixed wrapper that bust regenerates on every run.
-
-Before you run bust 1.0 on an existing project:
-
-1. Move the code between the `-- User ... Start/End` comments into a file of
-   your own, for example a new entity that instantiates `<module>`.
-2. Connect it to the registers through the `to_hw` and `from_hw` record ports
-   of `<module>`. [Generated HDL](generated-hdl.md) shows how.
-3. Delete or rename the old `<module>.vhd`.
-
-If an old top-level file with those comments is still there, bust stops before
-it writes anything and exits with status 1:
+`<module>.vhd` is still your file. bust writes it only when it does not exist,
+and never replaces it, not even with `-f`. In 0.14 it held your logic between
+`-- User ... Start` and `-- User ... End` comments and instantiated
+`<module>_ipb_pif` or `<module>_axi_pif`. bust 1.0 leaves such a file alone,
+generates the other files, and warns:
 
 ```text
-An error occurred during output generation...
-LegacyTopLevelFile: Refusing to overwrite out/timer/hdl/timer.vhd: it has the '-- User ... Start/End' sections of a bust 0.14 top level, so it may hold your own logic. In bust 1.0 timer.vhd is a fixed wrapper that bust regenerates, and hardware logic connects through the to_hw/from_hw records outside the generated files. Move your logic out of this file, then delete or rename it to proceed. No files were written.
+out/timer/hdl/timer.vhd is a bust 0.14 top level, so bust leaves it alone. Connect its logic to timer_ipb_endpoint as described in Upgrading from 0.14.
 ```
 
-## Update your compile order
+To connect it, change the architecture of `<module>.vhd`. The entity, with its
+0.14 generics and ports, can stay as it is, so the instantiations of
+`<module>` in your design do not change.
 
-The generated files have new names. For a module called `<module>`, with `axi`
-or `ipb` for the bus:
+1. Replace `use work.<module>_pif_pkg.all;` with
+   `use work.<module>_regfile_pkg.all;`.
+2. Replace the signals `ipb_rw_regs`, `ipb_ro_regs` and `ipb_pulse_regs`, or
+   the `axi_` ones, with `to_hw` and `from_hw`.
+3. Replace the instance of `<module>_ipb_pif` or `<module>_axi_pif` with an
+   instance of `<module>_ipb_endpoint` or `<module>_axi_endpoint`.
+4. In your logic, rename the register records as in the table below.
 
-| bust 0.14 | bust 1.0 |
-|---|---|
-| `axi_pkg.vhd` (AXI4-Lite only) | `<module>_localbus_pkg.vhd` |
-| `<module>_pif_pkg.vhd` | `<module>_regfile_pkg.vhd` |
-| `<module>_axi_pif.vhd` or `<module>_ipb_pif.vhd` | `<module>_regfile.vhd` and `<module>_axi_endpoint.vhd` or `<module>_ipb_endpoint.vhd` |
-| `<module>.vhd` | `<module>.vhd`, now a fixed wrapper |
-| `tb/<module>_axi_pif_tb.vhd` or `tb/<module>_ipb_pif_tb.vhd` | `tb/<module>_tb.vhd` |
-| `scripts/` (ModelSim/Questa scripts) | not generated |
+For an IPBus module with 16-bit addresses, steps 2 and 3 give:
 
-Delete the old files from your project and compile the new ones in the order
-given in [Generated HDL](generated-hdl.md). The generated VHDL needs VHDL-2008.
+```vhdl
+  signal to_hw   : t_timer_to_hw;
+  signal from_hw : t_timer_from_hw;
+  ...
+  i_bus : entity work.timer_ipb_endpoint
+    generic map (
+      G_BASE_ADDRESS       => unsigned(g_ipb_baseaddr(15 downto 0)),
+      G_CHECK_BASE_ADDRESS => g_check_baseaddr,
+      G_MODULE_ADDR_WIDTH  => g_module_addr_width)
+    port map (
+      clk     => ipb_clk,
+      reset   => ipb_reset,
+      ipb_in  => ipb_in,
+      ipb_out => ipb_out_i,
+      to_hw   => to_hw,
+      from_hw => from_hw);
+```
 
-bust no longer writes simulator scripts. [Testbenches](testbenches.md) describes
-what the testbench needs, so you can add it to your own simulation flow.
-
-## Update the instantiations
-
-The generics of `<module>` have new names and types:
-
-| bust 0.14 | bust 1.0 |
-|---|---|
-| `g_ipb_baseaddr` or `g_axi_baseaddr`, a 32-bit `std_logic_vector` | `G_BASE_ADDRESS`, an `unsigned` of `addr_width` bits |
-| `g_check_baseaddr` | `G_CHECK_BASE_ADDRESS` |
-| `g_module_addr_width` | `G_MODULE_ADDR_WIDTH` |
-
-VHDL names are not case-sensitive, so `g_module_addr_width => 16` connects to
-`G_MODULE_ADDR_WIDTH` as it is. Its default decodes just the bits the
-registers need, as 0 did in 0.14, but a value below that width, 0 included,
-stops the simulation. Replace a 0 with the width of the module's address range,
-such as 12 for 4 KiB.
+`g_module_addr_width` of 0 meant "just the bits the registers need" in 0.14.
+In 1.0 a value below `C_MODULE_ADDR_WIDTH`, 0 included, stops the simulation,
+so map `C_MODULE_ADDR_WIDTH` instead if your design uses 0. Better, set the
+width of the module's address range, such as 16.
 [Base address and address range](addressing.md) describes the three generics.
-
-The IPBus ports `ipb_clk` and `ipb_reset` are now `clk` and `reset`, and
-`ipb_in` and `ipb_out` keep their names. The register records give way to the
-`to_hw` and `from_hw` ports, and the names in your logic map one to one:
 
 | bust 0.14 | bust 1.0 |
 |---|---|
@@ -80,6 +66,37 @@ The IPBus ports `ipb_clk` and `ipb_reset` are now `clk` and `reset`, and
 
 A field keeps its name below its register, as in `to_hw.<reg>.<field>`.
 [Generated HDL](generated-hdl.md) describes the records.
+
+To start over from the bust 1.0 starter instead, run bust with
+`--replace-top`. It keeps your 0.14 file as `<module>.vhd.bak`. The starter
+has the bust 1.0 generics and ports, so the instantiations then change:
+
+| bust 0.14 | bust 1.0 starter |
+|---|---|
+| `g_ipb_baseaddr` or `g_axi_baseaddr`, a 32-bit `std_logic_vector` | `G_BASE_ADDRESS`, an `unsigned` of `addr_width` bits |
+| `g_check_baseaddr` | `G_CHECK_BASE_ADDRESS` |
+| `g_module_addr_width` | `G_MODULE_ADDR_WIDTH` |
+| `ipb_clk`, `ipb_reset` | `clk`, `reset` |
+
+## Update your compile order
+
+The generated files have new names. For a module called `<module>`:
+
+| bust 0.14 | bust 1.0 |
+|---|---|
+| `axi_pkg.vhd` (AXI4-Lite only) | `<module>_localbus_pkg.vhd` |
+| `<module>_pif_pkg.vhd` | `<module>_regfile_pkg.vhd` |
+| `<module>_axi_pif.vhd` or `<module>_ipb_pif.vhd` | `<module>_regfile.vhd` and `<module>_axi_endpoint.vhd` or `<module>_ipb_endpoint.vhd` |
+| `<module>.vhd` | `<module>.vhd`, still yours |
+| `tb/<module>_axi_pif_tb.vhd` or `tb/<module>_ipb_pif_tb.vhd` | `tb/<module>_tb.vhd` |
+| `scripts/` (ModelSim/Questa scripts) | not generated |
+
+Delete the old generated files from your project and compile the new ones in
+the order given in [Generated HDL](generated-hdl.md). The generated VHDL needs
+VHDL-2008.
+
+bust no longer writes simulator scripts. [Testbenches](testbenches.md) describes
+what the testbench needs, so you can add it to your own simulation flow.
 
 ## Check your JSON files
 

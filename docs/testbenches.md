@@ -1,10 +1,10 @@
 # Testbenches
 
 For every module, bust writes `tb/<module>_tb.vhd`, a self-checking
-testbench. It instantiates the top-level `<module>` entity, drives the bus
-with a bus functional model (BFM), drives the `from_hw` record, watches the
-`to_hw` record, and checks the results with
-[UVVM](https://github.com/UVVM/UVVM). This page describes what the testbench
+testbench. It instantiates the bus endpoint `<module>_<bus>_endpoint`, drives
+the bus with a bus functional model (BFM), drives the `from_hw` record,
+watches the `to_hw` record, and checks the results with
+[UVVM](https://github.com/UVVM/UVVM). It does not use your `<module>.vhd`. This page describes what the testbench
 checks, what it needs, and how to compile and run it.
 
 bust does not write simulator scripts, so you add the testbench to your own
@@ -122,8 +122,8 @@ or a UVVM `FAIL` line in the log, as a failure.
 
 The testbench uses only the BFM package of each VIP, not its VVC.
 
-For IPBus, the generated endpoint and top-level file also use the `ipbus`
-library, so you need it for synthesis as well. `vip_ipbus` uses `uvvm_util` and
+For IPBus, the generated endpoint and the starter top level also use the
+`ipbus` library, so you need it for synthesis as well. `vip_ipbus` uses `uvvm_util` and
 `ipbus`, so compile it after both.
 
 ## Compile and run
@@ -139,8 +139,7 @@ In any simulator, the steps are:
    2. `hdl/<module>_regfile_pkg.vhd`
    3. `hdl/<module>_regfile.vhd`
    4. `hdl/<module>_<bus>_endpoint.vhd`
-   5. `hdl/<module>.vhd`
-   6. `tb/<module>_tb.vhd`
+   5. `tb/<module>_tb.vhd`
 4. Elaborate and run `<module>_tb`.
 
 Several modules can share one library. Every package carries the module name,
@@ -168,7 +167,6 @@ nvc --std=08 -a example_axi/hdl/example_axi_localbus_pkg.vhd \
     example_axi/hdl/example_axi_regfile_pkg.vhd \
     example_axi/hdl/example_axi_regfile.vhd \
     example_axi/hdl/example_axi_axi_endpoint.vhd \
-    example_axi/hdl/example_axi.vhd \
     example_axi/tb/example_axi_tb.vhd
 nvc --std=08 -e example_axi_tb
 nvc --std=08 -r example_axi_tb
@@ -199,7 +197,6 @@ nvc --std=08 -L libs -a example_ipbus/hdl/example_ipbus_localbus_pkg.vhd \
     example_ipbus/hdl/example_ipbus_regfile_pkg.vhd \
     example_ipbus/hdl/example_ipbus_regfile.vhd \
     example_ipbus/hdl/example_ipbus_ipb_endpoint.vhd \
-    example_ipbus/hdl/example_ipbus.vhd \
     example_ipbus/tb/example_ipbus_tb.vhd
 nvc --std=08 -L libs -e example_ipbus_tb
 nvc --std=08 -L libs -r example_ipbus_tb

@@ -10,7 +10,7 @@ files go, and what bust does when they already exist.
 
 ```text
 Usage:
-  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i] [-u] [-b] [-t] [-m]] | [-a [-F | -f]] | [-c | -e]]
+  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i] [--replace-top] [-u] [-b] [-t] [-m]] | [-a [-F | -f]] | [-c | -e]]
   bust --version
   bust -h | --help
 ```
@@ -36,11 +36,12 @@ and exit with status 1.
 | Option         | Effect                                                                                                                                                                  |
 |----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `-o DIR`       | Write the output under `DIR`. This overrides `proj_dir` in the JSON file and the location of the JSON file. See [Output directory](#output-directory).                   |
-| `-f`           | Overwrite existing files without asking. See [Existing files](#existing-files).                                                                                         |
+| `-f`           | Overwrite existing files without asking, except `<module>.vhd`, which is yours. See [Existing files](#existing-files).                                               |
 | `-F`           | The same as `-f`.                                                                                                                                                       |
 | `-d`           | Do not write the documentation, neither the `.tex` file nor the PDF.                                                                                                    |
 | `-p`           | Write the `.tex` file, but do not run `pdflatex` to make the PDF.                                                                                                       |
 | `-i`           | Do not write the headers: the `.h`, `.hpp` and `.py` files, and for IPBus the `.xml` address table.                                                                     |
+| `--replace-top` | Replace `<module>.vhd` with a fresh starter and keep the old file as `<module>.vhd.bak`. Asks first unless you add `-f`. See [Your top level](#your-top-level). |
 | `-u`, `-b`, `-t`, `-m` | Ignored, with a warning. These bust 0.14 options are accepted so that old command lines and Makefiles keep working. Remove them when you can.                    |
 | `-a`           | Give every register a new address and save the JSON file. Generates nothing. With `-f`, saves without asking. See [Renumber addresses](#renumber-addresses).          |
 | `-c`           | Create `FILE` with the interactive editor. See [Interactive editor](#interactive-editor).                                                                               |
@@ -118,6 +119,9 @@ an empty `doc/` and `-i` an empty `header/`.
 
 ## Existing files
 
+This section is about the files bust generates. `<module>.vhd` is yours, see
+[Your top level](#your-top-level).
+
 ### Without `-f`
 
 For each file that already exists, bust asks before it replaces it:
@@ -143,26 +147,36 @@ Use `-f` in scripts.
 
 ### With `-f`
 
-bust replaces every file without asking. That includes `<module>.vhd`, the
-top-level wrapper, so keep your own logic in your own files and connect it
-through the `to_hw` and `from_hw` records. [Generated HDL](generated-hdl.md)
-shows how.
-
-### Top-level files from bust 0.14
-
-In bust 0.14, `<module>.vhd` held your own logic between `-- User ... Start`
-and `-- User ... End` comments. Before bust writes anything, it checks whether
-`hdl/<module>.vhd` still has those comments. If it has, bust refuses to replace
-it, with or without `-f`, and exits with status 1 without writing any file:
+bust replaces every file it generates without asking. It does not replace
+`<module>.vhd`, which is yours, and says how to:
 
 ```text
-Parsing file: example_axi.json...
-Project path: /path/to/out
-An error occurred during output generation...
-LegacyTopLevelFile: Refusing to overwrite out/example_axi/hdl/example_axi.vhd: it has the '-- User ... Start/End' sections of a bust 0.14 top level, so it may hold your own logic. In bust 1.0 example_axi.vhd is a fixed wrapper that bust regenerates, and hardware logic connects through the to_hw/from_hw records outside the generated files. Move your logic out of this file, then delete or rename it to proceed. No files were written.
+out/example_axi/hdl/example_axi.vhd is yours, so -f did not replace it. To replace it with a fresh starter, run bust with --replace-top.
 ```
 
-[Upgrading from 0.14](upgrading.md) explains how to move that logic out.
+## Your top level
+
+`<module>.vhd` is the top level of your module, and the file is yours. When it
+does not exist, bust writes a starter and says so:
+
+```text
+Wrote out/example_axi/hdl/example_axi.vhd, a starting point that is yours to edit. bust will not change it again.
+```
+
+After that, bust leaves the file alone, with or without `-f`.
+[Generated HDL](generated-hdl.md#your-top-level) describes the starter.
+
+`--replace-top` replaces the file with a fresh starter and keeps your old file
+next to it as `<module>.vhd.bak`. bust asks first, and with `-f` it replaces
+the file without asking:
+
+```bash
+bust example_axi.json -o out --replace-top -f
+```
+
+```text
+Replaced out/example_axi/hdl/example_axi.vhd with a fresh starter. The old file is out/example_axi/hdl/example_axi.vhd.bak.
+```
 
 ## Renumber addresses
 
@@ -319,4 +333,4 @@ the file when you no longer need it.
 | Code | Meaning                                                                                                                                                                                                                      |
 |------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 0    | Success. Also when you answered no to an overwrite question, when the PDF could not be made, and for `--version` and `--help`.                                                                                               |
-| 1    | Any error: invalid command-line arguments, a JSON file that is missing or not valid JSON, a register map that fails validation, a 0.14 top-level file in the way, a file that could not be written (including an existing file with no terminal to ask), or the editor without a terminal. |
+| 1    | Any error: invalid command-line arguments, a JSON file that is missing or not valid JSON, a register map that fails validation, a file that could not be written (including an existing file with no terminal to ask), or the editor without a terminal. |

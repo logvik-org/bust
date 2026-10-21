@@ -53,7 +53,7 @@ begin
 
   clock_generator(clk, C_CLK_PERIOD);
 
-  DUT : entity work.{{ module.name }}
+  DUT : entity work.{{ module.name }}_{{ module.bus.endpoint_suffix }}
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
