@@ -20,7 +20,8 @@ entity access_matrix_axi_endpoint is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH
+    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
+    G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0')
   );
   port (
     clk      : in  std_logic;
@@ -81,6 +82,7 @@ begin
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
       G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
+      G_UNMAPPED_READ_DATA => G_UNMAPPED_READ_DATA,
       G_RESET_ACTIVE_LOW   => true)       -- AXI reset is active-low
     port map (
       clk     => clk,
@@ -122,9 +124,7 @@ begin
   rresp  <= rresp_q       when state = ST_RHOLD else
             C_RESP_SLVERR when s2m.err = '1'    else
             C_RESP_OKAY;
-  rdata  <= rdata_q         when state = ST_RHOLD else
-            (others => '0') when s2m.err = '1'    else
-            s2m.rdata;
+  rdata  <= rdata_q when state = ST_RHOLD else s2m.rdata;
 
   p_axi : process (clk, areset_n) is
   begin
@@ -167,7 +167,7 @@ begin
             if rready = '1' then          -- response accepted same cycle
               state <= ST_IDLE;
             else                          -- hold R until the master is ready
-              rdata_q <= (others => '0') when s2m.err = '1' else s2m.rdata;
+              rdata_q <= s2m.rdata;
               rresp_q <= C_RESP_SLVERR when s2m.err = '1' else C_RESP_OKAY;
               state   <= ST_RHOLD;
             end if;

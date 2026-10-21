@@ -27,7 +27,8 @@ entity prototype_avalon_endpoint is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH
+    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
+    G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0')
   );
   port (
     clk         : in  std_logic;
@@ -58,6 +59,7 @@ begin
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
       G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
+      G_UNMAPPED_READ_DATA => G_UNMAPPED_READ_DATA,
       G_RESET_ACTIVE_LOW   => false)      -- Avalon-MM reset is sync active-high
     port map (
       clk     => clk,
@@ -75,6 +77,6 @@ begin
   -- waitrequest=1 stalls; the accept beat is one cycle of waitrequest=0 when the
   -- regfile answers. With no command, ack/err are low so waitrequest stays high.
   waitrequest <= not (s2m.ack or s2m.err);
-  readdata    <= (others => '0') when s2m.err = '1' else s2m.rdata;
+  readdata    <= s2m.rdata;
 
 end architecture rtl;

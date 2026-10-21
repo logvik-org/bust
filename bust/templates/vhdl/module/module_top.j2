@@ -15,7 +15,8 @@ entity {{ module.name }} is
   generic (
     G_BASE_ADDRESS       : unsigned({{ module.addr_width - 1 }} downto 0) := {{ module.addr_width }}x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH
+    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
+    G_UNMAPPED_READ_DATA : std_logic_vector({{ module.data_width - 1 }} downto 0) := (others => '0')
   );
   port (
 {% if bus.bus_type == 'axi' %}
@@ -108,7 +109,8 @@ begin
     generic map (
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
-      G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH)
+      G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
+      G_UNMAPPED_READ_DATA => G_UNMAPPED_READ_DATA)
     port map (
 {% if bus.bus_type == 'axi' %}
       clk      => clk,

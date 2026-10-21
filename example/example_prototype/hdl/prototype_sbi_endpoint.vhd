@@ -23,7 +23,8 @@ entity prototype_sbi_endpoint is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH
+    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
+    G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0')
   );
   port (
     clk     : in  std_logic;
@@ -54,6 +55,7 @@ begin
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
       G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
+      G_UNMAPPED_READ_DATA => G_UNMAPPED_READ_DATA,
       G_RESET_ACTIVE_LOW   => false)      -- SBI carries no reset; use sync active-high
     port map (
       clk     => clk,
@@ -68,9 +70,9 @@ begin
   m2s.wen     <= cs and wena;
   m2s.ren     <= cs and rena;
 
-  -- SBI has no error line, so ack and err both complete as a single ready beat;
-  -- on a decode error rdata is forced to 0.
+  -- SBI has no error line, so ack and err both complete as a single ready beat,
+  -- and a decode error reads G_UNMAPPED_READ_DATA.
   ready <= s2m.ack or s2m.err;
-  rdata <= (others => '0') when s2m.err = '1' else s2m.rdata;
+  rdata <= s2m.rdata;
 
 end architecture rtl;

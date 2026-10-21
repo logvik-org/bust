@@ -7,8 +7,7 @@
 -- response is forwarded straight back as a one-cycle ack_o/err_o beat. No FSM and
 -- no register stage of its own: the regfile's single registered cycle is the whole
 -- latency, and its response guard provides transaction separation. Wishbone has a
--- native err_o line, so a regfile decode error maps to err_o; dat_o is still forced
--- to 0 on err so reads of invalid addresses stay deterministic. Wishbone's sync
+-- native err_o line, so a regfile decode error maps to err_o. Wishbone's sync
 -- active-high reset passes straight to the regfile, and the master drives a byte
 -- address mapped directly onto the local bus.
 library ieee;
@@ -22,7 +21,8 @@ entity prototype_wishbone_endpoint is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH
+    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
+    G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0')
   );
   port (
     clk_i   : in  std_logic;
@@ -56,6 +56,7 @@ begin
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
       G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
+      G_UNMAPPED_READ_DATA => G_UNMAPPED_READ_DATA,
       G_RESET_ACTIVE_LOW   => false)      -- Wishbone reset is sync active-high
     port map (
       clk     => clk_i,
@@ -74,6 +75,6 @@ begin
 
   ack_o <= s2m.ack;
   err_o <= s2m.err;
-  dat_o <= (others => '0') when s2m.err = '1' else s2m.rdata;
+  dat_o <= s2m.rdata;
 
 end architecture rtl;
