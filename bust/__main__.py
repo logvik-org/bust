@@ -30,6 +30,8 @@ Arguments:
 """
 from docopt import docopt
 import sys
+import shlex
+import time
 import logging
 import logging.handlers
 from typing import Dict, Union
@@ -66,8 +68,8 @@ _IGNORED_0_14_OPTIONS = {
 
 
 class _DebugLog(logging.handlers.BufferingHandler):
-    """Keeps every log record of the run, so that a run that fails can write
-    them to debug.log. A run that succeeds leaves no file behind."""
+    """Keeps every log record of the run, so that a run that fails can add
+    them to debug.log. A run that succeeds leaves the file alone."""
 
     def __init__(self) -> None:
         super().__init__(capacity=0)
@@ -76,16 +78,18 @@ class _DebugLog(logging.handlers.BufferingHandler):
         return False
 
     def write(self, path: str = "debug.log") -> None:
-        handler = logging.FileHandler(path, mode="w")
-        handler.setFormatter(
-            logging.Formatter(
-                "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
-                datefmt="%a, %d %b %Y %H:%M:%S",
-            )
+        """Append the records after a line with the time and the command line."""
+        date_format = "%a, %d %b %Y %H:%M:%S"
+        formatter = logging.Formatter(
+            "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
+            datefmt=date_format,
         )
-        for record in self.buffer:
-            handler.handle(record)
-        handler.close()
+        with open(path, "a", encoding="utf-8") as log:
+            log.write(
+                f"=== {time.strftime(date_format)} bust {shlex.join(sys.argv[1:])}\n"
+            )
+            for record in self.buffer:
+                log.write(formatter.format(record) + "\n")
 
 
 def main():

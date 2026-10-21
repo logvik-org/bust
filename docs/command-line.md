@@ -305,12 +305,13 @@ When specifying address for register reg1, address 0x0 is already assigned to ot
 Bus type is not valid: pci
 ```
 
-A run that stops with an error also writes `debug.log` in the directory you
-run bust from, replacing any earlier one. It holds the same messages with a
-timestamp, a line for each file written, and the full Python traceback of the
-error. Look there when a message is not enough, and attach it when you report a
-problem. A run that succeeds writes no `debug.log`, and neither do `--version`,
-`--help` and a usage error.
+A run that stops with an error also adds to `debug.log` in the directory you
+run bust from. Each run starts with a line that gives the time and the command
+line, followed by the same messages with a timestamp, a line for each file
+written, and the full Python traceback of the error. Look there when a message
+is not enough, and attach it when you report a problem. A run that succeeds
+adds nothing, and neither do `--version`, `--help` and a usage error. Delete
+the file when you no longer need it.
 
 ## Exit codes
 
