@@ -228,6 +228,7 @@ use work.timer_regfile_pkg.all;
 | `t_<reg>_to_hw` | The fields of one register that the hardware reads. A register without fields has none. |
 | `t_<reg>_<field>_out` | One field's value together with its `swmod` or `swacc` strobe. |
 | `t_<module>_from_hw` | Everything the hardware drives, one member per register. |
+| `C_<MODULE>_FROM_HW_RESET` | A `t_<module>_from_hw` with every value at its `reset` and every strobe inactive. Use it to tie off `from_hw` or as its initial value. |
 | `t_<reg>_from_hw` | The fields of one register that the hardware drives. A register without fields has none. |
 | `t_<reg>_<field>_in` | One field's value together with its `we`, `wel`, `set` or `clr` input. |
 | `t_<module>_regs`, `t_<reg>_regs`, `C_<MODULE>_REGS_RESET`, `base_match`, `above_registers`, `reg_addr_match`, `is_mapped` | The register file's internal storage, its reset value and its address decoding. Your design does not need them. |

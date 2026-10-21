@@ -502,6 +502,19 @@ package access_matrix_regfile_pkg is
     flat_flag : t_flat_flag_flat_flag_in;
   end record;
 
+  -- from_hw at rest: every value at its reset, every strobe inactive.
+  constant C_ACCESS_MATRIX_FROM_HW_RESET : t_access_matrix_from_hw := (
+    status => (busy => '0', count => (value => (others => '0'), we => '0'), fault => (value => '0', wel => '1')),
+    hw_modify => (override => (value => (others => '0'), we => '0'), sticky => (set => '0', clr => '0')),
+    hw_set_clear => (set_only => (value => (others => '0'), set => '0'), clr_only => (value => '0', clr => '0')),
+    enum_hw => (state => ST_HALT, supply => (value => PWR_OFF, we => '0')),
+    hw_status_swacc => (level => (others => '0'), latched => (value => (others => '0'), we => '0')),
+    hw_only => (shadow => (others => '0')),
+    irq_status => (pending => (set => '0')),
+    flat_override => (value => (others => '0'), we => '0'),
+    flat_status => (others => '0'),
+    flat_flag => (set => '0', clr => '0'));
+
   -- base_match and above_registers get the register file's G_MODULE_ADDR_WIDTH
   -- as module_addr_width. In an address, bits 0 to C_MODULE_ADDR_WIDTH - 1
   -- select a register, bits C_MODULE_ADDR_WIDTH to module_addr_width - 1 must

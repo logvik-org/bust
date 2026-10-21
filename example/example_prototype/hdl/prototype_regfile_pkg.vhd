@@ -228,6 +228,11 @@ package prototype_regfile_pkg is
     reg4 : t_reg4_from_hw;
   end record;
 
+  -- from_hw at rest: every value at its reset, every strobe inactive.
+  constant C_PROTOTYPE_FROM_HW_RESET : t_prototype_from_hw := (
+    reg1 => (field0 => (value => (others => '0'), we => '0'), field1 => '0', field2 => (value => '0', wel => '1')),
+    reg4 => (field0 => (value => (others => '0'), we => '0'), field1 => (set => '0', clr => '0')));
+
   -- base_match and above_registers get the register file's G_MODULE_ADDR_WIDTH
   -- as module_addr_width. In an address, bits 0 to C_MODULE_ADDR_WIDTH - 1
   -- select a register, bits C_MODULE_ADDR_WIDTH to module_addr_width - 1 must

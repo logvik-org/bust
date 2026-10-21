@@ -3,5 +3,5 @@
   signal to_hw   : t_{{ module.name }}_to_hw;
 {% endif %}
 {% if module.from_hw_registers %}
-  signal from_hw : t_{{ module.name }}_from_hw;
+  signal from_hw : t_{{ module.name }}_from_hw := C_{{ module.name | upper }}_FROM_HW_RESET;
 {% endif %}
