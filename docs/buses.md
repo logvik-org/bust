@@ -34,8 +34,10 @@ the same apart from the handshake.
 
 - An endpoint handles one single-beat transfer at a time. There are no bursts
   and no outstanding transactions.
-- No endpoint has byte enables or write strobes. A write always writes the
-  whole register.
+- No endpoint has byte enables or write strobes, so software must read and
+  write whole registers. A write always writes the whole register, so a byte or
+  halfword write to a register writes all its bytes. A read of an address
+  inside a register, such as a byte read of byte 1, gets an error.
 - Every endpoint answers in the clock cycle after the request, never later.
   A transfer therefore takes at least two clock cycles.
 
@@ -50,8 +52,8 @@ the same apart from the handshake.
   `0x8` and so on, and on IPBus at `0x0`, `0x1`, `0x2`. Addresses you set in
   the JSON are used as they are. See [Register map format](register-map-format.md).
 - The register file compares the whole address, low bits included, with the
-  register addresses. An address between two registers, such as `0x2` on a
-  byte-addressed bus, does not match and gets an error.
+  register addresses. An address between two registers or inside one, such as
+  `0x2` on a byte-addressed bus, matches no register and gets an error.
 - Some masters and interconnects drive word addresses on a bus other than
   IPBus. For those, set `"byte_addressable": false` in the module, and bust
   places the registers at `0x0`, `0x1`, `0x2`. See

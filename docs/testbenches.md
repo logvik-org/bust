@@ -32,8 +32,9 @@ kind of register below. A register that fits a row gets that row's checks.
 | One field with `hwset`, `onread: rclr` and `swacc`                                                           | Holds `hwset` through a read and checks that the field is still set afterwards, since hardware wins over the read clear. Once `hwset` is released, a read clears it.                        |
 
 Last, the testbench writes and reads addresses where no register sits: an
-unused register offset if there is one, an address above the registers, and an
-address with another base address. Each access must get an
+unused register offset if there is one, an address one byte into a register
+when addresses count bytes, an address above the registers, and an address with
+another base address. Each access must get an
 [error response](buses.md#errors), or read 0 on SBI and Avalon-MM, which have
 none. A plain read-write register is then read again to check that none of
 these writes reached it.
