@@ -1,0 +1,39 @@
+{% set last = "," if module.to_hw_registers or module.from_hw_registers else "" %}
+  i_{{ module.name }}_{{ bus.endpoint_suffix }} : entity work.{{ module.name }}_{{ bus.endpoint_suffix }}
+    generic map (
+      G_BASE_ADDRESS       => unsigned(g_{{ prefix }}_baseaddr),
+      G_CHECK_BASE_ADDRESS => g_check_baseaddr,
+      G_MODULE_ADDR_WIDTH  => maximum(g_module_addr_width, C_MODULE_ADDR_WIDTH))
+    port map (
+{% if bus.bus_type == 'ipbus' %}
+      clk      => ipb_clk,
+      reset    => ipb_reset,
+      ipb_in   => ipb_in,
+      ipb_out  => ipb_out_i{{ last }}
+{% else %}
+      clk      => axi_clk,
+      areset_n => axi_areset_n,
+      awaddr   => axi_in.awaddr({{ module.addr_width - 1 }} downto 0),
+      awvalid  => axi_in.awvalid,
+      awready  => axi_out_i.awready,
+      wdata    => axi_in.wdata({{ module.data_width - 1 }} downto 0),
+      wvalid   => axi_in.wvalid,
+      wready   => axi_out_i.wready,
+      bresp    => axi_out_i.bresp,
+      bvalid   => axi_out_i.bvalid,
+      bready   => axi_in.bready,
+      araddr   => axi_in.araddr({{ module.addr_width - 1 }} downto 0),
+      arvalid  => axi_in.arvalid,
+      arready  => axi_out_i.arready,
+      rdata    => axi_out_i.rdata({{ module.data_width - 1 }} downto 0),
+      rresp    => axi_out_i.rresp,
+      rvalid   => axi_out_i.rvalid,
+      rready   => axi_in.rready{{ last }}
+{% endif %}
+{% if module.to_hw_registers %}
+      to_hw    => to_hw{{ "," if module.from_hw_registers else "" }}
+{% endif %}
+{% if module.from_hw_registers %}
+      from_hw  => from_hw
+{% endif %}
+      );

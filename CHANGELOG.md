@@ -27,6 +27,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   ignored with a warning, so 0.14 command lines in Makefiles keep working.
 - `--replace-top` replaces `<module>.vhd` with a fresh starter and keeps the
   old file as `<module>.vhd.bak`. It asks first unless `-f` is given.
+- `bust FILE --migrate` migrates a bust 0.14 JSON file without moving a
+  register, and connects a 0.14 `<module>.vhd` to the bus endpoint, keeping its
+  entity and the user logic (#221).
 
 ### Changed
 - `<module>.vhd` belongs to the user again, as in bust 0.14. bust writes a
