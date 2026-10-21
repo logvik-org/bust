@@ -180,6 +180,8 @@ back to `FILE`. It generates no other output. It asks before it replaces
 bust timer.json -a -f
 ```
 
+A file that uses JSON5 syntax, such as comments, is not rewritten.
+
 bust numbers the registers in the order they appear, starting at 0. They are
 `data_width / 8` apart, and 1 apart on IPBus or with `"byte_addressable": false`
 in the module. See
