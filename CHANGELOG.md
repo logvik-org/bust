@@ -11,6 +11,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 ## [Unreleased]
 
 ### Added
+- bust reads register maps written in JSON5, with comments, trailing commas and
+  hexadecimal numbers without quotes such as `0x1c`. `bust -a` refuses to
+  rewrite such a file, because it would lose the comments (#219).
 - `<module>_regfile_pkg` has a constant `C_<MODULE>_FROM_HW_RESET`, a
   `from_hw` with every value at its reset and every strobe inactive. A top
   level migrated with `--migrate` uses it as the initial value of `from_hw`,

@@ -38,7 +38,7 @@ import logging
 import logging.handlers
 from typing import Dict, Union
 
-from bust.utils.json_utils import json_parser
+from bust.utils.json_utils import json_parser, uses_json5
 from bust.validation.config_validator import warn_unknown_keys
 from bust.utils.file_utils import write_string_to_file
 from bust.core.module import Module
@@ -221,6 +221,12 @@ def _run(args):
             gs["gen_localbus"] = True
 
             if args["-a"]:
+                if uses_json5(json_file):
+                    logger.error(
+                        f"{json_file} uses JSON5 syntax, and -a would lose its "
+                        "comments. Change the addresses by hand."
+                    )
+                    exit(1)
                 module.update_addresses()
                 json = module.to_json(True)
                 try:

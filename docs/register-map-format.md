@@ -108,14 +108,19 @@ written as a JSON number or as a string:
 | a string that starts with `0x` | hexadecimal | `"0x10"` | 16 |
 | a string that starts with `0b` | binary | `"0b10000"` | 16 |
 
-JSON has no hexadecimal numbers, so a hexadecimal value is a string. Upper and
-lower case both work, as in `"0X1B2"` and `"0x1b2"`. A number cannot be
-negative, and a fraction, a space or any other character stops bust. So does a
-string with hexadecimal digits but no `0x`, because it cannot be decimal:
+Plain JSON has no hexadecimal numbers, so a hexadecimal value is a string.
+Upper and lower case both work, as in `"0X1B2"` and `"0x1b2"`. A number cannot
+be negative, and a fraction, a space or any other character stops bust. So does
+a string with hexadecimal digits but no `0x`, because it cannot be decimal:
 
 ```text
 Could not parse register baud_div: Reset of register baud_div "1B2" has hexadecimal digits but no 0x. Write "0x1B2" for a hexadecimal number.
 ```
+
+bust also reads the file as [JSON5](https://json5.org/), whatever its name. A
+JSON5 file can have comments, trailing commas, keys without quotes and
+hexadecimal numbers without quotes, such as `"address": 0x1c`. `bust -a` does
+not rewrite a JSON5 file, because it would lose the comments.
 
 ## Bus
 
