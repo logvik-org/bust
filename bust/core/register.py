@@ -26,7 +26,11 @@ from bust.core.legacy_schema import (
 )
 from bust.utils.formatting import indent_string
 from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
-from bust.validation.config_validator import ConfigWrapper, warn_unknown_keys
+from bust.validation.config_validator import (
+    ConfigWrapper,
+    parse_number,
+    warn_unknown_keys,
+)
 from bust.core.enums import (
     HwAccess,
     OnRead,
@@ -165,10 +169,15 @@ class Register:
                 f"Register {self.name} has fields but type '{self.type.value}'. "
                 "Use type 'fields' or remove the fields."
             )
-        self.width = self._config.get(
-            "width"
-        )  # Width can be overridden depending on register type
-        self.reset = self._config.get("reset")
+        # Width can be overridden depending on register type
+        self.width = parse_number(
+            self._config.get("width"), f"Width of register {self.name}"
+        )
+        # The parsed reset as 0x and lower-case hexadecimal digits, the form the
+        # headers, the documentation and the IPBus address table print.
+        self.reset = hex(
+            parse_number(self._config.get("reset"), f"Reset of register {self.name}")
+        )
 
         # bust 1.0 access-mode defaults the register's fields inherit. Legacy `mode`
         # registers are translated onto sw/hw here (see legacy_schema). Fields
@@ -179,10 +188,7 @@ class Register:
         if self.type == RegisterType.DEFAULT:
             # Check if the width was explicitly set in the config,
             # and if it matches the module data width
-            if (
-                self._config.is_set("width")
-                and self._config.get("width") != module_data_width
-            ):
+            if self._config.is_set("width") and self.width != module_data_width:
                 self.logger.warning(
                     f"User-specified width of default register does not match the expected width ({module_data_width}). Ignoring configured width."
                 )
@@ -191,7 +197,7 @@ class Register:
             pass
         elif self.type == RegisterType.BIT:
             # Check if the width was explicitly set in the config, and if it matches the module data width
-            if self._config.is_set("width") and self._config.get("width") != 1:
+            if self._config.is_set("width") and self.width != 1:
                 self.logger.warning(
                     "User-specified width of BIT register does not match the expected width (1). Ignoring configured width."
                 )
@@ -294,7 +300,8 @@ class Register:
         if self.type == RegisterType.VECTOR:
             dic["width"] = self.width
         if self.type != RegisterType.FIELDS:
-            dic["reset"] = self.reset
+            # The reset as the file wrote it, so saving keeps its form.
+            dic["reset"] = self._config.get("reset")
         if self._config.is_set("stall_cycles"):
             dic["stall_cycles"] = self._config.get("stall_cycles")
         if self.type == RegisterType.FIELDS:
@@ -937,15 +944,12 @@ class Register:
         next_free = self.get_next_pos_low()
         position = field_cfg.get("position")
         field_name = field_cfg.get("name", "<unknown>")
+        if position is not None:
+            position = parse_number(
+                position, f"Position of field {field_name} in register {self.name}"
+            )
         if position is None:
             pos_low = next_free
-        elif (
-            not isinstance(position, int) or isinstance(position, bool) or position < 0
-        ):
-            raise InvalidFieldFormat(
-                f"Field '{field_name}' in register '{self.name}': position must "
-                f"be a non-negative integer, got {position!r}."
-            )
         elif position < next_free:
             raise InvalidFieldFormat(
                 f"Field '{field_name}' in register '{self.name}': position "

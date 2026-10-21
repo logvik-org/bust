@@ -41,11 +41,26 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   `to_hw.<reg>`.
 - bust writes `debug.log` only when a run stops with an error, so a run that
   succeeds no longer leaves the file in the working directory.
+- One rule for every number in the register map: a JSON number is decimal,
+  and a string is hexadecimal after `0x`, binary after `0b` and decimal
+  without a prefix. `address` and `reset` used to read a string without a
+  prefix as hexadecimal, so `"10"` meant 0x10 and now means 10. `address` and
+  `reset` now take JSON numbers, and `width`, `position`, enum values and the
+  bus widths take strings. A string with hexadecimal digits but no `0x`, such
+  as `"1B2"`, stops bust with a message that suggests `"0x1B2"`. A value of the
+  wrong type is reported with the key and the register instead of a Python
+  error.
 - The error for a `pulse_cycles` other than 1 points to a new section of
   Access modes, Pulses into another clock domain, which shows how to cross a
   clock domain without stretching pulses in the register file.
 
 ### Fixed
+- The headers, the LaTeX documentation and the IPBus address table printed a
+  `reset` as the JSON file wrote it. A reset without `0x` gave a C header that
+  does not compile, such as `1B2`, or a value that differs from the hardware,
+  such as `10` for a register that resets to 0x10. They now print the value
+  bust parsed, in the headers as `0x` and lower-case digits like the offsets
+  and masks.
 - A module without a `version` no longer gets an empty `Version:` on the title
   page and in the footer of its documentation. The version is now escaped for
   LaTeX.

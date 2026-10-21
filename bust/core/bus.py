@@ -12,7 +12,7 @@ from collections import OrderedDict
 from typing import Any, Dict
 
 from bust.exceptions import FormatError, InvalidBusType
-from bust.validation.config_validator import warn_unknown_keys
+from bust.validation.config_validator import parse_number, warn_unknown_keys
 
 
 class Bus:
@@ -116,8 +116,8 @@ class Bus:
         self.bus_type = bus["type"]
         config = Bus.BUS_CONFIG[self.bus_type]
 
-        self.data_width = bus["data_width"]
-        self.addr_width = bus["addr_width"]
+        self.data_width = parse_number(bus["data_width"], "data_width of the bus")
+        self.addr_width = parse_number(bus["addr_width"], "addr_width of the bus")
         self.byte_addressable = config["byte_addressable"]
         self.endpoint_suffix = config["endpoint_suffix"]
 

@@ -93,6 +93,13 @@ A few keys need changes:
 - **`sl` and `slv`.** The types `sl` and `slv` are now `bit` and `vector`, for
   registers and fields. bust reads the old names and warns that they are
   deprecated, and `bust FILE -a` saves the file with the new names.
+- **Hexadecimal values without `0x`.** bust 0.14 read an `address` or a
+  `reset` as hexadecimal even without `0x`, so `"10"` meant 0x10. bust 1.0
+  reads a string without a prefix as decimal, so `"10"` is now 10. Add `0x` to
+  such values. The values 0 to 9 are the same either way, and a value with a
+  letter, such as `"1c"`, stops bust with a message that suggests `"0x1c"`.
+  bust 0.14 and its editor wrote `0x` themselves, so only values typed by hand
+  can lack it. [Numbers](register-map-format.md#numbers) gives the rule.
 - **`pulse_cycles` and `stall_cycles`.** A pulse now lasts one clock cycle, and
   every access is answered in one cycle. Remove both keys. bust rejects
   `pulse_cycles` other than 1 and `stall_cycles` other than 0 with an error
