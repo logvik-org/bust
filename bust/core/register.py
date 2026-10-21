@@ -26,8 +26,19 @@ from bust.core.legacy_schema import (
 )
 from bust.utils.formatting import indent_string
 from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
-from bust.validation.config_validator import ConfigWrapper, warn_unknown_keys
-from bust.core.enums import OnRead, RegisterMode, RegisterType, SwAccess, HwAccess
+from bust.validation.config_validator import (
+    ConfigWrapper,
+    parse_number,
+    warn_unknown_keys,
+)
+from bust.core.enums import (
+    HwAccess,
+    OnRead,
+    RegisterMode,
+    RegisterType,
+    SwAccess,
+    current_type_name,
+)
 
 # Register-level access summarised from its fields, keyed by
 # (any field readable, any field writable).
@@ -148,16 +159,25 @@ class Register:
                 f"Register {self.name} sets the legacy 'mode' key together with "
                 "bust 1.0 access-mode keys (sw/hw/...); use one schema, not both"
             )
-        self.type = RegisterType.from_string(self._config.get("type"))
+        type_name = self._config.get("type")
+        self.legacy_type_name = (
+            type_name if current_type_name(type_name) != type_name else None
+        )
+        self.type = RegisterType.from_string(current_type_name(type_name))
         if self._config.is_set("fields") and self.type != RegisterType.FIELDS:
             raise InvalidRegisterFormat(
                 f"Register {self.name} has fields but type '{self.type.value}'. "
                 "Use type 'fields' or remove the fields."
             )
-        self.width = self._config.get(
-            "width"
-        )  # Width can be overridden depending on register type
-        self.reset = self._config.get("reset")
+        # Width can be overridden depending on register type
+        self.width = parse_number(
+            self._config.get("width"), f"Width of register {self.name}"
+        )
+        # The parsed reset as 0x and lower-case hexadecimal digits, the form the
+        # headers, the documentation and the IPBus address table print.
+        self.reset = hex(
+            parse_number(self._config.get("reset"), f"Reset of register {self.name}")
+        )
 
         # bust 1.0 access-mode defaults the register's fields inherit. Legacy `mode`
         # registers are translated onto sw/hw here (see legacy_schema). Fields
@@ -168,10 +188,7 @@ class Register:
         if self.type == RegisterType.DEFAULT:
             # Check if the width was explicitly set in the config,
             # and if it matches the module data width
-            if (
-                self._config.is_set("width")
-                and self._config.get("width") != module_data_width
-            ):
+            if self._config.is_set("width") and self.width != module_data_width:
                 self.logger.warning(
                     f"User-specified width of default register does not match the expected width ({module_data_width}). Ignoring configured width."
                 )
@@ -180,7 +197,7 @@ class Register:
             pass
         elif self.type == RegisterType.BIT:
             # Check if the width was explicitly set in the config, and if it matches the module data width
-            if self._config.is_set("width") and self._config.get("width") != 1:
+            if self._config.is_set("width") and self.width != 1:
                 self.logger.warning(
                     "User-specified width of BIT register does not match the expected width (1). Ignoring configured width."
                 )
@@ -216,7 +233,9 @@ class Register:
         cfg: Dict = {"name": self.name, "type": field_type, "reset": self.reset}
         if field_type == "vector":
             cfg["width"] = self.width
-        return Field(cfg, 0, self.name, inherited=self.access_defaults)
+        field = Field(cfg, 0, self.name, inherited=self.access_defaults)
+        field.implicit = True
+        return field
 
     @property
     def effective_fields(self) -> List["Field"]:
@@ -281,7 +300,8 @@ class Register:
         if self.type == RegisterType.VECTOR:
             dic["width"] = self.width
         if self.type != RegisterType.FIELDS:
-            dic["reset"] = self.reset
+            # The reset as the file wrote it, so saving keeps its form.
+            dic["reset"] = self._config.get("reset")
         if self._config.is_set("stall_cycles"):
             dic["stall_cycles"] = self._config.get("stall_cycles")
         if self.type == RegisterType.FIELDS:
@@ -408,6 +428,24 @@ class Register:
     def from_hw_fields(self) -> List[Field]:
         """Fields the hardware drives or strobes (members of t_<reg>_from_hw)."""
         return [f for f in self.effective_fields if f.driven_by_hw]
+
+    @property
+    def to_hw_type_name(self) -> str:
+        """The type of to_hw.<reg>: the record type t_<reg>_to_hw, or for a
+        register without fields the type of its value."""
+        if self.fields:
+            return f"t_{self.name}_to_hw"
+        f = self._implicit_field
+        return f.to_hw_record_name if f.to_hw_is_record else f.value_type_vhdl
+
+    @property
+    def from_hw_type_name(self) -> str:
+        """The type of from_hw.<reg>: the record type t_<reg>_from_hw, or for a
+        register without fields the type of its value."""
+        if self.fields:
+            return f"t_{self.name}_from_hw"
+        f = self._implicit_field
+        return f.from_hw_record_name if f.from_hw_is_record else f.value_type_vhdl
 
     @property
     def swmod_fields(self) -> List[Field]:
@@ -667,7 +705,7 @@ class Register:
         for f in self.from_hw_fields:
             steps.append(
                 {
-                    "field": f.name,
+                    "path": f.hw_path,
                     "member": "value" if f.from_hw_is_record else None,
                     "enable": "we" if f.we else ("wel" if f.wel else None),
                     "literal": f.value_literal(self._alternating_bits(f.width)),
@@ -809,7 +847,7 @@ class Register:
                 "expected_msg": f"{self.name} reads back the software value",
                 "to_hw_checks": [
                     {
-                        "target": f.name + (".value" if f.to_hw_is_record else ""),
+                        "target": f.hw_path + (".value" if f.to_hw_is_record else ""),
                         "literal": f.value_literal(state[f.name]),
                         "name": f.name,
                     }
@@ -831,13 +869,13 @@ class Register:
                     "sw_write": None,
                     "drives": [
                         {
-                            "target": f.name + ".value",
+                            "target": f.hw_path + ".value",
                             "literal": f.value_literal(state[f.name]),
                         }
                         for f in we_fields
                     ],
                     "strobes": [
-                        {"target": f.name + ".we", "on": "'1'", "off": "'0'"}
+                        {"target": f.hw_path + ".we", "on": "'1'", "off": "'0'"}
                         for f in we_fields
                     ],
                     "expected": self._data_width_literal(self._compose(state)),
@@ -856,7 +894,7 @@ class Register:
                     "sw_write": None,
                     "drives": [],
                     "strobes": [
-                        {"target": f.name + ".set", "on": "'1'", "off": "'0'"}
+                        {"target": f.hw_path + ".set", "on": "'1'", "off": "'0'"}
                         for f in hwset_fields
                     ],
                     "expected": self._data_width_literal(self._compose(state)),
@@ -872,9 +910,11 @@ class Register:
                 state[f.name] = 0
                 if f.hwset:  # assert set in the same cycle: clr must win
                     strobes.append(
-                        {"target": f.name + ".set", "on": "'1'", "off": "'0'"}
+                        {"target": f.hw_path + ".set", "on": "'1'", "off": "'0'"}
                     )
-                strobes.append({"target": f.name + ".clr", "on": "'1'", "off": "'0'"})
+                strobes.append(
+                    {"target": f.hw_path + ".clr", "on": "'1'", "off": "'0'"}
+                )
             steps.append(
                 {
                     "log": f"{self.name}: hwclr clears fields (and beats hwset)",
@@ -904,15 +944,12 @@ class Register:
         next_free = self.get_next_pos_low()
         position = field_cfg.get("position")
         field_name = field_cfg.get("name", "<unknown>")
+        if position is not None:
+            position = parse_number(
+                position, f"Position of field {field_name} in register {self.name}"
+            )
         if position is None:
             pos_low = next_free
-        elif (
-            not isinstance(position, int) or isinstance(position, bool) or position < 0
-        ):
-            raise InvalidFieldFormat(
-                f"Field '{field_name}' in register '{self.name}': position must "
-                f"be a non-negative integer, got {position!r}."
-            )
         elif position < next_free:
             raise InvalidFieldFormat(
                 f"Field '{field_name}' in register '{self.name}': position "

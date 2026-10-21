@@ -10,7 +10,7 @@ files go, and what bust does when they already exist.
 
 ```text
 Usage:
-  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i]] | [-a [-F | -f]] | [-c | -e]]
+  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i] [-u] [-b] [-t] [-m]] | [-a [-F | -f]] | [-c | -e]]
   bust --version
   bust -h | --help
 ```
@@ -22,7 +22,8 @@ options go together:
 - `-o` combines with everything else, but only a run that generates files
   uses it.
 - `-f` (or `-F`), one of `-d` and `-p`, and `-i` combine with each other. They
-  control a normal run that generates files.
+  control a normal run that generates files. So do `-u`, `-b`, `-t` and `-m`,
+  which bust ignores.
 - `-a` saves the JSON file instead of generating files. It takes `-f` (or `-F`)
   to save without asking.
 - `-c` and `-e` open the editor, so they stand alone.
@@ -40,6 +41,7 @@ and exit with status 1.
 | `-d`           | Do not write the documentation, neither the `.tex` file nor the PDF.                                                                                                    |
 | `-p`           | Write the `.tex` file, but do not run `pdflatex` to make the PDF.                                                                                                       |
 | `-i`           | Do not write the headers: the `.h`, `.hpp` and `.py` files, and for IPBus the `.xml` address table.                                                                     |
+| `-u`, `-b`, `-t`, `-m` | Ignored, with a warning. These bust 0.14 options are accepted so that old command lines and Makefiles keep working. Remove them when you can.                    |
 | `-a`           | Give every register a new address and save the JSON file. Generates nothing. With `-f`, saves without asking. See [Renumber addresses](#renumber-addresses).          |
 | `-c`           | Create `FILE` with the interactive editor. See [Interactive editor](#interactive-editor).                                                                               |
 | `-e`           | Open `FILE` in the interactive editor.                                                                                                                                  |
@@ -173,9 +175,11 @@ back to `FILE`. It generates no other output. It asks before it replaces
 bust timer.json -a -f
 ```
 
-bust numbers the registers in the order they appear, starting at 0 and one data
-word apart: 4 bytes apart for a byte-addressed bus with 32-bit data, and 1 apart
-for IPBus, which addresses words. Addresses you wrote yourself are replaced.
+bust numbers the registers in the order they appear, starting at 0. They are
+`data_width / 8` apart, and 1 apart on IPBus or with `"byte_addressable": false`
+in the module. See
+[Byte and word addresses](register-map-format.md#byte-and-word-addresses).
+Addresses you wrote yourself are replaced.
 
 bust then writes the whole file again, with 4-space indentation. Every register
 gets an `address`, and the defaults bust used are written out, such as `type`,
@@ -302,12 +306,13 @@ When specifying address for register reg1, address 0x0 is already assigned to ot
 Bus type is not valid: pci
 ```
 
-Each run that reads a JSON file also writes `debug.log` in the directory you
-run bust from, replacing the one from the previous run. It holds the same
-messages with a timestamp, a line for each file written, and the full Python
-traceback of any error. Look there when a message is not enough, and attach it
-when you report a problem. `--version`, `--help` and a usage error do not write
-it.
+A run that stops with an error also adds to `debug.log` in the directory you
+run bust from. Each run starts with a line that gives the time and the command
+line, followed by the same messages with a timestamp, a line for each file
+written, and the full Python traceback of the error. Look there when a message
+is not enough, and attach it when you report a problem. A run that succeeds
+adds nothing, and neither do `--version`, `--help` and a usage error. Delete
+the file when you no longer need it.
 
 ## Exit codes
 

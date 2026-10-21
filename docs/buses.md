@@ -34,8 +34,10 @@ the same apart from the handshake.
 
 - An endpoint handles one single-beat transfer at a time. There are no bursts
   and no outstanding transactions.
-- No endpoint has byte enables or write strobes. A write always writes the
-  whole register.
+- No endpoint has byte enables or write strobes, so software must read and
+  write whole registers. A write always writes the whole register, so a byte or
+  halfword write to a register writes all its bytes. A read of an address
+  inside a register, such as a byte read of byte 1, gets an error.
 - Every endpoint answers in the clock cycle after the request, never later.
   A transfer therefore takes at least two clock cycles.
 
@@ -44,27 +46,31 @@ the same apart from the handshake.
 - The address port is `addr_width` bits wide and the data ports are
   `data_width` bits wide. IPBus is the exception, with fixed 32-bit ports.
 - The endpoint passes the address to the register file unchanged, except that
-  IPBus passes the low `addr_width` bits. It is a byte address on every bus
-  except IPBus, where it is a word address. When bust
+  IPBus passes the low `addr_width` bits. By default it is a byte address on
+  every bus except IPBus, where it is a word address. When bust
   assigns the addresses, with 32-bit data, the registers are at `0x0`, `0x4`,
   `0x8` and so on, and on IPBus at `0x0`, `0x1`, `0x2`. Addresses you set in
   the JSON are used as they are. See [Register map format](register-map-format.md).
 - The register file compares the whole address, low bits included, with the
-  register addresses. An address between two registers, such as `0x2` on a
-  byte-addressed bus, does not match and gets an error.
-- Some interconnects give their targets word addresses. On a bus other than
-  IPBus, append zero bits below such a word address to make it a byte address
-  before it reaches the module.
+  register addresses. An address between two registers or inside one, such as
+  `0x2` on a byte-addressed bus, matches no register and gets an error.
+- Some masters and interconnects drive word addresses on a bus other than
+  IPBus. For those, set `"byte_addressable": false` in the module, and bust
+  places the registers at `0x0`, `0x1`, `0x2`. See
+  [Byte and word addresses](register-map-format.md#byte-and-word-addresses).
 
 ### Errors
 
 Only an address that does not decode produces an error:
 
-- an address inside the module's window that is not a register address, or
-- with `G_CHECK_BASE_ADDRESS` set to `true`, an address whose bits above the
-  window differ from `G_BASE_ADDRESS`.
+- a register offset where no register sits, or an address above the
+  registers in the module's address range when `G_MODULE_ADDR_WIDTH` is larger
+  than `C_MODULE_ADDR_WIDTH`, or
+- with `G_CHECK_BASE_ADDRESS` set to `true`, an address whose base address
+  bits differ from `G_BASE_ADDRESS`.
 
-A write that fails changes nothing, and a read that fails returns 0. Every
+[Base address and address range](addressing.md) shows which bits are which. A write
+that fails changes nothing, and a read that fails returns 0. Every
 access to a register address completes normally, whatever the access mode.
 Writing a read-only field has no effect, and reading a write-only field returns
 0. See [Access modes](access-modes.md).
@@ -87,8 +93,9 @@ handshake state also resets asynchronously.
 
 ### Base address
 
-All endpoints have the generics `G_BASE_ADDRESS` and `G_CHECK_BASE_ADDRESS`.
-[Base address](generated-hdl.md#base-address) describes them.
+All endpoints have the generics `G_BASE_ADDRESS`, `G_CHECK_BASE_ADDRESS` and
+`G_MODULE_ADDR_WIDTH`. [Base address and address range](addressing.md) describes
+them.
 
 ### Testbenches
 
@@ -147,7 +154,7 @@ is the `axi` bus type. The endpoint is `<module>_axi_endpoint`.
   and `arvalid`. If your interconnect or your timing needs registered ready
   signals, put a register slice in front of the module.
 - `areset_n` is active low.
-- Addresses are byte addresses. AXI4-Lite allows a `data_width` of 32 or 64.
+- AXI4-Lite allows a `data_width` of 32 or 64.
 
 ## IPBus
 
@@ -181,7 +188,6 @@ and the top wrapper use it as `library ipbus; use ipbus.ipbus.all;`, so compile
   in the cycle after the strobe, with `ipb_rdata` valid on a read.
 - `ipb_rdata` is 0 when a read gets `ipb_err`.
 - `reset` is active high.
-- Addresses are word addresses.
 - `data_width` must be 32 and `addr_width` at most 32. bust stops with an
   error for other values.
 - With an `addr_width` below 32, the endpoint ignores the upper bits of
@@ -213,7 +219,6 @@ endpoint is `<module>_sbi_endpoint`.
 - SBI has no error signal. An access that does not decode completes with
   `ready` as usual, with `rdata` 0 on a read.
 - SBI defines no reset. bust adds `reset`, active high.
-- Addresses are byte addresses.
 
 ## Avalon-MM
 
@@ -245,8 +250,6 @@ Avalon-MM agent.
   read.
 - If your host has no chip select, tie `chipselect` to `'1'`.
 - `reset` is active high.
-- Addresses are byte addresses. If you connect the module in Platform
-  Designer, check that the agent interface uses byte addressing.
 
 ## Wishbone
 
@@ -275,8 +278,6 @@ classic cycles.
   ports, so the endpoint supports neither the pipelined mode nor registered
   feedback bursts.
 - `rst_i` is active high.
-- Addresses on `adr_i` are byte addresses. Many Wishbone designs drive word
-  addresses on 32-bit ports instead, so check what your master drives.
 
 ## APB
 
@@ -303,4 +304,3 @@ classic cycles.
 - On an error, `pslverr` is high together with `pready`, and `prdata` is 0 on a
   read.
 - `presetn` is active low.
-- Addresses on `paddr` are byte addresses.

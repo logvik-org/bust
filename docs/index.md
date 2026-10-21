@@ -48,6 +48,8 @@ testbench of every bus in CI.
 - [Access modes](access-modes.md): what software and hardware can do with each
   field.
 - [Buses](buses.md): the ports and protocol details of each bus.
+- [Base address and address range](addressing.md): how a module decodes an address,
+  and the generics that set its base address and address range.
 - [Generated HDL](generated-hdl.md): the generated files, the records and how
   to instantiate the module.
 - [Headers and documentation](headers-and-docs.md): the C, C++ and Python
@@ -70,6 +72,7 @@ getting-started
 register-map-format
 access-modes
 buses
+addressing
 generated-hdl
 headers-and-docs
 testbenches

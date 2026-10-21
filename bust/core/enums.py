@@ -41,6 +41,18 @@ class ConfigEnum(Enum):
         return list(e.value for e in cls)
 
 
+# The bust 0.14 names of the bit and vector types. bust accepts them for
+# registers and fields, and Module warns that they are deprecated.
+LEGACY_TYPE_NAMES = {"sl": "bit", "slv": "vector"}
+
+
+def current_type_name(value):
+    """Return `bit` for `sl` and `vector` for `slv`, and any other value as it is."""
+    if isinstance(value, str):
+        return LEGACY_TYPE_NAMES.get(value.lower(), value)
+    return value
+
+
 class FieldType(ConfigEnum):
     """Enumeration of supported field types within a register.
 

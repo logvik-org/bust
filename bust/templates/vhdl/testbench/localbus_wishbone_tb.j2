@@ -54,7 +54,8 @@ begin
   DUT : entity work.{{ module.name }}
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true,
+      G_MODULE_ADDR_WIDTH  => {{ tb.module_addr_width }})
     port map (
       clk_i   => clk,
       rst_i   => reset,
@@ -76,9 +77,10 @@ begin
   p_main : process is
 
     -- Classic Wishbone single write: assert cyc/stb/we, hold until ack/err.
-    procedure bus_write(constant addr : in unsigned;
-                        constant data : in std_logic_vector;
-                        constant msg  : in string) is
+    procedure bus_write(constant addr       : in unsigned;
+                        constant data       : in std_logic_vector;
+                        constant msg        : in string;
+                        constant expect_err : in boolean := false) is
     begin
       wb_cyc   <= '1';
       wb_stb   <= '1';
@@ -89,7 +91,11 @@ begin
       while wb_ack = '0' and wb_err = '0' loop
         wait until rising_edge(clk);
       end loop;
-      check_value(wb_err, '0', error, "write must terminate on ack, not err: " & msg, C_SCOPE);
+      if expect_err then
+        check_value(wb_err, '1', error, "write must terminate on err: " & msg, C_SCOPE);
+      else
+        check_value(wb_err, '0', error, "write must terminate on ack, not err: " & msg, C_SCOPE);
+      end if;
       wb_cyc   <= '0';
       wb_stb   <= '0';
       wb_we    <= '0';
@@ -129,6 +135,23 @@ begin
       bus_read(addr, v_data, v_got_err);
       check_value(v_got_err, false, error, msg & " (terminated on ack)", C_SCOPE);
       check_value(v_data, data, error, msg, C_SCOPE);
+    end procedure;
+
+    -- An address without a register terminates on err.
+    procedure bus_write_unmapped(constant addr : in unsigned;
+                                 constant data : in std_logic_vector;
+                                 constant msg  : in string) is
+    begin
+      bus_write(addr, data, msg, expect_err => true);
+    end procedure;
+
+    procedure bus_check_unmapped(constant addr : in unsigned;
+                                 constant msg  : in string) is
+      variable v_data    : std_logic_vector({{ module.data_width - 1 }} downto 0);
+      variable v_got_err : boolean;
+    begin
+      bus_read(addr, v_data, v_got_err);
+      check_value(v_got_err, true, error, msg & " (terminated on err)", C_SCOPE);
     end procedure;
 {% include "vhdl/testbench/localbus_tb/snapshot_vars.j2" %}
 

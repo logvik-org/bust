@@ -23,7 +23,8 @@ use work.example_ipbus_regfile_pkg.all;
 entity example_ipbus_ipb_endpoint is
   generic (
     G_BASE_ADDRESS       : unsigned(15 downto 0) := 16x"0";
-    G_CHECK_BASE_ADDRESS : boolean := true
+    G_CHECK_BASE_ADDRESS : boolean := true;
+    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH
   );
   port (
     clk     : in  std_logic;
@@ -46,6 +47,7 @@ begin
     generic map (
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
+      G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
       G_RESET_ACTIVE_LOW   => false)      -- IPBus reset is sync active-high
     port map (
       clk     => clk,

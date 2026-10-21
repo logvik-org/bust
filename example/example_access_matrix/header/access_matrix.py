@@ -87,7 +87,7 @@ class ACCESS_MATRIX_H:
     """ Field: id """
     IDENTITY_ID_OFFSET = 0
     IDENTITY_ID_WIDTH = 8
-    IDENTITY_ID_RESET = 0xA5
+    IDENTITY_ID_RESET = 0xa5
     IDENTITY_ID_MASK = 0xff
     IDENTITY_ID_SW = "ro"
     IDENTITY_ID_HW = "r"
@@ -202,7 +202,7 @@ class ACCESS_MATRIX_H:
     """ Field: clear_bits """
     WRITE_EFFECTS_CLEAR_BITS_OFFSET = 4
     WRITE_EFFECTS_CLEAR_BITS_WIDTH = 4
-    WRITE_EFFECTS_CLEAR_BITS_RESET = 0xF
+    WRITE_EFFECTS_CLEAR_BITS_RESET = 0xf
     WRITE_EFFECTS_CLEAR_BITS_MASK = 0xf0
     WRITE_EFFECTS_CLEAR_BITS_SW = "rw"
     WRITE_EFFECTS_CLEAR_BITS_HW = "r"
@@ -452,7 +452,7 @@ class ACCESS_MATRIX_H:
     """ Field: clear_on_zero """
     MIXED_HISTORY_CLEAR_ON_ZERO_OFFSET = 8
     MIXED_HISTORY_CLEAR_ON_ZERO_WIDTH = 4
-    MIXED_HISTORY_CLEAR_ON_ZERO_RESET = 0xF
+    MIXED_HISTORY_CLEAR_ON_ZERO_RESET = 0xf
     MIXED_HISTORY_CLEAR_ON_ZERO_MASK = 0xf00
     MIXED_HISTORY_CLEAR_ON_ZERO_SW = "rw"
     MIXED_HISTORY_CLEAR_ON_ZERO_HW = "r"
@@ -528,3 +528,38 @@ class ACCESS_MATRIX_H:
     IRQ_STATUS_PENDING_SW = "ro"
     IRQ_STATUS_PENDING_HW = "r"
     IRQ_STATUS_PENDING_ONREAD = "rclr"
+
+    """Register: flat_level"""
+    FLAT_LEVEL_SW = "rw"
+    FLAT_LEVEL_HW = "r"
+    FLAT_LEVEL_WIDTH = 8
+    FLAT_LEVEL_OFFSET = 0x4c
+    FLAT_LEVEL_RESET = 0x0
+
+    """Register: flat_strobe"""
+    FLAT_STROBE_SW = "rw"
+    FLAT_STROBE_HW = "r"
+    FLAT_STROBE_WIDTH = 4
+    FLAT_STROBE_OFFSET = 0x50
+    FLAT_STROBE_RESET = 0x0
+
+    """Register: flat_override"""
+    FLAT_OVERRIDE_SW = "rw"
+    FLAT_OVERRIDE_HW = "rw"
+    FLAT_OVERRIDE_WIDTH = 8
+    FLAT_OVERRIDE_OFFSET = 0x54
+    FLAT_OVERRIDE_RESET = 0x0
+
+    """Register: flat_status"""
+    FLAT_STATUS_SW = "ro"
+    FLAT_STATUS_HW = "w"
+    FLAT_STATUS_WIDTH = 6
+    FLAT_STATUS_OFFSET = 0x58
+    FLAT_STATUS_RESET = 0x0
+
+    """Register: flat_flag"""
+    FLAT_FLAG_SW = "rw"
+    FLAT_FLAG_HW = "r"
+    FLAT_FLAG_WIDTH = 1
+    FLAT_FLAG_OFFSET = 0x5c
+    FLAT_FLAG_RESET = 0x0

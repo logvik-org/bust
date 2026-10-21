@@ -21,7 +21,11 @@ from bust.exceptions import (
 from bust.core.register import Register
 from bust.utils.formatting import indent_string
 from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
-from bust.validation.config_validator import ConfigWrapper, warn_unknown_keys
+from bust.validation.config_validator import (
+    ConfigWrapper,
+    parse_number,
+    warn_unknown_keys,
+)
 
 if TYPE_CHECKING:
     from bust.core.bus import Bus
@@ -76,6 +80,7 @@ class Module:
             settings: Project-wide settings.
 
         Raises:
+            FormatError: If byte_addressable is not a boolean.
             InvalidAddress: If register addresses conflict.
             InvalidRegister: If register configuration is invalid.
             ValueError: If module name is not a valid VHDL identifier.
@@ -109,13 +114,14 @@ class Module:
         self.description: str = self._config.get("description")
         self.version = self._config.get("version")
         self.git_hash = self._config.get("git_hash")  # Currently not used
-        self.byte_addressable = self._config.get("byte_addressable")
+        self.byte_addressable = self._read_byte_addressable()
 
         self.addr_width = bus.addr_width
         self.data_width = bus.data_width
 
         for reg in mod["register"]:
             self.add_register(reg)
+        self._warn_legacy_type_names()
 
     def add_register(self, reg: Dict) -> None:
         """Add a register to the module.
@@ -148,17 +154,36 @@ class Module:
             raise InvalidRegister(reg, e) from e
         self.registers.append(register)
 
+    def _read_byte_addressable(self) -> bool:
+        """Read byte_addressable, which bust 0.14 wrote as "True" or "False"."""
+        value = self._config.get("byte_addressable")
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str) and value in ("True", "False"):
+            self.logger.warning(
+                f'byte_addressable "{value}" is the deprecated bust 0.14 form. '
+                f"Use {value.lower()}, without quotes."
+            )
+            return value == "True"
+        raise FormatError(f"byte_addressable must be true or false (got {value!r})")
+
+    def _warn_legacy_type_names(self) -> None:
+        """Warn once about the bust 0.14 type names sl and slv."""
+        count = sum(
+            (reg.legacy_type_name is not None)
+            + sum(f.legacy_type_name is not None for f in reg.fields)
+            for reg in self.registers
+        )
+        if count:
+            self.logger.warning(
+                "The bust 0.14 type names 'sl' and 'slv' are deprecated. Use "
+                f"'bit' and 'vector' instead ({count} registers and fields)."
+            )
+
     def _explicit_address(self, reg: Dict) -> int:
         """Parse a register's `address` and check that the bus can reach it."""
         name = reg.get("name", "<unknown>")
-        address = reg["address"]
-        try:
-            addr = int(address, 16)
-        except (TypeError, ValueError):
-            raise FormatError(
-                f"Address of register {name} must be a hex string such as "
-                f'"0x10" (got {address!r})'
-            ) from None
+        addr = parse_number(reg["address"], f"Address of register {name}")
         if self.is_address_out_of_range(addr):
             raise FormatError(
                 f"Address {hex(addr)} of register {name} does not fit in "
@@ -296,10 +321,10 @@ class Module:
 
     @property
     def register_select_width(self) -> int:
-        """Bits needed to decode this module's register window (C_MODULE_ADDR_WIDTH).
+        """C_MODULE_ADDR_WIDTH: the number of low address bits that select a register.
 
-        Covers the span from offset 0 to the last register plus one stride, so the
-        window is a power-of-two byte range the base address must align to.
+        Enough bits for every address from 0 to the end of the last register. It
+        is the smallest module address width that holds the registers.
         """
         stride = self.data_width // 8 if self.byte_addressable else 1
         top = max((reg.address for reg in self.registers), default=0) + stride

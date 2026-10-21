@@ -2,6 +2,7 @@
 bookkeeping. Uses a lightweight stub bus so the domain logic is exercised
 without the generator/template stack."""
 
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -44,6 +45,50 @@ class TestAddressAssignment:
         mod = make_module(regs("R0", "R1", "R2"), bus=stub_bus(bus_type="ipbus"))
         assert mod.addresses == [0, 1, 2]
 
+    def test_word_addressing_on_a_byte_bus(self):
+        # bust 0.14 allowed this on AXI, and the endpoint compares the address
+        # as the master drives it.
+        mod = Module(
+            {
+                "name": "testmod",
+                "byte_addressable": False,
+                "register": regs("R0", "R1") + [{"name": "R2", "address": "0x3"}],
+            },
+            stub_bus(),
+            settings=None,
+        )
+        assert mod.addresses == [0, 1, 3]
+
+    @pytest.mark.parametrize("value, step", [("True", 4), ("False", 1)])
+    def test_byte_addressable_reads_the_0_14_strings(self, value, step, caplog):
+        bus = stub_bus()
+        bus.to_json = dict
+        mod = Module(
+            {
+                "name": "testmod",
+                "byte_addressable": value,
+                "register": regs("R0", "R1"),
+            },
+            bus,
+            settings=SimpleNamespace(to_json=dict),
+        )
+        assert mod.addresses == [0, step]
+        assert f'byte_addressable "{value}" is the deprecated bust 0.14 form' in (
+            caplog.text
+        )
+        # Saving writes the JSON boolean.
+        saved = json.loads(mod.to_json())["module"]["byte_addressable"]
+        assert saved is (value == "True")
+
+    @pytest.mark.parametrize("value", ["false", "yes", 0])
+    def test_byte_addressable_must_be_a_boolean(self, value):
+        with pytest.raises(FormatError, match="byte_addressable must be true or false"):
+            Module(
+                {"name": "testmod", "byte_addressable": value, "register": regs("R0")},
+                stub_bus(),
+                settings=None,
+            )
+
     def test_explicit_address_honoured(self):
         mod = make_module([{"name": "R0", "mode": "rw", "address": "0x10"}])
         assert mod.registers[0].address == 0x10
@@ -75,9 +120,9 @@ class TestAddressAssignment:
         )
         assert mod.addresses == [3]
 
-    def test_numeric_address_rejected_with_a_hint(self):
-        with pytest.raises(FormatError, match='hex string such as "0x10"'):
-            make_module([{"name": "R0", "mode": "rw", "address": 16}])
+    def test_numeric_address_is_decimal(self):
+        mod = make_module([{"name": "R0", "mode": "rw", "address": 16}])
+        assert mod.registers[0].address == 0x10
 
     def test_update_addresses_reassigns_sequentially(self):
         mod = make_module(regs("R0", "R1"))

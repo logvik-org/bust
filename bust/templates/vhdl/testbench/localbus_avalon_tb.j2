@@ -57,7 +57,8 @@ begin
   DUT : entity work.{{ module.name }}
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true,
+      G_MODULE_ADDR_WIDTH  => {{ tb.module_addr_width }})
     port map (
       clk         => clk,
       reset       => reset,
@@ -91,6 +92,21 @@ begin
     begin
       avalon_mm_check(addr, data, msg, clk, avmm_if, error, C_SCOPE,
                       shared_msg_id_panel, avmm_bfm_config);
+    end procedure;
+
+    -- The endpoint does not use the Avalon-MM response signal, so an address
+    -- without a register completes normally and reads 0.
+    procedure bus_write_unmapped(constant addr : in unsigned;
+                                 constant data : in std_logic_vector;
+                                 constant msg  : in string) is
+    begin
+      bus_write(addr, data, msg);
+    end procedure;
+
+    procedure bus_check_unmapped(constant addr : in unsigned;
+                                 constant msg  : in string) is
+    begin
+      bus_check(addr, {{ module.data_width }}x"0", msg);
     end procedure;
 {% include "vhdl/testbench/localbus_tb/snapshot_vars.j2" %}
 

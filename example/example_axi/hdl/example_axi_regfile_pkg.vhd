@@ -29,8 +29,9 @@ package example_axi_regfile_pkg is
   constant C_ADDR_REG10 : std_logic_vector(31 downto 0) := 32x"28";
   constant C_ADDR_REG11 : std_logic_vector(31 downto 0) := 32x"2C";
 
-  -- Register-select width. base_match compares the bits above this width, so the
-  -- base address must be aligned to this register window.
+  -- Register-select width: the low address bits that pick a register. It is the
+  -- smallest module address width that holds the registers, and the default of
+  -- the G_MODULE_ADDR_WIDTH generic.
   constant C_MODULE_ADDR_WIDTH : natural := 6;
 
   -- Internal storage, one record per register, each member a field that holds
@@ -111,29 +112,14 @@ package example_axi_regfile_pkg is
 
   -- regfile -> hardware: only fields the hardware can read (hw r / rw). Fields
   -- with a software-access pulse (swmod/swacc) pair the value with the strobe.
-  type t_reg0_to_hw is record
-    reg0 : std_logic;
-  end record;
-  type t_reg1_to_hw is record
-    reg1 : std_logic;
-  end record;
-  type t_reg3_to_hw is record
-    reg3 : std_logic_vector(7 downto 0);
-  end record;
-  type t_reg5_to_hw is record
-    reg5 : std_logic_vector(31 downto 0);
-  end record;
+  -- A register without fields gets no t_<reg>_to_hw record. Its member of
+  -- t_<module>_to_hw is its value, or a record of the value and the strobe
+  -- when it has swmod or swacc.
   type t_reg7_to_hw is record
     field0 : std_logic;
     field1 : std_logic_vector(3 downto 0);
     field2 : std_logic;
     field3 : std_logic_vector(14 downto 0);
-  end record;
-  type t_reg9_to_hw is record
-    reg9 : std_logic;
-  end record;
-  type t_reg10_to_hw is record
-    reg10 : std_logic_vector(3 downto 0);
   end record;
   type t_reg11_to_hw is record
     field0 : std_logic_vector(14 downto 0);
@@ -142,28 +128,19 @@ package example_axi_regfile_pkg is
 
   -- Whole-module regfile -> hardware bundle.
   type t_example_axi_to_hw is record
-    reg0 : t_reg0_to_hw;
-    reg1 : t_reg1_to_hw;
-    reg3 : t_reg3_to_hw;
-    reg5 : t_reg5_to_hw;
+    reg0 : std_logic;
+    reg1 : std_logic;
+    reg3 : std_logic_vector(7 downto 0);
+    reg5 : std_logic_vector(31 downto 0);
     reg7 : t_reg7_to_hw;
-    reg9 : t_reg9_to_hw;
-    reg10 : t_reg10_to_hw;
+    reg9 : std_logic;
+    reg10 : std_logic_vector(3 downto 0);
     reg11 : t_reg11_to_hw;
   end record;
 
   -- hardware -> regfile: per-field input records pairing each value with the
   -- modifier strobes that gate it. A field gets its own record only when it
   -- carries a strobe (we/wel/set/clr); a plain continuous input is a bare member.
-  type t_reg2_from_hw is record
-    reg2 : std_logic;
-  end record;
-  type t_reg4_from_hw is record
-    reg4 : std_logic_vector(13 downto 0);
-  end record;
-  type t_reg6_from_hw is record
-    reg6 : std_logic_vector(31 downto 0);
-  end record;
   type t_reg8_from_hw is record
     field0 : std_logic;
     field1 : std_logic_vector(18 downto 0);
@@ -173,46 +150,77 @@ package example_axi_regfile_pkg is
 
   -- Whole-module hardware -> regfile bundle.
   type t_example_axi_from_hw is record
-    reg2 : t_reg2_from_hw;
-    reg4 : t_reg4_from_hw;
-    reg6 : t_reg6_from_hw;
+    reg2 : std_logic;
+    reg4 : std_logic_vector(13 downto 0);
+    reg6 : std_logic_vector(31 downto 0);
     reg8 : t_reg8_from_hw;
   end record;
 
-  function base_match(addr  : std_logic_vector(31 downto 0);
-                      base  : unsigned(31 downto 0);
-                      check : boolean) return boolean;
+  -- base_match and above_registers get the register file's G_MODULE_ADDR_WIDTH
+  -- as module_addr_width. In an address, bits 0 to C_MODULE_ADDR_WIDTH - 1
+  -- select a register, bits C_MODULE_ADDR_WIDTH to module_addr_width - 1 must
+  -- be 0, and bit module_addr_width and up are the base address.
 
-  function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-                  reg_addr : std_logic_vector(31 downto 0)) return boolean;
+  -- True when check is false, or when the base address bits of addr equal the
+  -- same bits of base.
+  function base_match(addr              : std_logic_vector(31 downto 0);
+                      base              : unsigned(31 downto 0);
+                      check             : boolean;
+                      module_addr_width : natural) return boolean;
 
-  function is_mapped(sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+  -- True when any of bits C_MODULE_ADDR_WIDTH to module_addr_width - 1 of addr
+  -- is set. The address is then in the module's address range but above the
+  -- registers, and the register file answers it with an error, so that it
+  -- cannot reach a register through its low bits.
+  function above_registers(addr              : std_logic_vector(31 downto 0);
+                           module_addr_width : natural) return boolean;
+
+  -- True when reg_offset, the low address bits of an access, equals the
+  -- register offset in reg_addr. Every bit counts, so an address between two
+  -- registers, or inside one, matches no register.
+  function reg_addr_match(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+                          reg_addr   : std_logic_vector(31 downto 0)) return boolean;
+
+  -- True when a register sits at reg_offset.
+  function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
 
 end package example_axi_regfile_pkg;
 
 package body example_axi_regfile_pkg is
 
-  function base_match(addr  : std_logic_vector(31 downto 0);
-                      base  : unsigned(31 downto 0);
-                      check : boolean) return boolean is
+  function base_match(addr              : std_logic_vector(31 downto 0);
+                      base              : unsigned(31 downto 0);
+                      check             : boolean;
+                      module_addr_width : natural) return boolean is
     constant base_slv : std_logic_vector(31 downto 0) := std_logic_vector(base);
   begin
     if not check then
       return true;
     end if;
-    return addr(31 downto C_MODULE_ADDR_WIDTH)
-         = base_slv(31 downto C_MODULE_ADDR_WIDTH);
+    return addr(31 downto module_addr_width)
+         = base_slv(31 downto module_addr_width);
   end function;
 
-  function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-                  reg_addr : std_logic_vector(31 downto 0)) return boolean is
+  function above_registers(addr              : std_logic_vector(31 downto 0);
+                           module_addr_width : natural) return boolean is
   begin
-    return sel = reg_addr(C_MODULE_ADDR_WIDTH-1 downto 0);
+    for i in C_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
+      if addr(i) /= '0' then
+        return true;
+      end if;
+    end loop;
+    return false;
   end function;
 
-  function is_mapped(sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  function reg_addr_match(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+                          reg_addr   : std_logic_vector(31 downto 0)) return boolean is
   begin
-    return sel_is(sel, C_ADDR_REG0) or sel_is(sel, C_ADDR_REG1) or sel_is(sel, C_ADDR_REG2) or sel_is(sel, C_ADDR_REG3) or sel_is(sel, C_ADDR_REG4) or sel_is(sel, C_ADDR_REG5) or sel_is(sel, C_ADDR_REG6) or sel_is(sel, C_ADDR_REG7) or sel_is(sel, C_ADDR_REG8) or sel_is(sel, C_ADDR_REG9) or sel_is(sel, C_ADDR_REG10) or sel_is(sel, C_ADDR_REG11);
+    return reg_offset = reg_addr(C_MODULE_ADDR_WIDTH-1 downto 0);
+  end function;
+
+  function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  begin
+    return reg_addr_match(reg_offset, C_ADDR_REG0) or reg_addr_match(reg_offset, C_ADDR_REG1) or reg_addr_match(reg_offset, C_ADDR_REG2) or reg_addr_match(reg_offset, C_ADDR_REG3) or reg_addr_match(reg_offset, C_ADDR_REG4) or reg_addr_match(reg_offset, C_ADDR_REG5) or reg_addr_match(reg_offset, C_ADDR_REG6) or reg_addr_match(reg_offset, C_ADDR_REG7) or reg_addr_match(reg_offset, C_ADDR_REG8) or reg_addr_match(reg_offset, C_ADDR_REG9) or reg_addr_match(reg_offset, C_ADDR_REG10) or reg_addr_match(reg_offset, C_ADDR_REG11);
   end function;
 
 end package body example_axi_regfile_pkg;

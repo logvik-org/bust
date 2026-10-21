@@ -18,6 +18,7 @@ headers and the documentation from it.
     "register": [
       {
         "name": "ctrl",
+        "address": "0x0",
         "type": "fields",
         "sw": "rw",
         "hw": "r",
@@ -47,6 +48,7 @@ headers and the documentation from it.
       },
       {
         "name": "baud_div",
+        "address": "0x4",
         "type": "vector",
         "width": 16,
         "reset": "0x1b2",
@@ -56,6 +58,7 @@ headers and the documentation from it.
       },
       {
         "name": "status",
+        "address": "0x8",
         "type": "fields",
         "sw": "ro",
         "hw": "w",
@@ -85,12 +88,35 @@ The file has up to three sections:
 - `module`: the module's name and its registers.
 - `settings` (optional): where bust writes its output.
 
-This page describes every key. The access keys (`sw`, `hw`, `onread` and the
+This page describes every key. In the tables, the Default column says
+`required` for a key that must be present. Every other key is optional, and
+bust uses the default when the key is left out. The access keys (`sw`, `hw`, `onread` and the
 others) decide what software and hardware can do with each field.
 [Access modes](access-modes.md) describes what each of them does in hardware.
 
 bust reads and checks the whole file before it writes anything. At the first
 error it prints what is wrong and exits with status 1.
+
+## Numbers
+
+Every number in the file, such as an `address`, a `reset` or a `width`, can be
+written as a JSON number or as a string:
+
+| Written as | Read as | Example | Value |
+|---|---|---|---|
+| a JSON number | decimal | `16` | 16 |
+| a string | decimal | `"16"` | 16 |
+| a string that starts with `0x` | hexadecimal | `"0x10"` | 16 |
+| a string that starts with `0b` | binary | `"0b10000"` | 16 |
+
+JSON has no hexadecimal numbers, so a hexadecimal value is a string. Upper and
+lower case both work, as in `"0X1B2"` and `"0x1b2"`. A number cannot be
+negative, and a fraction, a space or any other character stops bust. So does a
+string with hexadecimal digits but no `0x`, because it cannot be decimal:
+
+```text
+Could not parse register baud_div: Reset of register baud_div "1B2" has hexadecimal digits but no 0x. Write "0x1B2" for a hexadecimal number.
+```
 
 ## Bus
 
@@ -105,8 +131,8 @@ error it prints what is wrong and exits with status 1.
 | Key | Type | Default | Meaning |
 |---|---|---|---|
 | `type` | string | required | The bus protocol, from the table below. |
-| `addr_width` | integer | required | Width of the bus address in bits. |
-| `data_width` | integer | required | Width of the bus data in bits. No register can be wider. |
+| `addr_width` | [number](#numbers) | required | Width of the bus address in bits. |
+| `data_width` | [number](#numbers) | required | Width of the bus data in bits. No register can be wider. |
 | `comp_library` | string | none | Accepted so that bust 0.14 files still load. It has no effect. |
 | `reset` | string | none | Accepted so that bust 0.14 files still load. It has no effect. |
 
@@ -146,7 +172,7 @@ the timing of each protocol.
 | `register` | list | required | The registers, see [Registers](#registers). |
 | `version` | string | `""` | Shown in the LaTeX documentation. |
 | `description` | string | `""` | Shown in the LaTeX documentation. |
-| `byte_addressable` | boolean | from the bus | How far apart bust places registers that have no address. See [Addresses](#addresses). |
+| `byte_addressable` | boolean | from the bus | `true` if an address counts bytes, `false` if it counts data words. See [Byte and word addresses](#byte-and-word-addresses). |
 | `git_hash` | string | none | Accepted and ignored. |
 
 ## Registers
@@ -157,9 +183,9 @@ Each entry in `register` is one register.
 |---|---|---|---|
 | `name` | string | required | Register name. See [Names](#names). |
 | `type` | string | `"default"` | `default`, `vector`, `bit` or `fields`. See [Register types](#register-types). |
-| `address` | string | next free address | Hexadecimal address. See [Addresses](#addresses). |
-| `width` | integer | `data_width` | Width of a `vector` register. |
-| `reset` | string | `"0x0"` | Hexadecimal reset value of a register without fields. See [Reset values](#reset-values). |
+| `address` | [number](#numbers) | next free address | Register offset. See [Addresses](#addresses). |
+| `width` | [number](#numbers) | `data_width` | Width of a `vector` register. |
+| `reset` | [number](#numbers) | `0` | Reset value of a register without fields. See [Reset values](#reset-values). |
 | `description` | string | `""` | Shown in the LaTeX documentation and the IPBus address table. |
 | `fields` | list | none | The fields of a `fields` register. See [Fields](#fields). |
 | access keys | | | Defaults for the register's fields. See [Access keys](#access-keys). |
@@ -173,17 +199,16 @@ Each entry in `register` is one register.
 | `bit` | one `std_logic`, at bit 0 |
 | `fields` | the fields listed under `fields` |
 
-A register without fields counts as one field with the same name as the
-register. It takes the register's `reset` and access keys. bust generated this
-record for `baud_div` in the example:
+A register without fields works like one field that spans the register. It
+takes the register's `reset` and access keys, and `to_hw` and `from_hw` hold
+its value directly, with no record of its own. bust generated this member of
+`to_hw` for `baud_div` in the example:
 
 ```vhdl
-type t_baud_div_to_hw is record
-  baud_div : std_logic_vector(15 downto 0);
-end record;
+baud_div : std_logic_vector(15 downto 0);
 ```
 
-Your logic reads it as `to_hw.baud_div.baud_div`.
+Your logic reads it as `to_hw.baud_div`.
 
 bust ignores a `width` on a `default` or `bit` register and prints a warning:
 
@@ -197,39 +222,54 @@ of another type stops bust.
 
 ### Addresses
 
-`address` is a hexadecimal string such as `"0x1c"`. The `0x` is optional, so
-`"10"` means 0x10. A JSON number is not accepted. The address must fit in
+`address` is the register offset, the register's distance from the module's
+base address. See [Base address and address range](addressing.md). It is a
+[number](#numbers), such as `"0x1c"` or `28`. The address must fit in
 `addr_width` bits.
 
-A register without an `address` gets the lowest free address. bust goes
-through the list in order and places each such register at the first address
-that no earlier register uses. It steps by `data_width / 8` on byte-addressed
-buses and by 1 on IPBus. With AXI4-Lite and 32-bit data, the registers of the
-example land at 0x0, 0x4 and 0x8.
+Give every register an address when you can. The register map then says where
+each register is, and adding, removing or reordering registers does not move
+the others.
 
-You can give some registers an address and leave it out on others. A register
-with an address that an earlier register already took stops bust:
+`address` is optional, though. A register without an `address` gets the lowest
+free address. bust goes through the list in order and places each such
+register at the first address that no earlier register uses. It steps by
+`data_width / 8` when addresses count bytes and by 1 when they count data
+words. See [Byte and word addresses](#byte-and-word-addresses). With AXI4-Lite
+and 32-bit data, these registers get the addresses in the table:
 
-```text
-When specifying address for register status, address 0x4 is already assigned to other register
+```json
+"register": [
+  { "name": "ctrl", "address": "0x0" },
+  { "name": "status" },
+  { "name": "irq", "address": "0x10" },
+  { "name": "debug" }
+]
 ```
 
-So either give every register an address, or list the registers with fixed
-addresses first.
+| Register | `address` | Address |
+|---|---|---|
+| `ctrl` | `"0x0"` | 0x0 |
+| `status` | left out | 0x4 |
+| `irq` | `"0x10"` | 0x10 |
+| `debug` | left out | 0x8 |
+
+`debug` comes after `irq` in the list, but 0x8 is the lowest address that no
+earlier register uses.
+
+A register with an address that an earlier register already took stops bust.
+With `"address": "0x4"` on `irq`, `status` would already have taken 0x4:
+
+```text
+When specifying address for register irq, address 0x4 is already assigned to other register
+```
+
+So either give every register an address, or list the registers with an
+address before the registers without one.
 
 `bust -a` gives every register a new address, in list order, and writes the
 addresses into the JSON file. It replaces addresses you set by hand. See
 [Command line](command-line.md).
-
-`byte_addressable` in `module` overrides the step: `false` steps by 1 and
-`true` by `data_width / 8`. It only changes the addresses bust picks. The bus
-endpoint still compares the address exactly as the bus master drives it.
-
-On a byte-addressed bus, an address must be a multiple of `data_width / 8`:
-
-```text
-Address 0x6 of register baud_div is not a multiple of 4, the data width in bytes
-```
 
 The generated register file compares the whole address, so software has to use
 the exact address of each register. An access to any other address, including
@@ -240,11 +280,34 @@ The base address of the module is not part of the register map. You set it
 with the `G_BASE_ADDRESS` generic when you instantiate the module. See
 [Generated HDL](generated-hdl.md).
 
+### Byte and word addresses
+
+An address counts either bytes or data words. `byte_addressable` in `module`
+says which:
+
+| `byte_addressable` | An address counts | bust places registers | An address you set |
+|---|---|---|---|
+| `true` | bytes | `data_width / 8` apart | must be a multiple of `data_width / 8` |
+| `false` | data words | 1 apart | can be any address |
+
+The default follows the bus: `false` on IPBus, whose addresses count 32-bit
+words, and `true` on every other bus. Set `false` on another bus when the
+master or the interconnect drives word addresses, as many Wishbone designs and
+some bridges from IPBus do. The endpoint compares the address exactly as the
+master drives it, so `byte_addressable` must match what the master drives.
+With 32-bit data, the third register of a module is at `0x8` with `true` and
+at `0x2` with `false`.
+
+With `true`, an address that is not a multiple of `data_width / 8` stops bust:
+
+```text
+Address 0x6 of register baud_div is not a multiple of 4, the data width in bytes
+```
+
 ### Reset values
 
-`reset` is a hexadecimal string, written like `address`: `"0x1b2"`, `"1B2"`.
-A JSON number is not accepted. The value must fit in the register's width,
-otherwise bust stops:
+`reset` is a [number](#numbers), such as `"0x1b2"` or `434`. The value must
+fit in the register's width, otherwise bust stops:
 
 ```text
 Could not parse register baud_div: Invalid register format: Reset value does not match register: baud_div
@@ -288,9 +351,9 @@ A `fields` register lists its fields under `fields`. Each entry is one field.
 |---|---|---|---|
 | `name` | string | required | Field name. See [Names](#names). |
 | `type` | string | required | `bit` for a `std_logic`, `vector` for a `std_logic_vector`. |
-| `width` | integer | `1` | Width of a `vector` field. A `bit` field is always 1 bit wide, and bust ignores a different `width` with a warning. |
-| `position` | integer | next free bit | Lowest bit of the field. See [Bit positions](#bit-positions). |
-| `reset` | string | `"0x0"` | Hexadecimal reset value, written like a register's `reset`. |
+| `width` | [number](#numbers) | `1` | Width of a `vector` field. A `bit` field is always 1 bit wide, and bust ignores a different `width` with a warning. |
+| `position` | [number](#numbers) | next free bit | Lowest bit of the field. See [Bit positions](#bit-positions). |
+| `reset` | [number](#numbers) | `0` | Reset value of the field. |
 | `description` | string | `""` | Shown in the LaTeX documentation and the IPBus address table. |
 | `enums` | list | none | Named values. See [Enumerations](#enumerations). |
 | access keys | | from the register | See [Access keys](#access-keys). |
@@ -349,7 +412,7 @@ Each entry has two keys:
 
 - `name`: the name of the value. It becomes a VHDL enumeration literal, so it
   follows the [name rules](#names) and must be unique in the field.
-- `value`: the encoding, a JSON integer. It must fit in the field's width and
+- `value`: the encoding, a [number](#numbers). It must fit in the field's width and
   be unique in the field.
 
 bust reads no other keys from an entry and warns about any other key, such as
@@ -452,10 +515,36 @@ instead of access keys, and bust translates it:
 | `pulse` | `"sw": "wo", "hw": "r", "singlepulse": true` |
 
 A `pulse` register therefore returns to its reset value one clock cycle after
-a software write. The register types `default`, `vector`, `bit` and `fields`
-are the same in both versions. The fields of a `mode` register can set their
-own access keys, but a register cannot have `mode` together with access keys
-of its own:
+a software write.
+
+bust 0.14 called the `bit` and `vector` types `sl` and `slv`, for registers and
+fields. bust 1.0 still reads these names and warns once per file that they are
+deprecated:
+
+```text
+The bust 0.14 type names 'sl' and 'slv' are deprecated. Use 'bit' and 'vector' instead (17 registers and fields).
+```
+
+`bust FILE -a` saves the file with the new names. The types `default` and
+`fields` are the same in both versions.
+
+bust 0.14 wrote `byte_addressable` as the string `"True"` or `"False"`. bust
+1.0 reads both and warns that they are deprecated, and `bust FILE -a` saves
+`true` or `false`:
+
+```text
+byte_addressable "False" is the deprecated bust 0.14 form. Use false, without quotes.
+```
+
+bust 0.14 read an `address` or a `reset` as hexadecimal even without `0x`, so
+`"10"` meant 0x10. bust 1.0 reads a string without a prefix as decimal, so
+`"10"` is 10. Add `0x` to such values before you run bust 1.0. The values 0 to
+9 are the same either way. A value with a hexadecimal letter, such as `"1c"`,
+stops bust with a message that suggests `"0x1c"`. bust 0.14 and its editor
+wrote `0x` themselves, so only values typed by hand can lack it.
+
+The fields of a `mode` register can set their own access keys, but a register
+cannot have `mode` together with access keys of its own:
 
 ```text
 Could not parse register baud_div: Invalid register format: Register baud_div sets the legacy 'mode' key together with bust 1.0 access-mode keys (sw/hw/...); use one schema, not both
