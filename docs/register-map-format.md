@@ -97,6 +97,30 @@ others) decide what software and hardware can do with each field.
 bust reads and checks the whole file before it writes anything. At the first
 error it prints what is wrong and exits with status 1.
 
+## Numbers
+
+Every number in the file, such as an `address`, a `reset` or a `width`, can be
+written as a JSON number or as a string:
+
+| Written as | Read as | Example | Value |
+|---|---|---|---|
+| a JSON number | decimal | `16` | 16 |
+| a string | decimal | `"16"` | 16 |
+| a string that starts with `0x` | hexadecimal | `"0x10"` | 16 |
+| a string that starts with `0b` | binary | `"0b10000"` | 16 |
+
+JSON has no hexadecimal numbers, so a hexadecimal value is a string. Upper and
+lower case both work, as in `"0X1B2"` and `"0x1b2"`. A number cannot be
+negative, and a fraction, a space or any other character stops bust. So does a
+string with hexadecimal digits but no `0x`, because it cannot be decimal:
+
+```text
+Could not parse register baud_div: Reset of register baud_div "1B2" has hexadecimal digits but no 0x. Write "0x1B2" for a hexadecimal number.
+```
+
+bust 0.14 read `"10"` in an `address` or a `reset` as hexadecimal. See
+[Files from bust 0.14](#files-from-bust-014).
+
 ## Bus
 
 ```json
@@ -110,8 +134,8 @@ error it prints what is wrong and exits with status 1.
 | Key | Type | Default | Meaning |
 |---|---|---|---|
 | `type` | string | required | The bus protocol, from the table below. |
-| `addr_width` | integer | required | Width of the bus address in bits. |
-| `data_width` | integer | required | Width of the bus data in bits. No register can be wider. |
+| `addr_width` | [number](#numbers) | required | Width of the bus address in bits. |
+| `data_width` | [number](#numbers) | required | Width of the bus data in bits. No register can be wider. |
 | `comp_library` | string | none | Accepted so that bust 0.14 files still load. It has no effect. |
 | `reset` | string | none | Accepted so that bust 0.14 files still load. It has no effect. |
 
@@ -162,9 +186,9 @@ Each entry in `register` is one register.
 |---|---|---|---|
 | `name` | string | required | Register name. See [Names](#names). |
 | `type` | string | `"default"` | `default`, `vector`, `bit` or `fields`. See [Register types](#register-types). |
-| `address` | string | next free address | Hexadecimal register offset. See [Addresses](#addresses). |
-| `width` | integer | `data_width` | Width of a `vector` register. |
-| `reset` | string | `"0x0"` | Hexadecimal reset value of a register without fields. See [Reset values](#reset-values). |
+| `address` | [number](#numbers) | next free address | Register offset. See [Addresses](#addresses). |
+| `width` | [number](#numbers) | `data_width` | Width of a `vector` register. |
+| `reset` | [number](#numbers) | `0` | Reset value of a register without fields. See [Reset values](#reset-values). |
 | `description` | string | `""` | Shown in the LaTeX documentation and the IPBus address table. |
 | `fields` | list | none | The fields of a `fields` register. See [Fields](#fields). |
 | access keys | | | Defaults for the register's fields. See [Access keys](#access-keys). |
@@ -203,8 +227,8 @@ of another type stops bust.
 
 `address` is the register offset, the register's distance from the module's
 base address. See [Base address and address range](addressing.md). It is a
-hexadecimal string such as `"0x1c"`. The `0x` is optional, so `"10"` means
-0x10. A JSON number is not accepted. The address must fit in `addr_width` bits.
+[number](#numbers), such as `"0x1c"` or `28`. The address must fit in
+`addr_width` bits.
 
 Give every register an address when you can. The register map then says where
 each register is, and adding, removing or reordering registers does not move
@@ -270,9 +294,8 @@ with the `G_BASE_ADDRESS` generic when you instantiate the module. See
 
 ### Reset values
 
-`reset` is a hexadecimal string, written like `address`: `"0x1b2"`, `"1B2"`.
-A JSON number is not accepted. The value must fit in the register's width,
-otherwise bust stops:
+`reset` is a [number](#numbers), such as `"0x1b2"` or `434`. The value must
+fit in the register's width, otherwise bust stops:
 
 ```text
 Could not parse register baud_div: Invalid register format: Reset value does not match register: baud_div
@@ -316,9 +339,9 @@ A `fields` register lists its fields under `fields`. Each entry is one field.
 |---|---|---|---|
 | `name` | string | required | Field name. See [Names](#names). |
 | `type` | string | required | `bit` for a `std_logic`, `vector` for a `std_logic_vector`. |
-| `width` | integer | `1` | Width of a `vector` field. A `bit` field is always 1 bit wide, and bust ignores a different `width` with a warning. |
-| `position` | integer | next free bit | Lowest bit of the field. See [Bit positions](#bit-positions). |
-| `reset` | string | `"0x0"` | Hexadecimal reset value, written like a register's `reset`. |
+| `width` | [number](#numbers) | `1` | Width of a `vector` field. A `bit` field is always 1 bit wide, and bust ignores a different `width` with a warning. |
+| `position` | [number](#numbers) | next free bit | Lowest bit of the field. See [Bit positions](#bit-positions). |
+| `reset` | [number](#numbers) | `0` | Reset value of the field. |
 | `description` | string | `""` | Shown in the LaTeX documentation and the IPBus address table. |
 | `enums` | list | none | Named values. See [Enumerations](#enumerations). |
 | access keys | | from the register | See [Access keys](#access-keys). |
@@ -377,7 +400,7 @@ Each entry has two keys:
 
 - `name`: the name of the value. It becomes a VHDL enumeration literal, so it
   follows the [name rules](#names) and must be unique in the field.
-- `value`: the encoding, a JSON integer. It must fit in the field's width and
+- `value`: the encoding, a [number](#numbers). It must fit in the field's width and
   be unique in the field.
 
 bust reads no other keys from an entry and warns about any other key, such as
@@ -492,6 +515,13 @@ The bust 0.14 type names 'sl' and 'slv' are deprecated. Use 'bit' and 'vector' i
 
 `bust FILE -a` saves the file with the new names. The types `default` and
 `fields` are the same in both versions.
+
+bust 0.14 read an `address` or a `reset` as hexadecimal even without `0x`, so
+`"10"` meant 0x10. bust 1.0 reads a string without a prefix as decimal, so
+`"10"` is 10. Add `0x` to such values before you run bust 1.0. The values 0 to
+9 are the same either way. A value with a hexadecimal letter, such as `"1c"`,
+stops bust with a message that suggests `"0x1c"`. bust 0.14 and its editor
+wrote `0x` themselves, so only values typed by hand can lack it.
 
 The fields of a `mode` register can set their own access keys, but a register
 cannot have `mode` together with access keys of its own:

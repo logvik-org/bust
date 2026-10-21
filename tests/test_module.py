@@ -75,9 +75,9 @@ class TestAddressAssignment:
         )
         assert mod.addresses == [3]
 
-    def test_numeric_address_rejected_with_a_hint(self):
-        with pytest.raises(FormatError, match='hex string such as "0x10"'):
-            make_module([{"name": "R0", "mode": "rw", "address": 16}])
+    def test_numeric_address_is_decimal(self):
+        mod = make_module([{"name": "R0", "mode": "rw", "address": 16}])
+        assert mod.registers[0].address == 0x10
 
     def test_update_addresses_reassigns_sequentially(self):
         mod = make_module(regs("R0", "R1"))

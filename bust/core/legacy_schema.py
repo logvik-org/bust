@@ -19,6 +19,7 @@ from typing import Dict, List
 from bust.core.enums import RegisterMode
 from bust.core.field import INHERITABLE_ACCESS
 from bust.exceptions import InvalidRegisterFormat
+from bust.validation.config_validator import parse_number
 
 # Register-level keys that signal the new access-mode schema is in use.
 _NEW_SCHEMA_KEYS: List[str] = list(INHERITABLE_ACCESS)
@@ -39,7 +40,9 @@ def reject_unsupported_timing(reg: Dict) -> None:
         InvalidRegisterFormat: If either key asks for other timing.
     """
     name = reg.get("name", "<unknown>")
-    pulse_cycles = reg.get("pulse_cycles", 1)
+    pulse_cycles = parse_number(
+        reg.get("pulse_cycles", 1), f"pulse_cycles of register {name}"
+    )
     if pulse_cycles != 1:
         raise InvalidRegisterFormat(
             f"Register '{name}': pulse_cycles={pulse_cycles} is not supported in "
@@ -48,7 +51,10 @@ def reject_unsupported_timing(reg: Dict) -> None:
             "To reach logic on another clock, see "
             "https://bust.readthedocs.io/en/latest/access-modes.html#pulses-into-another-clock-domain"
         )
-    if reg.get("stall_cycles", 0) != 0:
+    stall_cycles = parse_number(
+        reg.get("stall_cycles", 0), f"stall_cycles of register {name}"
+    )
+    if stall_cycles != 0:
         raise InvalidRegisterFormat(
             f"Register '{name}': stall_cycles is not supported in bust 1.0, "
             "because registers live in the generated register file and always "

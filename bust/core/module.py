@@ -21,7 +21,11 @@ from bust.exceptions import (
 from bust.core.register import Register
 from bust.utils.formatting import indent_string
 from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
-from bust.validation.config_validator import ConfigWrapper, warn_unknown_keys
+from bust.validation.config_validator import (
+    ConfigWrapper,
+    parse_number,
+    warn_unknown_keys,
+)
 
 if TYPE_CHECKING:
     from bust.core.bus import Bus
@@ -165,14 +169,7 @@ class Module:
     def _explicit_address(self, reg: Dict) -> int:
         """Parse a register's `address` and check that the bus can reach it."""
         name = reg.get("name", "<unknown>")
-        address = reg["address"]
-        try:
-            addr = int(address, 16)
-        except (TypeError, ValueError):
-            raise FormatError(
-                f"Address of register {name} must be a hex string such as "
-                f'"0x10" (got {address!r})'
-            ) from None
+        addr = parse_number(reg["address"], f"Address of register {name}")
         if self.is_address_out_of_range(addr):
             raise FormatError(
                 f"Address {hex(addr)} of register {name} does not fit in "
