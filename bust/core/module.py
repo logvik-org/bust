@@ -378,11 +378,10 @@ class Module:
                 (default: False).
 
         Returns:
-            JSON string with settings, bus, and module configuration.
+            JSON string with the bus and module configuration.
         """
         dic = OrderedDict()
         mod = OrderedDict()
-        dic["settings"] = self.settings.to_json()
         dic["bus"] = self.bus.to_json()
         dic["module"] = OrderedDict()
 

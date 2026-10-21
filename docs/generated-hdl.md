@@ -9,9 +9,6 @@ is bust's output for this register map, trimmed:
 
 ```json
 {
-  "settings": {
-    "mod_subdir": true
-  },
   "bus": {
     "type": "axi",
     "addr_width": 32,
@@ -99,10 +96,9 @@ timer/
     └── timer_tb.vhd
 ```
 
-The `timer/` directory is there because `mod_subdir` is `true`, which is also
-the default. With `"mod_subdir": false`, the four directories go straight into
-the output directory. You choose the output directory with `-o`.
-[Command line](command-line.md) describes the default.
+bust puts the four directories in a directory named after the module, here
+`timer/`, inside the output directory. You choose the output directory with
+`-o`. [Command line](command-line.md) describes the default.
 
 ### Compile order
 
@@ -116,8 +112,7 @@ Compile the files in this order, all into the same library:
 6. `<module>_tb.vhd`, for simulation only
 
 The files refer to each other through `work`, so the library name is up to
-you. The `comp_library` key of the `bus` object does not change the generated
-HDL. The files use VHDL-2008 syntax, so compile with VHDL-2008 enabled. With
+you. The files use VHDL-2008 syntax, so compile with VHDL-2008 enabled. With
 [GHDL](https://github.com/ghdl/ghdl), into a library called `periph`:
 
 ```bash

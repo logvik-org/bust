@@ -1,15 +1,8 @@
 {
-  "settings": {
-    "mod_subdir": true,
-    "bus_subdir": false,
-    "uvvm_rel_path": "../../../UVVM",
-    "coverage": true
-  },
   "bus": {
     "type": "axi",
     "addr_width": 32,
-    "data_width": 32,
-    "comp_library": "bust"
+    "data_width": 32
   },
   "module": {
     "name": "access_matrix",

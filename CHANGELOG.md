@@ -17,6 +17,16 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   so a read-only field the logic does not drive reads its reset value, as in
   bust 0.14 (#225).
 
+### Changed
+- bust no longer reads the `settings` section. It always writes into
+  `<output directory>/<module>/`, where the output directory is `-o DIR` or
+  the directory of the JSON file. A `settings` section gives a warning, and one
+  with `proj_dir` or `"mod_subdir": false` stops bust, because the output would
+  land somewhere else. `--migrate` removes the section and says which `-o` to
+  use (#227).
+- The bust 0.14 bus keys `comp_library` and `reset` are unknown keys now. bust
+  warns about them, and `bust -a` no longer writes them back (#227).
+
 ## [1.0.0a2] - 2026-10-21
 
 Third pre-release of bust 1.0.0, for testing. Install it with

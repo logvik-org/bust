@@ -49,10 +49,10 @@ cd sim && make build && make sim-axi            # nvc + UVVM in Docker
   (the curses editor behind `-c` and `-e`). The editor still writes only the
   0.14 `mode` schema.
 - Each JSON section has a set of the keys bust reads (`REGISTER_KEYS`,
-  `FIELD_KEYS`, `MODULE_KEYS` in `bust/core/`, and the key tuples in `Bus` and
-  `Settings`). bust warns about any other key, so a new key goes into its set.
-  Keys bust 0.14 used that 1.0 ignores stay accepted (`IGNORED_KEYS`) and are
-  written back unchanged by `-a`.
+  `FIELD_KEYS`, `MODULE_KEYS` in `bust/core/`, and the key tuple in `Bus`).
+  bust warns about any other key, so a new key goes into its set. bust no
+  longer reads the 0.14 `settings` section, and `--migrate` removes the 0.14
+  keys.
 
 ## Generated VHDL
 
