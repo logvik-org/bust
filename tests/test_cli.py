@@ -189,3 +189,22 @@ def test_failed_run_writes_debug_log(tmp_path):
     log = (tmp_path / "debug.log").read_text()
     assert "Bus type is not valid: pci" in log
     assert "Traceback" in log
+    assert f"bust {path} -o out" in log.splitlines()[0]
+
+
+def test_failed_runs_append_to_debug_log(tmp_path):
+    register_map = json.loads(json.dumps(_REGISTER_MAP))
+    register_map["bus"]["type"] = "pci"
+    path = _write_register_map(tmp_path, register_map)
+
+    for out in ("first", "second"):
+        code, output = _run_bust(tmp_path, str(path), "-o", out)
+        assert code == 1, output
+
+    runs = [
+        line
+        for line in (tmp_path / "debug.log").read_text().splitlines()
+        if line.startswith("=== ")
+    ]
+    assert len(runs) == 2
+    assert runs[0].endswith("-o first") and runs[1].endswith("-o second")

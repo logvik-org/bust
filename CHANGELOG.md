@@ -40,7 +40,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   This is the shape of the 0.14 records, so `ipb_rw_regs.<reg>` becomes
   `to_hw.<reg>`.
 - bust writes `debug.log` only when a run stops with an error, so a run that
-  succeeds no longer leaves the file in the working directory.
+  succeeds no longer leaves the file in the working directory. A failed run
+  adds to the file under a line with the time and the command line, instead
+  of replacing it.
 - One rule for every number in the register map: a JSON number is decimal,
   and a string is hexadecimal after `0x`, binary after `0b` and decimal
   without a prefix. `address` and `reset` used to read a string without a
