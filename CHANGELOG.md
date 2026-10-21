@@ -10,6 +10,13 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Added
+- `<module>_regfile_pkg` has a constant `C_<MODULE>_FROM_HW_RESET`, a
+  `from_hw` with every value at its reset and every strobe inactive. A top
+  level migrated with `--migrate` uses it as the initial value of `from_hw`,
+  so a read-only field the logic does not drive reads its reset value, as in
+  bust 0.14 (#225).
+
 ## [1.0.0a2] - 2026-10-21
 
 Third pre-release of bust 1.0.0, for testing. Install it with
