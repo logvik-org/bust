@@ -63,6 +63,9 @@ class AddressChecks:
         gap = next((a for a in range(0, span, stride) if a not in used), None)
         if gap is not None:
             offsets.append((gap, "an unused register offset"))
+        if stride > 1 and module.registers:
+            inside = (alias or module.registers[0]).address + 1
+            offsets.append((inside, "an address inside a register"))
         if self.module_addr_width > module.register_select_width:
             offsets.append((span + alias_offset, "an address above the registers"))
         if self.module_addr_width < module.addr_width:

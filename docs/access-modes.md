@@ -332,8 +332,10 @@ elsif sel_is(sel, C_ADDR_REG2) then
 ### Unmapped addresses
 
 An access to a register offset where no register sits gets an error response.
-So does an address above the registers in the module's address range, and an
-address with another base address, unless the module was instantiated with
+That includes an address inside a register, such as `0x1` when a register sits
+at `0x0` on a bus whose addresses count bytes. So does an address above the
+registers in the module's address range, and an address with another base
+address, unless the module was instantiated with
 `G_CHECK_BASE_ADDRESS => false`. A write to such an address has no effect, and
 a read returns 0. [Base address and address range](addressing.md) explains these
 checks. How the error reaches the bus master depends on the bus:

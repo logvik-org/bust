@@ -266,6 +266,8 @@ begin
     log(ID_LOG_HDR, "addresses without a register get an error and change nothing", C_SCOPE);
     bus_write_unmapped(f_addr(32x"30"), 32x"0", "write 0x30, an unused register offset");
     bus_check_unmapped(f_addr(32x"30"), "read 0x30, an unused register offset");
+    bus_write_unmapped(f_addr(32x"1"), 32x"0", "write 0x1, an address inside a register");
+    bus_check_unmapped(f_addr(32x"1"), "read 0x1, an address inside a register");
     bus_write_unmapped(f_addr(32x"40"), 32x"0", "write 0x40, an address above the registers");
     bus_check_unmapped(f_addr(32x"40"), "read 0x40, an address above the registers");
     bus_write_unmapped(f_addr(32x"100"), 32x"0", "write 0x100, another base address");
