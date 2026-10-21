@@ -69,85 +69,85 @@ begin
     variable rd_service : boolean;     -- a new software read from a register
   begin
     if rising_edge(clk) then
-      wr_ack <= '0';
-      wr_err <= '0';
-
-      -- A software access only takes effect on the cycle it is first seen
-      -- (response still low); the master holds the request until it observes
-      -- the response, so these guards keep the effect single-shot.
-      reg_offset := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
-      mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
-                               G_MODULE_ADDR_WIDTH)
-                    and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
-                    and is_mapped(reg_offset);
-      sw_write   := lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' and mapped;
-      rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' and mapped;
-
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG0) then
-        regs.reg0.reg0 <= lb_m2s.wdata(0);
-      end if;
-
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG1) then
-        regs.reg1.reg1 <= lb_m2s.wdata(0);
-      end if;
-
-      regs.reg2.reg2 <= from_hw.reg2;
-
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG3) then
-        regs.reg3.reg3 <= lb_m2s.wdata(7 downto 0);
-      end if;
-
-      regs.reg4.reg4 <= from_hw.reg4;
-
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG5) then
-        regs.reg5.reg5 <= lb_m2s.wdata(31 downto 0);
-      end if;
-
-      regs.reg6.reg6 <= from_hw.reg6;
-
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG7) then
-        regs.reg7.field0 <= lb_m2s.wdata(0);
-        regs.reg7.field1 <= lb_m2s.wdata(4 downto 1);
-        regs.reg7.field2 <= lb_m2s.wdata(5);
-        regs.reg7.field3 <= lb_m2s.wdata(20 downto 6);
-      end if;
-
-      regs.reg8.field0 <= from_hw.reg8.field0;
-      regs.reg8.field1 <= from_hw.reg8.field1;
-      regs.reg8.field2 <= from_hw.reg8.field2;
-      regs.reg8.field3 <= from_hw.reg8.field3;
-
-      regs.reg9.reg9 <= '1';
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG9) then
-        regs.reg9.reg9 <= lb_m2s.wdata(0);
-      end if;
-
-      regs.reg10.reg10 <= 4X"A";
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG10) then
-        regs.reg10.reg10 <= lb_m2s.wdata(3 downto 0);
-      end if;
-
-      regs.reg11.field0 <= 15X"3";
-      regs.reg11.field1 <= '0';
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG11) then
-        regs.reg11.field0 <= lb_m2s.wdata(14 downto 0);
-        regs.reg11.field1 <= lb_m2s.wdata(15);
-      end if;
-
-      -- Write response: ack a write to a register, err a write to any other
-      -- address.
-      if lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' then
-        if mapped then
-          wr_ack <= '1';
-        else
-          wr_err <= '1';
-        end if;
-      end if;
-
       if rst = '1' then
         regs       <= C_EXAMPLE_IPBUS_REGS_RESET;
         wr_ack     <= '0';
         wr_err     <= '0';
+      else
+        wr_ack <= '0';
+        wr_err <= '0';
+
+        -- A software access only takes effect on the cycle it is first seen
+        -- (response still low); the master holds the request until it observes
+        -- the response, so these guards keep the effect single-shot.
+        reg_offset := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
+        mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
+                                 G_MODULE_ADDR_WIDTH)
+                      and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
+                      and is_mapped(reg_offset);
+        sw_write   := lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' and mapped;
+        rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' and mapped;
+
+        if sw_write and reg_addr_match(reg_offset, C_ADDR_REG0) then
+          regs.reg0.reg0 <= lb_m2s.wdata(0);
+        end if;
+
+        if sw_write and reg_addr_match(reg_offset, C_ADDR_REG1) then
+          regs.reg1.reg1 <= lb_m2s.wdata(0);
+        end if;
+
+        regs.reg2.reg2 <= from_hw.reg2;
+
+        if sw_write and reg_addr_match(reg_offset, C_ADDR_REG3) then
+          regs.reg3.reg3 <= lb_m2s.wdata(7 downto 0);
+        end if;
+
+        regs.reg4.reg4 <= from_hw.reg4;
+
+        if sw_write and reg_addr_match(reg_offset, C_ADDR_REG5) then
+          regs.reg5.reg5 <= lb_m2s.wdata(31 downto 0);
+        end if;
+
+        regs.reg6.reg6 <= from_hw.reg6;
+
+        if sw_write and reg_addr_match(reg_offset, C_ADDR_REG7) then
+          regs.reg7.field0 <= lb_m2s.wdata(0);
+          regs.reg7.field1 <= lb_m2s.wdata(4 downto 1);
+          regs.reg7.field2 <= lb_m2s.wdata(5);
+          regs.reg7.field3 <= lb_m2s.wdata(20 downto 6);
+        end if;
+
+        regs.reg8.field0 <= from_hw.reg8.field0;
+        regs.reg8.field1 <= from_hw.reg8.field1;
+        regs.reg8.field2 <= from_hw.reg8.field2;
+        regs.reg8.field3 <= from_hw.reg8.field3;
+
+        regs.reg9.reg9 <= '1';
+        if sw_write and reg_addr_match(reg_offset, C_ADDR_REG9) then
+          regs.reg9.reg9 <= lb_m2s.wdata(0);
+        end if;
+
+        regs.reg10.reg10 <= 4X"A";
+        if sw_write and reg_addr_match(reg_offset, C_ADDR_REG10) then
+          regs.reg10.reg10 <= lb_m2s.wdata(3 downto 0);
+        end if;
+
+        regs.reg11.field0 <= 15X"3";
+        regs.reg11.field1 <= '0';
+        if sw_write and reg_addr_match(reg_offset, C_ADDR_REG11) then
+          regs.reg11.field0 <= lb_m2s.wdata(14 downto 0);
+          regs.reg11.field1 <= lb_m2s.wdata(15);
+        end if;
+
+        -- Write response: ack a write to a register, err a write to any other
+        -- address.
+        if lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' then
+          if mapped then
+            wr_ack <= '1';
+          else
+            wr_err <= '1';
+          end if;
+        end if;
       end if;
     end if;
   end process p_write;
@@ -159,64 +159,64 @@ begin
     variable mapped     : boolean;     -- a register sits at this address
   begin
     if rising_edge(clk) then
-      rd_ack <= '0';
-      rd_err <= '0';
-
-      if lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' then
-        rdata <= (others => '0');
-        reg_offset := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
-        mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
-                                 G_MODULE_ADDR_WIDTH)
-                      and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
-                      and is_mapped(reg_offset);
-        if not mapped then
-          rd_err <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG0) then
-          rdata(0) <= regs.reg0.reg0;
-          rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG1) then
-          rdata(0) <= regs.reg1.reg1;
-          rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG2) then
-          rdata(0) <= regs.reg2.reg2;
-          rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG3) then
-          rdata(7 downto 0) <= regs.reg3.reg3;
-          rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG4) then
-          rdata(13 downto 0) <= regs.reg4.reg4;
-          rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG5) then
-          rdata(31 downto 0) <= regs.reg5.reg5;
-          rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG6) then
-          rdata(31 downto 0) <= regs.reg6.reg6;
-          rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG7) then
-          rdata(0) <= regs.reg7.field0;
-          rdata(4 downto 1) <= regs.reg7.field1;
-          rdata(5) <= regs.reg7.field2;
-          rdata(20 downto 6) <= regs.reg7.field3;
-          rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG8) then
-          rdata(0) <= regs.reg8.field0;
-          rdata(19 downto 1) <= regs.reg8.field1;
-          rdata(20) <= regs.reg8.field2;
-          rdata(23 downto 21) <= regs.reg8.field3;
-          rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG9) then
-          rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG10) then
-          rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG11) then
-          rd_ack <= '1';
-        end if;
-      end if;
-
       if rst = '1' then
         rdata  <= (others => '0');
         rd_ack <= '0';
         rd_err <= '0';
+      else
+        rd_ack <= '0';
+        rd_err <= '0';
+
+        if lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' then
+          rdata <= (others => '0');
+          reg_offset := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
+          mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
+                                   G_MODULE_ADDR_WIDTH)
+                        and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
+                        and is_mapped(reg_offset);
+          if not mapped then
+            rd_err <= '1';
+          elsif reg_addr_match(reg_offset, C_ADDR_REG0) then
+            rdata(0) <= regs.reg0.reg0;
+            rd_ack <= '1';
+          elsif reg_addr_match(reg_offset, C_ADDR_REG1) then
+            rdata(0) <= regs.reg1.reg1;
+            rd_ack <= '1';
+          elsif reg_addr_match(reg_offset, C_ADDR_REG2) then
+            rdata(0) <= regs.reg2.reg2;
+            rd_ack <= '1';
+          elsif reg_addr_match(reg_offset, C_ADDR_REG3) then
+            rdata(7 downto 0) <= regs.reg3.reg3;
+            rd_ack <= '1';
+          elsif reg_addr_match(reg_offset, C_ADDR_REG4) then
+            rdata(13 downto 0) <= regs.reg4.reg4;
+            rd_ack <= '1';
+          elsif reg_addr_match(reg_offset, C_ADDR_REG5) then
+            rdata(31 downto 0) <= regs.reg5.reg5;
+            rd_ack <= '1';
+          elsif reg_addr_match(reg_offset, C_ADDR_REG6) then
+            rdata(31 downto 0) <= regs.reg6.reg6;
+            rd_ack <= '1';
+          elsif reg_addr_match(reg_offset, C_ADDR_REG7) then
+            rdata(0) <= regs.reg7.field0;
+            rdata(4 downto 1) <= regs.reg7.field1;
+            rdata(5) <= regs.reg7.field2;
+            rdata(20 downto 6) <= regs.reg7.field3;
+            rd_ack <= '1';
+          elsif reg_addr_match(reg_offset, C_ADDR_REG8) then
+            rdata(0) <= regs.reg8.field0;
+            rdata(19 downto 1) <= regs.reg8.field1;
+            rdata(20) <= regs.reg8.field2;
+            rdata(23 downto 21) <= regs.reg8.field3;
+            rd_ack <= '1';
+          elsif reg_addr_match(reg_offset, C_ADDR_REG9) then
+            rd_ack <= '1';
+          elsif reg_addr_match(reg_offset, C_ADDR_REG10) then
+            rd_ack <= '1';
+          elsif reg_addr_match(reg_offset, C_ADDR_REG11) then
+            rd_ack <= '1';
+          end if;
+        end if;
       end if;
     end if;
   end process p_read;
