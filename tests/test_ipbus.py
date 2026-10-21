@@ -13,6 +13,7 @@ from bust.exceptions import FormatError
 from bust.generators.documentation_generator import DocumentationGenerator
 from bust.generators.factory import GeneratorFactory
 from bust.generators.header_generator import HeaderGenerator
+from bust.generators.vhdl.address_checks import AddressChecks
 
 _ACCESS_REGISTERS = [
     {
@@ -126,7 +127,20 @@ def test_endpoint_slices_ipbus_address_to_module_width():
     localbus_pkg = GeneratorFactory.generate_localbus_package_vhdl(module)
     assert "C_LB_ADDR_WIDTH : natural := 16;" in localbus_pkg
     regfile_pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
-    assert "return addr(15 downto C_MODULE_ADDR_WIDTH)" in regfile_pkg
+    assert "return addr(15 downto module_addr_width)" in regfile_pkg
+
+
+def test_unmapped_offsets_follow_the_ipbus_word_addresses():
+    module = _ipbus_module(
+        [{"name": "a", "type": "default"}, {"name": "b", "type": "default"}]
+    )
+    # Two registers at word addresses 0 and 1 need one select bit. The testbench
+    # sets G_MODULE_ADDR_WIDTH to 3, so 0x2 is above the registers and 0x8 has
+    # another base address.
+    assert module.register_select_width == 1
+    checks = AddressChecks(module)
+    assert checks.module_addr_width == 3
+    assert [u.hex for u in checks.unmapped_addresses] == ["0x2", "0x8"]
 
 
 def test_ipbus_addr_width_above_32_rejected():

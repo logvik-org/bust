@@ -29,7 +29,7 @@ Save this one as `timer.json`:
     "name": "timer",
     "register": [
       {
-        "name": "ctrl", "sw": "rw", "hw": "r", "type": "fields",
+        "name": "ctrl", "address": "0x0", "sw": "rw", "hw": "r", "type": "fields",
         "fields": [
           {"name": "enable", "type": "bit"},
           {"name": "mode", "type": "vector", "width": 2,
@@ -37,16 +37,19 @@ Save this one as `timer.json`:
           {"name": "start", "type": "bit", "singlepulse": true}
         ]
       },
-      {"name": "load", "sw": "rw", "hw": "r", "type": "default", "swmod": true},
       {
-        "name": "status", "sw": "ro", "hw": "w", "type": "fields",
+        "name": "load", "address": "0x4", "sw": "rw", "hw": "r",
+        "type": "default", "swmod": true
+      },
+      {
+        "name": "status", "address": "0x8", "sw": "ro", "hw": "w", "type": "fields",
         "fields": [
           {"name": "count", "type": "vector", "width": 16, "we": true},
           {"name": "running", "type": "bit"}
         ]
       },
       {
-        "name": "irq", "sw": "rw", "hw": "r", "type": "fields",
+        "name": "irq", "address": "0xc", "sw": "rw", "hw": "r", "type": "fields",
         "fields": [
           {"name": "expired", "type": "bit", "hwset": true, "onwrite": "woclr"}
         ]
@@ -69,8 +72,7 @@ with it (`hw`):
 - `irq.expired` is a sticky flag. Hardware sets it with `hwset`, and software
   clears it by writing 1 (`onwrite: woclr`).
 
-The registers have no addresses, so bust places them one after another from
-address 0. [Register map format](register-map-format.md) lists every key, and
+[Register map format](register-map-format.md) lists every key, and
 [Access modes](access-modes.md) describes what each access mode does.
 
 ## Generate
@@ -120,7 +122,7 @@ record ports, `to_hw` and `from_hw`, that carry every field by name:
 ```vhdl
 type t_timer_to_hw is record
   ctrl : t_ctrl_to_hw;     -- enable, mode (t_ctrl_mode), start
-  load : t_load_to_hw;     -- load.value, load.swmod
+  load : t_load_load_out;  -- value, swmod
   irq  : t_irq_to_hw;      -- expired
 end record;
 
@@ -140,7 +142,8 @@ signal timer_from_hw : t_timer_from_hw;
 
 i_timer : entity work.timer
   generic map (
-    G_BASE_ADDRESS => x"4000_1000")
+    G_BASE_ADDRESS      => x"4000_1000",
+    G_MODULE_ADDR_WIDTH => 12)
   port map (
     clk      => clk,
     areset_n => areset_n,
@@ -161,7 +164,10 @@ timer_from_hw.irq.expired.set    <= '1' when count = 1 else '0';
 ```
 
 The base address is a generic, so the same module can sit at different
-addresses in different designs. [Generated HDL](generated-hdl.md) shows the
+addresses in different designs. `G_MODULE_ADDR_WIDTH => 12` gives the timer a
+4 KiB address range, and any address in it without a register gets an error.
+[Base address and address range](addressing.md) shows how to choose these
+generics for your interconnect. [Generated HDL](generated-hdl.md) shows the
 complete timer logic and describes the files and records in detail, and
 [Buses](buses.md) covers the ports of each bus.
 

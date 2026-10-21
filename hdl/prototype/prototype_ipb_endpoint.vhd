@@ -12,7 +12,7 @@
 -- registered cycle is the whole latency: ipb_ack/ipb_err assert exactly one clock
 -- after a strobe. The regfile's own response guard (it acks a held request only
 -- once) provides transaction separation, so no FSM is needed here. The address is
--- forwarded unchanged; the regfile slices the module window from it. IPBus's sync
+-- forwarded unchanged and the regfile decodes it. IPBus's sync
 -- active-high reset passes straight to the regfile.
 library ieee;
 use ieee.std_logic_1164.all;
@@ -27,7 +27,8 @@ use work.prototype_regfile_pkg.all;
 entity prototype_ipb_endpoint is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := x"00000000";
-    G_CHECK_BASE_ADDRESS : boolean               := true
+    G_CHECK_BASE_ADDRESS : boolean               := true;
+    G_MODULE_ADDR_WIDTH  : natural               := C_MODULE_ADDR_WIDTH
   );
   port (
     clk     : in  std_logic;
@@ -50,6 +51,7 @@ begin
     generic map (
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
+      G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
       G_RESET_ACTIVE_LOW   => false)      -- IPBus reset is sync active-high
     port map (
       clk     => clk,

@@ -35,9 +35,15 @@ package access_matrix_regfile_pkg is
   constant C_ADDR_HW_STATUS_SWACC : std_logic_vector(31 downto 0) := 32x"40";
   constant C_ADDR_HW_ONLY : std_logic_vector(31 downto 0) := 32x"44";
   constant C_ADDR_IRQ_STATUS : std_logic_vector(31 downto 0) := 32x"48";
+  constant C_ADDR_FLAT_LEVEL : std_logic_vector(31 downto 0) := 32x"4C";
+  constant C_ADDR_FLAT_STROBE : std_logic_vector(31 downto 0) := 32x"50";
+  constant C_ADDR_FLAT_OVERRIDE : std_logic_vector(31 downto 0) := 32x"54";
+  constant C_ADDR_FLAT_STATUS : std_logic_vector(31 downto 0) := 32x"58";
+  constant C_ADDR_FLAT_FLAG : std_logic_vector(31 downto 0) := 32x"5C";
 
-  -- Register-select width. base_match compares the bits above this width, so the
-  -- base address must be aligned to this register window.
+  -- Register-select width: the low address bits that pick a register. It is the
+  -- smallest module address width that holds the registers, and the default of
+  -- the G_MODULE_ADDR_WIDTH generic.
   constant C_MODULE_ADDR_WIDTH : natural := 7;
 
   -- Enumerated field type for identity.pwr_default. The
@@ -172,6 +178,21 @@ package access_matrix_regfile_pkg is
   type t_irq_status_regs is record
     pending : std_logic;
   end record;
+  type t_flat_level_regs is record
+    flat_level : std_logic_vector(7 downto 0);
+  end record;
+  type t_flat_strobe_regs is record
+    flat_strobe : std_logic_vector(3 downto 0);
+  end record;
+  type t_flat_override_regs is record
+    flat_override : std_logic_vector(7 downto 0);
+  end record;
+  type t_flat_status_regs is record
+    flat_status : std_logic_vector(5 downto 0);
+  end record;
+  type t_flat_flag_regs is record
+    flat_flag : std_logic;
+  end record;
 
   -- Whole-module storage: the regfile keeps this as a single signal.
   type t_access_matrix_regs is record
@@ -193,6 +214,11 @@ package access_matrix_regfile_pkg is
     hw_status_swacc : t_hw_status_swacc_regs;
     hw_only : t_hw_only_regs;
     irq_status : t_irq_status_regs;
+    flat_level : t_flat_level_regs;
+    flat_strobe : t_flat_strobe_regs;
+    flat_override : t_flat_override_regs;
+    flat_status : t_flat_status_regs;
+    flat_flag : t_flat_flag_regs;
   end record;
 
   constant C_ACCESS_MATRIX_REGS_RESET : t_access_matrix_regs := (
@@ -213,10 +239,18 @@ package access_matrix_regfile_pkg is
     mixed_history => (toggle => (others => '0'), set_on_zero => (others => '0'), clear_on_zero => 4X"F", toggle_on_zero => (others => '0')),
     hw_status_swacc => (level => (others => '0'), latched => (others => '0')),
     hw_only => (shadow => (others => '0'), enable => '0'),
-    irq_status => (pending => '0'));
+    irq_status => (pending => '0'),
+    flat_level => (flat_level => (others => '0')),
+    flat_strobe => (flat_strobe => (others => '0')),
+    flat_override => (flat_override => (others => '0')),
+    flat_status => (flat_status => (others => '0')),
+    flat_flag => (flat_flag => '0'));
 
   -- regfile -> hardware: only fields the hardware can read (hw r / rw). Fields
   -- with a software-access pulse (swmod/swacc) pair the value with the strobe.
+  -- A register without fields gets no t_<reg>_to_hw record. Its member of
+  -- t_<module>_to_hw is its value, or a record of the value and the strobe
+  -- when it has swmod or swacc.
   type t_plain_to_hw is record
     flag : std_logic;
     level : std_logic_vector(2 downto 0);
@@ -337,6 +371,11 @@ package access_matrix_regfile_pkg is
   type t_irq_status_to_hw is record
     pending : t_irq_status_pending_out;
   end record;
+  type t_flat_strobe_flat_strobe_out is record
+    value : std_logic_vector(3 downto 0);
+    swmod : std_logic;
+  end record;
+
 
   -- Whole-module regfile -> hardware bundle.
   type t_access_matrix_to_hw is record
@@ -358,6 +397,10 @@ package access_matrix_regfile_pkg is
     hw_status_swacc : t_hw_status_swacc_to_hw;
     hw_only : t_hw_only_to_hw;
     irq_status : t_irq_status_to_hw;
+    flat_level : std_logic_vector(7 downto 0);
+    flat_strobe : t_flat_strobe_flat_strobe_out;
+    flat_override : std_logic_vector(7 downto 0);
+    flat_flag : std_logic;
   end record;
 
   -- hardware -> regfile: per-field input records pairing each value with the
@@ -434,6 +477,16 @@ package access_matrix_regfile_pkg is
   type t_irq_status_from_hw is record
     pending : t_irq_status_pending_in;
   end record;
+  type t_flat_override_flat_override_in is record
+    value : std_logic_vector(7 downto 0);
+    we : std_logic;
+  end record;
+
+  type t_flat_flag_flat_flag_in is record
+    set : std_logic;
+    clr : std_logic;
+  end record;
+
 
   -- Whole-module hardware -> regfile bundle.
   type t_access_matrix_from_hw is record
@@ -444,42 +497,76 @@ package access_matrix_regfile_pkg is
     hw_status_swacc : t_hw_status_swacc_from_hw;
     hw_only : t_hw_only_from_hw;
     irq_status : t_irq_status_from_hw;
+    flat_override : t_flat_override_flat_override_in;
+    flat_status : std_logic_vector(5 downto 0);
+    flat_flag : t_flat_flag_flat_flag_in;
   end record;
 
-  function base_match(addr  : std_logic_vector(31 downto 0);
-                      base  : unsigned(31 downto 0);
-                      check : boolean) return boolean;
+  -- base_match and above_registers get the register file's G_MODULE_ADDR_WIDTH
+  -- as module_addr_width. In an address, bits 0 to C_MODULE_ADDR_WIDTH - 1
+  -- select a register, bits C_MODULE_ADDR_WIDTH to module_addr_width - 1 must
+  -- be 0, and bit module_addr_width and up are the base address.
 
-  function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-                  reg_addr : std_logic_vector(31 downto 0)) return boolean;
+  -- True when check is false, or when the base address bits of addr equal the
+  -- same bits of base.
+  function base_match(addr              : std_logic_vector(31 downto 0);
+                      base              : unsigned(31 downto 0);
+                      check             : boolean;
+                      module_addr_width : natural) return boolean;
 
-  function is_mapped(sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+  -- True when any of bits C_MODULE_ADDR_WIDTH to module_addr_width - 1 of addr
+  -- is set. The address is then in the module's address range but above the
+  -- registers, and the register file answers it with an error, so that it
+  -- cannot reach a register through its low bits.
+  function above_registers(addr              : std_logic_vector(31 downto 0);
+                           module_addr_width : natural) return boolean;
+
+  -- True when reg_offset, the low address bits of an access, equals the
+  -- register offset in reg_addr. Every bit counts, so an address between two
+  -- registers, or inside one, matches no register.
+  function reg_addr_match(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+                          reg_addr   : std_logic_vector(31 downto 0)) return boolean;
+
+  -- True when a register sits at reg_offset.
+  function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
 
 end package access_matrix_regfile_pkg;
 
 package body access_matrix_regfile_pkg is
 
-  function base_match(addr  : std_logic_vector(31 downto 0);
-                      base  : unsigned(31 downto 0);
-                      check : boolean) return boolean is
+  function base_match(addr              : std_logic_vector(31 downto 0);
+                      base              : unsigned(31 downto 0);
+                      check             : boolean;
+                      module_addr_width : natural) return boolean is
     constant base_slv : std_logic_vector(31 downto 0) := std_logic_vector(base);
   begin
     if not check then
       return true;
     end if;
-    return addr(31 downto C_MODULE_ADDR_WIDTH)
-         = base_slv(31 downto C_MODULE_ADDR_WIDTH);
+    return addr(31 downto module_addr_width)
+         = base_slv(31 downto module_addr_width);
   end function;
 
-  function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-                  reg_addr : std_logic_vector(31 downto 0)) return boolean is
+  function above_registers(addr              : std_logic_vector(31 downto 0);
+                           module_addr_width : natural) return boolean is
   begin
-    return sel = reg_addr(C_MODULE_ADDR_WIDTH-1 downto 0);
+    for i in C_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
+      if addr(i) /= '0' then
+        return true;
+      end if;
+    end loop;
+    return false;
   end function;
 
-  function is_mapped(sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  function reg_addr_match(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+                          reg_addr   : std_logic_vector(31 downto 0)) return boolean is
   begin
-    return sel_is(sel, C_ADDR_PLAIN) or sel_is(sel, C_ADDR_STATUS) or sel_is(sel, C_ADDR_COMMAND) or sel_is(sel, C_ADDR_IDENTITY) or sel_is(sel, C_ADDR_HW_MODIFY) or sel_is(sel, C_ADDR_HW_SET_CLEAR) or sel_is(sel, C_ADDR_READ_EFFECTS) or sel_is(sel, C_ADDR_WRITE_EFFECTS) or sel_is(sel, C_ADDR_PULSES) or sel_is(sel, C_ADDR_STROBES) or sel_is(sel, C_ADDR_ENUM_VECTOR) or sel_is(sel, C_ADDR_ENUM_BIT) or sel_is(sel, C_ADDR_ENUM_HW) or sel_is(sel, C_ADDR_ENUM_SWACC) or sel_is(sel, C_ADDR_MIXED_SWACC) or sel_is(sel, C_ADDR_MIXED_HISTORY) or sel_is(sel, C_ADDR_HW_STATUS_SWACC) or sel_is(sel, C_ADDR_HW_ONLY) or sel_is(sel, C_ADDR_IRQ_STATUS);
+    return reg_offset = reg_addr(C_MODULE_ADDR_WIDTH-1 downto 0);
+  end function;
+
+  function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  begin
+    return reg_addr_match(reg_offset, C_ADDR_PLAIN) or reg_addr_match(reg_offset, C_ADDR_STATUS) or reg_addr_match(reg_offset, C_ADDR_COMMAND) or reg_addr_match(reg_offset, C_ADDR_IDENTITY) or reg_addr_match(reg_offset, C_ADDR_HW_MODIFY) or reg_addr_match(reg_offset, C_ADDR_HW_SET_CLEAR) or reg_addr_match(reg_offset, C_ADDR_READ_EFFECTS) or reg_addr_match(reg_offset, C_ADDR_WRITE_EFFECTS) or reg_addr_match(reg_offset, C_ADDR_PULSES) or reg_addr_match(reg_offset, C_ADDR_STROBES) or reg_addr_match(reg_offset, C_ADDR_ENUM_VECTOR) or reg_addr_match(reg_offset, C_ADDR_ENUM_BIT) or reg_addr_match(reg_offset, C_ADDR_ENUM_HW) or reg_addr_match(reg_offset, C_ADDR_ENUM_SWACC) or reg_addr_match(reg_offset, C_ADDR_MIXED_SWACC) or reg_addr_match(reg_offset, C_ADDR_MIXED_HISTORY) or reg_addr_match(reg_offset, C_ADDR_HW_STATUS_SWACC) or reg_addr_match(reg_offset, C_ADDR_HW_ONLY) or reg_addr_match(reg_offset, C_ADDR_IRQ_STATUS) or reg_addr_match(reg_offset, C_ADDR_FLAT_LEVEL) or reg_addr_match(reg_offset, C_ADDR_FLAT_STROBE) or reg_addr_match(reg_offset, C_ADDR_FLAT_OVERRIDE) or reg_addr_match(reg_offset, C_ADDR_FLAT_STATUS) or reg_addr_match(reg_offset, C_ADDR_FLAT_FLAG);
   end function;
 
   -- case over the literals so the encoding follows each enum's declared value,

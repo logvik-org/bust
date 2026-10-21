@@ -39,9 +39,9 @@ architecture tb of example_ipbus_tb is
 
   signal to_hw    : t_example_ipbus_to_hw;
   signal from_hw  : t_example_ipbus_from_hw := (
-    reg2 => (reg2 => '0'),
-    reg4 => (reg4 => (others => '0')),
-    reg6 => (reg6 => (others => '0')),
+    reg2 => '0',
+    reg4 => (others => '0'),
+    reg6 => (others => '0'),
     reg8 => (field0 => '0', field1 => (others => '0'), field2 => '0', field3 => (others => '0')));
 
   constant C_DATA_W : natural := 32;
@@ -80,7 +80,8 @@ begin
   DUT : entity work.example_ipbus
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true,
+      G_MODULE_ADDR_WIDTH  => 8)
     port map (
       clk     => clk,
       reset   => reset,
@@ -90,13 +91,13 @@ begin
   p_strobe_monitor : process (clk) is
   begin
     if rising_edge(clk) then
-      if to_hw.reg9.reg9 /= '1' then
+      if to_hw.reg9 /= '1' then
         reg9_reg9_sp_count <= reg9_reg9_sp_count + 1;
-        reg9_reg9_sp_value <= to_hw.reg9.reg9;
+        reg9_reg9_sp_value <= to_hw.reg9;
       end if;
-      if to_hw.reg10.reg10 /= 4x"A" then
+      if to_hw.reg10 /= 4x"A" then
         reg10_reg10_sp_count <= reg10_reg10_sp_count + 1;
-        reg10_reg10_sp_value <= to_hw.reg10.reg10;
+        reg10_reg10_sp_value <= to_hw.reg10;
       end if;
       if to_hw.reg11.field0 /= 15x"0003" then
         reg11_field0_sp_count <= reg11_field0_sp_count + 1;
@@ -128,6 +129,27 @@ begin
                  shared_msg_id_panel, ipbus_bfm_config);
       check_value(v_data, data, error, msg, C_SCOPE);
     end procedure;
+
+    -- An address without a register answers ipb_err.
+    procedure bus_write_unmapped(constant addr : in unsigned;
+                                 constant data : in std_logic_vector;
+                                 constant msg  : in string) is
+      variable v_config : t_ipbus_bfm_config := ipbus_bfm_config;
+    begin
+      v_config.expected_response := ERR;
+      ipbus_write(addr, data, msg, clk, ipbus_if, C_SCOPE,
+                  shared_msg_id_panel, v_config);
+    end procedure;
+
+    procedure bus_check_unmapped(constant addr : in unsigned;
+                                 constant msg  : in string) is
+      variable v_config : t_ipbus_bfm_config := ipbus_bfm_config;
+      variable v_data   : std_logic_vector(C_DATA_W-1 downto 0);
+    begin
+      v_config.expected_response := ERR;
+      ipbus_read(addr, v_data, msg, clk, ipbus_if, C_SCOPE,
+                 shared_msg_id_panel, v_config);
+    end procedure;
     variable v_reg9_reg9_sp : natural;
     variable v_reg10_reg10_sp : natural;
     variable v_reg11_field0_sp : natural;
@@ -145,22 +167,22 @@ begin
     log(ID_LOG_HDR, "reg0: software read-write round-trip", C_SCOPE);
     bus_write(f_addr(C_ADDR_REG0), 32x"00000001", "write reg0");
     bus_check(f_addr(C_ADDR_REG0), 32x"00000001", "reg0 reads back");
-    check_value(to_hw.reg0.reg0, '1', error, "reg0.reg0 exposed to hw", C_SCOPE);
+    check_value(to_hw.reg0, '1', error, "reg0.reg0 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg1: software read-write round-trip", C_SCOPE);
     bus_write(f_addr(C_ADDR_REG1), 32x"00000001", "write reg1");
     bus_check(f_addr(C_ADDR_REG1), 32x"00000001", "reg1 reads back");
-    check_value(to_hw.reg1.reg1, '1', error, "reg1.reg1 exposed to hw", C_SCOPE);
+    check_value(to_hw.reg1, '1', error, "reg1.reg1 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg3: software read-write round-trip", C_SCOPE);
     bus_write(f_addr(C_ADDR_REG3), 32x"000000FF", "write reg3");
     bus_check(f_addr(C_ADDR_REG3), 32x"000000FF", "reg3 reads back");
-    check_value(to_hw.reg3.reg3, 8x"FF", error, "reg3.reg3 exposed to hw", C_SCOPE);
+    check_value(to_hw.reg3, 8x"FF", error, "reg3.reg3 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg5: software read-write round-trip", C_SCOPE);
     bus_write(f_addr(C_ADDR_REG5), 32x"FFFFFFFF", "write reg5");
     bus_check(f_addr(C_ADDR_REG5), 32x"FFFFFFFF", "reg5 reads back");
-    check_value(to_hw.reg5.reg5, 32x"FFFFFFFF", error, "reg5.reg5 exposed to hw", C_SCOPE);
+    check_value(to_hw.reg5, 32x"FFFFFFFF", error, "reg5.reg5 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg7: software read-write round-trip", C_SCOPE);
     bus_write(f_addr(C_ADDR_REG7), 32x"001FFFFF", "write reg7");
@@ -184,19 +206,19 @@ begin
 
     log(ID_LOG_HDR, "reg2: hardware-driven status read back over the bus", C_SCOPE);
     wait until falling_edge(clk);
-    from_hw.reg2.reg2 <= '1';
+    from_hw.reg2 <= '1';
     wait until falling_edge(clk);
     bus_check(f_addr(C_ADDR_REG2), 32x"00000001", "reg2 reflects hardware inputs");
 
     log(ID_LOG_HDR, "reg4: hardware-driven status read back over the bus", C_SCOPE);
     wait until falling_edge(clk);
-    from_hw.reg4.reg4 <= 14x"1555";
+    from_hw.reg4 <= 14x"1555";
     wait until falling_edge(clk);
     bus_check(f_addr(C_ADDR_REG4), 32x"00001555", "reg4 reflects hardware inputs");
 
     log(ID_LOG_HDR, "reg6: hardware-driven status read back over the bus", C_SCOPE);
     wait until falling_edge(clk);
-    from_hw.reg6.reg6 <= 32x"55555555";
+    from_hw.reg6 <= 32x"55555555";
     wait until falling_edge(clk);
     bus_check(f_addr(C_ADDR_REG6), 32x"55555555", "reg6 reflects hardware inputs");
 
@@ -235,6 +257,17 @@ begin
     check_value(reg11_field0_sp_value, 15x"7FFC", error, "reg11.field0 hw saw the pulse value", C_SCOPE);
     check_value(reg11_field1_sp_count - v_reg11_field1_sp, 1, error, "reg11.field1 singlepulse lasts exactly one cycle", C_SCOPE);
     check_value(reg11_field1_sp_value, '1', error, "reg11.field1 hw saw the pulse value", C_SCOPE);
+
+    -- An address where no register sits gets an error response where the bus
+    -- has one, reads as 0, and a write to it changes no register.
+    log(ID_LOG_HDR, "addresses without a register get an error and change nothing", C_SCOPE);
+    bus_write_unmapped(f_addr(16x"1"), 32x"0", "write 0x1, an unused register offset");
+    bus_check_unmapped(f_addr(16x"1"), "read 0x1, an unused register offset");
+    bus_write_unmapped(f_addr(16x"40"), 32x"0", "write 0x40, an address above the registers");
+    bus_check_unmapped(f_addr(16x"40"), "read 0x40, an address above the registers");
+    bus_write_unmapped(f_addr(16x"100"), 32x"0", "write 0x100, another base address");
+    bus_check_unmapped(f_addr(16x"100"), "read 0x100, another base address");
+    bus_check(f_addr(C_ADDR_REG0), 32x"00000001", "reg0 unchanged by the unmapped writes");
 
     wait for 10*C_CLK_PERIOD;
     report_alert_counters(FINAL);

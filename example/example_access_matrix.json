@@ -544,6 +544,54 @@
             "swacc": true
           }
         ]
+      },
+      {
+        "name": "flat_level",
+        "sw": "rw",
+        "hw": "r",
+        "type": "vector",
+        "width": 8,
+        "reset": "0x0",
+        "description": "A register without fields: hardware reads to_hw.flat_level directly."
+      },
+      {
+        "name": "flat_strobe",
+        "sw": "rw",
+        "hw": "r",
+        "type": "vector",
+        "width": 4,
+        "swmod": true,
+        "reset": "0x0",
+        "description": "A register without fields with a swmod strobe: to_hw.flat_strobe pairs the value with the strobe."
+      },
+      {
+        "name": "flat_override",
+        "sw": "rw",
+        "hw": "rw",
+        "type": "vector",
+        "width": 8,
+        "we": true,
+        "reset": "0x0",
+        "description": "A register without fields that hardware overrides with we: from_hw.flat_override pairs the value with we."
+      },
+      {
+        "name": "flat_status",
+        "sw": "ro",
+        "hw": "w",
+        "type": "vector",
+        "width": 6,
+        "reset": "0x0",
+        "description": "A register without fields driven by hardware: from_hw.flat_status is the value."
+      },
+      {
+        "name": "flat_flag",
+        "sw": "rw",
+        "hw": "r",
+        "type": "bit",
+        "hwset": true,
+        "hwclr": true,
+        "reset": "0x0",
+        "description": "A one-bit register without fields with hardware set and clear: from_hw.flat_flag holds set and clr."
       }
     ]
   }

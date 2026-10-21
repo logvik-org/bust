@@ -2,7 +2,7 @@
 """bust register tool.
 
 Usage:
-  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i]] | [-a [-F | -f]] | [-c | -e]]
+  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i] [-u] [-b] [-t] [-m]] | [-a [-F | -f]] | [-c | -e]]
   bust --version
   bust -h | --help
 
@@ -13,6 +13,10 @@ Options:
   -d             Do not generate documentation (neither LaTeX nor PDF)
   -p             Do not generate PDF from LaTeX
   -i             Do not generate the include header files (.h, .hpp & .py)
+  -u             Ignored with a warning, a bust 0.14 option
+  -b             Ignored with a warning, a bust 0.14 option
+  -t             Ignored with a warning, a bust 0.14 option
+  -m             Ignored with a warning, a bust 0.14 option
   -a             Update register addresses and save JSON file (with -f, without asking)
   -e             Edit the JSON file
   -c             Create a new JSON file
@@ -26,7 +30,10 @@ Arguments:
 """
 from docopt import docopt
 import sys
+import shlex
+import time
 import logging
+import logging.handlers
 from typing import Dict, Union
 
 from bust.utils.json_utils import json_parser
@@ -49,23 +56,67 @@ from bust.editor import Editor
 from bust._version import __VERSION__
 
 
+# bust 0.14 options that bust 1.0 accepts and ignores, so that old command lines
+# and Makefiles keep working during the switch. The value is the reason the
+# warning gives.
+_IGNORED_0_14_OPTIONS = {
+    "-u": "bust 1.0 always regenerates the top-level file",
+    "-b": "bust 1.0 always writes the local-bus package",
+    "-t": "bust 1.0 always writes the testbench",
+    "-m": "bust 1.0 always writes the module VHDL",
+}
+
+
+class _DebugLog(logging.handlers.BufferingHandler):
+    """Keeps every log record of the run, so that a run that fails can add
+    them to debug.log. A run that succeeds leaves the file alone."""
+
+    def __init__(self) -> None:
+        super().__init__(capacity=0)
+
+    def shouldFlush(self, record: logging.LogRecord) -> bool:
+        return False
+
+    def write(self, path: str = "debug.log") -> None:
+        """Append the records after a line with the time and the command line."""
+        date_format = "%a, %d %b %Y %H:%M:%S"
+        formatter = logging.Formatter(
+            "%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
+            datefmt=date_format,
+        )
+        with open(path, "a", encoding="utf-8") as log:
+            log.write(
+                f"=== {time.strftime(date_format)} bust {shlex.join(sys.argv[1:])}\n"
+            )
+            for record in self.buffer:
+                log.write(formatter.format(record) + "\n")
+
+
 def main():
     args = docopt(__doc__, help=True, version="bust " + __VERSION__)
-    logging.basicConfig(
-        filename="debug.log",
-        filemode="w",
-        datefmt="%a, %d %b %Y %H:%M:%S",
-        format="%(asctime)s %(name)-15s %(levelname)-8s %(message)s",
-        level=logging.DEBUG,
-    )
-    # Define a handler which writes INFO or higher to sys.stderr
+    root = logging.getLogger("")
+    root.setLevel(logging.DEBUG)
+    # Messages of level INFO and above go to standard error.
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
-    # Define a simpler format for sys.stderr
-    formatter = logging.Formatter("%(message)s")
-    console.setFormatter(formatter)
-    logging.getLogger("").addHandler(console)
+    console.setFormatter(logging.Formatter("%(message)s"))
+    root.addHandler(console)
+    debug_log = _DebugLog()
+    root.addHandler(debug_log)
+    try:
+        _run(args)
+    except SystemExit as stop:
+        if stop.code not in (None, 0):
+            debug_log.write()
+        raise
+
+
+def _run(args):
     logger = logging.getLogger(__name__)
+
+    for option, reason in _IGNORED_0_14_OPTIONS.items():
+        if args.get(option):
+            logger.warning(f"Ignoring {option}, a bust 0.14 option: {reason}.")
 
     try:
 

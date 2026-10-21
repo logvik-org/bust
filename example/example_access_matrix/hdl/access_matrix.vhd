@@ -12,7 +12,8 @@ use work.access_matrix_regfile_pkg.all;
 entity access_matrix is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
-    G_CHECK_BASE_ADDRESS : boolean := true
+    G_CHECK_BASE_ADDRESS : boolean := true;
+    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH
   );
   port (
     clk      : in  std_logic;
@@ -45,7 +46,8 @@ begin
   i_endpoint : entity work.access_matrix_axi_endpoint
     generic map (
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
-      G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS)
+      G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
+      G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH)
     port map (
       clk      => clk,
       areset_n => areset_n,

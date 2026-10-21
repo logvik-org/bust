@@ -68,7 +68,8 @@ begin
   DUT : entity work.prototype
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true,
+      G_MODULE_ADDR_WIDTH  => 8)
     port map (
       clk         => clk,
       reset       => reset,
@@ -112,6 +113,21 @@ begin
     begin
       avalon_mm_check(addr, data, msg, clk, avmm_if, error, C_SCOPE,
                       shared_msg_id_panel, avmm_bfm_config);
+    end procedure;
+
+    -- The endpoint does not use the Avalon-MM response signal, so an address
+    -- without a register completes normally and reads 0.
+    procedure bus_write_unmapped(constant addr : in unsigned;
+                                 constant data : in std_logic_vector;
+                                 constant msg  : in string) is
+    begin
+      bus_write(addr, data, msg);
+    end procedure;
+
+    procedure bus_check_unmapped(constant addr : in unsigned;
+                                 constant msg  : in string) is
+    begin
+      bus_check(addr, 32x"0", msg);
     end procedure;
     variable v_reg9_field0_swmod : natural;
     variable v_reg9_field1_swacc : natural;
@@ -231,6 +247,19 @@ begin
     wait until rising_edge(clk);
     check_value(reg10_field0_sp_count - v_reg10_field0_sp, 1, error, "reg10.field0 singlepulse lasts exactly one cycle", C_SCOPE);
     check_value(reg10_field0_sp_value, 4x"F", error, "reg10.field0 hw saw the pulse value", C_SCOPE);
+
+    -- An address where no register sits gets an error response where the bus
+    -- has one, reads as 0, and a write to it changes no register.
+    log(ID_LOG_HDR, "addresses without a register get an error and change nothing", C_SCOPE);
+    bus_write_unmapped(f_addr(32x"30"), 32x"0", "write 0x30, an unused register offset");
+    bus_check_unmapped(f_addr(32x"30"), "read 0x30, an unused register offset");
+    bus_write_unmapped(f_addr(32x"1"), 32x"0", "write 0x1, an address inside a register");
+    bus_check_unmapped(f_addr(32x"1"), "read 0x1, an address inside a register");
+    bus_write_unmapped(f_addr(32x"40"), 32x"0", "write 0x40, an address above the registers");
+    bus_check_unmapped(f_addr(32x"40"), "read 0x40, an address above the registers");
+    bus_write_unmapped(f_addr(32x"100"), 32x"0", "write 0x100, another base address");
+    bus_check_unmapped(f_addr(32x"100"), "read 0x100, another base address");
+    bus_check(f_addr(C_ADDR_REG0), 32x"00000007", "reg0 unchanged by the unmapped writes");
 
     wait for 10*C_CLK_PERIOD;
     report_alert_counters(FINAL);

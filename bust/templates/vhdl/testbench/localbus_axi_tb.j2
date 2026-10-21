@@ -56,7 +56,8 @@ begin
   DUT : entity work.{{ module.name }}
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true,
+      G_MODULE_ADDR_WIDTH  => {{ tb.module_addr_width }})
     port map (
       clk      => clk,
       areset_n => areset_n,
@@ -99,6 +100,26 @@ begin
     begin
       axilite_check(addr, data, msg, clk, axilite_if, error, C_SCOPE,
                     shared_msg_id_panel, axilite_bfm_config);
+    end procedure;
+
+    -- An address without a register answers SLVERR and reads 0.
+    procedure bus_write_unmapped(constant addr : in unsigned;
+                                 constant data : in std_logic_vector;
+                                 constant msg  : in string) is
+      variable v_config : t_axilite_bfm_config := axilite_bfm_config;
+    begin
+      v_config.expected_response := SLVERR;
+      axilite_write(addr, data, msg, clk, axilite_if, C_SCOPE,
+                    shared_msg_id_panel, v_config);
+    end procedure;
+
+    procedure bus_check_unmapped(constant addr : in unsigned;
+                                 constant msg  : in string) is
+      variable v_config : t_axilite_bfm_config := axilite_bfm_config;
+    begin
+      v_config.expected_response := SLVERR;
+      axilite_check(addr, {{ module.data_width }}x"0", msg, clk, axilite_if, error, C_SCOPE,
+                    shared_msg_id_panel, v_config);
     end procedure;
 {% include "vhdl/testbench/localbus_tb/snapshot_vars.j2" %}
 

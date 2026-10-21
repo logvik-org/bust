@@ -40,7 +40,10 @@ architecture tb of access_matrix_tb is
     enum_hw => (state => ST_HALT, supply => (value => PWR_OFF, we => '0')),
     hw_status_swacc => (level => (others => '0'), latched => (value => (others => '0'), we => '0')),
     hw_only => (shadow => (others => '0')),
-    irq_status => (pending => (set => '0')));
+    irq_status => (pending => (set => '0')),
+    flat_override => (value => (others => '0'), we => '0'),
+    flat_status => (others => '0'),
+    flat_flag => (set => '0', clr => '0'));
 
   constant C_DATA_W : natural := 32;
   constant C_ADDR_W : natural := 32;
@@ -76,6 +79,7 @@ architecture tb of access_matrix_tb is
   signal hw_status_swacc_level_swacc_count : natural := 0;
   signal irq_status_pending_swacc_count : natural := 0;
   signal irq_status_pending_at_swacc : std_logic := '0';
+  signal flat_strobe_flat_strobe_swmod_count : natural := 0;
 
 begin
 
@@ -84,7 +88,8 @@ begin
   DUT : entity work.access_matrix
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true,
+      G_MODULE_ADDR_WIDTH  => 9)
     port map (
       clk      => clk,
       areset_n => areset_n,
@@ -148,6 +153,9 @@ begin
         irq_status_pending_swacc_count <= irq_status_pending_swacc_count + 1;
         irq_status_pending_at_swacc <= to_hw.irq_status.pending.value;
       end if;
+      if to_hw.flat_strobe.swmod = '1' then
+        flat_strobe_flat_strobe_swmod_count <= flat_strobe_flat_strobe_swmod_count + 1;
+      end if;
     end if;
   end process p_strobe_monitor;
 
@@ -168,6 +176,26 @@ begin
       axilite_check(addr, data, msg, clk, axilite_if, error, C_SCOPE,
                     shared_msg_id_panel, axilite_bfm_config);
     end procedure;
+
+    -- An address without a register answers SLVERR and reads 0.
+    procedure bus_write_unmapped(constant addr : in unsigned;
+                                 constant data : in std_logic_vector;
+                                 constant msg  : in string) is
+      variable v_config : t_axilite_bfm_config := axilite_bfm_config;
+    begin
+      v_config.expected_response := SLVERR;
+      axilite_write(addr, data, msg, clk, axilite_if, C_SCOPE,
+                    shared_msg_id_panel, v_config);
+    end procedure;
+
+    procedure bus_check_unmapped(constant addr : in unsigned;
+                                 constant msg  : in string) is
+      variable v_config : t_axilite_bfm_config := axilite_bfm_config;
+    begin
+      v_config.expected_response := SLVERR;
+      axilite_check(addr, 32x"0", msg, clk, axilite_if, error, C_SCOPE,
+                    shared_msg_id_panel, v_config);
+    end procedure;
     variable v_hw_set_clear_clr_only_swacc : natural;
     variable v_pulses_kick_swmod : natural;
     variable v_pulses_go_sp : natural;
@@ -180,6 +208,7 @@ begin
     variable v_mixed_history_toggle_swacc : natural;
     variable v_hw_status_swacc_level_swacc : natural;
     variable v_irq_status_pending_swacc : natural;
+    variable v_flat_strobe_flat_strobe_swmod : natural;
 
   begin
     axilite_bfm_config.clock_period <= C_CLK_PERIOD;
@@ -200,6 +229,16 @@ begin
     bus_check(f_addr(C_ADDR_STROBES), 32x"000000FF", "strobes reads back");
     check_value(to_hw.strobes.modified.value, 4x"F", error, "strobes.modified exposed to hw", C_SCOPE);
     check_value(to_hw.strobes.accessed.value, 4x"F", error, "strobes.accessed exposed to hw", C_SCOPE);
+
+    log(ID_LOG_HDR, "flat_level: software read-write round-trip", C_SCOPE);
+    bus_write(f_addr(C_ADDR_FLAT_LEVEL), 32x"000000FF", "write flat_level");
+    bus_check(f_addr(C_ADDR_FLAT_LEVEL), 32x"000000FF", "flat_level reads back");
+    check_value(to_hw.flat_level, 8x"FF", error, "flat_level.flat_level exposed to hw", C_SCOPE);
+
+    log(ID_LOG_HDR, "flat_strobe: software read-write round-trip", C_SCOPE);
+    bus_write(f_addr(C_ADDR_FLAT_STROBE), 32x"0000000F", "write flat_strobe");
+    bus_check(f_addr(C_ADDR_FLAT_STROBE), 32x"0000000F", "flat_strobe reads back");
+    check_value(to_hw.flat_strobe.value, 4x"F", error, "flat_strobe.flat_strobe exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "enum_vector: enumerated round-trip", C_SCOPE);
     bus_write(f_addr(C_ADDR_ENUM_VECTOR), 32x"00000003", "write enum_vector");
@@ -255,6 +294,12 @@ begin
     from_hw.hw_status_swacc.latched.we <= '0';
     bus_check(f_addr(C_ADDR_HW_STATUS_SWACC), 32x"00000055", "hw_status_swacc reflects hardware inputs");
 
+    log(ID_LOG_HDR, "flat_status: hardware-driven status read back over the bus", C_SCOPE);
+    wait until falling_edge(clk);
+    from_hw.flat_status <= 6x"15";
+    wait until falling_edge(clk);
+    bus_check(f_addr(C_ADDR_FLAT_STATUS), 32x"00000015", "flat_status reflects hardware inputs");
+
     log(ID_LOG_HDR, "hw_modify: software baseline write", C_SCOPE);
     bus_write(f_addr(C_ADDR_HW_MODIFY), 32x"00000015", "write hw_modify");
     bus_check(f_addr(C_ADDR_HW_MODIFY), 32x"00000015", "hw_modify reads back the software value");
@@ -284,6 +329,40 @@ begin
     from_hw.hw_modify.sticky.set <= '0';
     from_hw.hw_modify.sticky.clr <= '0';
     bus_check(f_addr(C_ADDR_HW_MODIFY), 32x"0000000A", "hw_modify reflects hwclr");
+
+    log(ID_LOG_HDR, "flat_override: software baseline write", C_SCOPE);
+    bus_write(f_addr(C_ADDR_FLAT_OVERRIDE), 32x"00000055", "write flat_override");
+    bus_check(f_addr(C_ADDR_FLAT_OVERRIDE), 32x"00000055", "flat_override reads back the software value");
+    check_value(to_hw.flat_override, 8x"55", error, "flat_override.flat_override exposed to hw", C_SCOPE);
+
+    log(ID_LOG_HDR, "flat_override: hardware we overrides the stored value", C_SCOPE);
+    wait until falling_edge(clk);
+    from_hw.flat_override.value <= 8x"AA";
+    from_hw.flat_override.we <= '1';
+    wait until falling_edge(clk);
+    from_hw.flat_override.we <= '0';
+    bus_check(f_addr(C_ADDR_FLAT_OVERRIDE), 32x"000000AA", "flat_override reflects the hardware we override");
+
+    log(ID_LOG_HDR, "flat_flag: software baseline write", C_SCOPE);
+    bus_write(f_addr(C_ADDR_FLAT_FLAG), 32x"00000001", "write flat_flag");
+    bus_check(f_addr(C_ADDR_FLAT_FLAG), 32x"00000001", "flat_flag reads back the software value");
+    check_value(to_hw.flat_flag, '1', error, "flat_flag.flat_flag exposed to hw", C_SCOPE);
+
+    log(ID_LOG_HDR, "flat_flag: hwset drives fields high", C_SCOPE);
+    wait until falling_edge(clk);
+    from_hw.flat_flag.set <= '1';
+    wait until falling_edge(clk);
+    from_hw.flat_flag.set <= '0';
+    bus_check(f_addr(C_ADDR_FLAT_FLAG), 32x"00000001", "flat_flag reflects hwset");
+
+    log(ID_LOG_HDR, "flat_flag: hwclr clears fields (and beats hwset)", C_SCOPE);
+    wait until falling_edge(clk);
+    from_hw.flat_flag.set <= '1';
+    from_hw.flat_flag.clr <= '1';
+    wait until falling_edge(clk);
+    from_hw.flat_flag.set <= '0';
+    from_hw.flat_flag.clr <= '0';
+    bus_check(f_addr(C_ADDR_FLAT_FLAG), 32x"00000000", "flat_flag reflects hwclr");
 
     log(ID_LOG_HDR, "hw_set_clear: software-access strobe pulses", C_SCOPE);
     v_hw_set_clear_clr_only_swacc := hw_set_clear_clr_only_swacc_count;
@@ -359,6 +438,13 @@ begin
     wait until rising_edge(clk);
     check_value(irq_status_pending_swacc_count - v_irq_status_pending_swacc, 2, error, "irq_status.pending swacc pulses per access (write + read)", C_SCOPE);
 
+    log(ID_LOG_HDR, "flat_strobe: software-access strobe pulses", C_SCOPE);
+    v_flat_strobe_flat_strobe_swmod := flat_strobe_flat_strobe_swmod_count;
+    bus_write(f_addr(C_ADDR_FLAT_STROBE), 32x"0000000F", "write flat_strobe");
+    wait until rising_edge(clk);
+    wait until rising_edge(clk);
+    check_value(flat_strobe_flat_strobe_swmod_count - v_flat_strobe_flat_strobe_swmod, 1, error, "flat_strobe.flat_strobe swmod pulses once per write", C_SCOPE);
+
     -- hwset is held through the read, so it meets the read clear in the same
     -- cycle. The value sampled with the swacc strobe shows which one won.
     log(ID_LOG_HDR, "irq_status: hwset beats a read clear in the same cycle", C_SCOPE);
@@ -371,6 +457,19 @@ begin
     check_value(irq_status_pending_at_swacc, '1', error, "irq_status.pending still set in the cycle after the read clear", C_SCOPE);
     bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"00000001", "irq_status still set after that read");
     bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"0", "irq_status cleared by a read without hwset");
+
+    -- An address where no register sits gets an error response where the bus
+    -- has one, reads as 0, and a write to it changes no register.
+    log(ID_LOG_HDR, "addresses without a register get an error and change nothing", C_SCOPE);
+    bus_write_unmapped(f_addr(32x"60"), 32x"0", "write 0x60, an unused register offset");
+    bus_check_unmapped(f_addr(32x"60"), "read 0x60, an unused register offset");
+    bus_write_unmapped(f_addr(32x"1"), 32x"0", "write 0x1, an address inside a register");
+    bus_check_unmapped(f_addr(32x"1"), "read 0x1, an address inside a register");
+    bus_write_unmapped(f_addr(32x"80"), 32x"0", "write 0x80, an address above the registers");
+    bus_check_unmapped(f_addr(32x"80"), "read 0x80, an address above the registers");
+    bus_write_unmapped(f_addr(32x"200"), 32x"0", "write 0x200, another base address");
+    bus_check_unmapped(f_addr(32x"200"), "read 0x200, another base address");
+    bus_check(f_addr(C_ADDR_PLAIN), 32x"000000FF", "plain unchanged by the unmapped writes");
 
     wait for 10*C_CLK_PERIOD;
     report_alert_counters(FINAL);

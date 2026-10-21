@@ -16,6 +16,7 @@ import pytest
 from bust.core.bus import Bus
 from bust.core.module import Module
 from bust.generators.factory import GeneratorFactory
+from bust.generators.vhdl.address_checks import AddressChecks
 from bust.generation import generate_output
 from bust.settings import Settings
 from bust.utils.json_utils import json_parser
@@ -80,7 +81,11 @@ def _structural_lines(text):
         line = re.sub(r"--.*$", "", raw).strip()
         line = re.sub(r"\s+", " ", line)
         is_reset_aggregate = "=>" in line and not line.startswith("when")
-        if not line or is_reset_aggregate or re.match(r"(return |or )?sel_is", line):
+        if (
+            not line
+            or is_reset_aggregate
+            or re.match(r"(return |or )?reg_addr_match", line)
+        ):
             continue
         lines.append(line)
     return lines
@@ -178,6 +183,99 @@ def test_prototype_c_header_surfaces_access_modes():
     assert "#define PROTOTYPE_REG10_FIELD0_SINGLEPULSE 1" in out
     assert "#define PROTOTYPE_REG11_FIELD0_STATE3 3" in out
     assert "_MODE" not in out  # legacy mode macro is gone
+
+
+def test_register_without_fields_is_a_bare_member_of_to_hw_and_from_hw():
+    """A register without fields has no record of its own: to_hw.<reg> is its
+    value, or its value-and-strobe record when it has strobes."""
+    bus = Bus({"type": "axi", "addr_width": 32, "data_width": 32})
+    module = Module(
+        {
+            "name": "m",
+            "register": [
+                {"name": "level", "type": "vector", "width": 8, "sw": "rw", "hw": "r"},
+                {"name": "kick", "type": "bit", "sw": "rw", "hw": "r", "swmod": True},
+                {"name": "count", "type": "vector", "width": 4, "sw": "ro", "hw": "w"},
+                {
+                    "name": "load",
+                    "type": "vector",
+                    "width": 4,
+                    "sw": "rw",
+                    "hw": "rw",
+                    "we": True,
+                },
+                {
+                    "name": "ctrl",
+                    "type": "fields",
+                    "sw": "rw",
+                    "hw": "r",
+                    "fields": [{"name": "go", "type": "bit"}],
+                },
+            ],
+        },
+        bus,
+        settings=None,
+    )
+    pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
+    assert "    level : std_logic_vector(7 downto 0);" in pkg
+    assert "    kick : t_kick_kick_out;" in pkg
+    assert "    count : std_logic_vector(3 downto 0);" in pkg
+    assert "    load : t_load_load_in;" in pkg
+    assert "    ctrl : t_ctrl_to_hw;" in pkg
+    assert "type t_level_to_hw" not in pkg
+    assert "type t_count_from_hw" not in pkg
+
+    regfile = GeneratorFactory.generate_regfile_vhdl(module)
+    assert "  to_hw.level <= regs.level.level;" in regfile
+    assert (
+        "  to_hw.kick <= (value => regs.kick.kick, swmod => swmod_kick_kick);"
+        in regfile
+    )
+    assert "  to_hw.ctrl <= (go => regs.ctrl.go);" in regfile
+    assert "regs.count.count <= from_hw.count;" in regfile
+    assert "if from_hw.load.we = '1' then" in regfile
+
+
+def test_module_addr_width_generic_reaches_the_regfile():
+    """G_MODULE_ADDR_WIDTH, the module address width, is declared on the top
+    wrapper, the endpoint and the regfile, and defaults to C_MODULE_ADDR_WIDTH."""
+    module = _build_module()
+    default = "G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH"
+    for generate in (
+        GeneratorFactory.generate_module_top_vhdl,
+        GeneratorFactory.generate_axi_endpoint_vhdl,
+        GeneratorFactory.generate_regfile_vhdl,
+    ):
+        hdl = generate(module)
+        assert default in hdl
+    assert "G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH" in (
+        GeneratorFactory.generate_module_top_vhdl(module)
+    )
+    regfile = GeneratorFactory.generate_regfile_vhdl(module)
+    assert "above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)" in regfile
+    assert "and is_mapped(reg_offset);" in regfile
+    assert "if mapped then" in regfile
+
+
+def test_testbench_checks_unmapped_offsets():
+    """The prototype's registers use offsets 0x00..0x2C (6 select bits), so the
+    testbench sets G_MODULE_ADDR_WIDTH to 8 and checks 0x30, 0x1, which is one
+    byte into reg0, 0x40, which aliases reg0 by its low bits, and 0x100, which
+    has another base address."""
+    module = _build_module()
+    checks = AddressChecks(module)
+    assert checks.module_addr_width == 8
+    assert [u.hex for u in checks.unmapped_addresses] == [
+        "0x30",
+        "0x1",
+        "0x40",
+        "0x100",
+    ]
+    tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
+    assert "G_MODULE_ADDR_WIDTH  => 8)" in tb
+    assert 'bus_write_unmapped(f_addr(32x"40"), 32x"0"' in tb
+    assert "v_config.expected_response := SLVERR;" in tb
+    assert "unchanged by the unmapped writes" in tb
 
 
 def test_example_c_headers_compile_in_one_file(tmp_path):
@@ -369,7 +467,7 @@ def test_constant_only_module_omits_empty_record_families():
     assert "C_RONLY_REGS_RESET" not in out
     assert "type t_ronly_from_hw is record" not in out
     assert "type t_ronly_to_hw is record" in out
-    assert "return sel_is(sel, C_ADDR_STAT);" in out
+    assert "return reg_addr_match(reg_offset, C_ADDR_STAT);" in out
 
 
 def test_constant_only_entity_uses_literals_not_regs():
@@ -682,10 +780,12 @@ def test_hardware_updates_override_onread_effects_in_the_same_cycle():
         hw="r",
     )
     p_write = _p_write(module)
-    onread = p_write.index("if rd_service and sel_is(sel, C_ADDR_R) then")
+    onread = p_write.index(
+        "if rd_service and reg_addr_match(reg_offset, C_ADDR_R) then"
+    )
     assert onread < p_write.index("if from_hw.r.f.clr = '1' then")
     assert onread < p_write.index("if from_hw.r.g.we = '1' then")
-    assert p_write.count("rd_service and sel_is(sel, C_ADDR_R)") == 1
+    assert p_write.count("rd_service and reg_addr_match(reg_offset, C_ADDR_R)") == 1
 
 
 def test_sticky_flag_testbench_checks_hwset_against_the_read_clear():
