@@ -131,7 +131,7 @@
 {% set alias = tb.alias_register %}
 
     -- An address where no register sits gets an error response where the bus
-    -- has one, reads as 0, and a write to it changes no register.
+    -- has one, reads as G_UNMAPPED_READ_DATA, and a write to it changes no register.
     log(ID_LOG_HDR, "addresses without a register get an error and change nothing", C_SCOPE);
 {% for u in tb.unmapped_addresses %}
     bus_write_unmapped(f_addr({{ u.literal }}), {{ module.data_width }}x"0", "write {{ u.hex }}, {{ u.why }}");

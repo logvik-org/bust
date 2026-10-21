@@ -10,7 +10,7 @@ output_dir="$(mktemp -d)"
 # bust writes debug.log to the working directory.
 cd "$output_dir"
 
-bust --version | grep -Fx "bust $expected_version"
+bust --version | grep -Fx "bust v$expected_version"
 for example in example_axi example_ipbus; do
     bust "$examples/$example.json" -o "$output_dir" -p
     # PDFs need pdflatex. The .tex header names the running bust version,

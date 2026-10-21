@@ -82,11 +82,10 @@ headers and the documentation from it.
 }
 ```
 
-The file has up to three sections:
+The file has two sections:
 
 - `bus`: the bus protocol and its address and data widths.
 - `module`: the module's name and its registers.
-- `settings` (optional): where bust writes its output.
 
 This page describes every key. In the tables, the Default column says
 `required` for a key that must be present. Every other key is optional, and
@@ -109,14 +108,19 @@ written as a JSON number or as a string:
 | a string that starts with `0x` | hexadecimal | `"0x10"` | 16 |
 | a string that starts with `0b` | binary | `"0b10000"` | 16 |
 
-JSON has no hexadecimal numbers, so a hexadecimal value is a string. Upper and
-lower case both work, as in `"0X1B2"` and `"0x1b2"`. A number cannot be
-negative, and a fraction, a space or any other character stops bust. So does a
-string with hexadecimal digits but no `0x`, because it cannot be decimal:
+Plain JSON has no hexadecimal numbers, so a hexadecimal value is a string.
+Upper and lower case both work, as in `"0X1B2"` and `"0x1b2"`. A number cannot
+be negative, and a fraction, a space or any other character stops bust. So does
+a string with hexadecimal digits but no `0x`, because it cannot be decimal:
 
 ```text
 Could not parse register baud_div: Reset of register baud_div "1B2" has hexadecimal digits but no 0x. Write "0x1B2" for a hexadecimal number.
 ```
+
+bust also reads the file as [JSON5](https://json5.org/), whatever its name. A
+JSON5 file can have comments, trailing commas, keys without quotes and
+hexadecimal numbers without quotes, such as `"address": 0x1c`. `bust -a` does
+not rewrite a JSON5 file, because it would lose the comments.
 
 ## Bus
 
@@ -133,8 +137,6 @@ Could not parse register baud_div: Reset of register baud_div "1B2" has hexadeci
 | `type` | string | required | The bus protocol, from the table below. |
 | `addr_width` | [number](#numbers) | required | Width of the bus address in bits. |
 | `data_width` | [number](#numbers) | required | Width of the bus data in bits. No register can be wider. |
-| `comp_library` | string | none | Accepted so that bust 0.14 files still load. It has no effect. |
-| `reset` | string | none | Accepted so that bust 0.14 files still load. It has no effect. |
 
 | `type` | Protocol | An address selects |
 |---|---|---|
@@ -470,27 +472,14 @@ Could not parse register ctrl: Invalid SwAccess: 'rx'. Did you mean one of these
 
 ## Settings
 
-Most files need no `settings` section. It decides where bust writes its
-output:
+bust 1.0 has no `settings` section. Without `-o`, `bust uart.json` writes
+`uart/hdl`, `uart/tb`, `uart/header` and `uart/doc` next to `uart.json`, and
+`-o DIR` puts the `uart/` directory in `DIR` instead.
 
-```json
-"settings": {
-  "proj_dir": "build",
-  "mod_subdir": false
-}
-```
-
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `proj_dir` | string | the directory of the JSON file | Output directory, used when you run bust without `-o`. A relative path is relative to the directory you run bust from, not to the JSON file. A leading `~` is expanded. |
-| `mod_subdir` | boolean | `true` | Put the output in a subdirectory named after the module, inside the output directory. With `false`, bust writes straight into the output directory. |
-
-With neither key and no `-o`, `bust uart.json` writes `uart/hdl`, `uart/tb`,
-`uart/header` and `uart/doc` next to `uart.json`.
-
-bust also accepts `bus_subdir`, `coverage`, `uvvm_rel_path`, `ipbus_rel_path`
-and `vip_ipbus_rel_path`, so that bust 0.14 files still load, and ignores
-them.
+bust ignores a `settings` section left from bust 0.14 and warns about it. A
+`proj_dir` or `"mod_subdir": false` in it stops bust, because the output would
+land somewhere else. `bust FILE --migrate` removes the section and says which
+`-o` to use.
 
 ## Keys bust does not know
 
@@ -559,6 +548,5 @@ Could not parse register go: Invalid register format: Register 'go': pulse_cycle
 Could not parse register st: Invalid register format: Register 'st': stall_cycles is not supported in bust 1.0, because registers live in the generated register file and always answer in one cycle. Remove stall_cycles.
 ```
 
-The 0.14 settings `bus_subdir`, `coverage`, `uvvm_rel_path`, `ipbus_rel_path`
-and `vip_ipbus_rel_path` are ignored, see [Settings](#settings).
+bust no longer reads the 0.14 `settings` section, see [Settings](#settings).
 [Upgrading from 0.14](upgrading.md) lists everything else that changed.

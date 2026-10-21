@@ -1,13 +1,5 @@
--- Generated testbench for the {{ module.name }} module (AMBA APB).
--- UVVM ships no APB VIP, so this drives the {{ module.name }} top entity with an
--- inlined hand-written APB master BFM (the bus_write/bus_read procedures below)
--- and uses uvvm_util only for logging and checks. It self-checks every register
--- of the module, by kind: plain read-write, enumerated,
--- write-only/singlepulse (reads back 0), onread/onwrite software side effects,
--- software-readonly registers driven from from_hw (we/wel), the hardware we
--- override / hwset / hwclr modifiers, the to_hw values the hardware sees, and the
--- swmod/swacc/singlepulse to_hw strobe pulses (counted by a monitor process, since
--- they are single-cycle).
+-- {{ generated_by() }}
+-- Testbench for the {{ module.name }} module (AMBA APB).
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -55,7 +47,8 @@ begin
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
-      G_MODULE_ADDR_WIDTH  => {{ tb.module_addr_width }})
+      G_MODULE_ADDR_WIDTH  => {{ tb.module_addr_width }},
+      G_UNMAPPED_READ_DATA => C_UNMAPPED_READ_DATA)
     port map (
       pclk    => clk,
       presetn => presetn,
@@ -157,6 +150,7 @@ begin
     begin
       bus_read(addr, v_data, v_got_err);
       check_value(v_got_err, true, error, msg & " (terminated on pslverr)", C_SCOPE);
+      check_value(v_data, C_UNMAPPED_READ_DATA, error, msg, C_SCOPE);
     end procedure;
 {% include "vhdl/testbench/localbus_tb/snapshot_vars.j2" %}
 

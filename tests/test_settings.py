@@ -1,4 +1,7 @@
-"""Settings and bus keys: what bust uses, and what it keeps but ignores."""
+"""bust writes into <output directory>/<module>/ and no longer reads the
+settings section or the bust 0.14 bus keys (#227)."""
+
+import logging
 
 import pytest
 
@@ -7,33 +10,33 @@ from bust.exceptions import FormatError
 from bust.settings import Settings
 
 
-def test_missing_settings_section_uses_defaults():
-    settings = Settings("cfg/m.json", None)
+def test_output_goes_next_to_the_json_file():
+    assert Settings("cfg/m.json", None).project_path == "cfg"
+    assert Settings("m.json", None).project_path == "."
+
+
+def test_settings_section_is_ignored_with_a_warning(caplog):
+    with caplog.at_level(logging.WARNING):
+        settings = Settings("cfg/m.json", {"mod_subdir": True, "coverage": True})
 
     assert settings.project_path == "cfg"
-    assert settings.mod_subdir is True
-    assert settings.to_json() == {"mod_subdir": True}
+    assert "The settings section is ignored" in caplog.text
 
 
-def test_proj_dir_sets_the_output_directory():
-    settings = Settings("cfg/m.json", {"proj_dir": "out", "mod_subdir": False})
-
-    assert settings.project_path == "out"
-    assert settings.mod_subdir is False
-
-
-def test_ignored_settings_are_written_back_unchanged():
-    old = {"bus_subdir": False, "uvvm_rel_path": "../UVVM", "coverage": True}
-
-    assert Settings("m.json", old).to_json() == dict(mod_subdir=True, **old)
+@pytest.mark.parametrize("section", [{"proj_dir": "out"}, {"mod_subdir": False}])
+def test_settings_that_move_the_output_stop_bust(section):
+    with pytest.raises(FormatError, match="run bust with -o instead"):
+        Settings("cfg/m.json", section)
 
 
-def test_ignored_bus_keys_are_written_back_and_none_added():
+def test_0_14_bus_keys_are_unknown_and_not_written_back(caplog):
     plain = {"type": "apb", "addr_width": 16, "data_width": 32}
-    old = dict(plain, comp_library="regs", reset="async")
 
-    assert Bus(plain).to_json() == plain
-    assert Bus(old).to_json() == old
+    with caplog.at_level(logging.WARNING):
+        bus = Bus(dict(plain, comp_library="regs", reset="async"))
+
+    assert bus.to_json() == plain
+    assert "Unknown key 'comp_library' in bus is ignored" in caplog.text
 
 
 def test_data_width_must_be_whole_bytes():

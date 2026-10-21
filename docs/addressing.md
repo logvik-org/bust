@@ -46,7 +46,7 @@ at the top are for `G_MODULE_ADDR_WIDTH => 12`, a 4 KiB address range.
 An access that fails a check gets an [error response](buses.md#errors), and so
 does an access to an unused register offset, such as `0x8` in a module with
 registers at `0x0`, `0x4` and `0xC`. A failed write changes nothing,
-and a failed read returns 0.
+and a failed read returns `G_UNMAPPED_READ_DATA`, 0 by default.
 
 ## Choosing the settings
 

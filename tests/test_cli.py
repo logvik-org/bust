@@ -83,13 +83,8 @@ def test_save_addresses_with_force(tmp_path):
     assert code == 0, output
     saved = json.loads(path.read_text())
     assert saved["module"]["register"][0]["address"] == "0x0"
-    assert saved["settings"]["coverage"] is True
-    assert saved["bus"] == {
-        "type": "axi",
-        "addr_width": 32,
-        "data_width": 32,
-        "comp_library": "regs",
-    }
+    assert "settings" not in saved
+    assert saved["bus"] == {"type": "axi", "addr_width": 32, "data_width": 32}
 
 
 def test_save_addresses_without_terminal_asks_for_force(tmp_path):
