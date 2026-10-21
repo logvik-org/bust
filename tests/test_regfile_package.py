@@ -232,7 +232,8 @@ def test_register_without_fields_is_a_bare_member_of_to_hw_and_from_hw():
         in regfile
     )
     assert "  to_hw.ctrl <= (go => regs.ctrl.go);" in regfile
-    assert "regs.count.count <= from_hw.count;" in regfile
+    assert "rdata(3 downto 0) <= from_hw.count;" in regfile
+    assert "regs.count" not in regfile
     assert "if from_hw.load.we = '1' then" in regfile
 
 
@@ -272,7 +273,7 @@ def test_testbench_checks_unmapped_offsets():
         "0x100",
     ]
     tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
-    assert "G_MODULE_ADDR_WIDTH  => 8)" in tb
+    assert "G_MODULE_ADDR_WIDTH  => 8," in tb
     assert 'bus_write_unmapped(f_addr(32x"40"), 32x"0"' in tb
     assert "v_config.expected_response := SLVERR;" in tb
     assert "unchanged by the unmapped writes" in tb
@@ -521,7 +522,7 @@ def test_non_fields_registers_normalize_to_implicit_field():
 def _generate_only_localbus(out_dir, gen_localbus):
     cfg_path = os.path.join(_REPO_ROOT, "example", "example_axi.json")
     cfg = json_parser(cfg_path)
-    settings = Settings(cfg_path, cfg["settings"])
+    settings = Settings(cfg_path, cfg.get("settings"))
     bus = Bus(cfg["bus"])
     module = Module(cfg["module"], bus, settings)
     gen_settings = {

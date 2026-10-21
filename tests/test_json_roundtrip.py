@@ -34,7 +34,7 @@ def _example_path(name):
 
 
 def _build_module(json_file, config):
-    settings = Settings(json_file, config["settings"])
+    settings = Settings(json_file, config.get("settings"))
     return Module(config["module"], Bus(config["bus"]), settings)
 
 
@@ -154,11 +154,11 @@ def test_save_keeps_field_level_access_without_register_defaults():
         "register": [{"name": "status", "type": "fields", "fields": fields}],
     }
     bus = Bus({"type": "axi", "addr_width": 32, "data_width": 32})
-    settings = Settings(os.path.join("cfg", "m.json"), {"proj_dir": "out"})
+    settings = Settings(os.path.join("cfg", "m.json"), None)
 
     saved = json.loads(Module(cfg, bus, settings).to_json(True))
 
-    assert saved["settings"]["proj_dir"] == "out"
+    assert "settings" not in saved
     assert saved["module"]["byte_addressable"] is False
     (status,) = saved["module"]["register"]
     assert "mode" not in status and "sw" not in status

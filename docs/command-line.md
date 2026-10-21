@@ -35,7 +35,7 @@ and exit with status 1.
 
 | Option         | Effect                                                                                                                                                                  |
 |----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `-o DIR`       | Write the output under `DIR`. This overrides `proj_dir` in the JSON file and the location of the JSON file. See [Output directory](#output-directory).                   |
+| `-o DIR`       | Write the output under `DIR` instead of next to the JSON file. See [Output directory](#output-directory).                                                                 |
 | `-f`           | Overwrite existing files without asking, except `<module>.vhd`, which is yours. See [Existing files](#existing-files).                                               |
 | `-F`           | The same as `-f`.                                                                                                                                                       |
 | `-d`           | Do not write the documentation, neither the `.tex` file nor the PDF.                                                                                                    |
@@ -47,7 +47,7 @@ and exit with status 1.
 | `--migrate`    | Migrate a bust 0.14 JSON file and its `<module>.vhd`. Generates nothing. With `-f`, without asking. See [Upgrading](upgrading.md#migrate-with---migrate). |
 | `-c`           | Create `FILE` with the interactive editor. See [Interactive editor](#interactive-editor).                                                                               |
 | `-e`           | Open `FILE` in the interactive editor.                                                                                                                                  |
-| `--version`    | Print `bust` and the version number, then exit.                                                                                                                         |
+| `--version`    | Print `bust` and the version, such as `bust v1.0.0a3`, then exit.                                                                                                       |
 | `-h`, `--help` | Print the usage and a short description of each option, then exit.                                                                                                      |
 
 Every run that generates files writes the VHDL files and the testbench. No
@@ -56,19 +56,9 @@ describes the headers, the address table and the documentation.
 
 ## Output directory
 
-bust picks the directory to write into from the first of these that is set:
-
-1. `-o DIR` on the command line.
-2. `proj_dir` in the `settings` section of the JSON file. A relative
-   `proj_dir` is relative to the directory you run bust from, not to the JSON
-   file. It may start with `~`.
-3. The directory that holds the JSON file.
-
-When `mod_subdir` in the `settings` section is `true`, which is the default,
-bust adds a directory named after the module (the `name` in the `module`
-section). When it is `false`, bust writes straight into the directory above.
-[Register map format](register-map-format.md) describes the `settings`
-section.
+bust writes into `-o DIR`, or else into the directory that holds the JSON
+file. There it adds a directory named after the module (the `name` in the
+`module` section).
 
 Inside that directory, bust writes four directories. This is the output of
 `bust example_ipbus.json -o out` for the IPBus example from the repository,
@@ -190,6 +180,8 @@ back to `FILE`. It generates no other output. It asks before it replaces
 bust timer.json -a -f
 ```
 
+A file that uses JSON5 syntax, such as comments, is not rewritten.
+
 bust numbers the registers in the order they appear, starting at 0. They are
 `data_width / 8` apart, and 1 apart on IPBus or with `"byte_addressable": false`
 in the module. See
@@ -253,9 +245,8 @@ become:
 ]
 ```
 
-The `settings`, `bus` and `module` sections get the same treatment. The bust
-0.14 keys that bust accepts and ignores, such as `comp_library`, are kept as
-they are. Commit or copy the file first if you want to compare.
+The `bus` and `module` sections get the same treatment, and a `settings`
+section is dropped. Commit or copy the file first if you want to compare.
 
 ## Interactive editor
 

@@ -28,7 +28,7 @@ class BusHolder:
         # Load the example JSON file
         json_file = "example/example_{}.json".format(bus_type)
         json = json_parser(json_file)
-        sett = Settings(json_file, json["settings"])
+        sett = Settings(json_file, json.get("settings"))
         bus = Bus(json["bus"])
         mod = Module(json["module"], bus, sett)
         doc = DocumentationGenerator(mod)

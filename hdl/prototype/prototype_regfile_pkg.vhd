@@ -87,7 +87,6 @@ package prototype_regfile_pkg is
   -- Stored fields of reg1.
   type t_reg1_regs is record
     field0 : std_logic_vector(3 downto 0);   -- reg1.field0
-    field1 : std_logic;                      -- reg1.field1
     field2 : std_logic;                      -- reg1.field2
   end record;
 
@@ -170,7 +169,7 @@ package prototype_regfile_pkg is
   -- makes their clearing observable in the demo.
   constant C_PROTOTYPE_REGS_RESET : t_prototype_regs := (
     reg0 => (field0 => '0', field1 => (others => '0')),
-    reg1 => (field0 => (others => '0'), field1 => '0', field2 => '0'),
+    reg1 => (field0 => (others => '0'), field2 => '0'),
     reg2 => (field0 => '0'),
     reg3 => (field0 => (others => '0')),
     reg4 => (field0 => (others => '0'), field1 => '0'),
@@ -319,6 +318,11 @@ package prototype_regfile_pkg is
     reg1 : t_reg1_from_hw;
     reg4 : t_reg4_from_hw;
   end record;
+
+  -- from_hw at rest: every value at its reset, every strobe inactive.
+  constant C_PROTOTYPE_FROM_HW_RESET : t_prototype_from_hw := (
+    reg1 => (field0 => (value => (others => '0'), we => '0'), field1 => '0', field2 => (value => '0', wel => '1')),
+    reg4 => (field0 => (value => (others => '0'), we => '0'), field1 => (set => '0', clr => '0')));
 
   -- base_match and above_registers get the register file's G_MODULE_ADDR_WIDTH
   -- as module_addr_width. In an address, bits 0 to C_MODULE_ADDR_WIDTH - 1
