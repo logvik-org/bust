@@ -156,7 +156,7 @@ The widths are the `addr_width` and `data_width` of the register map.
 
 | Member | Direction | Meaning |
 |--------|-----------|---------|
-| `address` | endpoint to register file | The address the bus master drove, unchanged. A byte address, or a word address on IPBus and in a module with `byte_addressable` set to `false`. |
+| `address` | endpoint to register file | The address the bus master drove: the base address plus the register offset. |
 | `wdata` | endpoint to register file | Write data. |
 | `wen` | endpoint to register file | Write request. |
 | `ren` | endpoint to register file | Read request. |
@@ -185,13 +185,7 @@ entity timer_regfile is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    -- Module address width: the module answers for 2**G_MODULE_ADDR_WIDTH
-    -- addresses from its base address. An address in that range where no
-    -- register sits gets an error response. The default is the smallest
-    -- width that holds the registers.
     G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
-    -- Reset polarity. The regfile normalizes internally so the rest of the
-    -- logic is polarity-agnostic.
     G_RESET_ACTIVE_LOW   : boolean := false
   );
   port (

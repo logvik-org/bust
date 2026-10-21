@@ -47,9 +47,7 @@ def reject_unsupported_timing(reg: Dict) -> None:
         raise InvalidRegisterFormat(
             f"Register '{name}': pulse_cycles={pulse_cycles} is not supported in "
             "bust 1.0. A pulse register drives the written value for one clock "
-            "cycle and then returns to its reset value. Remove pulse_cycles. "
-            "To reach logic on another clock, see "
-            "https://bust.readthedocs.io/en/latest/access-modes.html#pulses-into-another-clock-domain"
+            "cycle and then returns to its reset value. Remove pulse_cycles."
         )
     stall_cycles = parse_number(
         reg.get("stall_cycles", 0), f"stall_cycles of register {name}"

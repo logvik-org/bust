@@ -75,10 +75,6 @@ script and run it from the repository root. The PNG files need
 repository, so upload `docs/images/social-preview.png` again under Settings,
 General, Social preview after a change.
 
-The figure on the Base address and address range page is inline SVG, so it follows the
-light and dark themes. `scripts/make_address_figure.py` draws it and replaces it
-in `docs/addressing.md`.
-
 ## Changelog
 
 `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).

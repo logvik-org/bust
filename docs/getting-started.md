@@ -72,10 +72,8 @@ with it (`hw`):
 - `irq.expired` is a sticky flag. Hardware sets it with `hwset`, and software
   clears it by writing 1 (`onwrite: woclr`).
 
-`address` is the register offset, the register's distance from the module's
-base address. You can leave it out, and bust then places the register at the
-next free address. [Register map format](register-map-format.md) lists every
-key, and [Access modes](access-modes.md) describes what each access mode does.
+[Register map format](register-map-format.md) lists every key, and
+[Access modes](access-modes.md) describes what each access mode does.
 
 ## Generate
 

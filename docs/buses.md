@@ -152,8 +152,7 @@ is the `axi` bus type. The endpoint is `<module>_axi_endpoint`.
   and `arvalid`. If your interconnect or your timing needs registered ready
   signals, put a register slice in front of the module.
 - `areset_n` is active low.
-- Addresses are byte addresses by default. AXI4-Lite allows a `data_width` of
-  32 or 64.
+- AXI4-Lite allows a `data_width` of 32 or 64.
 
 ## IPBus
 
@@ -187,7 +186,6 @@ and the top wrapper use it as `library ipbus; use ipbus.ipbus.all;`, so compile
   in the cycle after the strobe, with `ipb_rdata` valid on a read.
 - `ipb_rdata` is 0 when a read gets `ipb_err`.
 - `reset` is active high.
-- Addresses are word addresses.
 - `data_width` must be 32 and `addr_width` at most 32. bust stops with an
   error for other values.
 - With an `addr_width` below 32, the endpoint ignores the upper bits of
@@ -219,7 +217,6 @@ endpoint is `<module>_sbi_endpoint`.
 - SBI has no error signal. An access that does not decode completes with
   `ready` as usual, with `rdata` 0 on a read.
 - SBI defines no reset. bust adds `reset`, active high.
-- Addresses are byte addresses by default.
 
 ## Avalon-MM
 
@@ -251,10 +248,6 @@ Avalon-MM agent.
   read.
 - If your host has no chip select, tie `chipselect` to `'1'`.
 - `reset` is active high.
-- Addresses are byte addresses by default. If you connect the module in
-  Platform Designer, set the agent interface to byte addressing
-  (`addressUnits SYMBOLS`), or keep word addressing and set `byte_addressable`
-  to `false`.
 
 ## Wishbone
 
@@ -283,9 +276,6 @@ classic cycles.
   ports, so the endpoint supports neither the pipelined mode nor registered
   feedback bursts.
 - `rst_i` is active high.
-- Addresses on `adr_i` are byte addresses by default. Many Wishbone designs
-  drive word addresses on 32-bit ports instead, so check what your master
-  drives, and set `byte_addressable` to `false` for word addresses.
 
 ## APB
 
@@ -312,4 +302,3 @@ classic cycles.
 - On an error, `pslverr` is high together with `pready`, and `prdata` is 0 on a
   read.
 - `presetn` is active low.
-- Addresses on `paddr` are byte addresses by default.

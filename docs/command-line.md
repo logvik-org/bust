@@ -175,10 +175,11 @@ back to `FILE`. It generates no other output. It asks before it replaces
 bust timer.json -a -f
 ```
 
-bust numbers the registers in the order they appear, starting at 0 and one data
-word apart: 4 apart when addresses count bytes and the data is 32 bits wide,
-and 1 apart when they count words, as on IPBus. Addresses you wrote yourself
-are replaced.
+bust numbers the registers in the order they appear, starting at 0. They are
+`data_width / 8` apart, and 1 apart on IPBus or with `"byte_addressable": false`
+in the module. See
+[Byte and word addresses](register-map-format.md#byte-and-word-addresses).
+Addresses you wrote yourself are replaced.
 
 bust then writes the whole file again, with 4-space indentation. Every register
 gets an `address`, and the defaults bust used are written out, such as `type`,
