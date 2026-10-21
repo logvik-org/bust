@@ -36,13 +36,11 @@ def is_legacy_top(text):
 def migrate_register_map(cfg):
     """Rewrite a bust 0.14 register map in place and return the changes made."""
     changes = []
-    for section, keys in (
-        ("settings", Settings.IGNORED_KEYS),
-        ("bus", Bus.IGNORED_KEYS),
-    ):
-        for key in keys:
-            if cfg.get(section, {}).pop(key, None) is not None:
-                changes.append(f"removed {section}.{key}")
+    if cfg.pop("settings", None) is not None:
+        changes.append("removed the settings section")
+    for key in ("comp_library", "reset"):
+        if cfg["bus"].pop(key, None) is not None:
+            changes.append(f"removed bus.{key}")
     module = cfg["module"]
     if module.get("byte_addressable") in ("True", "False"):
         module["byte_addressable"] = module["byte_addressable"] == "True"
@@ -125,13 +123,18 @@ def migrate(json_file, out_dir, force):
     """
     with open(json_file, encoding="utf-8") as fp:
         cfg = json.load(fp)
+    old = cfg.get("settings") or {}
     changes = migrate_register_map(cfg)
-    settings = Settings(json_file, cfg.get("settings"))
+    settings = Settings(json_file, None)
     module = Module(cfg["module"], Bus(cfg["bus"]), settings)
 
-    mod_dir = os.path.expanduser(out_dir or settings.project_path)
-    if settings.mod_subdir:
+    # Where the 0.14 settings put the output, and where bust 1.0 puts it.
+    new_dir = os.path.expanduser(out_dir or settings.project_path)
+    mod_dir = os.path.expanduser(out_dir or old.get("proj_dir") or new_dir)
+    if old.get("mod_subdir", True):
         mod_dir = os.path.join(mod_dir, module.name)
+    mod_dir = os.path.normpath(mod_dir)
+    moved = mod_dir != os.path.normpath(os.path.join(new_dir, module.name))
     top_path = os.path.join(mod_dir, settings.hdl_dir, f"{module.name}.vhd")
     files = [(json_file, json.dumps(cfg, indent=4) + "\n")] if changes else []
     todo = []
@@ -162,4 +165,14 @@ def migrate(json_file, out_dir, force):
             fp.write(text)
     for line in todo:
         logger.warning(f"Change by hand in {top_path}, {line}")
-    logger.info(f"Migrated. The old files end in .0_14. Now run bust {json_file}.")
+    option = ""
+    if moved and os.path.basename(mod_dir) == module.name:
+        option = f" -o {os.path.dirname(mod_dir) or '.'}"
+    elif moved:
+        logger.warning(
+            f"bust now writes into <-o DIR>/{module.name}/. Move {mod_dir} to "
+            f"a directory named {module.name}."
+        )
+    logger.info(
+        f"Migrated. The old files end in .0_14. Now run bust {json_file}{option}."
+    )

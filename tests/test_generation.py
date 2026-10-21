@@ -54,7 +54,7 @@ def _write_top(out_dir, text):
 
 def _generate(out_dir, force_ow=True, replace_top=False):
     cfg = json_parser(_EXAMPLE_JSON)
-    settings = Settings(_EXAMPLE_JSON, cfg["settings"])
+    settings = Settings(_EXAMPLE_JSON, cfg.get("settings"))
     bus = Bus(cfg["bus"])
     gen_settings = {
         "dir": str(out_dir),

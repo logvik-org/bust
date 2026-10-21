@@ -121,10 +121,7 @@ def generate_output(settings, bus, module, header, documentation, gen_settings):
     # Control all output directories
     proj_dir = os.path.expanduser(gen_settings["dir"])  # Make sure that we understand ~
     logger.info(f"Project path: {os.path.abspath(proj_dir)}")
-    if settings.mod_subdir:
-        mod_dir = os.path.join(proj_dir, module.name)
-    else:
-        mod_dir = proj_dir
+    mod_dir = os.path.join(proj_dir, module.name)
 
     mod_hdl = os.path.join(mod_dir, settings.hdl_dir)
     mod_tb = os.path.join(mod_dir, settings.tb_dir)

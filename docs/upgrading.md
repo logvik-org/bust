@@ -146,11 +146,13 @@ A few keys need changes:
   after the pulse, as in 0.14.
 - **IPBus widths.** An IPBus module needs `data_width` 32 and an `addr_width` of
   at most 32.
-- **Keys that no longer do anything.** bust ignores the settings
-  `bus_subdir`, `coverage`, `uvvm_rel_path`, `ipbus_rel_path` and
-  `vip_ipbus_rel_path`, and the bus keys `comp_library` and `reset`. You can
-  leave them in your files. The generated files refer to each other through
-  `work`, so you choose the library when you compile them.
+- **Keys that no longer do anything.** bust no longer reads the `settings`
+  section or the bus keys `comp_library` and `reset`, and warns about them. A
+  `proj_dir` or `"mod_subdir": false` stops bust, because the output would land
+  somewhere else. Remove them and use `-o` for the output directory.
+  `--migrate` removes them and says which `-o` to use. The generated files
+  refer to each other through `work`, so you choose the library when you
+  compile them.
 - **Stricter checks.** bust 1.0 stops on register maps that 0.14 accepted but
   that produce VHDL that does not compile or a register software cannot reach,
   such as two registers whose names differ only in case, or an address that is

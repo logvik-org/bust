@@ -521,7 +521,7 @@ def test_non_fields_registers_normalize_to_implicit_field():
 def _generate_only_localbus(out_dir, gen_localbus):
     cfg_path = os.path.join(_REPO_ROOT, "example", "example_axi.json")
     cfg = json_parser(cfg_path)
-    settings = Settings(cfg_path, cfg["settings"])
+    settings = Settings(cfg_path, cfg.get("settings"))
     bus = Bus(cfg["bus"])
     module = Module(cfg["module"], bus, settings)
     gen_settings = {

@@ -1,11 +1,4 @@
 {
-    "settings": {
-        "mod_subdir": true,
-        "uvvm_rel_path": "../../../UVVM",
-        "ipbus_rel_path": "../../../ipbus-firmware",
-        "vip_ipbus_rel_path": "../../../vip_ipbus",
-        "coverage": true
-    },
     "bus": {
         "type": "ipbus",
         "addr_width": 16,
