@@ -14,34 +14,34 @@
 {% if f.sw_writable %}{% set ns.branches = ns.branches + [("sw_write and reg_addr_match(reg_offset, C_ADDR_" ~ reg.name | upper ~ ")", sw_action(reg, f))] %}{% endif %}
 {% for cond, act in ns.branches %}
 {% if loop.first %}
-      if {{ cond }} then
+        if {{ cond }} then
 {% else %}
-      elsif {{ cond }} then
+        elsif {{ cond }} then
 {% endif %}
-        {{ act }};
+          {{ act }};
 {% endfor %}
 {% if ns.branches %}
-      end if;
+        end if;
 {% endif %}
 {%- endmacro -%}
 {% macro register_write(reg) -%}
 {% for f in reg.stored_fields %}
 {% if f.singlepulse %}
-      regs.{{ reg.name }}.{{ f.name }} <= {{ f.reset_value_vhdl }};
+        regs.{{ reg.name }}.{{ f.name }} <= {{ f.reset_value_vhdl }};
 {% elif f.hw_writes_continuously %}
-      regs.{{ reg.name }}.{{ f.name }} <= from_hw.{{ f.hw_path }}{{ ".value" if f.from_hw_is_record else "" }};
+        regs.{{ reg.name }}.{{ f.name }} <= from_hw.{{ f.hw_path }}{{ ".value" if f.from_hw_is_record else "" }};
 {% endif %}
 {% endfor %}
 {% set onread_fields = reg.effective_fields | selectattr('onread') | list %}
 {% set later = namespace(writes=False) %}
 {% for f in reg.stored_fields if f.sw_writable or f.we or f.wel or f.hwset or f.hwclr %}{% set later.writes = True %}{% endfor %}
 {% if onread_fields %}
-      -- {{ reg.name }} onread effects, applied when the software read is serviced.
-      if rd_service and reg_addr_match(reg_offset, C_ADDR_{{ reg.name | upper }}) then
+        -- {{ reg.name }} onread effects, applied when the software read is serviced.
+        if rd_service and reg_addr_match(reg_offset, C_ADDR_{{ reg.name | upper }}) then
 {% for f in onread_fields %}
-        regs.{{ reg.name }}.{{ f.name }} <= {{ f.ones_literal if f.onread.value == 'rset' else f.zeros_literal }};
+          regs.{{ reg.name }}.{{ f.name }} <= {{ f.ones_literal if f.onread.value == 'rset' else f.zeros_literal }};
 {% endfor %}
-      end if;
+        end if;
 {% if later.writes %}
 
 {% endif %}
@@ -51,11 +51,11 @@
 {% endfor %}
 {% set sw_fields = reg.stored_fields | selectattr('sw_writable') | rejectattr('we') | rejectattr('wel') | rejectattr('hwset') | rejectattr('hwclr') | list %}
 {% if sw_fields %}
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_{{ reg.name | upper }}) then
+        if sw_write and reg_addr_match(reg_offset, C_ADDR_{{ reg.name | upper }}) then
 {% for f in sw_fields %}
-        {{ sw_action(reg, f) }};
+          {{ sw_action(reg, f) }};
 {% endfor %}
-      end if;
+        end if;
 {% endif %}
 {%- endmacro -%}
 {# A constant enum is qualified because enum literal names (e.g. IDLE/BUSY) may be
@@ -153,62 +153,6 @@ begin
     variable rd_service : boolean;     -- a new software read from a register
   begin
     if rising_edge(clk) then
-      wr_ack <= '0';
-      wr_err <= '0';
-
-      -- A software access only takes effect on the cycle it is first seen
-      -- (response still low); the master holds the request until it observes
-      -- the response, so these guards keep the effect single-shot.
-      reg_offset := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
-      mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
-                               G_MODULE_ADDR_WIDTH)
-                    and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
-                    and is_mapped(reg_offset);
-      sw_write   := lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' and mapped;
-      rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' and mapped;
-
-{% for reg in module.registers if reg.stored_fields %}
-{{ register_write(reg) }}
-
-{% endfor %}
-{% for reg in module.registers %}
-{% set swmod_fields = reg.effective_fields | selectattr('swmod') | list %}
-{% set swacc_fields = reg.effective_fields | selectattr('swacc') | list %}
-{% if swmod_fields or swacc_fields %}
-      -- {{ reg.name }} software-access strobes (swmod on write, swacc on any access).
-{% for f in swmod_fields %}
-      swmod_{{ reg.name }}_{{ f.name }} <= '0';
-{% endfor %}
-{% for f in swacc_fields %}
-      swacc_{{ reg.name }}_{{ f.name }} <= '0';
-{% endfor %}
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_{{ reg.name | upper }}) then
-{% for f in swmod_fields %}
-        swmod_{{ reg.name }}_{{ f.name }} <= '1';
-{% endfor %}
-{% for f in swacc_fields %}
-        swacc_{{ reg.name }}_{{ f.name }} <= '1';
-{% endfor %}
-{% if swacc_fields %}
-      elsif rd_service and reg_addr_match(reg_offset, C_ADDR_{{ reg.name | upper }}) then
-{% for f in swacc_fields %}
-        swacc_{{ reg.name }}_{{ f.name }} <= '1';
-{% endfor %}
-{% endif %}
-      end if;
-
-{% endif %}
-{% endfor %}
-      -- Write response: ack a write to a register, err a write to any other
-      -- address.
-      if lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' then
-        if mapped then
-          wr_ack <= '1';
-        else
-          wr_err <= '1';
-        end if;
-      end if;
-
       if rst = '1' then
 {% if module.stored_registers %}
         regs       <= C_{{ module.name | upper }}_REGS_RESET;
@@ -223,6 +167,62 @@ begin
         swacc_{{ reg.name }}_{{ f.name }} <= '0';
 {% endfor %}
 {% endfor %}
+      else
+        wr_ack <= '0';
+        wr_err <= '0';
+
+        -- A software access only takes effect on the cycle it is first seen
+        -- (response still low); the master holds the request until it observes
+        -- the response, so these guards keep the effect single-shot.
+        reg_offset := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
+        mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
+                                 G_MODULE_ADDR_WIDTH)
+                      and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
+                      and is_mapped(reg_offset);
+        sw_write   := lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' and mapped;
+        rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' and mapped;
+
+{% for reg in module.registers if reg.stored_fields %}
+{{ register_write(reg) }}
+
+{% endfor %}
+{% for reg in module.registers %}
+{% set swmod_fields = reg.effective_fields | selectattr('swmod') | list %}
+{% set swacc_fields = reg.effective_fields | selectattr('swacc') | list %}
+{% if swmod_fields or swacc_fields %}
+        -- {{ reg.name }} software-access strobes (swmod on write, swacc on any access).
+{% for f in swmod_fields %}
+        swmod_{{ reg.name }}_{{ f.name }} <= '0';
+{% endfor %}
+{% for f in swacc_fields %}
+        swacc_{{ reg.name }}_{{ f.name }} <= '0';
+{% endfor %}
+        if sw_write and reg_addr_match(reg_offset, C_ADDR_{{ reg.name | upper }}) then
+{% for f in swmod_fields %}
+          swmod_{{ reg.name }}_{{ f.name }} <= '1';
+{% endfor %}
+{% for f in swacc_fields %}
+          swacc_{{ reg.name }}_{{ f.name }} <= '1';
+{% endfor %}
+{% if swacc_fields %}
+        elsif rd_service and reg_addr_match(reg_offset, C_ADDR_{{ reg.name | upper }}) then
+{% for f in swacc_fields %}
+          swacc_{{ reg.name }}_{{ f.name }} <= '1';
+{% endfor %}
+{% endif %}
+        end if;
+
+{% endif %}
+{% endfor %}
+        -- Write response: ack a write to a register, err a write to any other
+        -- address.
+        if lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' then
+          if mapped then
+            wr_ack <= '1';
+          else
+            wr_err <= '1';
+          end if;
+        end if;
       end if;
     end if;
   end process p_write;
@@ -234,32 +234,32 @@ begin
     variable mapped     : boolean;     -- a register sits at this address
   begin
     if rising_edge(clk) then
-      rd_ack <= '0';
-      rd_err <= '0';
-
-      if lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' then
-        rdata <= (others => '0');
-        reg_offset := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
-        mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
-                                 G_MODULE_ADDR_WIDTH)
-                      and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
-                      and is_mapped(reg_offset);
-        if not mapped then
-          rd_err <= '1';
-{% for reg in module.registers %}
-        elsif reg_addr_match(reg_offset, C_ADDR_{{ reg.name | upper }}) then
-{% for f in reg.effective_fields if f.sw_readable %}
-          rdata({{ f.vector_pos_vhdl if f.is_enum else f.get_pos_vhdl() }}) <= {{ ("to_slv(" ~ field_value(reg, f) ~ ")") if f.is_enum else field_value(reg, f) }};
-{% endfor %}
-          rd_ack <= '1';
-{% endfor %}
-        end if;
-      end if;
-
       if rst = '1' then
         rdata  <= (others => '0');
         rd_ack <= '0';
         rd_err <= '0';
+      else
+        rd_ack <= '0';
+        rd_err <= '0';
+
+        if lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' then
+          rdata <= (others => '0');
+          reg_offset := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
+          mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
+                                   G_MODULE_ADDR_WIDTH)
+                        and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
+                        and is_mapped(reg_offset);
+          if not mapped then
+            rd_err <= '1';
+{% for reg in module.registers %}
+          elsif reg_addr_match(reg_offset, C_ADDR_{{ reg.name | upper }}) then
+{% for f in reg.effective_fields if f.sw_readable %}
+            rdata({{ f.vector_pos_vhdl if f.is_enum else f.get_pos_vhdl() }}) <= {{ ("to_slv(" ~ field_value(reg, f) ~ ")") if f.is_enum else field_value(reg, f) }};
+{% endfor %}
+            rd_ack <= '1';
+{% endfor %}
+          end if;
+        end if;
       end if;
     end if;
   end process p_read;
