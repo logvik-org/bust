@@ -81,7 +81,11 @@ def _structural_lines(text):
         line = re.sub(r"--.*$", "", raw).strip()
         line = re.sub(r"\s+", " ", line)
         is_reset_aggregate = "=>" in line and not line.startswith("when")
-        if not line or is_reset_aggregate or re.match(r"(return |or )?sel_is", line):
+        if (
+            not line
+            or is_reset_aggregate
+            or re.match(r"(return |or )?reg_addr_match", line)
+        ):
             continue
         lines.append(line)
     return lines
@@ -249,7 +253,7 @@ def test_module_addr_width_generic_reaches_the_regfile():
     )
     regfile = GeneratorFactory.generate_regfile_vhdl(module)
     assert "above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)" in regfile
-    assert "and is_mapped(sel);" in regfile
+    assert "and is_mapped(reg_offset);" in regfile
     assert "if mapped then" in regfile
 
 
@@ -463,7 +467,7 @@ def test_constant_only_module_omits_empty_record_families():
     assert "C_RONLY_REGS_RESET" not in out
     assert "type t_ronly_from_hw is record" not in out
     assert "type t_ronly_to_hw is record" in out
-    assert "return sel_is(sel, C_ADDR_STAT);" in out
+    assert "return reg_addr_match(reg_offset, C_ADDR_STAT);" in out
 
 
 def test_constant_only_entity_uses_literals_not_regs():
@@ -776,10 +780,12 @@ def test_hardware_updates_override_onread_effects_in_the_same_cycle():
         hw="r",
     )
     p_write = _p_write(module)
-    onread = p_write.index("if rd_service and sel_is(sel, C_ADDR_R) then")
+    onread = p_write.index(
+        "if rd_service and reg_addr_match(reg_offset, C_ADDR_R) then"
+    )
     assert onread < p_write.index("if from_hw.r.f.clr = '1' then")
     assert onread < p_write.index("if from_hw.r.g.we = '1' then")
-    assert p_write.count("rd_service and sel_is(sel, C_ADDR_R)") == 1
+    assert p_write.count("rd_service and reg_addr_match(reg_offset, C_ADDR_R)") == 1
 
 
 def test_sticky_flag_testbench_checks_hwset_against_the_read_clear():

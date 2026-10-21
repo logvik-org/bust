@@ -339,13 +339,15 @@ package prototype_regfile_pkg is
   function above_registers(addr              : std_logic_vector(31 downto 0);
                            module_addr_width : natural) return boolean;
 
-  -- True when the register-select bits match a register's byte offset.
-  function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-                  reg_addr : std_logic_vector(31 downto 0)) return boolean;
+  -- True when reg_offset, the low address bits of an access, equals the
+  -- register offset in reg_addr. Every bit counts, so an address between two
+  -- registers, or inside one, matches no register.
+  function reg_addr_match(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+                          reg_addr   : std_logic_vector(31 downto 0)) return boolean;
 
-  -- True when the select bits address any mapped register. Enumerates the
-  -- register offsets in one place so the decode logic need not repeat them.
-  function is_mapped(sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+  -- True when a register sits at reg_offset. Enumerates the register offsets
+  -- in one place so the decode logic need not repeat them.
+  function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
 
 end package prototype_regfile_pkg;
 
@@ -375,20 +377,26 @@ package body prototype_regfile_pkg is
     return false;
   end function;
 
-  function sel_is(sel      : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-                  reg_addr : std_logic_vector(31 downto 0)) return boolean is
+  function reg_addr_match(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+                          reg_addr   : std_logic_vector(31 downto 0)) return boolean is
   begin
-    return sel = reg_addr(C_MODULE_ADDR_WIDTH-1 downto 0);
+    return reg_offset = reg_addr(C_MODULE_ADDR_WIDTH-1 downto 0);
   end function;
 
-  function is_mapped(sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
   begin
-    return sel_is(sel, C_ADDR_REG0) or sel_is(sel, C_ADDR_REG1)
-        or sel_is(sel, C_ADDR_REG2) or sel_is(sel, C_ADDR_REG3)
-        or sel_is(sel, C_ADDR_REG4) or sel_is(sel, C_ADDR_REG5)
-        or sel_is(sel, C_ADDR_REG6) or sel_is(sel, C_ADDR_REG7)
-        or sel_is(sel, C_ADDR_REG8) or sel_is(sel, C_ADDR_REG9)
-        or sel_is(sel, C_ADDR_REG10) or sel_is(sel, C_ADDR_REG11);
+    return reg_addr_match(reg_offset, C_ADDR_REG0)
+        or reg_addr_match(reg_offset, C_ADDR_REG1)
+        or reg_addr_match(reg_offset, C_ADDR_REG2)
+        or reg_addr_match(reg_offset, C_ADDR_REG3)
+        or reg_addr_match(reg_offset, C_ADDR_REG4)
+        or reg_addr_match(reg_offset, C_ADDR_REG5)
+        or reg_addr_match(reg_offset, C_ADDR_REG6)
+        or reg_addr_match(reg_offset, C_ADDR_REG7)
+        or reg_addr_match(reg_offset, C_ADDR_REG8)
+        or reg_addr_match(reg_offset, C_ADDR_REG9)
+        or reg_addr_match(reg_offset, C_ADDR_REG10)
+        or reg_addr_match(reg_offset, C_ADDR_REG11);
   end function;
 
   -- case over the literals so the encoding follows each enum's declared value,
