@@ -16,6 +16,11 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   level migrated with `--migrate` uses it as the initial value of `from_hw`,
   so a read-only field the logic does not drive reads its reset value, as in
   bust 0.14 (#225).
+- The generic `G_UNMAPPED_READ_DATA`, on the register file, every endpoint and
+  the starter top level, is the data a read gets from an address where no
+  register sits. It defaults to 0, as before. The endpoints no longer force
+  the data of an error response to 0, and the generated testbench sets the
+  generic and checks it on every bus (#218).
 
 ### Changed
 - bust no longer reads the `settings` section. It always writes into

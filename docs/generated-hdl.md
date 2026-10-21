@@ -188,6 +188,7 @@ entity timer_regfile is
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
     G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
+    G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0');
     G_RESET_ACTIVE_LOW   : boolean := false
   );
   port (
@@ -415,7 +416,8 @@ entity timer is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH
+    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
+    G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0')
   );
 ```
 
@@ -425,6 +427,8 @@ sets whether the module checks the base address of each access, and
 the module answers for `2**G_MODULE_ADDR_WIDTH` addresses from its base
 address. [Base address and address range](addressing.md)
 shows how the register file decodes an address with each setting.
+`G_UNMAPPED_READ_DATA` is the data a read gets from an address where no
+register sits, such as `x"DEADBEEF"` to make it stand out in a register dump.
 
 ## Several modules in one design
 

@@ -13,7 +13,7 @@
 -- busy flag keeps the request asserted for exactly one transaction (the regfile's
 -- own response guard blocks a re-service in the ack cycle), and it clears on ack so a
 -- back-to-back transfer starts cleanly at its SETUP cycle. APB has a native pslverr,
--- so a regfile decode error maps to pslverr (prdata still forced to 0). APB's reset
+-- so a regfile decode error maps to pslverr. APB's reset
 -- (presetn) is active-low and async, handed to the regfile via G_RESET_ACTIVE_LOW;
 -- the master drives a byte address mapped directly onto the local bus.
 library ieee;
@@ -27,7 +27,8 @@ entity {{ module.name }}_apb_endpoint is
   generic (
     G_BASE_ADDRESS       : unsigned({{ module.addr_width - 1 }} downto 0) := {{ module.addr_width }}x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH
+    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
+    G_UNMAPPED_READ_DATA : std_logic_vector({{ module.data_width - 1 }} downto 0) := (others => '0')
   );
   port (
     pclk    : in  std_logic;
@@ -70,6 +71,7 @@ begin
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
       G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
+      G_UNMAPPED_READ_DATA => G_UNMAPPED_READ_DATA,
       G_RESET_ACTIVE_LOW   => true)       -- APB presetn is active-low
     port map (
       clk     => pclk,
@@ -102,6 +104,6 @@ begin
 
   pready  <= s2m.ack or s2m.err;
   pslverr <= s2m.err;
-  prdata  <= (others => '0') when s2m.err = '1' else s2m.rdata;
+  prdata  <= s2m.rdata;
 
 end architecture rtl;

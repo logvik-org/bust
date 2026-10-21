@@ -55,7 +55,8 @@ begin
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
-      G_MODULE_ADDR_WIDTH  => {{ tb.module_addr_width }})
+      G_MODULE_ADDR_WIDTH  => {{ tb.module_addr_width }},
+      G_UNMAPPED_READ_DATA => C_UNMAPPED_READ_DATA)
     port map (
       pclk    => clk,
       presetn => presetn,
@@ -157,6 +158,7 @@ begin
     begin
       bus_read(addr, v_data, v_got_err);
       check_value(v_got_err, true, error, msg & " (terminated on pslverr)", C_SCOPE);
+      check_value(v_data, C_UNMAPPED_READ_DATA, error, msg, C_SCOPE);
     end procedure;
 {% include "vhdl/testbench/localbus_tb/snapshot_vars.j2" %}
 

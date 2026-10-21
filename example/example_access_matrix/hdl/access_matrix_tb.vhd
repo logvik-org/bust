@@ -32,6 +32,9 @@ architecture tb of access_matrix_tb is
   signal clk      : std_logic := '0';
   signal areset_n : std_logic := '1';
 
+  -- What a read gets where no register sits (G_UNMAPPED_READ_DATA).
+  constant C_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := 32x"DEADBEEF";
+
   signal to_hw    : t_access_matrix_to_hw;
   signal from_hw  : t_access_matrix_from_hw := (
     status => (busy => '0', count => (value => (others => '0'), we => '0'), fault => (value => '0', wel => '1')),
@@ -89,7 +92,8 @@ begin
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
-      G_MODULE_ADDR_WIDTH  => 9)
+      G_MODULE_ADDR_WIDTH  => 9,
+      G_UNMAPPED_READ_DATA => C_UNMAPPED_READ_DATA)
     port map (
       clk      => clk,
       areset_n => areset_n,
@@ -193,7 +197,7 @@ begin
       variable v_config : t_axilite_bfm_config := axilite_bfm_config;
     begin
       v_config.expected_response := SLVERR;
-      axilite_check(addr, 32x"0", msg, clk, axilite_if, error, C_SCOPE,
+      axilite_check(addr, C_UNMAPPED_READ_DATA, msg, clk, axilite_if, error, C_SCOPE,
                     shared_msg_id_panel, v_config);
     end procedure;
     variable v_hw_set_clear_clr_only_swacc : natural;
@@ -459,7 +463,7 @@ begin
     bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"0", "irq_status cleared by a read without hwset");
 
     -- An address where no register sits gets an error response where the bus
-    -- has one, reads as 0, and a write to it changes no register.
+    -- has one, reads as G_UNMAPPED_READ_DATA, and a write to it changes no register.
     log(ID_LOG_HDR, "addresses without a register get an error and change nothing", C_SCOPE);
     bus_write_unmapped(f_addr(32x"60"), 32x"0", "write 0x60, an unused register offset");
     bus_check_unmapped(f_addr(32x"60"), "read 0x60, an unused register offset");

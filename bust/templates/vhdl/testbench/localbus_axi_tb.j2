@@ -57,7 +57,8 @@ begin
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
-      G_MODULE_ADDR_WIDTH  => {{ tb.module_addr_width }})
+      G_MODULE_ADDR_WIDTH  => {{ tb.module_addr_width }},
+      G_UNMAPPED_READ_DATA => C_UNMAPPED_READ_DATA)
     port map (
       clk      => clk,
       areset_n => areset_n,
@@ -118,7 +119,7 @@ begin
       variable v_config : t_axilite_bfm_config := axilite_bfm_config;
     begin
       v_config.expected_response := SLVERR;
-      axilite_check(addr, {{ module.data_width }}x"0", msg, clk, axilite_if, error, C_SCOPE,
+      axilite_check(addr, C_UNMAPPED_READ_DATA, msg, clk, axilite_if, error, C_SCOPE,
                     shared_msg_id_panel, v_config);
     end procedure;
 {% include "vhdl/testbench/localbus_tb/snapshot_vars.j2" %}

@@ -337,7 +337,7 @@ at `0x0` on a bus whose addresses count bytes. So does an address above the
 registers in the module's address range, and an address with another base
 address, unless the module was instantiated with
 `G_CHECK_BASE_ADDRESS => false`. A write to such an address has no effect, and
-a read returns 0. [Base address and address range](addressing.md) explains these
+a read returns `G_UNMAPPED_READ_DATA`, which is 0 unless the instance sets it. [Base address and address range](addressing.md) explains these
 checks. How the error reaches the bus master depends on the bus:
 
 | Bus | Error response |
