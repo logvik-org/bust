@@ -109,9 +109,12 @@ failure.
 
 ## Units
 
-On AXI4-Lite, SBI, Avalon-MM, Wishbone and APB, addresses count bytes, and
-register offsets are multiples of the data width in bytes. An address inside
-a register, such as `0x4000_1005` for the timer, gets an error.
+On AXI4-Lite, SBI, Avalon-MM, Wishbone and APB, addresses count bytes by
+default, and register offsets are multiples of the data width in bytes. An
+address inside a register, such as `0x4000_1005` for the timer, gets an error.
+A module with `"byte_addressable": false` counts data words on these buses
+too, as IPBus does. See
+[Byte and word addresses](register-map-format.md#byte-and-word-addresses).
 
 IPBus addresses count 32-bit words, so consecutive registers of an IPBus
 module have consecutive register offsets. The IPBus endpoint passes the low

@@ -44,17 +44,18 @@ the same apart from the handshake.
 - The address port is `addr_width` bits wide and the data ports are
   `data_width` bits wide. IPBus is the exception, with fixed 32-bit ports.
 - The endpoint passes the address to the register file unchanged, except that
-  IPBus passes the low `addr_width` bits. It is a byte address on every bus
-  except IPBus, where it is a word address. When bust
+  IPBus passes the low `addr_width` bits. By default it is a byte address on
+  every bus except IPBus, where it is a word address. When bust
   assigns the addresses, with 32-bit data, the registers are at `0x0`, `0x4`,
   `0x8` and so on, and on IPBus at `0x0`, `0x1`, `0x2`. Addresses you set in
   the JSON are used as they are. See [Register map format](register-map-format.md).
 - The register file compares the whole address, low bits included, with the
   register addresses. An address between two registers, such as `0x2` on a
   byte-addressed bus, does not match and gets an error.
-- Some interconnects give their targets word addresses. On a bus other than
-  IPBus, append zero bits below such a word address to make it a byte address
-  before it reaches the module.
+- Some masters and interconnects drive word addresses on a bus other than
+  IPBus. For those, set `"byte_addressable": false` in the module, and bust
+  places the registers at `0x0`, `0x1`, `0x2`. See
+  [Byte and word addresses](register-map-format.md#byte-and-word-addresses).
 
 ### Errors
 
@@ -151,7 +152,8 @@ is the `axi` bus type. The endpoint is `<module>_axi_endpoint`.
   and `arvalid`. If your interconnect or your timing needs registered ready
   signals, put a register slice in front of the module.
 - `areset_n` is active low.
-- Addresses are byte addresses. AXI4-Lite allows a `data_width` of 32 or 64.
+- Addresses are byte addresses by default. AXI4-Lite allows a `data_width` of
+  32 or 64.
 
 ## IPBus
 
@@ -217,7 +219,7 @@ endpoint is `<module>_sbi_endpoint`.
 - SBI has no error signal. An access that does not decode completes with
   `ready` as usual, with `rdata` 0 on a read.
 - SBI defines no reset. bust adds `reset`, active high.
-- Addresses are byte addresses.
+- Addresses are byte addresses by default.
 
 ## Avalon-MM
 
@@ -249,8 +251,10 @@ Avalon-MM agent.
   read.
 - If your host has no chip select, tie `chipselect` to `'1'`.
 - `reset` is active high.
-- Addresses are byte addresses. If you connect the module in Platform
-  Designer, check that the agent interface uses byte addressing.
+- Addresses are byte addresses by default. If you connect the module in
+  Platform Designer, set the agent interface to byte addressing
+  (`addressUnits SYMBOLS`), or keep word addressing and set `byte_addressable`
+  to `false`.
 
 ## Wishbone
 
@@ -279,8 +283,9 @@ classic cycles.
   ports, so the endpoint supports neither the pipelined mode nor registered
   feedback bursts.
 - `rst_i` is active high.
-- Addresses on `adr_i` are byte addresses. Many Wishbone designs drive word
-  addresses on 32-bit ports instead, so check what your master drives.
+- Addresses on `adr_i` are byte addresses by default. Many Wishbone designs
+  drive word addresses on 32-bit ports instead, so check what your master
+  drives, and set `byte_addressable` to `false` for word addresses.
 
 ## APB
 
@@ -307,4 +312,4 @@ classic cycles.
 - On an error, `pslverr` is high together with `pready`, and `prdata` is 0 on a
   read.
 - `presetn` is active low.
-- Addresses on `paddr` are byte addresses.
+- Addresses on `paddr` are byte addresses by default.

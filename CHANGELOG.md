@@ -55,6 +55,12 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   clock domain without stretching pulses in the register file.
 
 ### Fixed
+- `"byte_addressable": "False"`, as bust 0.14 wrote it, was read as true, so a
+  word-addressed module from 0.14 became byte-addressed. Its registers without
+  an address moved to multiples of the data width in bytes, and addresses set
+  by hand that were not such multiples were rejected. bust reads `"True"` and
+  `"False"` again, warns that they are deprecated, and `bust FILE -a` saves a
+  JSON boolean. Any other value is an error.
 - The headers, the LaTeX documentation and the IPBus address table printed a
   `reset` as the JSON file wrote it. A reset without `0x` gave a C header that
   does not compile, such as `1B2`, or a value that differs from the hardware,
