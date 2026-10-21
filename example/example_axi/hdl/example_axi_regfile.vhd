@@ -16,13 +16,7 @@ entity example_axi_regfile is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    -- Module address width: the module answers for 2**G_MODULE_ADDR_WIDTH
-    -- addresses from its base address. An address in that range where no
-    -- register sits gets an error response. The default is the smallest
-    -- width that holds the registers.
     G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
-    -- Reset polarity. The regfile normalizes internally so the rest of the
-    -- logic is polarity-agnostic.
     G_RESET_ACTIVE_LOW   : boolean := false
   );
   port (
@@ -50,13 +44,13 @@ begin
 
   rst <= (reset xor '1') when G_RESET_ACTIVE_LOW else reset;
 
+  -- G_MODULE_ADDR_WIDTH must hold the registers and fit in the address.
   assert G_MODULE_ADDR_WIDTH >= C_MODULE_ADDR_WIDTH and G_MODULE_ADDR_WIDTH <= 32
     report "G_MODULE_ADDR_WIDTH must be from C_MODULE_ADDR_WIDTH ("
            & natural'image(C_MODULE_ADDR_WIDTH) & ") to 32"
     severity failure;
 
-  -- base_match compares only the bits above the address range, so the low
-  -- G_MODULE_ADDR_WIDTH bits of the base address must be 0.
+  -- The base address must be a multiple of the size of the address range.
   assert (not G_CHECK_BASE_ADDRESS)
       or (G_BASE_ADDRESS(G_MODULE_ADDR_WIDTH-1 downto 0) = 0)
     report "G_BASE_ADDRESS must be a multiple of 2**G_MODULE_ADDR_WIDTH"
@@ -70,9 +64,9 @@ begin
   -- hwclr, hwset or a we/wel write in the same cycle as a read wins over them.
   p_write : process (clk) is
     variable sel        : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-    variable hit        : boolean;     -- the address passes the base and range checks
-    variable sw_write   : boolean;     -- a new software write that passes them
-    variable rd_service : boolean;     -- a new software read that passes them
+    variable mapped     : boolean;     -- a register sits at this address
+    variable sw_write   : boolean;     -- a new software write to a register
+    variable rd_service : boolean;     -- a new software read from a register
   begin
     if rising_edge(clk) then
       wr_ack <= '0';
@@ -82,11 +76,12 @@ begin
       -- (response still low); the master holds the request until it observes
       -- the response, so these guards keep the effect single-shot.
       sel        := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
-      hit        := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
+      mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
                                G_MODULE_ADDR_WIDTH)
-                    and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH);
-      sw_write   := lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' and hit;
-      rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' and hit;
+                    and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
+                    and is_mapped(sel);
+      sw_write   := lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' and mapped;
+      rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' and mapped;
 
       if sw_write and sel_is(sel, C_ADDR_REG0) then
         regs.reg0.reg0 <= lb_m2s.wdata(0);
@@ -139,10 +134,10 @@ begin
         regs.reg11.field1 <= lb_m2s.wdata(15);
       end if;
 
-      -- Write response: ack any mapped register, err an unmapped/out-of-range
+      -- Write response: ack a write to a register, err a write to any other
       -- address.
       if lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' then
-        if hit and is_mapped(sel) then
+        if mapped then
           wr_ack <= '1';
         else
           wr_err <= '1';
@@ -160,8 +155,8 @@ begin
   -- Read mux and read response. Reads of non-readable fields (sw wo / na)
   -- return 0 and ack; err is reserved for address-decode failures.
   p_read : process (clk) is
-    variable sel : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
-    variable hit : boolean;            -- the address passes the base and range checks
+    variable sel    : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+    variable mapped : boolean;         -- a register sits at this address
   begin
     if rising_edge(clk) then
       rd_ack <= '0';
@@ -169,11 +164,12 @@ begin
 
       if lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' then
         rdata <= (others => '0');
-        sel   := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
-        hit   := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
-                            G_MODULE_ADDR_WIDTH)
-                 and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH);
-        if not hit then
+        sel    := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
+        mapped := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
+                             G_MODULE_ADDR_WIDTH)
+                  and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
+                  and is_mapped(sel);
+        if not mapped then
           rd_err <= '1';
         elsif sel_is(sel, C_ADDR_REG0) then
           rdata(0) <= regs.reg0.reg0;
@@ -214,8 +210,6 @@ begin
           rd_ack <= '1';
         elsif sel_is(sel, C_ADDR_REG11) then
           rd_ack <= '1';
-        else
-          rd_err <= '1';
         end if;
       end if;
 
