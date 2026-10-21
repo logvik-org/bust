@@ -32,13 +32,13 @@ architecture rtl of prototype_regfile is
   signal regs : t_prototype_regs := C_PROTOTYPE_REGS_RESET;
 
   signal rst    : std_logic;            -- reset normalized to active high
-  signal rdata  : std_logic_vector(31 downto 0);
-  signal wr_ack : std_logic;
-  signal wr_err : std_logic;
-  signal rd_ack : std_logic;
-  signal rd_err : std_logic;
-  signal swmod_reg9_field0 : std_logic;
-  signal swacc_reg9_field1 : std_logic;
+  signal rdata  : std_logic_vector(31 downto 0) := (others => '0');
+  signal wr_ack : std_logic := '0';
+  signal wr_err : std_logic := '0';
+  signal rd_ack : std_logic := '0';
+  signal rd_err : std_logic := '0';
+  signal swmod_reg9_field0 : std_logic := '0';
+  signal swacc_reg9_field1 : std_logic := '0';
 
 begin
 
