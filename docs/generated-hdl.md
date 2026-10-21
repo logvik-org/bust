@@ -156,7 +156,7 @@ The widths are the `addr_width` and `data_width` of the register map.
 
 | Member | Direction | Meaning |
 |--------|-----------|---------|
-| `address` | endpoint to register file | The address the bus master drove, unchanged. A byte address on every bus except IPBus, where it is a word address. |
+| `address` | endpoint to register file | The address the bus master drove, unchanged. A byte address, or a word address on IPBus and in a module with `byte_addressable` set to `false`. |
 | `wdata` | endpoint to register file | Write data. |
 | `wen` | endpoint to register file | Write request. |
 | `ren` | endpoint to register file | Read request. |
