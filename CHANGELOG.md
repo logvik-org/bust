@@ -52,9 +52,6 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   as `"1B2"`, stops bust with a message that suggests `"0x1B2"`. A value of the
   wrong type is reported with the key and the register instead of a Python
   error.
-- The error for a `pulse_cycles` other than 1 points to a new section of
-  Access modes, Pulses into another clock domain, which shows how to cross a
-  clock domain without stretching pulses in the register file.
 
 ### Fixed
 - `"byte_addressable": "False"`, as bust 0.14 wrote it, was read as true, so a

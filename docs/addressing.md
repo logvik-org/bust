@@ -107,20 +107,24 @@ to 12, and `x"4000_1010"` only with the default of 4. With
 `addr_width`. Another value also stops the simulation with an assertion
 failure.
 
-## Units
+## Byte and word addresses
 
-On AXI4-Lite, SBI, Avalon-MM, Wishbone and APB, addresses count bytes by
-default, and register offsets are multiples of the data width in bytes. An
-address inside a register, such as `0x4000_1005` for the timer, gets an error.
-A module with `"byte_addressable": false` counts data words on these buses
-too, as IPBus does. See
+The register file compares every low address bit with the register offsets.
+With 32-bit data on a bus whose addresses count bytes, the timer's registers
+sit at `0x0`, `0x4`, `0x8` and `0xC`. An access to an address between them,
+such as `0x4000_1005`, matches no register and gets an error, as an unused
+register offset does. On AXI4-Lite a read of `0x1` with a register at `0x0`
+gets `SLVERR`, not the register.
+
+`byte_addressable` in the module changes only how far apart bust places the
+registers that have no address, which register offsets it accepts in the JSON
+file, and which addresses the generated testbench tries. The generated HDL is
+the same either way. See
 [Byte and word addresses](register-map-format.md#byte-and-word-addresses).
 
-IPBus addresses count 32-bit words, so consecutive registers of an IPBus
-module have consecutive register offsets. The IPBus endpoint passes the low
-`addr_width` bits of `ipb_addr` to the register file. Higher bits never reach
-the module, and the IPBus fabric decodes them. [IPBus](buses.md#ipbus) has the
-details.
+On IPBus, addresses count 32-bit words. The IPBus endpoint passes the low
+`addr_width` bits of `ipb_addr` to the register file, and the IPBus fabric
+decodes the higher bits. [IPBus](buses.md#ipbus) has the details.
 
 ## Why the base address is a generic
 
@@ -136,11 +140,3 @@ In the headers, `_OFFSET` also names the lowest bit of a field, as in
 `<MODULE>_<REG>_<FIELD>_OFFSET`. That is a bit position inside the register,
 not an address. [Headers and documentation](headers-and-docs.md#constant-names)
 lists the constants.
-
-## From bust 0.14
-
-bust 0.14 had the same three settings as `g_ipb_baseaddr` or
-`g_axi_baseaddr`, `g_check_baseaddr` and `g_module_addr_width`. VHDL names are
-not case-sensitive, so `g_module_addr_width => 16` connects to
-`G_MODULE_ADDR_WIDTH` as it is. [Upgrading from 0.14](upgrading.md#update-the-instantiations)
-lists the renamed generics.
