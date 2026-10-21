@@ -8,6 +8,24 @@ has the full list of changes.
 pip install --upgrade bust
 ```
 
+## Migrate with --migrate
+
+`bust FILE --migrate` makes the JSON changes listed in
+[Check your JSON files](#check-your-json-files) that need no decision, and
+connects a bust 0.14 `<module>.vhd` to the bust 1.0 endpoint as described in
+[Connect your top-level file](#connect-your-top-level-file). It lists the
+changes and asks first, unless you add `-f`, and keeps each old file with the
+suffix `.0_14`. Give it the same `-o` as your other runs, then generate the
+bust 1.0 files:
+
+```bash
+bust timer.json -o out --migrate
+bust timer.json -o out
+```
+
+bust lists any line it could not change, such as one that passes a whole 0.14
+register record to another entity. Change those by hand.
+
 ## Connect your top-level file
 
 `<module>.vhd` is still your file. bust writes it only when it does not exist,
@@ -17,10 +35,10 @@ and never replaces it, not even with `-f`. In 0.14 it held your logic between
 generates the other files, and warns:
 
 ```text
-out/timer/hdl/timer.vhd is a bust 0.14 top level, so bust leaves it alone. Connect its logic to timer_ipb_endpoint as described in Upgrading from 0.14.
+out/timer/hdl/timer.vhd is a bust 0.14 top level, so bust leaves it alone. To connect it to timer_ipb_endpoint, run bust with --migrate.
 ```
 
-To connect it, change the architecture of `<module>.vhd`. The entity, with its
+To connect it by hand, change the architecture of `<module>.vhd`. The entity, with its
 0.14 generics and ports, can stay as it is, so the instantiations of
 `<module>` in your design do not change.
 

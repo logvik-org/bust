@@ -10,6 +10,11 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+## [1.0.0a2] - 2026-10-21
+
+Third pre-release of bust 1.0.0, for testing. Install it with
+`pip install --pre bust` or `pip install bust==1.0.0a2`.
+
 ### Added
 - A logo, shown in the README and the documentation.
 - The generic `G_MODULE_ADDR_WIDTH` on the endpoint, the register file and the
@@ -27,6 +32,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   ignored with a warning, so 0.14 command lines in Makefiles keep working.
 - `--replace-top` replaces `<module>.vhd` with a fresh starter and keeps the
   old file as `<module>.vhd.bak`. It asks first unless `-f` is given.
+- `bust FILE --migrate` migrates a bust 0.14 JSON file without moving a
+  register, and connects a 0.14 `<module>.vhd` to the bus endpoint, keeping its
+  entity and the user logic (#221).
 
 ### Changed
 - `<module>.vhd` belongs to the user again, as in bust 0.14. bust writes a
@@ -249,6 +257,7 @@ First pre-release of bust 1.0.0, for testing. Install it with
   packages. The wheel also left out the Jinja2 templates, without which an
   installed bust cannot generate anything.
 
-[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0a1...HEAD
+[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0a2...HEAD
+[1.0.0a2]: https://github.com/logvik-org/bust/compare/v1.0.0a1...v1.0.0a2
 [1.0.0a1]: https://github.com/logvik-org/bust/compare/v1.0.0a0...v1.0.0a1
 [1.0.0a0]: https://github.com/logvik-org/bust/compare/0d2a394f4710dd007be031b2b05c1bce4f35d56b...v1.0.0a0
