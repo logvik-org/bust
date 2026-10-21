@@ -8,8 +8,8 @@ JSON file are register offsets, and so are the `C_ADDR_<REG>` constants in the
 VHDL and the `<MODULE>_<REG>_OFFSET` constants in the headers. An address on
 the bus is the base address plus a register offset.
 
-Three generics of the top wrapper control how the module decodes an address.
-The endpoint and the register file have the same three:
+Three generics of the bus endpoint control how the module decodes an address.
+The register file and the starter top level have the same three:
 
 | Generic | Default | What it sets |
 |---|---|---|

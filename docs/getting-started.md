@@ -116,8 +116,10 @@ library:
 4. `timer_axi_endpoint.vhd`
 5. `timer.vhd`
 
-`timer` is the entity you instantiate. Next to the AXI4-Lite ports it has two
-record ports, `to_hw` and `from_hw`, that carry every field by name:
+`timer.vhd` is yours: bust wrote it as a starter because it did not exist, and
+it does not change it again. `timer` is the entity you instantiate. Next to the
+AXI4-Lite ports it has two record ports, `to_hw` and `from_hw`, that carry
+every field by name:
 
 ```vhdl
 type t_timer_to_hw is record
@@ -132,7 +134,8 @@ type t_timer_from_hw is record
 end record;
 ```
 
-Instantiate the module and connect your logic through the records:
+Instantiate the module and connect your logic through the records, or put
+your logic inside `timer.vhd` itself:
 
 ```vhdl
 use work.timer_regfile_pkg.all;
@@ -210,5 +213,6 @@ each existing file. With `-f` it overwrites them all:
 bust timer.json -o out -f
 ```
 
-Every generated file is regenerated, including `timer.vhd`, so keep your own
-logic in your own files and connect it through `to_hw` and `from_hw`.
+Every generated file is regenerated. `timer.vhd` is yours and stays as it is.
+It connects `to_hw` and `from_hw` as whole records, so new registers and fields
+need no change to it.

@@ -60,16 +60,24 @@ For a module named `<module>`, bust writes these files:
 
 | File | Contents |
 |------|----------|
-| `<module>_localbus_pkg.vhd` | The local-bus records `t_lb_m2s` and `t_lb_s2m`, sized for this module. |
-| `<module>_regfile_pkg.vhd` | Register addresses, enumeration types, and the `to_hw` and `from_hw` record types you connect to. |
-| `<module>_regfile.vhd` | The register file: storage, access-mode behaviour, hardware updates, the read mux and the bus response. |
+| `<module>.vhd` | The top level of the module, the entity your design instantiates. This file is yours, see [Your top level](#your-top-level). |
 | `<module>_<bus>_endpoint.vhd` | The bus endpoint. It translates the bus protocol to the local bus and instantiates the register file. |
-| `<module>.vhd` | The top wrapper, the entity you instantiate. It contains only the endpoint. |
-| `<module>_tb.vhd` | A self-checking UVVM testbench for the top wrapper. See [Testbenches](testbenches.md). |
+| `<module>_regfile.vhd` | The register file: storage, access-mode behaviour, hardware updates, the read mux and the bus response. |
+| `<module>_regfile_pkg.vhd` | Register addresses, enumeration types, and the `to_hw` and `from_hw` record types you connect to. |
+| `<module>_localbus_pkg.vhd` | The local-bus records `t_lb_m2s` and `t_lb_s2m`, sized for this module. |
+| `<module>_tb.vhd` | A self-checking UVVM testbench for the bus endpoint. See [Testbenches](testbenches.md). |
 
-`<bus>` is `axi`, `ipb`, `sbi`, `avalon`, `wishbone` or `apb`. The
-[Buses](buses.md) page lists the ports of each endpoint. The top wrapper has
-the same generics and ports as its endpoint.
+`<bus>` is `axi`, `ipb`, `sbi`, `avalon`, `wishbone` or `apb`. A file with a
+suffix after the module name is bust's: bust writes it again on every run.
+`<module>.vhd` is yours. The [Buses](buses.md) page lists the ports of each
+endpoint.
+
+```text
+your design
+└── <module>                     <module>.vhd: yours
+    └── <module>_<bus>_endpoint  generated: the bus side
+        └── <module>_regfile     generated: the registers and the address decoding
+```
 
 ### Where the files go
 
@@ -127,8 +135,7 @@ bust keeps all register-map logic in one register file per module and connects
 it to your bus through a thin endpoint. Between the two is the local bus, a
 minimal single-beat interface. The register file is the same VHDL whichever
 bus you choose, so every bus gets the same access-mode behaviour. Changing the
-bus replaces the endpoint and the ports of the top wrapper, and the register
-file stays the same.
+bus replaces the endpoint, and the register file stays the same.
 
 The local bus is two records in `<module>_localbus_pkg`:
 
@@ -327,8 +334,10 @@ whose fields the hardware never drives has no `from_hw` port.
 
 ## Instantiate the module
 
-Instantiate the top wrapper, connect the bus ports, and declare one signal of
-each record type. The timer's AXI4-Lite ports connect one to one:
+The starter `<module>.vhd` has the generics and ports of the endpoint, `to_hw`
+and `from_hw` included, so you can instantiate it as it is and keep your logic
+next to it. Connect the bus ports and declare one signal of each record type.
+The timer's AXI4-Lite ports connect one to one:
 
 ```vhdl
 use work.timer_regfile_pkg.all;
@@ -402,7 +411,7 @@ undriven stays `'U'` in simulation.
 
 ## Base address
 
-The top wrapper, the endpoint and the register file have the same three
+The starter top level, the endpoint and the register file have the same three
 generics:
 
 ```vhdl
@@ -440,15 +449,26 @@ a selected name:
 signal gpio_ctrl : work.gpio_regfile_pkg.t_ctrl_to_hw;
 ```
 
-## Regenerating
+## Your top level
 
-bust owns every file it writes, including the top wrapper `<module>.vhd`. Run
-bust again after you change the register map, and all files are regenerated.
-bust asks before it overwrites an existing file, and `-f` overwrites without
-asking. Keep your own logic in your own files, connected through `to_hw` and
-`from_hw` as above, never in the generated ones.
+`<module>.vhd` is yours. bust writes it once, as a starter, when the file does
+not exist, and then leaves it alone. Running bust again does not change it,
+and neither does `-f`. The starter contains only the endpoint. You can use it
+as it is, as in [Instantiate the module](#instantiate-the-module), or make it
+your module: add your own generics, ports and logic, and turn `to_hw` and
+`from_hw` into signals inside it.
+
+Run bust again after you change the register map. It regenerates every other
+file, and asks before it overwrites one unless you add `-f`. `<module>.vhd`
+needs no change for new registers or fields, because it connects `to_hw` and
+`from_hw` as whole records. It needs one when you change the bus type, which
+changes the bus ports, or when the module gets its first `to_hw` or `from_hw`
+port.
+
+To start over from a fresh starter, run bust with `--replace-top`. It keeps
+your old file as `<module>.vhd.bak`, and asks first unless you add `-f`.
 
 bust 0.14 kept user logic in the top-level file between `-- User ... Start`
-and `-- User ... End` markers. bust stops with an error, before it writes
-anything, if the top-level file it would replace still has those markers.
-[Upgrading](upgrading.md) describes how to move that logic out.
+and `-- User ... End` markers. bust leaves such a file alone and warns about
+it. [Upgrading](upgrading.md) describes how to connect it to
+`<module>_<bus>_endpoint`.
