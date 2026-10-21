@@ -47,7 +47,7 @@ and exit with status 1.
 | `--migrate`    | Migrate a bust 0.14 JSON file and its `<module>.vhd`. Generates nothing. With `-f`, without asking. See [Upgrading](upgrading.md#migrate-with---migrate). |
 | `-c`           | Create `FILE` with the interactive editor. See [Interactive editor](#interactive-editor).                                                                               |
 | `-e`           | Open `FILE` in the interactive editor.                                                                                                                                  |
-| `--version`    | Print `bust` and the version number, then exit.                                                                                                                         |
+| `--version`    | Print `bust` and the version, such as `bust v1.0.0a2`, then exit.                                                                                                       |
 | `-h`, `--help` | Print the usage and a short description of each option, then exit.                                                                                                      |
 
 Every run that generates files writes the VHDL files and the testbench. No
