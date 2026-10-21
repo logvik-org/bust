@@ -255,12 +255,18 @@ def test_module_addr_width_generic_reaches_the_regfile():
 
 def test_testbench_checks_unmapped_offsets():
     """The prototype's registers use offsets 0x00..0x2C (6 select bits), so the
-    testbench sets G_MODULE_ADDR_WIDTH to 8 and checks 0x30, 0x40, which aliases
-    reg0 by its low bits, and 0x100, which has another base address."""
+    testbench sets G_MODULE_ADDR_WIDTH to 8 and checks 0x30, 0x1, which is one
+    byte into reg0, 0x40, which aliases reg0 by its low bits, and 0x100, which
+    has another base address."""
     module = _build_module()
     checks = AddressChecks(module)
     assert checks.module_addr_width == 8
-    assert [u.hex for u in checks.unmapped_addresses] == ["0x30", "0x40", "0x100"]
+    assert [u.hex for u in checks.unmapped_addresses] == [
+        "0x30",
+        "0x1",
+        "0x40",
+        "0x100",
+    ]
     tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
     assert "G_MODULE_ADDR_WIDTH  => 8)" in tb
     assert 'bus_write_unmapped(f_addr(32x"40"), 32x"0"' in tb
