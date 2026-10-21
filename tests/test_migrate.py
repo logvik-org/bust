@@ -58,6 +58,7 @@ def test_top_level(tmp_path, kind):
     assert "counter <= counter + unsigned(to_hw.ctrl.rate);" in new
     assert "from_hw.count <= std_logic_vector(counter);" in new
     assert f": entity work.blinky_{prefix}_endpoint" in new
+    assert "t_blinky_from_hw := C_BLINKY_FROM_HW_RESET;" in new
     assert "_pif" not in new and f"{prefix}_rw_regs" not in new
     assert (tmp_path / kind / "blinky" / "hdl" / "blinky.vhd.0_14").read_text() == old
     registers = json.loads(json_file.read_text())["module"]["register"]

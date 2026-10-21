@@ -156,6 +156,13 @@ package example_ipbus_regfile_pkg is
     reg8 : t_reg8_from_hw;
   end record;
 
+  -- from_hw at rest: every value at its reset, every strobe inactive.
+  constant C_EXAMPLE_IPBUS_FROM_HW_RESET : t_example_ipbus_from_hw := (
+    reg2 => '0',
+    reg4 => (others => '0'),
+    reg6 => (others => '0'),
+    reg8 => (field0 => '0', field1 => (others => '0'), field2 => '0', field3 => (others => '0')));
+
   -- base_match and above_registers get the register file's G_MODULE_ADDR_WIDTH
   -- as module_addr_width. In an address, bits 0 to C_MODULE_ADDR_WIDTH - 1
   -- select a register, bits C_MODULE_ADDR_WIDTH to module_addr_width - 1 must
