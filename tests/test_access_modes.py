@@ -241,8 +241,7 @@ class TestLegacyTranslation:
             "Invalid register format: Register 'reg9': pulse_cycles=4 is not "
             "supported in bust 1.0. A pulse register drives the written value for "
             "one clock cycle and then returns to its reset value. Remove "
-            "pulse_cycles. To reach logic on another clock, see "
-            "https://bust.readthedocs.io/en/latest/access-modes.html#pulses-into-another-clock-domain"
+            "pulse_cycles."
         )
 
     def test_pulse_cycles_of_one_accepted(self):
