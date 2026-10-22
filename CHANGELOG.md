@@ -39,6 +39,17 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 - `version` must be a string of printable ASCII characters other than `"`,
   `\`, `;` and `=`, so that it can go into every output as it is. bust stops
   with an error for any other value.
+- The editor behind `-c` and `-e` is a full-screen terminal application. It
+  shows the registers, the fields of the register under the cursor and the
+  keys of the register or field in focus side by side, and changes them in
+  dialogs that show bust's message for an answer bust rejects. It replaces the
+  numbered questions of 1.0.0a4.
+- The editor shows its keys on screen and lists all of them with `?`. `o`
+  shows an overview of the register map like the PDF documentation, with the
+  register list and a bit diagram of each register. `t` switches between a
+  light and a dark theme in the colours of the documentation.
+- bust depends on Textual, which the editor is built on. bust loads it only
+  when the editor starts.
 - The generated Python header is formatted as black formats it: the blank
   line follows the class docstring and hex values use upper-case digits.
   black leaves it unchanged.
