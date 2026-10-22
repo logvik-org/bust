@@ -23,7 +23,7 @@
 }
 
 \title{{ '{' }}{{ module.name | utf8tolatex }}{{ '}' }}
-\author{{ '{' }}{% if module.version %}Version: {{ module.version | utf8tolatex }}{% endif %}{{ '}' }}
+\author{{ '{' }}{% if module.version %}Version: {{ module.version | utf8tolatex }} \\ {% endif %}Register map hash: \texttt{0x{{ module.regmap_hash_hex }}}{{ '}' }}
 \date{\today\ \currenttime}
 
 \pagestyle{fancy}
@@ -40,8 +40,6 @@
 \thispagestyle{fancy}
 
 {{ module.description | utf8tolatex }}
-
-Register map hash: \texttt{0x{{ module.regmap_hash_hex }}}
 
 \section{Register List}
 

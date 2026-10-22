@@ -173,7 +173,7 @@ def test_empty_version_leaves_no_version_label_in_the_latex(tmp_path):
 
     assert code == 0, output
     tex = (tmp_path / "out/timer/doc/timer.tex").read_text()
-    assert "\\author{}" in tex
+    assert "\\author{Register map hash: \\texttt{0x" in tex
     assert "Version:" not in tex
 
 

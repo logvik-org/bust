@@ -15,7 +15,7 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   register map. The register file package has `C_<MODULE>_REGMAP_VERSION` and
   `C_<MODULE>_REGMAP_HASH`, the headers `REGMAP_VERSION` and `REGMAP_HASH`, the
   IPBus address table has both in the `parameters` of its top node, and the
-  documentation shows the hash. The hash changes exactly when something that
+  documentation shows the hash on its title page. The hash changes exactly when something that
   hardware or software depends on changes, and descriptions do not count (#99).
 - The module key `hash_register` adds the read-only register `regmap_hash`,
   whose value is the register map hash, so that software can check at run time
