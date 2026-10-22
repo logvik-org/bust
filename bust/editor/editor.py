@@ -8,7 +8,7 @@ Schema in bust.schema.
 """
 
 import os
-from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 from bust.core.bus import Bus
 from bust.core.enums import FieldType, RegisterType
@@ -20,108 +20,19 @@ from bust.editing.document import (
     RegisterMapDocument,
 )
 from bust.editing.json_source import join_pointer
+from bust.core.field import INHERITABLE_ACCESS
+from bust.editor.utilities import Prompts, shorten, shown, table
 from bust.exceptions import FormatError
 from bust.interaction import ConsoleInteractionHandler, InteractionHandler
 from bust.schema import register_map_schema
 from bust.validation.config_validator import parse_number
-from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
 
 _SCHEMA = register_map_schema()["$defs"]
-_ACCESS_KEYS = (
-    "sw",
-    "hw",
-    "onread",
-    "onwrite",
-    "singlepulse",
-    "we",
-    "wel",
-    "hwset",
-    "hwclr",
-    "swmod",
-    "swacc",
-)
 # Written as "0x..." strings, the form bust's own files use.
 _HEX_KEYS = ("address", "reset")
 _UNSET = "-"
 # Model attributes named differently from their key.
 _ATTRIBUTES = {"position": "pos_low"}
-
-
-class _Prompts:
-    """Questions answered through an InteractionHandler, asked again until the
-    answer is valid."""
-
-    def __init__(self, ask: InteractionHandler, show: Callable[[str], None]):
-        self.ask = ask
-        self.show = show
-
-    def text(self, prompt: str, default: Optional[str] = None) -> str:
-        suffix = f" [{default}]" if default else ""
-        answer = self.ask(f"{prompt}{suffix}: ").strip()
-        return default if answer == "" and default is not None else answer
-
-    def yes(self, prompt: str, default: bool) -> bool:
-        hint = "Y/n" if default else "y/N"
-        while True:
-            answer = self.ask(f"{prompt} ({hint}): ").strip().lower()
-            if answer == "":
-                return default
-            if answer in ("y", "yes", "n", "no"):
-                return answer.startswith("y")
-            self.show("Answer y or n.")
-
-    def choose(self, prompt: str, options: Sequence[str], default: int = 0) -> int:
-        """The index of the option chosen by its number or its text."""
-        for number, option in enumerate(options, start=1):
-            self.show(f"  {number}. {option}")
-        while True:
-            answer = self.ask(f"{prompt} [{default + 1}]: ").strip()
-            if answer == "":
-                return default
-            if answer.isdigit() and 1 <= int(answer) <= len(options):
-                return int(answer) - 1
-            if answer in options:
-                return list(options).index(answer)
-            self.show(f"Enter a number from 1 to {len(options)}.")
-
-    def number(self, prompt: str, default: Optional[str] = None) -> int:
-        while True:
-            answer = self.text(prompt, default)
-            try:
-                return parse_number(answer, "The number")
-            except FormatError as error:
-                self.show(str(error))
-
-    def identifier(
-        self, prompt: str, taken: Sequence[str], default: Optional[str] = None
-    ) -> str:
-        while True:
-            answer = self.text(prompt, default)
-            try:
-                is_valid_VHDL(answer)
-                is_unique(answer, taken)
-                return answer
-            except Exception as error:
-                self.show(str(error))
-
-
-def _table(headers: Sequence[str], rows: Sequence[Sequence[Any]]) -> str:
-    cells = [list(map(str, headers))] + [list(map(str, row)) for row in rows]
-    widths = [max(len(row[i]) for row in cells) for i in range(len(headers))]
-    lines = ["  ".join(c.ljust(w) for c, w in zip(row, widths)) for row in cells]
-    return "\n".join(line.rstrip() for line in lines)
-
-
-def _shorten(text: str, length: int = 40) -> str:
-    return text if len(text) <= length else text[: length - 3] + "..."
-
-
-def _shown(value: Any) -> str:
-    if hasattr(value, "value"):
-        value = value.value
-    if isinstance(value, bool):
-        return str(value).lower()
-    return "none" if value is None else str(value)
 
 
 def _register_path(index: Union[int, str], *keys: Any) -> str:
@@ -156,7 +67,7 @@ class Editor:
         """
         self.document = document
         self.path = path
-        self.prompts = _Prompts(ask or ConsoleInteractionHandler(), show)
+        self.prompts = Prompts(ask or ConsoleInteractionHandler(), show)
         self.show = show
         # bust warns about the whole register map on every change, so each
         # warning is shown once.
@@ -176,7 +87,7 @@ class Editor:
         """
         if os.path.exists(path):
             raise FileExistsError(f"{path} exists. Edit it with bust {path} -e.")
-        prompts = _Prompts(ask or ConsoleInteractionHandler(), show)
+        prompts = Prompts(ask or ConsoleInteractionHandler(), show)
         show(f"A new register map in {path}.")
         bus = cls._ask_bus(prompts)
         stem = os.path.splitext(os.path.basename(path))[0]
@@ -184,6 +95,10 @@ class Editor:
             "name": prompts.identifier("Module name", [], stem),
             "version": prompts.text("Version", "1.0"),
             "description": prompts.text("Description", ""),
+            "byte_addressable": prompts.yes(
+                "Do addresses count bytes, not data words (byte_addressable)?",
+                Bus.BUS_CONFIG[bus["type"]]["byte_addressable"],
+            ),
         }
         editor = cls(RegisterMapDocument.new(bus, module), path, ask, show)
         if prompts.yes("Add the first register now?", True):
@@ -191,7 +106,7 @@ class Editor:
         return editor
 
     @staticmethod
-    def _ask_bus(prompts: _Prompts) -> Dict[str, Any]:
+    def _ask_bus(prompts: Prompts) -> Dict[str, Any]:
         while True:
             types = Bus.supported_bus
             bus_type = types[prompts.choose("Bus", types, types.index("axi"))]
@@ -213,28 +128,26 @@ class Editor:
         path: str,
         ask: Optional[InteractionHandler] = None,
         show: Callable[[str], None] = print,
-    ) -> "Editor":
-        """Read `path`, offering to convert a bust 0.14 register map first.
+    ) -> Optional["Editor"]:
+        """Read `path`. A bust 0.14 register map opens only converted.
+
+        Returns:
+            The editor, or None if the user did not convert the file.
 
         Raises:
             EditRejected: If bust rejects the register map.
         """
-        prompts = _Prompts(ask or ConsoleInteractionHandler(), show)
+        prompts = Prompts(ask or ConsoleInteractionHandler(), show)
         document = RegisterMapDocument.open(path)
         changes, operations = document.legacy_conversion()
-        converted = False
         if operations:
-            show(f"{path} is in the bust 0.14 format. The 1.0 format changes:")
+            show(f"{path} is in the bust 0.14 format. The editor converts it:")
             for change in changes:
                 show(f"  - {change}")
-            converted = prompts.yes(
-                "Convert it? The file changes only when you save.", True
-            )
-        warnings = document.apply(operations) if converted else document.check()
+            if not prompts.yes("Convert it? The file changes when you save.", True):
+                return None
         editor = cls(document, path, ask, show)
-        editor._show_warnings(warnings)
-        if operations and not converted:
-            show("New registers get sw and hw, so the file mixes the two formats.")
+        editor._show_warnings(document.apply(operations))
         if not document.keeps_formatting:
             show(
                 "bust cannot edit this file in place, so saving rewrites it as "
@@ -332,12 +245,12 @@ class Editor:
                 reg.sw.value,
                 reg.hw.value,
                 reg.reset,
-                _shorten(reg.description),
+                shorten(reg.description),
             )
             for index, reg in enumerate(registers, start=1)
         ]
         headers = ("#", "Name", "Address", "Type", "Width", "sw", "hw", "Reset")
-        self.show(_table(headers + ("Description",), rows))
+        self.show(table(headers + ("Description",), rows))
 
     def _pick(self, what: str, names: List[str]) -> Optional[int]:
         """The index of the entry named or numbered, or None to cancel."""
@@ -529,7 +442,7 @@ class Editor:
                 keys.append("width")
             if register.type != RegisterType.FIELDS:
                 keys.append("reset")
-            keys += _ACCESS_KEYS
+            keys += INHERITABLE_ACCESS
             labels = [
                 _row(key, self._register_value(index, key), key in data) for key in keys
             ]
@@ -548,12 +461,12 @@ class Editor:
 
     def _register_value(self, index: int, key: str) -> str:
         register = self._registers()[index]
-        if key in _ACCESS_KEYS:
+        if key in INHERITABLE_ACCESS:
             default = _SCHEMA["register"]["properties"][key].get("default")
-            return _shown(register.access_defaults.get(key, default))
+            return shown(register.access_defaults.get(key, default))
         if key == "address":
             return hex(register.address)
-        return _shown(getattr(register, key))
+        return shown(getattr(register, key))
 
     def _edit_key(
         self, base: str, definition: str, key: str, data: Dict[str, Any]
@@ -666,12 +579,12 @@ class Editor:
                 field.sw.value,
                 field.hw.value,
                 field.reset,
-                _shorten(field.description),
+                shorten(field.description),
             )
             for number, field in enumerate(self._registers()[index].fields, start=1)
         ]
         headers = ("#", "Name", "Bits", "sw", "hw", "Reset", "Description")
-        self.show(_table(headers, rows))
+        self.show(table(headers, rows))
 
     def _pick_field(self, index: int) -> Optional[int]:
         names = [field.name for field in self._registers()[index].fields]
@@ -704,11 +617,9 @@ class Editor:
             keys = ["name", "description", "type"]
             if field.type == FieldType.VECTOR:
                 keys.append("width")
-            keys += ["position", "reset", *_ACCESS_KEYS]
+            keys += ["position", "reset", *INHERITABLE_ACCESS]
             labels = [
-                _row(
-                    key, _shown(getattr(field, _ATTRIBUTES.get(key, key))), key in data
-                )
+                _row(key, shown(getattr(field, _ATTRIBUTES.get(key, key))), key in data)
                 for key in keys
             ]
             self.show("")
@@ -731,7 +642,7 @@ class Editor:
                 "enums", []
             )
             rows = [(i, e["name"], e["value"]) for i, e in enumerate(enums, start=1)]
-            self.show(_table(("#", "Name", "Value"), rows))
+            self.show(table(("#", "Name", "Value"), rows))
             choice = self.prompts.choose("Enumerated values", actions)
             if choice == 0:
                 name = self.prompts.identifier("Name", [e["name"] for e in enums])
@@ -779,10 +690,10 @@ class Editor:
             module = self.document.module
             data = self._data
             items = [
-                ("module", key, _shown(getattr(module, key)), key in data["module"])
+                ("module", key, shown(getattr(module, key)), key in data["module"])
                 for key in ("name", "description", "version", "byte_addressable")
             ] + [
-                ("bus", key, _shown(getattr(module.bus, attribute)), True)
+                ("bus", key, shown(getattr(module.bus, attribute)), True)
                 for key, attribute in (
                     ("type", "bus_type"),
                     ("addr_width", "addr_width"),

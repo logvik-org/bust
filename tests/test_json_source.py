@@ -7,7 +7,7 @@ import os
 
 import pytest
 
-from bust.editing.json_source import JsonSource, JsonSourceError
+from bust.editing.json_source import JsonSource, JsonSourceError, apply_to_data
 from bust.utils.json_utils import json_parser
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
@@ -113,6 +113,20 @@ def test_add_a_key_to_an_object_with_one_key_per_line():
     assert _edited(_JSON, "add", "/register/1/sw", "ro") == _JSON.replace(
         '"name": "status"\n', '"name": "status",\n            "sw": "ro"\n'
     )
+
+
+def test_add_a_key_before_another():
+    assert _edited(_JSON, "add", "/register/0/sw", "ro", "reset") == _JSON.replace(
+        '"reset": "0x0"', '"sw": "ro",\n            "reset": "0x0"'
+    )
+
+
+def test_apply_to_data_puts_a_key_before_another():
+    data = {"name": "ctrl", "mode": "rw"}
+
+    apply_to_data(data, "add", "/sw", "rw", before="mode")
+
+    assert list(data.items()) == [("name", "ctrl"), ("sw", "rw"), ("mode", "rw")]
 
 
 def test_add_an_existing_key_replaces_its_value():

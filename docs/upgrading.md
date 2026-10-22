@@ -127,10 +127,10 @@ A few keys need changes:
 
 - **`sl` and `slv`.** The types `sl` and `slv` are now `bit` and `vector`, for
   registers and fields. bust reads the old names and warns that they are
-  deprecated, and `bust FILE -a` saves the file with the new names.
+  deprecated, and `bust FILE --migrate` saves the file with the new names.
 - **`byte_addressable`.** bust 0.14 wrote it as the string `"True"` or
   `"False"`. bust 1.0 reads both and warns that they are deprecated, and
-  `bust FILE -a` saves `true` or `false`. A word-addressed AXI4-Lite module
+  `bust FILE --migrate` saves `true` or `false`. A word-addressed AXI4-Lite module
   from 0.14 stays word-addressed.
 - **Hexadecimal values without `0x`.** bust 0.14 read an `address` or a
   `reset` as hexadecimal even without `0x`, so `"10"` meant 0x10. bust 1.0
@@ -206,8 +206,12 @@ with a warning, so a 0.14 command line in a Makefile still runs, but remove them
 when you can. `-F` is kept as another name for `-f`.
 [Command line](command-line.md) lists the options.
 
-The editor behind `-c` and `-e` writes the bust 1.0 format, and `-e` offers to
-convert a 0.14 file. See [Interactive editor](command-line.md#interactive-editor).
+The editor behind `-c` and `-e` writes the bust 1.0 format. When `bust FILE -e`
+opens a 0.14 file, it lists the changes that convert it and asks `Convert it?`.
+The changes are those of `--migrate`, and in addition each register's `mode`
+becomes the access keys it stands for, in the same place. Nothing is written
+until you save. If you do not convert the file, the editor does not open it.
+See [Interactive editor](command-line.md#interactive-editor).
 
 ## Python imports
 
