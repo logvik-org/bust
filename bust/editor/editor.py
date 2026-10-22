@@ -185,7 +185,6 @@ class Editor:
 
     def _status(self) -> str:
         module = self.document.module
-        assert module is not None
         bus = module.bus
         saved = "unsaved changes" if self.document.is_modified else "saved"
         return (
@@ -226,7 +225,6 @@ class Editor:
         return self.document.data
 
     def _registers(self) -> List[Register]:
-        assert self.document.module is not None
         return self.document.module.registers
 
     def list_registers(self) -> None:
@@ -276,7 +274,6 @@ class Editor:
         Each answer is checked as soon as it is given, so a rejected answer is
         asked again instead of losing the others.
         """
-        assert self.document.module is not None
         prompts = self.prompts
         taken = [reg.name for reg in self._registers()]
         register: Dict[str, Any] = {"name": prompts.identifier("Name", taken)}
@@ -513,7 +510,6 @@ class Editor:
         self._apply([{"op": "add", "path": path, "value": value}])
 
     def _change_register_type(self, index: int) -> None:
-        assert self.document.module is not None
         data = self._data["module"]["register"][index]
         old = self._registers()[index].type.value
         types = RegisterType.valid_values()
@@ -686,7 +682,6 @@ class Editor:
         """Change the module's name, description, version and addressing, and
         the bus."""
         while True:
-            assert self.document.module is not None
             module = self.document.module
             data = self._data
             items = [

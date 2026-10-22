@@ -7,7 +7,8 @@ import shutil
 
 import pytest
 
-from bust.migrate import migrate, migrate_register_map
+from bust.core.legacy_schema import migrate_register_map
+from bust.migrate import migrate
 
 _DATA = os.path.join(os.path.dirname(__file__), "data", "migrate")
 
@@ -66,6 +67,8 @@ def test_top_level(tmp_path, kind):
     assert (tmp_path / kind / "blinky" / "hdl" / "blinky.vhd.0_14").read_text() == old
     registers = json.loads(json_file.read_text())["module"]["register"]
     assert registers[2]["address"] == "0x10"
+    assert list(registers[2])[:4] == ["name", "sw", "hw", "singlepulse"]
+    assert [r["sw"] for r in registers] == ["rw", "ro", "wo"]
 
 
 def test_output_without_module_directory(tmp_path, caplog):
@@ -81,3 +84,41 @@ def test_output_without_module_directory(tmp_path, caplog):
 
     assert "to_hw" in (tmp_path / "blinky" / "hdl" / "blinky.vhd").read_text()
     assert f"Now run bust {json_file} -o {tmp_path}." in caplog.text
+
+
+_JSON5 = """{
+  // A bust 0.14 register map
+  bus: {type: "axi", addr_width: 32, data_width: 32},
+  module: {
+    name: "m",
+    register: [
+      {name: "ctrl", mode: "rw", type: "sl", address: 0x0}, // control
+    ],
+  },
+}
+"""
+
+
+def test_json5_keeps_its_text_except_the_changes(tmp_path):
+    json_file = tmp_path / "m.json5"
+    json_file.write_text(_JSON5)
+
+    migrate(str(json_file), None, force=True)
+
+    assert json_file.read_text() == _JSON5.replace(
+        'mode: "rw", type: "sl"', 'sw: "rw", hw: "r", type: "bit"'
+    )
+    assert (tmp_path / "m.json5.0_14").read_text() == _JSON5
+
+
+def test_nothing_to_migrate(tmp_path, caplog):
+    json_file = tmp_path / "m.json5"
+    text = _JSON5.replace('mode: "rw", type: "sl"', 'sw: "rw", hw: "r", type: "bit"')
+    json_file.write_text(text)
+
+    with caplog.at_level(logging.INFO):
+        migrate(str(json_file), None, force=True)
+
+    assert "Nothing to migrate." in caplog.text
+    assert json_file.read_text() == text
+    assert not (tmp_path / "m.json5.0_14").exists()

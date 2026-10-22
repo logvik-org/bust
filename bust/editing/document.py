@@ -14,7 +14,7 @@ from contextlib import contextmanager
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from bust.core.bus import Bus
-from bust.core.legacy_schema import register_access_defaults
+from bust.core.legacy_schema import migrate_register_map, register_access_defaults
 from bust.core.module import Module
 from bust.editing.json_source import (
     JsonSource,
@@ -23,7 +23,6 @@ from bust.editing.json_source import (
     join_pointer,
     split_pointer,
 )
-from bust.migrate import migrate_register_map
 from bust.settings import Settings
 from bust.utils.json_utils import json_parser
 from bust.validation.config_validator import warn_unknown_keys
@@ -47,8 +46,6 @@ class RegisterMapDocument:
     document still works, but saving rewrites the whole file, and
     `keeps_formatting` is False.
 
-    Attributes:
-        module: The Module the current data builds, set by `check` and `apply`.
     """
 
     def __init__(self, text: str, data: Any, saved_text: Optional[str]) -> None:
@@ -69,7 +66,7 @@ class RegisterMapDocument:
             self._source = None
         if self._source is not None and not _same(self._source.value, data):
             self._source = None
-        self.module: Optional[Module] = None
+        self._module: Optional[Module] = None
 
     @classmethod
     def open(cls, path: str) -> "RegisterMapDocument":
@@ -90,6 +87,17 @@ class RegisterMapDocument:
         document = cls(json.dumps(data, indent=4) + "\n", data, saved_text=None)
         document.check()
         return document
+
+    @property
+    def module(self) -> Module:
+        """The Module the current data builds.
+
+        Raises:
+            RuntimeError: Before the first `check` or `apply`.
+        """
+        if self._module is None:
+            raise RuntimeError("The register map has not been checked yet")
+        return self._module
 
     @property
     def data(self) -> Any:
@@ -122,7 +130,7 @@ class RegisterMapDocument:
         Raises:
             EditRejected: With bust's message, if bust rejects the data.
         """
-        self.module, warnings = _build_module(self._data)
+        self._module, warnings = _build_module(self._data)
         return warnings
 
     def apply(self, operations: List[Operation]) -> List[str]:
@@ -139,7 +147,7 @@ class RegisterMapDocument:
         """
         source = JsonSource(self._source.text) if self._source is not None else None
         data = self._patched(operations, source)
-        self.module, warnings = _build_module(data)
+        self._module, warnings = _build_module(data)
         self._data = data
         self._source = source
         return warnings
@@ -192,8 +200,8 @@ class RegisterMapDocument:
     def legacy_conversion(self) -> Tuple[List[str], List[Operation]]:
         """The changes that turn a bust 0.14 register map into the 1.0 form.
 
-        These are the changes `bust --migrate` makes, and in addition each
-        register's `mode` becomes the access keys it stands for, in its place.
+        Each register's `mode` becomes the access keys it stands for, in its
+        place. `bust --migrate` makes these changes.
 
         Returns:
             A description of each change, and the operations that make them.
