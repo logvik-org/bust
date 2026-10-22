@@ -9,7 +9,6 @@ bit range within the parent register's data width.
 """
 
 import logging
-from collections import OrderedDict
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
 from bust.core.enums import (
@@ -419,34 +418,6 @@ class Field:
             For a 4-bit field at position 2, returns 0b00111100 (0x3C).
         """
         return int((pow(2, self.width) - 1) << self.pos_low)
-
-    def return_dic(self) -> OrderedDict:
-        """Return field configuration as an ordered dictionary.
-
-        Returns:
-            OrderedDict with field configuration, including only non-default
-            values for width, reset, and description. Access-mode properties
-            and position are included only where the field set them itself, so
-            inherited register defaults stay inherited.
-        """
-        dic = OrderedDict()
-        dic["name"] = self.name
-        dic["type"] = self.type.value
-        if self.type == FieldType.VECTOR:
-            dic["width"] = self.width
-        if self._config.is_set("position"):
-            dic["position"] = self.pos_low
-        # The authored reset, so an enum's resolved reset is not written back.
-        if self._config.get("reset") != "0x0":
-            dic["reset"] = self._config.get("reset")
-        for key in INHERITABLE_ACCESS:
-            if self._config.is_set(key):
-                dic[key] = self._config.get(key)
-        if self.enums:
-            dic["enums"] = [enum._asdict() for enum in self.enums]
-        if self.description != "":
-            dic["description"] = self.description
-        return dic
 
     @property
     def range_vhdl(self) -> str:

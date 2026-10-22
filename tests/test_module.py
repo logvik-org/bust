@@ -2,7 +2,6 @@
 bookkeeping. Uses a lightweight stub bus so the domain logic is exercised
 without the generator/template stack."""
 
-import json
 from types import SimpleNamespace
 
 import pytest
@@ -61,24 +60,19 @@ class TestAddressAssignment:
 
     @pytest.mark.parametrize("value, step", [("True", 4), ("False", 1)])
     def test_byte_addressable_reads_the_0_14_strings(self, value, step, caplog):
-        bus = stub_bus()
-        bus.to_json = dict
         mod = Module(
             {
                 "name": "testmod",
                 "byte_addressable": value,
                 "register": regs("R0", "R1"),
             },
-            bus,
-            settings=SimpleNamespace(to_json=dict),
+            stub_bus(),
+            settings=None,
         )
         assert mod.addresses == [0, step]
         assert f'byte_addressable "{value}" is the deprecated bust 0.14 form' in (
             caplog.text
         )
-        # Saving writes the JSON boolean.
-        saved = json.loads(mod.to_json())["module"]["byte_addressable"]
-        assert saved is (value == "True")
 
     @pytest.mark.parametrize("value", ["false", "yes", 0])
     def test_byte_addressable_must_be_a_boolean(self, value):

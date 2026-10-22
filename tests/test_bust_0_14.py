@@ -9,7 +9,6 @@ import pytest
 from bust.core.bus import Bus
 from bust.core.enums import FieldType, RegisterType
 from bust.core.module import Module
-from bust.settings import Settings
 
 _DATA = os.path.join(os.path.dirname(__file__), "data", "bust_0_14")
 
@@ -46,19 +45,6 @@ def test_sl_and_slv_become_bit_and_vector():
         FieldType.BIT,
         FieldType.VECTOR,
     }
-
-
-def test_saved_file_uses_the_current_type_names():
-    """bust -a writes the file back with bit and vector."""
-    data = _load("example_axi")
-    path = os.path.join(_DATA, "example_axi.json")
-    module = Module(data["module"], Bus(data["bus"]), Settings(path, data["settings"]))
-    saved = json.loads(module.to_json(True))
-    types = set()
-    for reg in saved["module"]["register"]:
-        types.add(reg["type"])
-        types.update(field["type"] for field in reg.get("fields", []))
-    assert types == {"bit", "vector", "default", "fields"}
 
 
 def test_current_type_names_do_not_warn(caplog):

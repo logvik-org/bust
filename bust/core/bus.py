@@ -8,11 +8,12 @@ The Bus class handles bus-specific settings like data width, address width,
 reset type, and component library references.
 """
 
-from collections import OrderedDict
 from typing import Any, Dict
 
 from bust.exceptions import FormatError, InvalidBusType
 from bust.validation.config_validator import parse_number, warn_unknown_keys
+
+BUS_KEYS = ("type", "addr_width", "data_width")
 
 
 class Bus:
@@ -104,7 +105,7 @@ class Bus:
         """
         if bus["type"] not in Bus.BUS_CONFIG:
             raise InvalidBusType(bus["type"])
-        warn_unknown_keys(bus, ("type", "addr_width", "data_width"), "bus")
+        warn_unknown_keys(bus, BUS_KEYS, "bus")
         self.bus_type = bus["type"]
         config = Bus.BUS_CONFIG[self.bus_type]
 
@@ -132,15 +133,3 @@ class Bus:
                 f"Bus type {self.bus_type} carries {fixed_data_width}-bit data, "
                 f"so data_width must be {fixed_data_width} (got {self.data_width})"
             )
-
-    def to_json(self) -> OrderedDict:
-        """Export bus configuration as an ordered dictionary.
-
-        Returns:
-            OrderedDict with the bus configuration.
-        """
-        json = OrderedDict()
-        json["type"] = self.bus_type
-        json["addr_width"] = self.addr_width
-        json["data_width"] = self.data_width
-        return json

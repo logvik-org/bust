@@ -9,7 +9,6 @@ This package contains validation logic for VHDL identifiers and configuration:
 from bust.validation.vhdl_validator import (
     is_valid_VHDL,
     is_unique,
-    get_identifier,
     is_VHDL_keyword,
     InvalidVHDLIdentifier,
     NonUniqueIdentifer,
@@ -19,7 +18,6 @@ from bust.validation.config_validator import ConfigWrapper
 __all__ = [
     "is_valid_VHDL",
     "is_unique",
-    "get_identifier",
     "is_VHDL_keyword",
     "InvalidVHDLIdentifier",
     "NonUniqueIdentifer",
