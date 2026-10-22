@@ -6,6 +6,7 @@
 -- maps to pslverr). The master drives byte addresses, so a non-zero base
 -- exercises G_CHECK_BASE_ADDRESS. Full access-mode coverage lives in
 -- prototype_regfile_tb; this only proves the protocol translation.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -28,11 +29,11 @@ architecture tb of prototype_apb_endpoint_tb is
   constant C_BASE : std_logic_vector(31 downto 0) := 32x"FFAA0000";
 
   signal pclk    : std_logic := '0';
-  signal presetn : std_logic := '1';   -- active-low; gen_pulse drives it low
+  signal presetn : std_logic := '1'; -- active-low; gen_pulse drives it low
 
-  signal psel    : std_logic := '0';
-  signal penable : std_logic := '0';
-  signal pwrite  : std_logic := '0';
+  signal psel    : std_logic                     := '0';
+  signal penable : std_logic                     := '0';
+  signal pwrite  : std_logic                     := '0';
   signal paddr   : std_logic_vector(31 downto 0) := (others => '0');
   signal pwdata  : std_logic_vector(31 downto 0) := (others => '0');
   signal prdata  : std_logic_vector(31 downto 0);
@@ -40,27 +41,27 @@ architecture tb of prototype_apb_endpoint_tb is
   signal pslverr : std_logic;
 
   signal to_hw   : t_prototype_to_hw;
-  signal from_hw : t_prototype_from_hw := (
-    reg1 => (field0 => (value => (others => '0'), we => '0'),
-             field1 => '0',
-             field2 => (value => '0', wel => '1')),
-    reg4 => (field0 => (value => (others => '0'), we => '0'),
-             field1 => (set => '0', clr => '0')));
+  signal from_hw : t_prototype_from_hw := C_PROTOTYPE_FROM_HW_RESET;
 
-  function f_addr(base : std_logic_vector(31 downto 0);
-                  reg  : std_logic_vector(31 downto 0)) return std_logic_vector is
+  function f_addr (
+    base : std_logic_vector(31 downto 0);
+    reg  : std_logic_vector(31 downto 0)
+  ) return std_logic_vector is
   begin
+
     return std_logic_vector(unsigned(base) + unsigned(reg));
-  end function;
+
+  end function f_addr;
 
 begin
 
   clock_generator(pclk, C_CLK_PERIOD);
 
-  DUT : entity work.prototype_apb_endpoint
+  dut : entity work.prototype_apb_endpoint(rtl)
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true
+    )
     port map (
       pclk    => pclk,
       presetn => presetn,
@@ -73,15 +74,19 @@ begin
       pready  => pready,
       pslverr => pslverr,
       to_hw   => to_hw,
-      from_hw => from_hw);
+      from_hw => from_hw
+    );
 
   p_main : process is
 
     -- APB single write: SETUP (psel, penable low), then ACCESS (penable high)
     -- held until pready.
-    procedure apb_write(constant addr : in std_logic_vector;
-                        constant data : in std_logic_vector) is
+    procedure apb_write (
+      constant addr : in std_logic_vector;
+      constant data : in std_logic_vector
+    ) is
     begin
+
       psel    <= '1';
       penable <= '0';
       pwrite  <= '1';
@@ -90,20 +95,28 @@ begin
       wait until rising_edge(pclk);
       penable <= '1';
       wait until rising_edge(pclk);
+
       while pready = '0' loop
+
         wait until rising_edge(pclk);
+
       end loop;
+
       psel    <= '0';
       penable <= '0';
       pwrite  <= '0';
       wait for 0 ns;
-    end procedure;
+
+    end procedure apb_write;
 
     -- APB single read: returns the read data and whether pslverr was asserted.
-    procedure apb_read(constant addr : in std_logic_vector;
-                       variable data : out std_logic_vector(31 downto 0);
-                       variable got_err : out boolean) is
+    procedure apb_read (
+      constant addr    : in std_logic_vector;
+      variable data    : out std_logic_vector(31 downto 0);
+      variable got_err : out boolean
+    ) is
     begin
+
       psel    <= '1';
       penable <= '0';
       pwrite  <= '0';
@@ -111,31 +124,43 @@ begin
       wait until rising_edge(pclk);
       penable <= '1';
       wait until rising_edge(pclk);
+
       while pready = '0' loop
+
         wait until rising_edge(pclk);
+
       end loop;
+
       data    := prdata;
       got_err := pslverr = '1';
       psel    <= '0';
       penable <= '0';
       wait for 0 ns;
-    end procedure;
 
-    procedure apb_check(constant addr : in std_logic_vector;
-                        constant exp  : in std_logic_vector;
-                        constant msg  : in string) is
+    end procedure apb_read;
+
+    procedure apb_check (
+      constant addr : in std_logic_vector;
+      constant exp  : in std_logic_vector;
+      constant msg  : in string
+    ) is
+
       variable data    : std_logic_vector(31 downto 0);
       variable got_err : boolean;
+
     begin
+
       apb_read(addr, data, got_err);
       check_value(got_err, false, error, msg & " (no pslverr)", C_SCOPE);
       check_value(data, exp, error, msg, C_SCOPE);
-    end procedure;
+
+    end procedure apb_check;
 
     variable v_rdata : std_logic_vector(31 downto 0);
     variable v_err   : boolean;
 
   begin
+
     disable_log_msg(ALL_MESSAGES, QUIET);
     enable_log_msg(ID_LOG_HDR, QUIET);
 
@@ -174,11 +199,12 @@ begin
     check_value(v_err, true, error, "invalid-address read raises pslverr", C_SCOPE);
     check_value(v_rdata, 32x"0", error, "invalid-address read returns 0", C_SCOPE);
 
-    wait for 10*C_CLK_PERIOD;
+    wait for 10 * C_CLK_PERIOD;
     report_alert_counters(FINAL);
     log(ID_LOG_HDR, "SIMULATION COMPLETED", C_SCOPE);
     std.env.stop;
     wait;
+
   end process p_main;
 
 end architecture tb;

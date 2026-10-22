@@ -6,6 +6,7 @@
 -- maps to err_o). The master drives byte addresses, so a non-zero base exercises
 -- G_CHECK_BASE_ADDRESS. Full access-mode coverage lives in prototype_regfile_tb;
 -- this only proves the protocol translation.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -28,39 +29,39 @@ architecture tb of prototype_wishbone_endpoint_tb is
   constant C_BASE : std_logic_vector(31 downto 0) := 32x"FFAA0000";
 
   signal clk : std_logic := '0';
-  signal rst : std_logic := '0';   -- active-high; gen_pulse asserts it
+  signal rst : std_logic := '0'; -- active-high; gen_pulse asserts it
 
-  signal wb_cyc : std_logic := '0';
-  signal wb_stb : std_logic := '0';
-  signal wb_we  : std_logic := '0';
-  signal wb_adr : std_logic_vector(31 downto 0) := (others => '0');
+  signal wb_cyc   : std_logic                     := '0';
+  signal wb_stb   : std_logic                     := '0';
+  signal wb_we    : std_logic                     := '0';
+  signal wb_adr   : std_logic_vector(31 downto 0) := (others => '0');
   signal wb_dat_w : std_logic_vector(31 downto 0) := (others => '0');
   signal wb_dat_r : std_logic_vector(31 downto 0);
-  signal wb_ack : std_logic;
-  signal wb_err : std_logic;
+  signal wb_ack   : std_logic;
+  signal wb_err   : std_logic;
 
   signal to_hw   : t_prototype_to_hw;
-  signal from_hw : t_prototype_from_hw := (
-    reg1 => (field0 => (value => (others => '0'), we => '0'),
-             field1 => '0',
-             field2 => (value => '0', wel => '1')),
-    reg4 => (field0 => (value => (others => '0'), we => '0'),
-             field1 => (set => '0', clr => '0')));
+  signal from_hw : t_prototype_from_hw := C_PROTOTYPE_FROM_HW_RESET;
 
-  function f_addr(base : std_logic_vector(31 downto 0);
-                  reg  : std_logic_vector(31 downto 0)) return std_logic_vector is
+  function f_addr (
+    base : std_logic_vector(31 downto 0);
+    reg  : std_logic_vector(31 downto 0)
+  ) return std_logic_vector is
   begin
+
     return std_logic_vector(unsigned(base) + unsigned(reg));
-  end function;
+
+  end function f_addr;
 
 begin
 
   clock_generator(clk, C_CLK_PERIOD);
 
-  DUT : entity work.prototype_wishbone_endpoint
+  dut : entity work.prototype_wishbone_endpoint(rtl)
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true
+    )
     port map (
       clk_i   => clk,
       rst_i   => rst,
@@ -73,68 +74,92 @@ begin
       ack_o   => wb_ack,
       err_o   => wb_err,
       to_hw   => to_hw,
-      from_hw => from_hw);
+      from_hw => from_hw
+    );
 
   p_main : process is
 
     -- Classic Wishbone single write: assert cyc/stb/we, hold until ack/err.
-    procedure wb_write(constant addr : in std_logic_vector;
-                       constant data : in std_logic_vector) is
+    procedure wb_write (
+      constant addr : in std_logic_vector;
+      constant data : in std_logic_vector
+    ) is
     begin
+
       wb_cyc   <= '1';
       wb_stb   <= '1';
       wb_we    <= '1';
       wb_adr   <= addr;
       wb_dat_w <= data;
       wait until rising_edge(clk);
+
       while wb_ack = '0' and wb_err = '0' loop
+
         wait until rising_edge(clk);
+
       end loop;
+
       wb_cyc   <= '0';
       wb_stb   <= '0';
       wb_we    <= '0';
       wb_adr   <= (others => '0');
       wb_dat_w <= (others => '0');
       wait for 0 ns;
-    end procedure;
+
+    end procedure wb_write;
 
     -- Classic Wishbone single read: returns the read data and whether the cycle
     -- terminated on err_o rather than ack_o.
-    procedure wb_read(constant addr : in std_logic_vector;
-                      variable data : out std_logic_vector(31 downto 0);
-                      variable got_err : out boolean) is
+    procedure wb_read (
+      constant addr    : in std_logic_vector;
+      variable data    : out std_logic_vector(31 downto 0);
+      variable got_err : out boolean
+    ) is
     begin
+
       wb_cyc <= '1';
       wb_stb <= '1';
       wb_we  <= '0';
       wb_adr <= addr;
       wait until rising_edge(clk);
+
       while wb_ack = '0' and wb_err = '0' loop
+
         wait until rising_edge(clk);
+
       end loop;
+
       data    := wb_dat_r;
       got_err := wb_err = '1';
       wb_cyc  <= '0';
       wb_stb  <= '0';
       wb_adr  <= (others => '0');
       wait for 0 ns;
-    end procedure;
 
-    procedure wb_check(constant addr : in std_logic_vector;
-                       constant exp  : in std_logic_vector;
-                       constant msg  : in string) is
+    end procedure wb_read;
+
+    procedure wb_check (
+      constant addr : in std_logic_vector;
+      constant exp  : in std_logic_vector;
+      constant msg  : in string
+    ) is
+
       variable data    : std_logic_vector(31 downto 0);
       variable got_err : boolean;
+
     begin
+
       wb_read(addr, data, got_err);
       check_value(got_err, false, error, msg & " (terminated on ack)", C_SCOPE);
       check_value(data, exp, error, msg, C_SCOPE);
-    end procedure;
+
+    end procedure wb_check;
 
     variable v_rdata : std_logic_vector(31 downto 0);
     variable v_err   : boolean;
 
   begin
+
     disable_log_msg(ALL_MESSAGES, QUIET);
     enable_log_msg(ID_LOG_HDR, QUIET);
 
@@ -173,11 +198,12 @@ begin
     check_value(v_err, true, error, "invalid-address read raises err_o", C_SCOPE);
     check_value(v_rdata, 32x"0", error, "invalid-address read returns 0", C_SCOPE);
 
-    wait for 10*C_CLK_PERIOD;
+    wait for 10 * C_CLK_PERIOD;
     report_alert_counters(FINAL);
     log(ID_LOG_HDR, "SIMULATION COMPLETED", C_SCOPE);
     std.env.stop;
     wait;
+
   end process p_main;
 
 end architecture tb;
