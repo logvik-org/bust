@@ -70,21 +70,34 @@ def test_existing_output_without_terminal_asks_for_force(tmp_path):
     assert "Run bust with -f to overwrite it." in output
 
 
-def test_save_addresses_with_force(tmp_path):
-    register_map = dict(
-        _REGISTER_MAP,
-        settings={"coverage": True},
-        bus=dict(_REGISTER_MAP["bus"], comp_library="regs"),
+def test_save_addresses_with_force_changes_only_addresses(tmp_path):
+    register_map = json.loads(json.dumps(_REGISTER_MAP))
+    register_map["bus"]["comp_library"] = "regs"
+    register_map["module"]["register"].append(
+        {"name": "status", "sw": "ro", "hw": "w", "address": "0x10"}
     )
-    path = _write_register_map(tmp_path, register_map)
+    path = tmp_path / "timer.json"
+    path.write_text(json.dumps(register_map, indent=4))
 
     code, output = _run_bust(tmp_path, path.name, "-a", "-f")
 
     assert code == 0, output
-    saved = json.loads(path.read_text())
-    assert saved["module"]["register"][0]["address"] == "0x0"
-    assert "settings" not in saved
-    assert saved["bus"] == {"type": "axi", "addr_width": 32, "data_width": 32}
+    register_map["module"]["register"][0]["address"] = "0x0"
+    register_map["module"]["register"][1]["address"] = "0x4"
+    assert json.loads(path.read_text()) == register_map
+
+
+def test_save_addresses_in_order_does_not_write(tmp_path):
+    register_map = json.loads(json.dumps(_REGISTER_MAP))
+    register_map["module"]["register"][0]["address"] = 0
+    path = _write_register_map(tmp_path, register_map)
+    os.utime(path, (0, 0))
+
+    code, output = _run_bust(tmp_path, path.name, "-a")
+
+    assert code == 0, output
+    assert "are in order already" in output
+    assert os.stat(path).st_mtime == 0
 
 
 def test_save_addresses_without_terminal_asks_for_force(tmp_path):
