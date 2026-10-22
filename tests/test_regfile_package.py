@@ -231,15 +231,13 @@ def test_register_without_fields_is_a_bare_member_of_to_hw_and_from_hw():
     assert "type t_m_count_from_hw" not in pkg
 
     regfile = GeneratorFactory.generate_regfile_vhdl(module)
-    assert "  to_hw.level <= regs.level.level;" in regfile
-    assert (
-        "  to_hw.kick <= (value => regs.kick.kick, swmod => swmod_kick_kick);"
-        in regfile
-    )
-    assert "  to_hw.ctrl <= (go => regs.ctrl.go);" in regfile
-    assert "rdata(3 downto 0) <= from_hw.count;" in regfile
+    assert " to_hw.level <= regs.level.level;" in _squash(regfile)
+    assert " to_hw.kick.value <= regs.kick.kick;" in _squash(regfile)
+    assert " to_hw.kick.swmod <= swmod_kick_kick;" in _squash(regfile)
+    assert " to_hw.ctrl.go <= regs.ctrl.go;" in _squash(regfile)
+    assert "rdata(3 downto 0) <= from_hw.count;" in _squash(regfile)
     assert "regs.count" not in regfile
-    assert "if from_hw.load.we = '1' then" in regfile
+    assert "if (from_hw.load.we = '1') then" in regfile
 
 
 def test_module_addr_width_generic_reaches_the_regfile():
@@ -247,14 +245,14 @@ def test_module_addr_width_generic_reaches_the_regfile():
     wrapper, the endpoint and the regfile, and defaults to C_<MODULE>_MODULE_ADDR_WIDTH.
     """
     module = _build_module()
-    default = "G_MODULE_ADDR_WIDTH  : natural := C_PROTOTYPE_MODULE_ADDR_WIDTH"
+    default = "G_MODULE_ADDR_WIDTH : natural := C_PROTOTYPE_MODULE_ADDR_WIDTH"
     for generate in (
         GeneratorFactory.generate_module_top_vhdl,
         GeneratorFactory.generate_axi_endpoint_vhdl,
         GeneratorFactory.generate_regfile_vhdl,
     ):
         hdl = generate(module)
-        assert default in hdl
+        assert default in _squash(hdl)
     assert "G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH" in (
         GeneratorFactory.generate_module_top_vhdl(module)
     )
@@ -262,7 +260,7 @@ def test_module_addr_width_generic_reaches_the_regfile():
     assert "above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)" in regfile
     assert "and is_mapped(reg_offset);" in regfile
     assert (
-        "if mapped and (is_sw_writable(reg_offset) or not G_ERR_ON_BAD_ACCESS) then"
+        "if (mapped and (is_sw_writable(reg_offset) or not G_ERR_ON_BAD_ACCESS)) then"
         in regfile
     )
 
@@ -495,8 +493,8 @@ def test_constant_only_entity_uses_literals_not_regs():
 
     assert "signal regs " not in out
     assert "regs." not in out
-    assert 'rdata(7 downto 0) <= 8x"AB";' in out
-    assert 'to_hw.stat <= (id => 8x"AB");' in out
+    assert 'rdata(7 downto 0) <= 8x"AB";' in _squash(out)
+    assert 'to_hw.stat.id <= 8x"AB";' in _squash(out)
 
 
 def test_non_fields_registers_normalize_to_implicit_field():
@@ -612,8 +610,8 @@ def test_bit_enum_encodes_as_one_element_vector():
     )
     assert "variable slv : std_logic_vector(0 downto 0);" in pkg
     assert 'when "1" =>\n\n        return ENABLED;' in pkg
-    assert "regs.r.f <= to_m_r_f(lb_m2s.wdata(1 downto 1));" in regfile
-    assert "rdata(1 downto 1) <= to_slv(regs.r.f);" in regfile
+    assert "regs.r.f <= to_m_r_f(lb_m2s.wdata(1 downto 1));" in _squash(regfile)
+    assert "rdata(1 downto 1) <= to_slv(regs.r.f);" in _squash(regfile)
 
 
 def test_hw_written_enum_testbench_default_is_its_reset_literal():
@@ -638,9 +636,10 @@ def test_constant_enum_read_is_type_qualified():
         hw="r",
     )
     out = GeneratorFactory.generate_regfile_vhdl(module)
-    assert "rdata(0 downto 0) <= to_slv(t_m_r_a'(ENABLED));" in out
-    assert "rdata(1 downto 1) <= to_slv(t_m_r_b'(DISABLED));" in out
-    assert "to_hw.r <= (a => t_m_r_a'(ENABLED), b => t_m_r_b'(DISABLED));" in out
+    assert "rdata(0 downto 0) <= to_slv(t_m_r_a'(ENABLED));" in _squash(out)
+    assert "rdata(1 downto 1) <= to_slv(t_m_r_b'(DISABLED));" in _squash(out)
+    assert "to_hw.r.a <= t_m_r_a'(ENABLED);" in _squash(out)
+    assert "to_hw.r.b <= t_m_r_b'(DISABLED);" in _squash(out)
 
 
 def _strobe_read(module):
@@ -794,10 +793,10 @@ def test_hardware_updates_override_onread_effects_in_the_same_cycle():
     )
     p_write = _p_write(module)
     onread = p_write.index(
-        "if rd_service and reg_addr_match(reg_offset, C_M_R_OFFSET) then"
+        "if (rd_service and reg_addr_match(reg_offset, C_M_R_OFFSET)) then"
     )
-    assert onread < p_write.index("if from_hw.r.f.clr = '1' then")
-    assert onread < p_write.index("if from_hw.r.g.we = '1' then")
+    assert onread < p_write.index("if (from_hw.r.f.clr = '1') then")
+    assert onread < p_write.index("if (from_hw.r.g.we = '1') then")
     assert p_write.count("rd_service and reg_addr_match(reg_offset, C_M_R_OFFSET)") == 1
 
 

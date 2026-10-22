@@ -7,11 +7,11 @@
 {% set lhs = "regs." ~ reg.name ~ "." ~ f.name -%}
 {% set fin = "from_hw." ~ f.hw_path -%}
 {% set ns = namespace(branches=[]) %}
-{% if f.hwclr %}{% set ns.branches = ns.branches + [(fin ~ ".clr = '1'", lhs ~ " <= " ~ f.zeros_literal)] %}{% endif %}
-{% if f.hwset %}{% set ns.branches = ns.branches + [(fin ~ ".set = '1'", lhs ~ " <= " ~ f.ones_literal)] %}{% endif %}
-{% if f.we %}{% set ns.branches = ns.branches + [(fin ~ ".we = '1'", lhs ~ " <= " ~ fin ~ ".value")] %}{% endif %}
-{% if f.wel %}{% set ns.branches = ns.branches + [(fin ~ ".wel = '0'", lhs ~ " <= " ~ fin ~ ".value")] %}{% endif %}
-{% if f.sw_writable %}{% set ns.branches = ns.branches + [("sw_write and reg_addr_match(reg_offset, " ~ reg.offset_constant ~ ")", sw_action(reg, f))] %}{% endif %}
+{% if f.hwclr %}{% set ns.branches = ns.branches + [("(" ~ fin ~ ".clr = '1')", lhs ~ " <= " ~ f.zeros_literal)] %}{% endif %}
+{% if f.hwset %}{% set ns.branches = ns.branches + [("(" ~ fin ~ ".set = '1')", lhs ~ " <= " ~ f.ones_literal)] %}{% endif %}
+{% if f.we %}{% set ns.branches = ns.branches + [("(" ~ fin ~ ".we = '1')", lhs ~ " <= " ~ fin ~ ".value")] %}{% endif %}
+{% if f.wel %}{% set ns.branches = ns.branches + [("(" ~ fin ~ ".wel = '0')", lhs ~ " <= " ~ fin ~ ".value")] %}{% endif %}
+{% if f.sw_writable %}{% set ns.branches = ns.branches + [("(sw_write and reg_addr_match(reg_offset, " ~ reg.offset_constant ~ "))", sw_action(reg, f))] %}{% endif %}
 {% for cond, act in ns.branches %}
 {% if loop.first %}
         if {{ cond }} then
@@ -37,7 +37,7 @@
 {% for f in reg.stored_fields if f.sw_writable or f.we or f.wel or f.hwset or f.hwclr %}{% set later.writes = True %}{% endfor %}
 {% if onread_fields %}
         -- {{ reg.name }} onread effects.
-        if rd_service and reg_addr_match(reg_offset, {{ reg.offset_constant }}) then
+        if (rd_service and reg_addr_match(reg_offset, {{ reg.offset_constant }})) then
 {% for f in onread_fields %}
           regs.{{ reg.name }}.{{ f.name }} <= {{ f.ones_literal if f.onread.value == 'rset' else f.zeros_literal }};
 {% endfor %}
@@ -51,7 +51,7 @@
 {% endfor %}
 {% set sw_fields = reg.stored_fields | selectattr('sw_writable') | rejectattr('we') | rejectattr('wel') | rejectattr('hwset') | rejectattr('hwclr') | list %}
 {% if sw_fields %}
-        if sw_write and reg_addr_match(reg_offset, {{ reg.offset_constant }}) then
+        if (sw_write and reg_addr_match(reg_offset, {{ reg.offset_constant }})) then
 {% for f in sw_fields %}
           {{ sw_action(reg, f) }};
 {% endfor %}
@@ -60,9 +60,6 @@
 {%- endmacro -%}
 {# A constant enum is qualified because enum literal names (e.g. IDLE/BUSY) may be
    shared by several enum types, which would make to_slv(<literal>) ambiguous. #}
-{% macro to_hw_value(reg, f) -%}
-{%- if f.to_hw_is_record -%}(value => {{ field_value(reg, f) }}{% if f.swmod %}, swmod => swmod_{{ reg.name }}_{{ f.name }}{% endif %}{% if f.swacc %}, swacc => swacc_{{ reg.name }}_{{ f.name }}{% endif %}){%- else -%}{{ field_value(reg, f) }}{%- endif -%}
-{%- endmacro -%}
 {% macro field_value(reg, f) -%}
 {%- if f.holds_state -%}regs.{{ reg.name }}.{{ f.name }}{%- elif f.hw_wire -%}from_hw.{{ f.hw_path }}{%- elif f.is_enum -%}{{ f.enum_type_name }}'({{ f.reset_value_vhdl }}){%- else -%}{{ f.reset_value_vhdl }}{%- endif -%}
 {%- endmacro -%}
@@ -71,39 +68,44 @@
 {% if f.onread or f.swacc %}{% set uses.rd_service = true %}{% endif %}
 {% if f.hwset or f.hwclr or f.we or f.wel %}{% set uses.precedence = true %}{% endif %}
 {% endfor %}{% endfor %}
+{% set width = "C_" ~ (module.name | upper) ~ "_MODULE_ADDR_WIDTH" %}
 -- {{ generated_by() }}
 -- Protocol-agnostic register file for the {{ module.name }} module.
 -- p_write: register storage and write response.
 -- p_read: read mux and read response.
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
 
-use work.{{ module.name }}_localbus_pkg.all;
-use work.{{ module.name }}_regfile_pkg.all;
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+  use work.{{ module.name }}_localbus_pkg.all;
+  use work.{{ module.name }}_regfile_pkg.all;
 
 entity {{ module.name }}_regfile is
   generic (
+{% filter align(":", ":=") %}
     G_BASE_ADDRESS       : unsigned({{ module.addr_width - 1 }} downto 0) := {{ module.addr_width }}x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    G_MODULE_ADDR_WIDTH  : natural := C_{{ module.name | upper }}_MODULE_ADDR_WIDTH;
+    G_MODULE_ADDR_WIDTH  : natural := {{ width }};
     G_UNMAPPED_READ_DATA : std_logic_vector({{ module.data_width - 1 }} downto 0) := (others => '0');
     G_ERR_ON_BAD_ACCESS  : boolean := false;
     G_RESET_ACTIVE_LOW   : boolean := false
+{% endfilter %}
   );
   port (
-    clk     : in  std_logic;
-    reset   : in  std_logic;
-    lb_m2s  : in  t_lb_m2s;
-    lb_s2m  : out t_lb_s2m{% if module.to_hw_registers or module.from_hw_registers %};{% endif %}
+{% filter align(":") %}
+    clk : in    std_logic;
+    reset : in    std_logic;
+    lb_m2s : in    t_lb_m2s;
+    lb_s2m : out   t_lb_s2m{% if module.to_hw_registers or module.from_hw_registers %};{% endif %}
 
 {% if module.to_hw_registers %}
-    to_hw   : out t_{{ module.name }}_to_hw{% if module.from_hw_registers %};{% endif %}
+    to_hw : out   t_{{ module.name }}_to_hw{% if module.from_hw_registers %};{% endif %}
 
 {% endif %}
 {% if module.from_hw_registers %}
-    from_hw : in  t_{{ module.name }}_from_hw
+    from_hw : in    t_{{ module.name }}_from_hw
 {% endif %}
+{% endfilter %}
   );
 end entity {{ module.name }}_regfile;
 
@@ -113,7 +115,8 @@ architecture rtl of {{ module.name }}_regfile is
   signal regs : t_{{ module.name }}_regs := C_{{ module.name | upper }}_REGS_RESET;
 
 {% endif %}
-  signal rdata  : std_logic_vector({{ module.data_width - 1 }} downto 0) := (others => '0');
+{% filter align(":", ":=") %}
+  signal rdata : std_logic_vector({{ module.data_width - 1 }} downto 0) := (others => '0');
   signal wr_ack : std_logic := '0';
   signal wr_err : std_logic := '0';
   signal rd_ack : std_logic := '0';
@@ -126,28 +129,36 @@ architecture rtl of {{ module.name }}_regfile is
   signal swacc_{{ reg.name }}_{{ f.name }} : std_logic := '0';
 {% endfor %}
 {% endfor %}
+{% endfilter %}
 
   -- reset is compared with this level directly, so it adds no delta cycle.
-  function reset_level(active_low : boolean) return std_logic is
+  function reset_level (
+    active_low : boolean
+  ) return std_logic is
   begin
-    if active_low then
+
+    if (active_low) then
       return '0';
     end if;
+
     return '1';
-  end function;
+
+  end function reset_level;
+
   constant C_RESET_LEVEL : std_logic := reset_level(G_RESET_ACTIVE_LOW);
 
 begin
 
   -- G_MODULE_ADDR_WIDTH must hold the registers and fit in the address.
-  assert G_MODULE_ADDR_WIDTH >= C_{{ module.name | upper }}_MODULE_ADDR_WIDTH and G_MODULE_ADDR_WIDTH <= {{ module.addr_width }}
-    report "G_MODULE_ADDR_WIDTH must be from C_{{ module.name | upper }}_MODULE_ADDR_WIDTH ("
-           & natural'image(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH) & ") to {{ module.addr_width }}"
+  assert G_MODULE_ADDR_WIDTH >= {{ width }}
+      and G_MODULE_ADDR_WIDTH <= {{ module.addr_width }}
+    report "G_MODULE_ADDR_WIDTH must be from {{ width }} ("
+           & natural'image({{ width }}) & ") to {{ module.addr_width }}"
     severity failure;
 
   -- The base address must be a multiple of the size of the address range.
   assert (not G_CHECK_BASE_ADDRESS)
-      or (G_BASE_ADDRESS(G_MODULE_ADDR_WIDTH-1 downto 0) = 0)
+      or (G_BASE_ADDRESS(G_MODULE_ADDR_WIDTH - 1 downto 0) = 0)
     report "G_BASE_ADDRESS must be a multiple of 2**G_MODULE_ADDR_WIDTH"
     severity failure;
 
@@ -155,20 +166,24 @@ begin
   -- Same-cycle precedence: hwclr > hwset > we/wel write > software write or onread.
 {% endif %}
   p_write : process (clk) is
-    variable reg_offset : std_logic_vector(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0);
-    variable mapped     : boolean;     -- a register sits at this address
-    variable sw_write   : boolean;     -- a new software write to a register
+
+    variable reg_offset : std_logic_vector({{ width }} - 1 downto 0);
+    variable mapped     : boolean; -- a register sits at this address
+    variable sw_write   : boolean; -- a new software write to a register
 {% if uses.rd_service %}
-    variable rd_service : boolean;     -- a new software read from a register
+    variable rd_service : boolean; -- a new software read from a register
 {% endif %}
+
   begin
+
+{% filter align("<=|:=") %}
     if rising_edge(clk) then
-      if reset = C_RESET_LEVEL then
+      if (reset = C_RESET_LEVEL) then
 {% if module.stored_registers %}
-        regs       <= C_{{ module.name | upper }}_REGS_RESET;
+        regs <= C_{{ module.name | upper }}_REGS_RESET;
 {% endif %}
-        wr_ack     <= '0';
-        wr_err     <= '0';
+        wr_ack <= '0';
+        wr_err <= '0';
 {% for reg in module.registers %}
 {% for f in reg.effective_fields if f.swmod %}
         swmod_{{ reg.name }}_{{ f.name }} <= '0';
@@ -182,7 +197,7 @@ begin
         wr_err <= '0';
 
         -- A held request takes effect once, while its response is still low.
-        reg_offset := lb_m2s.address(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0);
+        reg_offset := lb_m2s.address({{ width }} - 1 downto 0);
         mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
                                  G_MODULE_ADDR_WIDTH)
                       and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
@@ -207,7 +222,7 @@ begin
 {% for f in swacc_fields %}
         swacc_{{ reg.name }}_{{ f.name }} <= '0';
 {% endfor %}
-        if sw_write and reg_addr_match(reg_offset, {{ reg.offset_constant }}) then
+        if (sw_write and reg_addr_match(reg_offset, {{ reg.offset_constant }})) then
 {% for f in swmod_fields %}
           swmod_{{ reg.name }}_{{ f.name }} <= '1';
 {% endfor %}
@@ -215,7 +230,7 @@ begin
           swacc_{{ reg.name }}_{{ f.name }} <= '1';
 {% endfor %}
 {% if swacc_fields %}
-        elsif rd_service and reg_addr_match(reg_offset, {{ reg.offset_constant }}) then
+        elsif (rd_service and reg_addr_match(reg_offset, {{ reg.offset_constant }})) then
 {% for f in swacc_fields %}
           swacc_{{ reg.name }}_{{ f.name }} <= '1';
 {% endfor %}
@@ -225,8 +240,8 @@ begin
 {% endif %}
 {% endfor %}
         -- Write response: err for an address without a register or a bad access.
-        if lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' then
-          if mapped and (is_sw_writable(reg_offset) or not G_ERR_ON_BAD_ACCESS) then
+        if (lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0') then
+          if (mapped and (is_sw_writable(reg_offset) or not G_ERR_ON_BAD_ACCESS)) then
             wr_ack <= '1';
           else
             wr_err <= '1';
@@ -234,15 +249,21 @@ begin
         end if;
       end if;
     end if;
+{% endfilter %}
+
   end process p_write;
 
   -- Unreadable fields read 0. A read that gets err returns G_UNMAPPED_READ_DATA.
   p_read : process (clk) is
-    variable reg_offset : std_logic_vector(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0);
-    variable mapped     : boolean;     -- a register sits at this address
+
+    variable reg_offset : std_logic_vector({{ width }} - 1 downto 0);
+    variable mapped     : boolean; -- a register sits at this address
+
   begin
+
+{% filter align("<=|:=") %}
     if rising_edge(clk) then
-      if reset = C_RESET_LEVEL then
+      if (reset = C_RESET_LEVEL) then
         rdata  <= (others => '0');
         rd_ack <= '0';
         rd_err <= '0';
@@ -250,14 +271,14 @@ begin
         rd_ack <= '0';
         rd_err <= '0';
 
-        if lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' then
+        if (lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0') then
           rdata <= (others => '0');
-          reg_offset := lb_m2s.address(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0);
+          reg_offset := lb_m2s.address({{ width }} - 1 downto 0);
           mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
                                    G_MODULE_ADDR_WIDTH)
                         and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
                         and is_mapped(reg_offset);
-          if not mapped or (G_ERR_ON_BAD_ACCESS and not is_sw_readable(reg_offset)) then
+          if (not mapped or (G_ERR_ON_BAD_ACCESS and not is_sw_readable(reg_offset))) then
             rd_err <= '1';
             rdata  <= G_UNMAPPED_READ_DATA;
 {% for reg in module.registers %}
@@ -271,17 +292,30 @@ begin
         end if;
       end if;
     end if;
+{% endfilter %}
+
   end process p_read;
 
 {% if module.to_hw_registers %}
-  -- Hardware-side outputs, one aggregate per register.
+  -- Hardware-side outputs.
+{% filter align("<=") %}
 {% for reg in module.to_hw_registers %}
-{% if reg.fields %}
-  to_hw.{{ reg.name }} <= ({% for f in reg.to_hw_fields %}{{ f.name }} => {{ to_hw_value(reg, f) }}{% if not loop.last %}, {% endif %}{% endfor %});
+{% for f in reg.to_hw_fields %}
+{% set target = "to_hw." ~ reg.name ~ ("." ~ f.name if reg.fields else "") %}
+{% if f.to_hw_is_record %}
+  {{ target }}.value <= {{ field_value(reg, f) }};
+{% if f.swmod %}
+  {{ target }}.swmod <= swmod_{{ reg.name }}_{{ f.name }};
+{% endif %}
+{% if f.swacc %}
+  {{ target }}.swacc <= swacc_{{ reg.name }}_{{ f.name }};
+{% endif %}
 {% else %}
-  to_hw.{{ reg.name }} <= {{ to_hw_value(reg, reg.to_hw_fields[0]) }};
+  {{ target }} <= {{ field_value(reg, f) }};
 {% endif %}
 {% endfor %}
+{% endfor %}
+{% endfilter %}
 
 {% endif %}
   lb_s2m.rdata <= rdata;
