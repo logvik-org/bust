@@ -419,8 +419,7 @@ so `IN` is rejected too:
 Could not parse register ctrl: Invalid identifier: in - identifier cannot be identical to VHDL keyword.
 ```
 
-bust warns, but goes on, when a name is longer than 16 characters or mixes
-uppercase and lowercase letters. The headers turn names into uppercase
+bust warns, but goes on, when a name mixes uppercase and lowercase letters. The headers turn names into uppercase
 constants, such as `CTRL_PARITY_MASK`.
 
 Register names must be unique in the module, field names in their register

@@ -161,6 +161,11 @@ class TestModuleValidation:
         with pytest.raises(InvalidVHDLIdentifier):
             Module({"name": "1bad", "register": []}, stub_bus(), settings=None)
 
+    def test_long_name_gives_no_warning(self, caplog):
+        name = "a_register_name_longer_than_sixteen_characters"
+        make_module([{"name": name, "mode": "rw"}])
+        assert caplog.text == ""
+
     def test_mode_enum_resolved(self):
         mod = make_module([{"name": "R0", "mode": "pulse"}])
         assert mod.registers[0].mode is RegisterMode.PULSE
