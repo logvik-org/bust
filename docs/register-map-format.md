@@ -203,7 +203,7 @@ Both appear in every output:
 | C header | `<MODULE>_REGMAP_VERSION` | `<MODULE>_REGMAP_HASH` |
 | C++ and Python headers | `REGMAP_VERSION` | `REGMAP_HASH` |
 | IPBus address table | `regmap_version=` in the `parameters` of the top node | `regmap_hash=` in the same `parameters` |
-| LaTeX documentation | Title page and page footer | Under the module description |
+| LaTeX documentation | Title page and page footer | Title page, under the version |
 
 ### The hash register
 
