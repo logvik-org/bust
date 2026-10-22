@@ -60,10 +60,21 @@ architecture tb of access_matrix_tb is
       latched       => (value => (others => '0'), we => '0')
     ),
     hw_only         => (shadow => (others => '0')),
-    irq_status      => (pending => (set => '0')),
-    flat_override   => (value => (others => '0'), we => '0'),
+    irq_status      =>
+    (
+      pending       => (set => '0')
+    ),
+    flat_override   =>
+    (
+      value         => (others => '0'),
+      we            => '0'
+    ),
     flat_status     => (others => '0'),
-    flat_flag       => (set => '0', clr => '0')
+    flat_flag       =>
+    (
+      set           => '0',
+      clr           => '0'
+    )
   );
 
   signal to_hw   : t_access_matrix_to_hw;

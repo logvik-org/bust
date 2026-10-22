@@ -535,7 +535,10 @@ package access_matrix_regfile_pkg is
       override       => (others => '0'),
       sticky         => '0'
     ),
-    hw_set_clear     => (clr_only => (value => '0', swacc => '0')),
+    hw_set_clear     =>
+    (
+      clr_only       => (value => '0', swacc => '0')
+    ),
     read_effects     =>
     (
       clear_on_read  => (others => '0'),
@@ -561,7 +564,10 @@ package access_matrix_regfile_pkg is
     enum_vector      => (mode => MODE_SLOW),
     enum_bit         => (power => PWR_OFF),
     enum_hw          => (supply => PWR_OFF),
-    enum_swacc       => (phase => (value => PH_IDLE, swacc => '0')),
+    enum_swacc       =>
+    (
+      phase          => (value => PH_IDLE, swacc => '0')
+    ),
     mixed_swacc      =>
     (
       clear_bits     => (value => (others => '0'), swacc => '0'),
@@ -589,9 +595,16 @@ package access_matrix_regfile_pkg is
       shadow         => (others => '0'),
       enable         => '0'
     ),
-    irq_status       => (pending => (value => '0', swacc => '0')),
+    irq_status       =>
+    (
+      pending        => (value => '0', swacc => '0')
+    ),
     flat_level       => (others => '0'),
-    flat_strobe      => (value => (others => '0'), swmod => '0'),
+    flat_strobe      =>
+    (
+      value          => (others => '0'),
+      swmod          => '0'
+    ),
     flat_override    => (others => '0'),
     flat_flag        => '0'
   );
@@ -726,10 +739,21 @@ package access_matrix_regfile_pkg is
       latched       => (value => (others => '0'), we => '0')
     ),
     hw_only         => (shadow => (others => '0')),
-    irq_status      => (pending => (set => '0')),
-    flat_override   => (value => (others => '0'), we => '0'),
+    irq_status      =>
+    (
+      pending       => (set => '0')
+    ),
+    flat_override   =>
+    (
+      value         => (others => '0'),
+      we            => '0'
+    ),
     flat_status     => (others => '0'),
-    flat_flag       => (set => '0', clr => '0')
+    flat_flag       =>
+    (
+      set           => '0',
+      clr           => '0'
+    )
   );
 
   -- True when check is false or the bits of addr from module_addr_width up equal base.

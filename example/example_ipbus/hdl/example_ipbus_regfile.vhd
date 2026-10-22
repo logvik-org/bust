@@ -220,19 +220,25 @@ begin
 
   end process p_read;
 
-  -- Hardware-side outputs.
-  to_hw.reg0         <= regs.reg0.reg0;
-  to_hw.reg1         <= regs.reg1.reg1;
-  to_hw.reg3         <= regs.reg3.reg3;
-  to_hw.reg5         <= regs.reg5.reg5;
-  to_hw.reg7.field0  <= regs.reg7.field0;
-  to_hw.reg7.field1  <= regs.reg7.field1;
-  to_hw.reg7.field2  <= regs.reg7.field2;
-  to_hw.reg7.field3  <= regs.reg7.field3;
-  to_hw.reg9         <= regs.reg9.reg9;
-  to_hw.reg10        <= regs.reg10.reg10;
-  to_hw.reg11.field0 <= regs.reg11.field0;
-  to_hw.reg11.field1 <= regs.reg11.field1;
+  -- Hardware-side outputs, one aggregate per register.
+  to_hw.reg0  <= regs.reg0.reg0;
+  to_hw.reg1  <= regs.reg1.reg1;
+  to_hw.reg3  <= regs.reg3.reg3;
+  to_hw.reg5  <= regs.reg5.reg5;
+  to_hw.reg7  <=
+  (
+    field0 => regs.reg7.field0,
+    field1 => regs.reg7.field1,
+    field2 => regs.reg7.field2,
+    field3 => regs.reg7.field3
+  );
+  to_hw.reg9  <= regs.reg9.reg9;
+  to_hw.reg10 <= regs.reg10.reg10;
+  to_hw.reg11 <=
+  (
+    field0 => regs.reg11.field0,
+    field1 => regs.reg11.field1
+  );
 
   lb_s2m.rdata <= rdata;
   lb_s2m.ack   <= wr_ack or rd_ack;

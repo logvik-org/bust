@@ -476,60 +476,96 @@ begin
 
   end process p_read;
 
-  -- Hardware-side outputs.
-  to_hw.plain.flag                   <= regs.plain.flag;
-  to_hw.plain.level                  <= regs.plain.level;
-  to_hw.command.opcode               <= regs.command.opcode;
-  to_hw.identity.id                  <= 8x"A5";
-  to_hw.identity.pwr_default         <= t_access_matrix_identity_pwr_default'(PWR_ON);
-  to_hw.identity.pwr_spare           <= t_access_matrix_identity_pwr_spare'(PWR_OFF);
-  to_hw.hw_modify.override           <= regs.hw_modify.override;
-  to_hw.hw_modify.sticky             <= regs.hw_modify.sticky;
-  to_hw.hw_set_clear.clr_only.value  <= regs.hw_set_clear.clr_only;
-  to_hw.hw_set_clear.clr_only.swacc  <= swacc_hw_set_clear_clr_only;
-  to_hw.read_effects.clear_on_read   <= regs.read_effects.clear_on_read;
-  to_hw.read_effects.set_on_read     <= regs.read_effects.set_on_read;
-  to_hw.write_effects.set_bits       <= regs.write_effects.set_bits;
-  to_hw.write_effects.clear_bits     <= regs.write_effects.clear_bits;
-  to_hw.write_effects.toggle_on_zero <= regs.write_effects.toggle_on_zero;
-  to_hw.write_effects.set_all        <= regs.write_effects.set_all;
-  to_hw.pulses.go                    <= regs.pulses.go;
-  to_hw.pulses.kick.value            <= regs.pulses.kick;
-  to_hw.pulses.kick.swmod            <= swmod_pulses_kick;
-  to_hw.strobes.modified.value       <= regs.strobes.modified;
-  to_hw.strobes.modified.swmod       <= swmod_strobes_modified;
-  to_hw.strobes.accessed.value       <= regs.strobes.accessed;
-  to_hw.strobes.accessed.swacc       <= swacc_strobes_accessed;
-  to_hw.enum_vector.mode             <= regs.enum_vector.mode;
-  to_hw.enum_bit.power               <= regs.enum_bit.power;
-  to_hw.enum_hw.supply               <= regs.enum_hw.supply;
-  to_hw.enum_swacc.phase.value       <= regs.enum_swacc.phase;
-  to_hw.enum_swacc.phase.swacc       <= swacc_enum_swacc_phase;
-  to_hw.mixed_swacc.clear_bits.value <= regs.mixed_swacc.clear_bits;
-  to_hw.mixed_swacc.clear_bits.swacc <= swacc_mixed_swacc_clear_bits;
-  to_hw.mixed_swacc.toggle_bits      <= regs.mixed_swacc.toggle_bits;
-  to_hw.mixed_swacc.fixed            <= 4x"9";
-  to_hw.mixed_swacc.arg              <= regs.mixed_swacc.arg;
-  to_hw.mixed_swacc.go               <= regs.mixed_swacc.go;
-  to_hw.mixed_swacc.power            <= regs.mixed_swacc.power;
-  to_hw.mixed_swacc.power_fixed      <= t_access_matrix_mixed_swacc_power_fixed'(PWR_ON);
-  to_hw.mixed_history.toggle.value   <= regs.mixed_history.toggle;
-  to_hw.mixed_history.toggle.swacc   <= swacc_mixed_history_toggle;
-  to_hw.mixed_history.set_on_zero    <= regs.mixed_history.set_on_zero;
-  to_hw.mixed_history.clear_on_zero  <= regs.mixed_history.clear_on_zero;
-  to_hw.mixed_history.toggle_on_zero <= regs.mixed_history.toggle_on_zero;
-  to_hw.hw_status_swacc.level.value  <= regs.hw_status_swacc.level;
-  to_hw.hw_status_swacc.level.swacc  <= swacc_hw_status_swacc_level;
-  to_hw.hw_status_swacc.latched      <= regs.hw_status_swacc.latched;
-  to_hw.hw_only.shadow               <= regs.hw_only.shadow;
-  to_hw.hw_only.enable               <= regs.hw_only.enable;
-  to_hw.irq_status.pending.value     <= regs.irq_status.pending;
-  to_hw.irq_status.pending.swacc     <= swacc_irq_status_pending;
-  to_hw.flat_level                   <= regs.flat_level.flat_level;
-  to_hw.flat_strobe.value            <= regs.flat_strobe.flat_strobe;
-  to_hw.flat_strobe.swmod            <= swmod_flat_strobe_flat_strobe;
-  to_hw.flat_override                <= regs.flat_override.flat_override;
-  to_hw.flat_flag                    <= regs.flat_flag.flat_flag;
+  -- Hardware-side outputs, one aggregate per register.
+  to_hw.plain           <=
+  (
+    flag  => regs.plain.flag,
+    level => regs.plain.level
+  );
+  to_hw.command         <= (opcode => regs.command.opcode);
+  to_hw.identity        <=
+  (
+    id          => 8x"A5",
+    pwr_default => t_access_matrix_identity_pwr_default'(PWR_ON),
+    pwr_spare   => t_access_matrix_identity_pwr_spare'(PWR_OFF)
+  );
+  to_hw.hw_modify       <=
+  (
+    override => regs.hw_modify.override,
+    sticky   => regs.hw_modify.sticky
+  );
+  to_hw.hw_set_clear    <=
+  (
+    clr_only => (value => regs.hw_set_clear.clr_only, swacc => swacc_hw_set_clear_clr_only)
+  );
+  to_hw.read_effects    <=
+  (
+    clear_on_read => regs.read_effects.clear_on_read,
+    set_on_read   => regs.read_effects.set_on_read
+  );
+  to_hw.write_effects   <=
+  (
+    set_bits       => regs.write_effects.set_bits,
+    clear_bits     => regs.write_effects.clear_bits,
+    toggle_on_zero => regs.write_effects.toggle_on_zero,
+    set_all        => regs.write_effects.set_all
+  );
+  to_hw.pulses          <=
+  (
+    go   => regs.pulses.go,
+    kick => (value => regs.pulses.kick, swmod => swmod_pulses_kick)
+  );
+  to_hw.strobes         <=
+  (
+    modified => (value => regs.strobes.modified, swmod => swmod_strobes_modified),
+    accessed => (value => regs.strobes.accessed, swacc => swacc_strobes_accessed)
+  );
+  to_hw.enum_vector     <= (mode => regs.enum_vector.mode);
+  to_hw.enum_bit        <= (power => regs.enum_bit.power);
+  to_hw.enum_hw         <= (supply => regs.enum_hw.supply);
+  to_hw.enum_swacc      <=
+  (
+    phase => (value => regs.enum_swacc.phase, swacc => swacc_enum_swacc_phase)
+  );
+  to_hw.mixed_swacc     <=
+  (
+    clear_bits  => (value => regs.mixed_swacc.clear_bits, swacc => swacc_mixed_swacc_clear_bits),
+    toggle_bits => regs.mixed_swacc.toggle_bits,
+    fixed       => 4x"9",
+    arg         => regs.mixed_swacc.arg,
+    go          => regs.mixed_swacc.go,
+    power       => regs.mixed_swacc.power,
+    power_fixed => t_access_matrix_mixed_swacc_power_fixed'(PWR_ON)
+  );
+  to_hw.mixed_history   <=
+  (
+    toggle         => (value => regs.mixed_history.toggle, swacc => swacc_mixed_history_toggle),
+    set_on_zero    => regs.mixed_history.set_on_zero,
+    clear_on_zero  => regs.mixed_history.clear_on_zero,
+    toggle_on_zero => regs.mixed_history.toggle_on_zero
+  );
+  to_hw.hw_status_swacc <=
+  (
+    level   => (value => regs.hw_status_swacc.level, swacc => swacc_hw_status_swacc_level),
+    latched => regs.hw_status_swacc.latched
+  );
+  to_hw.hw_only         <=
+  (
+    shadow => regs.hw_only.shadow,
+    enable => regs.hw_only.enable
+  );
+  to_hw.irq_status      <=
+  (
+    pending => (value => regs.irq_status.pending, swacc => swacc_irq_status_pending)
+  );
+  to_hw.flat_level      <= regs.flat_level.flat_level;
+  to_hw.flat_strobe     <=
+  (
+    value => regs.flat_strobe.flat_strobe,
+    swmod => swmod_flat_strobe_flat_strobe
+  );
+  to_hw.flat_override   <= regs.flat_override.flat_override;
+  to_hw.flat_flag       <= regs.flat_flag.flat_flag;
 
   lb_s2m.rdata <= rdata;
   lb_s2m.ack   <= wr_ack or rd_ack;

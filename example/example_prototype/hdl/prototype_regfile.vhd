@@ -281,28 +281,47 @@ begin
 
   end process p_read;
 
-  -- Hardware-side outputs.
-  to_hw.reg0.field0       <= regs.reg0.field0;
-  to_hw.reg0.field1       <= regs.reg0.field1;
-  to_hw.reg2.field0       <= regs.reg2.field0;
-  to_hw.reg4.field0       <= regs.reg4.field0;
-  to_hw.reg4.field1       <= regs.reg4.field1;
-  to_hw.reg5.field0       <= regs.reg5.field0;
-  to_hw.reg5.field1       <= regs.reg5.field1;
-  to_hw.reg6.field0       <= regs.reg6.field0;
-  to_hw.reg6.field1       <= regs.reg6.field1;
-  to_hw.reg6.field2       <= regs.reg6.field2;
-  to_hw.reg7.field0       <= regs.reg7.field0;
-  to_hw.reg7.field1       <= regs.reg7.field1;
-  to_hw.reg7.field2       <= regs.reg7.field2;
-  to_hw.reg8.field0       <= regs.reg8.field0;
-  to_hw.reg8.field1       <= regs.reg8.field1;
-  to_hw.reg9.field0.value <= regs.reg9.field0;
-  to_hw.reg9.field0.swmod <= swmod_reg9_field0;
-  to_hw.reg9.field1.value <= regs.reg9.field1;
-  to_hw.reg9.field1.swacc <= swacc_reg9_field1;
-  to_hw.reg10.field0      <= regs.reg10.field0;
-  to_hw.reg11.field0      <= regs.reg11.field0;
+  -- Hardware-side outputs, one aggregate per register.
+  to_hw.reg0  <=
+  (
+    field0 => regs.reg0.field0,
+    field1 => regs.reg0.field1
+  );
+  to_hw.reg2  <= (field0 => regs.reg2.field0);
+  to_hw.reg4  <=
+  (
+    field0 => regs.reg4.field0,
+    field1 => regs.reg4.field1
+  );
+  to_hw.reg5  <=
+  (
+    field0 => regs.reg5.field0,
+    field1 => regs.reg5.field1
+  );
+  to_hw.reg6  <=
+  (
+    field0 => regs.reg6.field0,
+    field1 => regs.reg6.field1,
+    field2 => regs.reg6.field2
+  );
+  to_hw.reg7  <=
+  (
+    field0 => regs.reg7.field0,
+    field1 => regs.reg7.field1,
+    field2 => regs.reg7.field2
+  );
+  to_hw.reg8  <=
+  (
+    field0 => regs.reg8.field0,
+    field1 => regs.reg8.field1
+  );
+  to_hw.reg9  <=
+  (
+    field0 => (value => regs.reg9.field0, swmod => swmod_reg9_field0),
+    field1 => (value => regs.reg9.field1, swacc => swacc_reg9_field1)
+  );
+  to_hw.reg10 <= (field0 => regs.reg10.field0);
+  to_hw.reg11 <= (field0 => regs.reg11.field0);
 
   lb_s2m.rdata <= rdata;
   lb_s2m.ack   <= wr_ack or rd_ack;
