@@ -52,13 +52,13 @@ of the prototype:
 type t_prototype_reg0_to_hw is record
   field0 : std_logic;
   field1 : std_logic_vector(1 downto 0);
-end record;
+end record t_prototype_reg0_to_hw;
 
 type t_prototype_reg1_from_hw is record
   field0 : t_prototype_reg1_field0_in;
   field1 : std_logic;
   field2 : t_prototype_reg1_field2_in;
-end record;
+end record t_prototype_reg1_from_hw;
 ```
 
 `reg1.field1` is a plain input. `field0` and `field2` have a write enable, so
@@ -92,7 +92,9 @@ it as a constant at its reset value. Here is the `identity` register of
 where `id` resets to `0xA5`:
 
 ```vhdl
-to_hw.identity <= (id => 8X"A5", pwr_default => t_identity_pwr_default'(PWR_ON), pwr_spare => t_identity_pwr_spare'(PWR_OFF));
+to_hw.identity.id          <= 8x"A5";
+to_hw.identity.pwr_default <= t_access_matrix_identity_pwr_default'(PWR_ON);
+to_hw.identity.pwr_spare   <= t_access_matrix_identity_pwr_spare'(PWR_OFF);
 ```
 
 ## Software side effects
@@ -111,8 +113,8 @@ The field needs software read access, `sw` `rw` or `ro`. The prototype's
 `reg5` has one field of each:
 
 ```vhdl
--- reg5 onread effects, applied when the software read is serviced.
-if rd_service and reg_addr_match(reg_offset, C_PROTOTYPE_REG5_OFFSET) then
+-- reg5 onread effects.
+if (rd_service and reg_addr_match(reg_offset, C_PROTOTYPE_REG5_OFFSET)) then
   regs.reg5.field0 <= (others => '0');
   regs.reg5.field1 <= (others => '1');
 end if;
@@ -138,7 +140,7 @@ The field needs software write access, `sw` `rw` or `wo`. The prototype's
 `reg6`:
 
 ```vhdl
-if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG6_OFFSET) then
+if (sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG6_OFFSET)) then
   regs.reg6.field0 <= regs.reg6.field0 or lb_m2s.wdata(3 downto 0);
   regs.reg6.field1 <= regs.reg6.field1 and not lb_m2s.wdata(7 downto 4);
   regs.reg6.field2 <= regs.reg6.field2 xor lb_m2s.wdata(11 downto 8);
@@ -158,7 +160,7 @@ cycle. Use it for commands such as start or flush. The prototype's `reg10`:
 
 ```vhdl
 regs.reg10.field0 <= (others => '0');
-if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG10_OFFSET) then
+if (sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG10_OFFSET)) then
   regs.reg10.field0 <= lb_m2s.wdata(3 downto 0);
 end if;
 ```
@@ -192,13 +194,13 @@ prototype, `reg1.field0` (`hw w`, `we`) and `reg4.field1` (`hw r`, `hwset`,
 ```vhdl
 type t_prototype_reg1_field0_in is record
   value : std_logic_vector(3 downto 0);
-  we : std_logic;
-end record;
+  we    : std_logic;
+end record t_prototype_reg1_field0_in;
 
 type t_prototype_reg4_field1_in is record
   set : std_logic;
   clr : std_logic;
-end record;
+end record t_prototype_reg4_field1_in;
 ```
 
 Your logic drives `from_hw.reg1.field0.value` and `from_hw.reg1.field0.we`.
@@ -210,7 +212,7 @@ value in `value`. The prototype's `reg9.field0` has `swmod`:
 type t_prototype_reg9_field0_out is record
   value : std_logic_vector(3 downto 0);
   swmod : std_logic;
-end record;
+end record t_prototype_reg9_field0_out;
 ```
 
 Your logic reads `to_hw.reg9.field0.value` and `to_hw.reg9.field0.swmod`.
@@ -293,11 +295,11 @@ The order comes out as an `if`/`elsif` chain in the register file. Here it is
 for the prototype's `reg4.field1`, which has `hwset` and `hwclr`:
 
 ```vhdl
-if from_hw.reg4.field1.clr = '1' then
+if (from_hw.reg4.field1.clr = '1') then
   regs.reg4.field1 <= '0';
-elsif from_hw.reg4.field1.set = '1' then
+elsif (from_hw.reg4.field1.set = '1') then
   regs.reg4.field1 <= '1';
-elsif sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG4_OFFSET) then
+elsif (sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG4_OFFSET)) then
   regs.reg4.field1 <= lb_m2s.wdata(8);
 end if;
 ```
@@ -368,24 +370,52 @@ which names the values 0 (`MODE_SLOW`) and 3 (`MODE_FAST`):
 ```vhdl
 type t_access_matrix_enum_vector_mode is (MODE_SLOW, MODE_FAST);
 
-function to_slv(v : t_access_matrix_enum_vector_mode) return std_logic_vector is
-  variable slv : std_logic_vector(1 downto 0);
-begin
-  case v is
-    when MODE_SLOW => slv := "00";
-    when MODE_FAST => slv := "11";
-  end case;
-  return slv;
-end function;
+function to_slv (
+  v : t_access_matrix_enum_vector_mode
+) return std_logic_vector is
 
-function to_access_matrix_enum_vector_mode(s : std_logic_vector(1 downto 0)) return t_access_matrix_enum_vector_mode is
+  variable slv : std_logic_vector(1 downto 0);
+
 begin
-  case s is
-    when "00" => return MODE_SLOW;
-    when "11" => return MODE_FAST;
-    when others => return MODE_SLOW;
+
+  case v is
+
+    when MODE_SLOW =>
+
+      slv := "00";
+
+    when MODE_FAST =>
+
+      slv := "11";
+
   end case;
-end function;
+
+  return slv;
+
+end function to_slv;
+
+function to_access_matrix_enum_vector_mode (
+  s : std_logic_vector(1 downto 0)
+) return t_access_matrix_enum_vector_mode is
+begin
+
+  case s is
+
+    when "00" =>
+
+      return MODE_SLOW;
+
+    when "11" =>
+
+      return MODE_FAST;
+
+    when others =>
+
+      return MODE_SLOW;
+
+  end case;
+
+end function to_access_matrix_enum_vector_mode;
 ```
 
 - The encoding is the `value` from the JSON file, not the position of the

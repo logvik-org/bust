@@ -38,6 +38,19 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 | `t_<reg>_<field>`, the type of an enumerated field | `t_<module>_<reg>_<field>` |
 | `to_<reg>_<field>`, its conversion from bits | `to_<module>_<reg>_<field>` |
 
+- The generated VHDL follows the default style of vsg, the VHDL Style Guide,
+  with constants and generics in upper case. `vsg.yaml` holds the rules, and
+  the tests check the generated examples against them (#62). The layout of
+  every generated file changes, and the behaviour does not. Among the changes:
+  - Conditions are in parentheses, and records, functions and procedures end
+    with their name.
+  - In a reset constant, a register with several fields has one field per line.
+  - A hexadecimal literal has a lower-case base, as in `8x"A5"`.
+  - An entity instantiation names the architecture, as in
+    `entity work.timer_regfile(rtl)`.
+  - The register file drives each member of `to_hw` in its own assignment.
+  - The testbench sets `from_hw` from a constant, `C_FROM_HW_IDLE`.
+
 ### Fixed
 - The register file compares `reset` with the active level directly. The
   signal `rst` added a delta cycle, so a reset pulse that ended on the first
@@ -47,6 +60,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   which made `pdflatex` fail.
 - The register file declares `rd_service` and prints the precedence comment
   only when a field uses them.
+- The starter top level of a module without `to_hw` or without `from_hw` no
+  longer has two ports, or the last port and the closing parenthesis, on one
+  line.
 
 ## [1.0.0a3] - 2026-10-21
 

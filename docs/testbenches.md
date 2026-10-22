@@ -65,9 +65,9 @@ bus_check(f_addr(C_PROTOTYPE_REG5_OFFSET), 32x"000000F0", "reg5 second read refl
 log(ID_LOG_HDR, "reg4: hardware we overrides the stored value", C_SCOPE);
 wait until falling_edge(clk);
 from_hw.reg4.field0.value <= 4x"A";
-from_hw.reg4.field0.we <= '1';
+from_hw.reg4.field0.we    <= '1';
 wait until falling_edge(clk);
-from_hw.reg4.field0.we <= '0';
+from_hw.reg4.field0.we    <= '0';
 bus_check(f_addr(C_PROTOTYPE_REG4_OFFSET), 32x"0000010A", "reg4 reflects the hardware we override");
 
 log(ID_LOG_HDR, "reg4: hwclr clears fields (and beats hwset)", C_SCOPE);

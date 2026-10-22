@@ -77,6 +77,10 @@ The generated testbench drives `<module>_<bus>_endpoint`.
   `we`/`wel` > software write or `onread` effect > hardware write without
   `we`/`wel`.
 - Output is VHDL-2008 and must simulate with nvc.
+- Output follows the vsg default style with the settings in `vsg.yaml`, and
+  `tests/test_vsg.py` checks the examples with the vsg version pinned in
+  `pyproject.toml`. Templates line up columns with the `align` filter and
+  break long calls with `wrap` (`bust/jinja_utils/filters.py`).
 - A new single-beat bus needs a `BUS_CONFIG` entry, endpoint and testbench
   templates, factory methods, goldens and a sim target.
 
