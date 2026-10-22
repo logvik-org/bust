@@ -113,7 +113,7 @@ def _save_addresses(json_file: str, module: Module, force: bool) -> None:
             "path": join_pointer("module", "register", index, "address"),
             "value": hex(register.address),
         }
-        for index, register in enumerate(module.registers)
+        for index, register in enumerate(module.user_registers)
         if "address" not in registers[index]
         or parse_number(registers[index]["address"], "address") != register.address
     ]

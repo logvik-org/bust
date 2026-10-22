@@ -176,6 +176,7 @@ the timing of each protocol.
 | `version` | string | `""` | The version of the register map. Every generated file carries it, see [Version and hash](#version-and-hash). Printable ASCII characters other than `"`, `\`, `;` and `=`. |
 | `description` | string | `""` | Shown in the LaTeX documentation. |
 | `byte_addressable` | boolean | from the bus | `true` if an address counts bytes, `false` if it counts data words. See [Byte and word addresses](#byte-and-word-addresses). |
+| `hash_register` | boolean or number | `false` | Adds a read-only register that holds the hash. `true` puts it at the lowest free register offset, a number at that register offset. See [Version and hash](#version-and-hash). |
 | `git_hash` | string | none | Accepted and ignored. |
 
 ### Version and hash
@@ -204,10 +205,37 @@ Both appear in every output:
 | IPBus address table | `regmap_version=` in the `parameters` of the top node | `regmap_hash=` in the same `parameters` |
 | LaTeX documentation | Title page and page footer | Under the module description |
 
-bust does not add a register for them. To let software check at run time
-which register map the hardware holds, add a register with `sw` `ro` and `hw`
-`w`, drive its `from_hw` value from `C_<MODULE>_REGMAP_HASH` in your top
-level, and compare what software reads with the constant in its header.
+### The hash register
+
+To let software check at run time which register map the hardware holds, set
+`hash_register`. bust then adds a register named `regmap_hash` with `sw` `ro`
+and `hw` `na` whose value is the hash. It is a constant, so it costs no
+flip-flops. Software reads it and compares it with `REGMAP_HASH` in its
+header. A difference means the software and the hardware come from different
+register maps.
+
+```json
+"module": {
+    "name": "uart",
+    "version": "1.2",
+    "hash_register": "0x0",
+    "register": []
+}
+```
+
+The register appears in the headers, the IPBus address table, the
+documentation and the generated testbench like any other register, and it
+comes after the registers of the JSON file. The hash covers the register,
+apart from its value.
+
+Give it a register offset, as in `"hash_register": "0x0"`, so that it stays in
+one place while the register map changes. bust takes that register offset
+before it places the other registers. With `true`, it gets the lowest free
+register offset after the other registers are placed, so it moves when you add
+a register without an `address`.
+
+`regmap_hash` is then a reserved name, and `hash_register` needs a
+`data_width` of at least 32 bits.
 
 ## Registers
 

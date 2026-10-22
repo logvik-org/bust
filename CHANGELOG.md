@@ -17,6 +17,11 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   IPBus address table has both in the `parameters` of its top node, and the
   documentation shows the hash. The hash changes exactly when something that
   hardware or software depends on changes, and descriptions do not count (#99).
+- The module key `hash_register` adds the read-only register `regmap_hash`,
+  whose value is the register map hash, so that software can check at run time
+  which register map the hardware holds. It takes `true` for the lowest free
+  register offset or a register offset of its own. The generated testbench
+  reads it back. The AXI4-Lite example uses it (#99).
 
 ### Changed
 - `version` must be a string of printable ASCII characters other than `"`,
