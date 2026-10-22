@@ -206,9 +206,11 @@ class EditSession:
         keys = ["name", "description", "address", "type"]
         if register.type == RegisterType.VECTOR:
             keys.append("width")
-        if register.type != RegisterType.FIELDS:
+        if register.type != RegisterType.FIELDS and not register.type.is_constant:
             keys.append("reset")
-        keys += INHERITABLE_ACCESS
+        # bust sets the access and the value of a hash or version register.
+        if not register.type.is_constant:
+            keys += INHERITABLE_ACCESS
         rows = []
         for key in keys:
             if key in INHERITABLE_ACCESS:
@@ -313,7 +315,8 @@ class EditSession:
         """The operations that change the type of register `index` to `new`.
 
         A `fields` register needs `first_field`. The keys the new type does not
-        use, such as the width of a former vector, are removed.
+        use, such as the width of a former vector or the access keys of a hash
+        register, are removed.
         """
         data = self.data["module"]["register"][index]
         old = self.registers[index].type.value
@@ -326,9 +329,14 @@ class EditSession:
         unused = ["reset"] if new == RegisterType.FIELDS.value else ["fields"]
         if new != RegisterType.VECTOR.value:
             unused.append("width")
+        is_constant = RegisterType(new).is_constant
+        if is_constant:
+            unused += ["reset", "mode", *INHERITABLE_ACCESS]
         operations += [
             {"op": "remove", "path": f"{path}/{key}"} for key in unused if key in data
         ]
+        if is_constant:
+            return operations
         if new == RegisterType.FIELDS.value:
             operations.append(
                 {"op": "add", "path": path + "/fields", "value": [first_field]}

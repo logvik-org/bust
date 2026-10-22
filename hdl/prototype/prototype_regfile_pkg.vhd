@@ -68,6 +68,10 @@ package prototype_regfile_pkg is
   -- holds the registers, and the default of the G_MODULE_ADDR_WIDTH generic.
   constant C_PROTOTYPE_MODULE_ADDR_WIDTH : natural := 6;
 
+  -- The version of the register map and the hash of its content.
+  constant C_PROTOTYPE_REGMAP_VERSION : string                        := "1.0";
+  constant C_PROTOTYPE_REGMAP_HASH    : std_logic_vector(31 downto 0) := x"593FA68E";
+
   -- Enumerated field type for reg11.field0: hardware and software see named
   -- states instead of raw bits, so assignments are compile-time type-checked.
   -- The literal positions are the field's encoded values (0..3).

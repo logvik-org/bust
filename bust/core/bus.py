@@ -11,7 +11,7 @@ reset type, and component library references.
 from typing import Any, Dict
 
 from bust.exceptions import FormatError, InvalidBusType
-from bust.validation.config_validator import parse_number, warn_unknown_keys
+from bust.validation.config_validator import parse_number
 
 BUS_KEYS = ("type", "addr_width", "data_width")
 
@@ -105,7 +105,6 @@ class Bus:
         """
         if bus["type"] not in Bus.BUS_CONFIG:
             raise InvalidBusType(bus["type"])
-        warn_unknown_keys(bus, BUS_KEYS, "bus")
         self.bus_type = bus["type"]
         config = Bus.BUS_CONFIG[self.bus_type]
 

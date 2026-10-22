@@ -24,7 +24,6 @@ from bust.validation.vhdl_validator import is_valid_VHDL
 from bust.validation.config_validator import (
     ConfigWrapper,
     parse_number,
-    warn_unknown_keys,
 )
 
 
@@ -146,9 +145,6 @@ class Field:
         # the register has validated already.
         if self.name != parent_register_name:
             is_valid_VHDL(self.name)
-        warn_unknown_keys(
-            field, FIELD_KEYS, f"field {self.name} of register {parent_register_name}"
-        )
 
         type_name = self._config.require("type")
         self.legacy_type_name = (
@@ -324,9 +320,6 @@ class Field:
         for entry in enums:
             name = entry["name"]
             is_valid_VHDL(name)
-            warn_unknown_keys(
-                entry, ("name", "value"), f"enum value {name} of field {self.name}"
-            )
             if name in seen_names:
                 raise InvalidFieldFormat(
                     f"Duplicate enum name '{name}' in field {self.name} "

@@ -23,6 +23,10 @@ package example_ipbus_regfile_pkg is
 
   constant C_EXAMPLE_IPBUS_MODULE_ADDR_WIDTH : natural := 6;
 
+  -- The version of the register map and the hash of its content.
+  constant C_EXAMPLE_IPBUS_REGMAP_VERSION : string                        := "1.0";
+  constant C_EXAMPLE_IPBUS_REGMAP_HASH    : std_logic_vector(31 downto 0) := x"FCD085B6";
+
   type t_reg0_regs is record
     reg0 : std_logic;
   end record t_reg0_regs;

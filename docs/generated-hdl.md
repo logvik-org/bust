@@ -233,6 +233,7 @@ use work.timer_regfile_pkg.all;
 |------|------------|
 | `C_<MODULE>_<REG>_OFFSET` | The register offset of each register, `addr_width` bits wide. |
 | `C_<MODULE>_MODULE_ADDR_WIDTH` | The number of low address bits that select a register, and the default of `G_MODULE_ADDR_WIDTH`. |
+| `C_<MODULE>_REGMAP_VERSION`, `C_<MODULE>_REGMAP_HASH` | The `version` of the module as a string and the 32-bit hash of the register map. See [Version and hash](register-map-format.md#version-and-hash). |
 | `t_<module>_<reg>_<field>` | The enumeration type of an enumerated field. |
 | `to_slv`, `to_<module>_<reg>_<field>` | Conversions between an enumeration type and its bits. |
 | `t_<module>_to_hw` | Everything the hardware reads, one member per register. |
@@ -248,7 +249,7 @@ use work.timer_regfile_pkg.all;
 Module, register and field names keep the case you gave them in the JSON. The
 constants are in upper case.
 
-The timer's register offsets and its enumeration type:
+The timer's register offsets, its version and hash, and its enumeration type:
 
 ```vhdl
   constant C_TIMER_CTRL_OFFSET   : std_logic_vector(31 downto 0) := 32x"00";
@@ -257,6 +258,10 @@ The timer's register offsets and its enumeration type:
   constant C_TIMER_IRQ_OFFSET    : std_logic_vector(31 downto 0) := 32x"0C";
 
   constant C_TIMER_MODULE_ADDR_WIDTH : natural := 4;
+
+  -- The version of the register map and the hash of its content.
+  constant C_TIMER_REGMAP_VERSION : string                        := "";
+  constant C_TIMER_REGMAP_HASH    : std_logic_vector(31 downto 0) := x"9FACFD14";
 
   type t_timer_ctrl_mode is (ONESHOT, PERIODIC);
 
