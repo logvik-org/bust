@@ -206,6 +206,9 @@ with a warning, so a 0.14 command line in a Makefile still runs, but remove them
 when you can. `-F` is kept as another name for `-f`.
 [Command line](command-line.md) lists the options.
 
+The editor behind `-c` and `-e` writes the bust 1.0 format, and `-e` offers to
+convert a 0.14 file. See [Interactive editor](command-line.md#interactive-editor).
+
 ## Python imports
 
 If you imported bust as a Python library, the 0.14 modules such as

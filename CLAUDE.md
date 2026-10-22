@@ -45,9 +45,12 @@ cd sim && make build && make sim-axi            # nvc + UVVM in Docker
 - `bust/templates/`: the Jinja2 templates. All emitted text lives here, so most
   output changes are template changes. `vhdl/testbench/localbus_tb/` holds the
   test body shared by every bus.
-- `bust/validation/`, `bust/utils/`, `bust/jinja_utils/`, and `bust/editor.py`
-  (the curses editor behind `-c` and `-e`). The editor still writes only the
-  0.14 `mode` schema.
+- `bust/editing/`: `JsonSource` edits the text of a JSON or JSON5 file one
+  value at a time, and `RegisterMapDocument` applies JSON Patch operations
+  that it checks through `Bus` and `Module`. `bust/schema.py` is the JSON
+  Schema of the register map. `bust/editor.py`, the prompt-based editor behind
+  `-c` and `-e`, works only through these.
+- `bust/validation/`, `bust/utils/` and `bust/jinja_utils/`.
 - Each JSON section has a set of the keys bust reads (`REGISTER_KEYS`,
   `FIELD_KEYS`, `MODULE_KEYS` in `bust/core/`, and the key tuple in `Bus`).
   bust warns about any other key, so a new key goes into its set. bust no
