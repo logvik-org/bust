@@ -1,5 +1,7 @@
 {# Shared local-bus testbench body. Bus-neutral: drives the register-map through
    bus_write/bus_check(f_addr(offset), ...), defined per bus shell. #}
+{% filter wrap %}
+{% filter align("<=|:=") %}
 {% for reg in module.registers if reg.is_simple_readback %}
 
     log(ID_LOG_HDR, "{{ reg.name }}: software read-write round-trip", C_SCOPE);
@@ -165,3 +167,5 @@
     bus_check(f_addr({{ alias.offset_constant }}), {{ alias.selftest_value_vhdl }}, "{{ alias.name }} unchanged by the unmapped writes");
 {% endif %}
 {% endif %}
+{% endfilter %}
+{% endfilter %}

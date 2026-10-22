@@ -472,13 +472,13 @@ class Field:
         r"""Generate VHDL literal for the field's reset value.
 
         Returns:
-            VHDL literal as string, e.g., "'0'" for BIT, "4X\"F\"" for VECTOR.
+            VHDL literal as string, e.g., "'0'" for BIT, "4x\"F\"" for VECTOR.
         """
         if self.type == FieldType.VECTOR:
             if self.reset == "0x0":
                 val = "(others => '0')"
             else:
-                val = str(self.width) + 'X"'
+                val = str(self.width) + 'x"'
                 val += format(int(self.reset, 16), "X") + '"'
 
         elif self.type == FieldType.BIT:

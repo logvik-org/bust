@@ -177,11 +177,11 @@ class _Shapes:
         }
         self.records = {
             name: dict(
-                line.strip().rstrip(";").split(" : ")
+                re.split(r" +: ", line.strip().rstrip(";"), maxsplit=1)
                 for line in body.strip().splitlines()
             )
             for name, body in re.findall(
-                r"type (\w+) is record\n(.*?)end record;", pkg, re.S
+                r"type (\w+) is record\n(.*?)end record \1;", pkg, re.S
             )
         }
         self.enums = {
@@ -189,7 +189,7 @@ class _Shapes:
             for name, lits in re.findall(r"type (\w+) is \(([^)]*)\);", pkg)
         }
         self.decoders = dict(
-            re.findall(r"function (to_\w+)\(s : [^;]*?\) return (\w+);", pkg)
+            re.findall(r"function (to_\w+) \(\s*s : [^;]*?\s*\) return (\w+);", pkg)
         )
 
     def resolve(self, path: str) -> str:

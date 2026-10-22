@@ -1,193 +1,203 @@
 -- {{ generated_by() }}
 -- A starting point. Add your own logic.
 -- To replace this file with a fresh copy, run bust with --replace-top.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-
 {% if bus.bus_type == 'ipbus' %}
+
 library ipbus;
 use ipbus.ipbus.all;
-
 {% endif %}
+
 use work.{{ module.name }}_regfile_pkg.all;
 
 entity {{ module.name }} is
   generic (
+{% filter align(":", ":=") %}
     G_BASE_ADDRESS       : unsigned({{ module.addr_width - 1 }} downto 0) := {{ module.addr_width }}x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
     G_MODULE_ADDR_WIDTH  : natural := C_{{ module.name | upper }}_MODULE_ADDR_WIDTH;
     G_UNMAPPED_READ_DATA : std_logic_vector({{ module.data_width - 1 }} downto 0) := (others => '0');
     G_ERR_ON_BAD_ACCESS  : boolean := false
+{% endfilter %}
   );
   port (
+{% filter align(":") %}
 {% if bus.bus_type == 'axi' %}
-    clk      : in  std_logic;
-    areset_n : in  std_logic;
+    clk : in    std_logic;
+    areset_n : in    std_logic;
 
-    awaddr   : in  std_logic_vector({{ module.addr_width - 1 }} downto 0);
-    awvalid  : in  std_logic;
-    awready  : out std_logic;
-    wdata    : in  std_logic_vector({{ module.data_width - 1 }} downto 0);
-    wvalid   : in  std_logic;
-    wready   : out std_logic;
-    bresp    : out std_logic_vector(1 downto 0);
-    bvalid   : out std_logic;
-    bready   : in  std_logic;
-    araddr   : in  std_logic_vector({{ module.addr_width - 1 }} downto 0);
-    arvalid  : in  std_logic;
-    arready  : out std_logic;
-    rdata    : out std_logic_vector({{ module.data_width - 1 }} downto 0);
-    rresp    : out std_logic_vector(1 downto 0);
-    rvalid   : out std_logic;
-    rready   : in  std_logic{% if module.to_hw_registers or module.from_hw_registers %};{% endif %}
+    awaddr : in    std_logic_vector({{ module.addr_width - 1 }} downto 0);
+    awvalid : in    std_logic;
+    awready : out   std_logic;
+    wdata : in    std_logic_vector({{ module.data_width - 1 }} downto 0);
+    wvalid : in    std_logic;
+    wready : out   std_logic;
+    bresp : out   std_logic_vector(1 downto 0);
+    bvalid : out   std_logic;
+    bready : in    std_logic;
+    araddr : in    std_logic_vector({{ module.addr_width - 1 }} downto 0);
+    arvalid : in    std_logic;
+    arready : out   std_logic;
+    rdata : out   std_logic_vector({{ module.data_width - 1 }} downto 0);
+    rresp : out   std_logic_vector(1 downto 0);
+    rvalid : out   std_logic;
+    rready : in    std_logic{{ ";" if module.to_hw_registers or module.from_hw_registers else "" }}
 {% elif bus.bus_type == 'ipbus' %}
-    clk     : in  std_logic;
-    reset   : in  std_logic;
-    ipb_in  : in  ipb_wbus;
-    ipb_out : out ipb_rbus{% if module.to_hw_registers or module.from_hw_registers %};{% endif %}
+    clk : in    std_logic;
+    reset : in    std_logic;
+    ipb_in : in    ipb_wbus;
+    ipb_out : out   ipb_rbus{{ ";" if module.to_hw_registers or module.from_hw_registers else "" }}
 {% elif bus.bus_type == 'sbi' %}
-    clk     : in  std_logic;
-    reset   : in  std_logic;
+    clk : in    std_logic;
+    reset : in    std_logic;
 
-    cs      : in  std_logic;
-    addr    : in  std_logic_vector({{ module.addr_width - 1 }} downto 0);
-    rena    : in  std_logic;
-    wena    : in  std_logic;
-    wdata   : in  std_logic_vector({{ module.data_width - 1 }} downto 0);
-    ready   : out std_logic;
-    rdata   : out std_logic_vector({{ module.data_width - 1 }} downto 0){% if module.to_hw_registers or module.from_hw_registers %};{% endif %}
+    cs : in    std_logic;
+    addr : in    std_logic_vector({{ module.addr_width - 1 }} downto 0);
+    rena : in    std_logic;
+    wena : in    std_logic;
+    wdata : in    std_logic_vector({{ module.data_width - 1 }} downto 0);
+    ready : out   std_logic;
+    rdata : out   std_logic_vector({{ module.data_width - 1 }} downto 0){{ ";" if module.to_hw_registers or module.from_hw_registers else "" }}
 {% elif bus.bus_type == 'avalon' %}
-    clk         : in  std_logic;
-    reset       : in  std_logic;
+    clk : in    std_logic;
+    reset : in    std_logic;
 
-    chipselect  : in  std_logic;
-    address     : in  std_logic_vector({{ module.addr_width - 1 }} downto 0);
-    read        : in  std_logic;
-    write       : in  std_logic;
-    writedata   : in  std_logic_vector({{ module.data_width - 1 }} downto 0);
-    waitrequest : out std_logic;
-    readdata    : out std_logic_vector({{ module.data_width - 1 }} downto 0){% if module.to_hw_registers or module.from_hw_registers %};{% endif %}
+    chipselect : in    std_logic;
+    address : in    std_logic_vector({{ module.addr_width - 1 }} downto 0);
+    read : in    std_logic;
+    write : in    std_logic;
+    writedata : in    std_logic_vector({{ module.data_width - 1 }} downto 0);
+    waitrequest : out   std_logic;
+    readdata : out   std_logic_vector({{ module.data_width - 1 }} downto 0){{ ";" if module.to_hw_registers or module.from_hw_registers else "" }}
 {% elif bus.bus_type == 'wishbone' %}
-    clk_i   : in  std_logic;
-    rst_i   : in  std_logic;
+    clk_i : in    std_logic;
+    rst_i : in    std_logic;
 
-    cyc_i   : in  std_logic;
-    stb_i   : in  std_logic;
-    we_i    : in  std_logic;
-    adr_i   : in  std_logic_vector({{ module.addr_width - 1 }} downto 0);
-    dat_i   : in  std_logic_vector({{ module.data_width - 1 }} downto 0);
-    dat_o   : out std_logic_vector({{ module.data_width - 1 }} downto 0);
-    ack_o   : out std_logic;
-    err_o   : out std_logic{% if module.to_hw_registers or module.from_hw_registers %};{% endif %}
+    cyc_i : in    std_logic;
+    stb_i : in    std_logic;
+    we_i : in    std_logic;
+    adr_i : in    std_logic_vector({{ module.addr_width - 1 }} downto 0);
+    dat_i : in    std_logic_vector({{ module.data_width - 1 }} downto 0);
+    dat_o : out   std_logic_vector({{ module.data_width - 1 }} downto 0);
+    ack_o : out   std_logic;
+    err_o : out   std_logic{{ ";" if module.to_hw_registers or module.from_hw_registers else "" }}
 {% elif bus.bus_type == 'apb' %}
-    pclk    : in  std_logic;
-    presetn : in  std_logic;
+    pclk : in    std_logic;
+    presetn : in    std_logic;
 
-    psel    : in  std_logic;
-    penable : in  std_logic;
-    pwrite  : in  std_logic;
-    paddr   : in  std_logic_vector({{ module.addr_width - 1 }} downto 0);
-    pwdata  : in  std_logic_vector({{ module.data_width - 1 }} downto 0);
-    prdata  : out std_logic_vector({{ module.data_width - 1 }} downto 0);
-    pready  : out std_logic;
-    pslverr : out std_logic{% if module.to_hw_registers or module.from_hw_registers %};{% endif %}
+    psel : in    std_logic;
+    penable : in    std_logic;
+    pwrite : in    std_logic;
+    paddr : in    std_logic_vector({{ module.addr_width - 1 }} downto 0);
+    pwdata : in    std_logic_vector({{ module.data_width - 1 }} downto 0);
+    prdata : out   std_logic_vector({{ module.data_width - 1 }} downto 0);
+    pready : out   std_logic;
+    pslverr : out   std_logic{{ ";" if module.to_hw_registers or module.from_hw_registers else "" }}
+{% endif %}
+{% if module.to_hw_registers or module.from_hw_registers %}
+
 {% endif %}
 {% if module.to_hw_registers %}
-
-    to_hw    : out t_{{ module.name }}_to_hw{% if module.from_hw_registers %};{% endif %}
-
+    to_hw : out   t_{{ module.name }}_to_hw{{ ";" if module.from_hw_registers else "" }}
 {% endif %}
 {% if module.from_hw_registers %}
-    from_hw  : in  t_{{ module.name }}_from_hw
+    from_hw : in    t_{{ module.name }}_from_hw
 {% endif %}
+{% endfilter %}
   );
 end entity {{ module.name }};
 
 architecture rtl of {{ module.name }} is
+
 begin
 
-  i_endpoint : entity work.{{ module.name }}_{{ bus.endpoint_suffix }}
+  i_endpoint : entity work.{{ module.name }}_{{ bus.endpoint_suffix }}(rtl)
     generic map (
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
       G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
       G_UNMAPPED_READ_DATA => G_UNMAPPED_READ_DATA,
-      G_ERR_ON_BAD_ACCESS  => G_ERR_ON_BAD_ACCESS)
+      G_ERR_ON_BAD_ACCESS  => G_ERR_ON_BAD_ACCESS
+    )
     port map (
+{% filter align("=>") %}
 {% if bus.bus_type == 'axi' %}
-      clk      => clk,
+      clk => clk,
       areset_n => areset_n,
-      awaddr   => awaddr,
-      awvalid  => awvalid,
-      awready  => awready,
-      wdata    => wdata,
-      wvalid   => wvalid,
-      wready   => wready,
-      bresp    => bresp,
-      bvalid   => bvalid,
-      bready   => bready,
-      araddr   => araddr,
-      arvalid  => arvalid,
-      arready  => arready,
-      rdata    => rdata,
-      rresp    => rresp,
-      rvalid   => rvalid,
-      rready   => rready{{ "," if module.to_hw_registers or module.from_hw_registers else "" }}
+      awaddr => awaddr,
+      awvalid => awvalid,
+      awready => awready,
+      wdata => wdata,
+      wvalid => wvalid,
+      wready => wready,
+      bresp => bresp,
+      bvalid => bvalid,
+      bready => bready,
+      araddr => araddr,
+      arvalid => arvalid,
+      arready => arready,
+      rdata => rdata,
+      rresp => rresp,
+      rvalid => rvalid,
+      rready => rready{{ "," if module.to_hw_registers or module.from_hw_registers else "" }}
 {% elif bus.bus_type == 'ipbus' %}
-      clk     => clk,
-      reset   => reset,
-      ipb_in  => ipb_in,
+      clk => clk,
+      reset => reset,
+      ipb_in => ipb_in,
       ipb_out => ipb_out{{ "," if module.to_hw_registers or module.from_hw_registers else "" }}
 {% elif bus.bus_type == 'sbi' %}
-      clk     => clk,
-      reset   => reset,
-      cs      => cs,
-      addr    => addr,
-      rena    => rena,
-      wena    => wena,
-      wdata   => wdata,
-      ready   => ready,
-      rdata   => rdata{{ "," if module.to_hw_registers or module.from_hw_registers else "" }}
+      clk => clk,
+      reset => reset,
+      cs => cs,
+      addr => addr,
+      rena => rena,
+      wena => wena,
+      wdata => wdata,
+      ready => ready,
+      rdata => rdata{{ "," if module.to_hw_registers or module.from_hw_registers else "" }}
 {% elif bus.bus_type == 'avalon' %}
-      clk         => clk,
-      reset       => reset,
-      chipselect  => chipselect,
-      address     => address,
-      read        => read,
-      write       => write,
-      writedata   => writedata,
+      clk => clk,
+      reset => reset,
+      chipselect => chipselect,
+      address => address,
+      read => read,
+      write => write,
+      writedata => writedata,
       waitrequest => waitrequest,
-      readdata    => readdata{{ "," if module.to_hw_registers or module.from_hw_registers else "" }}
+      readdata => readdata{{ "," if module.to_hw_registers or module.from_hw_registers else "" }}
 {% elif bus.bus_type == 'wishbone' %}
-      clk_i   => clk_i,
-      rst_i   => rst_i,
-      cyc_i   => cyc_i,
-      stb_i   => stb_i,
-      we_i    => we_i,
-      adr_i   => adr_i,
-      dat_i   => dat_i,
-      dat_o   => dat_o,
-      ack_o   => ack_o,
-      err_o   => err_o{{ "," if module.to_hw_registers or module.from_hw_registers else "" }}
+      clk_i => clk_i,
+      rst_i => rst_i,
+      cyc_i => cyc_i,
+      stb_i => stb_i,
+      we_i => we_i,
+      adr_i => adr_i,
+      dat_i => dat_i,
+      dat_o => dat_o,
+      ack_o => ack_o,
+      err_o => err_o{{ "," if module.to_hw_registers or module.from_hw_registers else "" }}
 {% elif bus.bus_type == 'apb' %}
-      pclk    => pclk,
+      pclk => pclk,
       presetn => presetn,
-      psel    => psel,
+      psel => psel,
       penable => penable,
-      pwrite  => pwrite,
-      paddr   => paddr,
-      pwdata  => pwdata,
-      prdata  => prdata,
-      pready  => pready,
+      pwrite => pwrite,
+      paddr => paddr,
+      pwdata => pwdata,
+      prdata => prdata,
+      pready => pready,
       pslverr => pslverr{{ "," if module.to_hw_registers or module.from_hw_registers else "" }}
 {% endif %}
 {% if module.to_hw_registers %}
-      to_hw    => to_hw{{ "," if module.from_hw_registers else "" }}
+      to_hw => to_hw{{ "," if module.from_hw_registers else "" }}
 {% endif %}
 {% if module.from_hw_registers %}
-      from_hw  => from_hw
+      from_hw => from_hw
 {% endif %}
+{% endfilter %}
     );
 
 end architecture rtl;

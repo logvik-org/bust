@@ -10,6 +10,11 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+## [1.0.0a4] - 2026-10-22
+
+Fifth pre-release of bust 1.0.0, for testing. Install it with
+`pip install --pre bust` or `pip install bust==1.0.0a4`.
+
 ### Added
 - `C_<MODULE>_TO_HW_RESET`, a `to_hw` with every value at its reset and every
   strobe inactive, for models and testbenches that drive `to_hw`.
@@ -49,6 +54,20 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 | `t_<reg>_<field>`, the type of an enumerated field | `t_<module>_<reg>_<field>` |
 | `to_<reg>_<field>`, its conversion from bits | `to_<module>_<reg>_<field>` |
 
+- The generated VHDL follows the default style of vsg, the VHDL Style Guide,
+  with constants and generics in upper case, `use` clauses not indented and
+  conditions without parentheses. `vsg.yaml` holds the rules, and the tests
+  check the generated examples against them (#62). The layout of
+  every generated file changes, and the behaviour does not. Among the changes:
+  - Records, functions and procedures end with their name.
+  - In a reset constant and in the `to_hw` assignments of the register file,
+    a register with several fields, or with a field that is a record, has one
+    field per line.
+  - A hexadecimal literal has a lower-case base, as in `8x"A5"`.
+  - An entity instantiation names the architecture, as in
+    `entity work.timer_regfile(rtl)`.
+  - The testbench sets `from_hw` from a constant, `C_FROM_HW_IDLE`.
+
 ### Removed
 - The dependencies `curses-menu` and `prettytable`, which only the editor used.
 
@@ -61,6 +80,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   which made `pdflatex` fail.
 - The register file declares `rd_service` and prints the precedence comment
   only when a field uses them.
+- The starter top level of a module without `to_hw` or without `from_hw` no
+  longer has two ports, or the last port and the closing parenthesis, on one
+  line.
 
 ## [1.0.0a3] - 2026-10-21
 
@@ -353,7 +375,8 @@ First pre-release of bust 1.0.0, for testing. Install it with
   packages. The wheel also left out the Jinja2 templates, without which an
   installed bust cannot generate anything.
 
-[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0a3...HEAD
+[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0a4...HEAD
+[1.0.0a4]: https://github.com/logvik-org/bust/compare/v1.0.0a3...v1.0.0a4
 [1.0.0a3]: https://github.com/logvik-org/bust/compare/v1.0.0a2...v1.0.0a3
 [1.0.0a2]: https://github.com/logvik-org/bust/compare/v1.0.0a1...v1.0.0a2
 [1.0.0a1]: https://github.com/logvik-org/bust/compare/v1.0.0a0...v1.0.0a1

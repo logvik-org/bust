@@ -68,6 +68,11 @@ def _build_ipbus_module():
     return Module(cfg["module"], bus, settings=None)
 
 
+def _squash(text):
+    """`text` with each run of spaces as one space, so alignment does not count."""
+    return re.sub(" +", " ", text)
+
+
 def _structural_lines(text):
     """Declaration lines with comments, blanks, and whitespace normalized away.
 
@@ -217,22 +222,22 @@ def test_register_without_fields_is_a_bare_member_of_to_hw_and_from_hw():
         settings=None,
     )
     pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
-    assert "    level : std_logic_vector(7 downto 0);" in pkg
-    assert "    kick : t_m_kick_kick_out;" in pkg
-    assert "    count : std_logic_vector(3 downto 0);" in pkg
-    assert "    load : t_m_load_load_in;" in pkg
-    assert "    ctrl : t_m_ctrl_to_hw;" in pkg
+    assert " level : std_logic_vector(7 downto 0);" in _squash(pkg)
+    assert " kick : t_m_kick_kick_out;" in _squash(pkg)
+    assert " count : std_logic_vector(3 downto 0);" in _squash(pkg)
+    assert " load : t_m_load_load_in;" in _squash(pkg)
+    assert " ctrl : t_m_ctrl_to_hw;" in _squash(pkg)
     assert "type t_m_level_to_hw" not in pkg
     assert "type t_m_count_from_hw" not in pkg
 
     regfile = GeneratorFactory.generate_regfile_vhdl(module)
-    assert "  to_hw.level <= regs.level.level;" in regfile
+    assert " to_hw.level <= regs.level.level;" in _squash(regfile)
     assert (
-        "  to_hw.kick <= (value => regs.kick.kick, swmod => swmod_kick_kick);"
-        in regfile
+        " to_hw.kick <=\n (\n value => regs.kick.kick,\n swmod => swmod_kick_kick\n );"
+        in _squash(regfile)
     )
-    assert "  to_hw.ctrl <= (go => regs.ctrl.go);" in regfile
-    assert "rdata(3 downto 0) <= from_hw.count;" in regfile
+    assert " to_hw.ctrl <= (go => regs.ctrl.go);" in _squash(regfile)
+    assert "rdata(3 downto 0) <= from_hw.count;" in _squash(regfile)
     assert "regs.count" not in regfile
     assert "if from_hw.load.we = '1' then" in regfile
 
@@ -242,14 +247,14 @@ def test_module_addr_width_generic_reaches_the_regfile():
     wrapper, the endpoint and the regfile, and defaults to C_<MODULE>_MODULE_ADDR_WIDTH.
     """
     module = _build_module()
-    default = "G_MODULE_ADDR_WIDTH  : natural := C_PROTOTYPE_MODULE_ADDR_WIDTH"
+    default = "G_MODULE_ADDR_WIDTH : natural := C_PROTOTYPE_MODULE_ADDR_WIDTH"
     for generate in (
         GeneratorFactory.generate_module_top_vhdl,
         GeneratorFactory.generate_axi_endpoint_vhdl,
         GeneratorFactory.generate_regfile_vhdl,
     ):
         hdl = generate(module)
-        assert default in hdl
+        assert default in _squash(hdl)
     assert "G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH" in (
         GeneratorFactory.generate_module_top_vhdl(module)
     )
@@ -407,7 +412,7 @@ def test_sparse_enum_encodes_by_value_not_position():
     pkg = GeneratorFactory.generate_regfile_package_vhdl(
         Module(cfg, bus, settings=None)
     )
-    assert 'when D => slv := "11";' in pkg
+    assert 'when D =>\n\n        slv := "11";' in pkg
     assert "'pos(v)" not in pkg
 
 
@@ -490,8 +495,8 @@ def test_constant_only_entity_uses_literals_not_regs():
 
     assert "signal regs " not in out
     assert "regs." not in out
-    assert 'rdata(7 downto 0) <= 8X"AB";' in out
-    assert 'to_hw.stat <= (id => 8X"AB");' in out
+    assert 'rdata(7 downto 0) <= 8x"AB";' in _squash(out)
+    assert 'to_hw.stat <= (id => 8x"AB");' in _squash(out)
 
 
 def test_non_fields_registers_normalize_to_implicit_field():
@@ -601,11 +606,14 @@ def test_bit_enum_encodes_as_one_element_vector():
     )
     pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
     regfile = GeneratorFactory.generate_regfile_vhdl(module)
-    assert "function to_m_r_f(s : std_logic_vector(0 downto 0)) return t_m_r_f;" in pkg
+    assert (
+        "  function to_m_r_f (\n    s : std_logic_vector(0 downto 0)\n"
+        "  ) return t_m_r_f;" in pkg
+    )
     assert "variable slv : std_logic_vector(0 downto 0);" in pkg
-    assert 'when "1" => return ENABLED;' in pkg
-    assert "regs.r.f <= to_m_r_f(lb_m2s.wdata(1 downto 1));" in regfile
-    assert "rdata(1 downto 1) <= to_slv(regs.r.f);" in regfile
+    assert 'when "1" =>\n\n        return ENABLED;' in pkg
+    assert "regs.r.f <= to_m_r_f(lb_m2s.wdata(1 downto 1));" in _squash(regfile)
+    assert "rdata(1 downto 1) <= to_slv(regs.r.f);" in _squash(regfile)
 
 
 def test_hw_written_enum_testbench_default_is_its_reset_literal():
@@ -617,7 +625,7 @@ def test_hw_written_enum_testbench_default_is_its_reset_literal():
         hw="w",
     )
     tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
-    assert "r => (a => C, b => (value => DISABLED, we => '0')));" in tb
+    assert "r =>\n (\n a => C,\n b => (value => DISABLED, we => '0')\n )" in _squash(tb)
 
 
 def test_constant_enum_read_is_type_qualified():
@@ -630,9 +638,12 @@ def test_constant_enum_read_is_type_qualified():
         hw="r",
     )
     out = GeneratorFactory.generate_regfile_vhdl(module)
-    assert "rdata(0 downto 0) <= to_slv(t_m_r_a'(ENABLED));" in out
-    assert "rdata(1 downto 1) <= to_slv(t_m_r_b'(DISABLED));" in out
-    assert "to_hw.r <= (a => t_m_r_a'(ENABLED), b => t_m_r_b'(DISABLED));" in out
+    assert "rdata(0 downto 0) <= to_slv(t_m_r_a'(ENABLED));" in _squash(out)
+    assert "rdata(1 downto 1) <= to_slv(t_m_r_b'(DISABLED));" in _squash(out)
+    assert (
+        "to_hw.r <=\n (\n a => t_m_r_a'(ENABLED),\n b => t_m_r_b'(DISABLED)\n );"
+        in _squash(out)
+    )
 
 
 def _strobe_read(module):
@@ -707,7 +718,7 @@ def test_singlepulse_returns_to_its_reset_value():
         singlepulse=True,
     )
     regfile = GeneratorFactory.generate_regfile_vhdl(module)
-    assert 'regs.r.go <= 4X"A";' in regfile
+    assert 'regs.r.go <= 4x"A";' in regfile
     assert "regs.r.go <= (others => '0');" not in regfile
 
 
@@ -722,7 +733,9 @@ def test_singlepulse_testbench_detects_the_pulse_against_the_reset_value():
         singlepulse=True,
     )
     tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
-    assert 'signal r_go_sp_value : std_logic_vector(3 downto 0) := 4X"A";' in tb
+    assert 'signal r_go_sp_value : std_logic_vector(3 downto 0) := 4x"A";' in _squash(
+        tb
+    )
     assert 'if to_hw.r.go /= 4x"A" then' in tb
     assert "if to_hw.r.arm /= '1' then" in tb
     # go=0x5 (inverse of 0xA) in bits 3:0, arm=0 (inverse of 1) in bit 4.
@@ -809,7 +822,7 @@ def test_sticky_flag_testbench_checks_hwset_against_the_read_clear():
     )
     assert module.registers[0].is_hwset_read_clear_register
     tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
-    assert "r_pending_at_swacc <= to_hw.r.pending.value;" in tb
+    assert "r_pending_at_swacc <= to_hw.r.pending.value;" in _squash(tb)
     sequence = tb[tb.index("hwset beats a read clear") :]
     assert sequence.index("from_hw.r.pending.set <= '1';") < sequence.index(
         'bus_check(f_addr(C_M_R_OFFSET), 32x"00000001", "r read while hwset is held");'
@@ -849,7 +862,7 @@ def test_enum_without_a_zero_literal_reports_the_reset_hardware_uses():
     assert reg.reset == "0x10"
 
     pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
-    assert "r => (lo => (others => '0'), mode => LOW));" in pkg
+    assert "r =>\n (\n lo => (others => '0'),\n mode => LOW\n )\n );" in _squash(pkg)
     header = HeaderGenerator(module)
     assert "#define M_R_RESET 0x10" in header.generate_c_header()
     assert "#define M_R_MODE_RESET 0x1" in header.generate_c_header()

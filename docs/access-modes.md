@@ -52,13 +52,13 @@ of the prototype:
 type t_prototype_reg0_to_hw is record
   field0 : std_logic;
   field1 : std_logic_vector(1 downto 0);
-end record;
+end record t_prototype_reg0_to_hw;
 
 type t_prototype_reg1_from_hw is record
   field0 : t_prototype_reg1_field0_in;
   field1 : std_logic;
   field2 : t_prototype_reg1_field2_in;
-end record;
+end record t_prototype_reg1_from_hw;
 ```
 
 `reg1.field1` is a plain input. `field0` and `field2` have a write enable, so
@@ -92,7 +92,12 @@ it as a constant at its reset value. Here is the `identity` register of
 where `id` resets to `0xA5`:
 
 ```vhdl
-to_hw.identity <= (id => 8X"A5", pwr_default => t_identity_pwr_default'(PWR_ON), pwr_spare => t_identity_pwr_spare'(PWR_OFF));
+to_hw.identity <=
+(
+  id          => 8x"A5",
+  pwr_default => t_access_matrix_identity_pwr_default'(PWR_ON),
+  pwr_spare   => t_access_matrix_identity_pwr_spare'(PWR_OFF)
+);
 ```
 
 ## Software side effects
@@ -111,7 +116,7 @@ The field needs software read access, `sw` `rw` or `ro`. The prototype's
 `reg5` has one field of each:
 
 ```vhdl
--- reg5 onread effects, applied when the software read is serviced.
+-- reg5 onread effects.
 if rd_service and reg_addr_match(reg_offset, C_PROTOTYPE_REG5_OFFSET) then
   regs.reg5.field0 <= (others => '0');
   regs.reg5.field1 <= (others => '1');
@@ -192,13 +197,13 @@ prototype, `reg1.field0` (`hw w`, `we`) and `reg4.field1` (`hw r`, `hwset`,
 ```vhdl
 type t_prototype_reg1_field0_in is record
   value : std_logic_vector(3 downto 0);
-  we : std_logic;
-end record;
+  we    : std_logic;
+end record t_prototype_reg1_field0_in;
 
 type t_prototype_reg4_field1_in is record
   set : std_logic;
   clr : std_logic;
-end record;
+end record t_prototype_reg4_field1_in;
 ```
 
 Your logic drives `from_hw.reg1.field0.value` and `from_hw.reg1.field0.we`.
@@ -210,7 +215,7 @@ value in `value`. The prototype's `reg9.field0` has `swmod`:
 type t_prototype_reg9_field0_out is record
   value : std_logic_vector(3 downto 0);
   swmod : std_logic;
-end record;
+end record t_prototype_reg9_field0_out;
 ```
 
 Your logic reads `to_hw.reg9.field0.value` and `to_hw.reg9.field0.swmod`.
@@ -368,24 +373,52 @@ which names the values 0 (`MODE_SLOW`) and 3 (`MODE_FAST`):
 ```vhdl
 type t_access_matrix_enum_vector_mode is (MODE_SLOW, MODE_FAST);
 
-function to_slv(v : t_access_matrix_enum_vector_mode) return std_logic_vector is
-  variable slv : std_logic_vector(1 downto 0);
-begin
-  case v is
-    when MODE_SLOW => slv := "00";
-    when MODE_FAST => slv := "11";
-  end case;
-  return slv;
-end function;
+function to_slv (
+  v : t_access_matrix_enum_vector_mode
+) return std_logic_vector is
 
-function to_access_matrix_enum_vector_mode(s : std_logic_vector(1 downto 0)) return t_access_matrix_enum_vector_mode is
+  variable slv : std_logic_vector(1 downto 0);
+
 begin
-  case s is
-    when "00" => return MODE_SLOW;
-    when "11" => return MODE_FAST;
-    when others => return MODE_SLOW;
+
+  case v is
+
+    when MODE_SLOW =>
+
+      slv := "00";
+
+    when MODE_FAST =>
+
+      slv := "11";
+
   end case;
-end function;
+
+  return slv;
+
+end function to_slv;
+
+function to_access_matrix_enum_vector_mode (
+  s : std_logic_vector(1 downto 0)
+) return t_access_matrix_enum_vector_mode is
+begin
+
+  case s is
+
+    when "00" =>
+
+      return MODE_SLOW;
+
+    when "11" =>
+
+      return MODE_FAST;
+
+    when others =>
+
+      return MODE_SLOW;
+
+  end case;
+
+end function to_access_matrix_enum_vector_mode;
 ```
 
 - The encoding is the `value` from the JSON file, not the position of the

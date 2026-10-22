@@ -126,12 +126,12 @@ type t_timer_to_hw is record
   ctrl : t_timer_ctrl_to_hw;     -- enable, mode (t_timer_ctrl_mode), start
   load : t_timer_load_load_out;  -- value, swmod
   irq  : t_timer_irq_to_hw;      -- expired
-end record;
+end record t_timer_to_hw;
 
 type t_timer_from_hw is record
   status : t_timer_status_from_hw;  -- count.value, count.we, running
   irq    : t_timer_irq_from_hw;     -- expired.set
-end record;
+end record t_timer_from_hw;
 ```
 
 Instantiate the module and connect your logic through the records, or put

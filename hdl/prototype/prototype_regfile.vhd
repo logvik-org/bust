@@ -10,6 +10,7 @@
 -- (software writes, hardware-driven updates, and onread side effects, since all
 -- modify state) and the write response; p_read owns the read mux and the read
 -- response. Concurrent output assignments are grouped at the bottom of the file.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -25,12 +26,12 @@ entity prototype_regfile is
     G_RESET_ACTIVE_LOW   : boolean               := false
   );
   port (
-    clk     : in  std_logic;
-    reset   : in  std_logic;
-    lb_m2s  : in  t_lb_m2s;
-    lb_s2m  : out t_lb_s2m;
-    to_hw   : out t_prototype_to_hw;
-    from_hw : in  t_prototype_from_hw
+    clk     : in    std_logic;
+    reset   : in    std_logic;
+    lb_m2s  : in    t_lb_m2s;
+    lb_s2m  : out   t_lb_s2m;
+    to_hw   : out   t_prototype_to_hw;
+    from_hw : in    t_prototype_from_hw
   );
 end entity prototype_regfile;
 
@@ -38,19 +39,20 @@ architecture rtl of prototype_regfile is
 
   signal regs : t_prototype_regs := C_PROTOTYPE_REGS_RESET;
 
-  signal rst    : std_logic;            -- reset normalized to active high
+  signal rst    : std_logic; -- reset normalized to active high
   signal rdata  : std_logic_vector(31 downto 0);
   signal wr_ack : std_logic;
   signal wr_err : std_logic;
   signal rd_ack : std_logic;
   signal rd_err : std_logic;
 
-  signal swmod_r9f0 : std_logic;        -- reg9.field0 swmod pulse (1 cycle)
-  signal swacc_r9f1 : std_logic;        -- reg9.field1 swacc pulse (1 cycle)
+  signal swmod_r9f0 : std_logic; -- reg9.field0 swmod pulse (1 cycle)
+  signal swacc_r9f1 : std_logic; -- reg9.field1 swacc pulse (1 cycle)
 
 begin
 
-  rst <= (reset xor '1') when G_RESET_ACTIVE_LOW else reset;
+  rst <= (reset xor '1') when G_RESET_ACTIVE_LOW else
+         reset;
 
   -- G_MODULE_ADDR_WIDTH must hold the registers and fit in the address.
   assert G_MODULE_ADDR_WIDTH >= C_PROTOTYPE_MODULE_ADDR_WIDTH and G_MODULE_ADDR_WIDTH <= 32
@@ -60,7 +62,7 @@ begin
 
   -- The base address must be a multiple of the size of the address range.
   assert (not G_CHECK_BASE_ADDRESS)
-      or (G_BASE_ADDRESS(G_MODULE_ADDR_WIDTH-1 downto 0) = 0)
+      or (G_BASE_ADDRESS(G_MODULE_ADDR_WIDTH - 1 downto 0) = 0)
     report "G_BASE_ADDRESS must be aligned to 2**G_MODULE_ADDR_WIDTH bytes"
     severity failure;
 
@@ -70,14 +72,17 @@ begin
   -- (provisional, since `precedence` is deferred) reads top-to-bottom:
   --   hwclr > hwset > hardware we/wel write > software write.
   p_write : process (clk) is
-    variable reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0);
-    variable mapped     : boolean;     -- a register sits at this address
-    variable sw_write   : boolean;     -- a new software write to a register
+
+    variable reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH - 1 downto 0);
+    variable mapped     : boolean; -- a register sits at this address
+    variable sw_write   : boolean; -- a new software write to a register
     -- p_write is the single driver of `regs`, so the onread side effects (which
     -- modify storage on a software read) are applied here too; this flags a
     -- new software read from a register.
     variable rd_service : boolean;
+
   begin
+
     if rising_edge(clk) then
       wr_ack <= '0';
       wr_err <= '0';
@@ -85,7 +90,7 @@ begin
       -- A software access only takes effect on the cycle it is first seen
       -- (wr_ack/rd_err/... still low). The master holds the request until it
       -- observes the response, so these guards keep the effect single-shot.
-      reg_offset := lb_m2s.address(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0);
+      reg_offset := lb_m2s.address(C_PROTOTYPE_MODULE_ADDR_WIDTH - 1 downto 0);
       mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
                                G_MODULE_ADDR_WIDTH)
                     and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
@@ -109,11 +114,12 @@ begin
         regs.reg3.field0 <= lb_m2s.wdata(7 downto 0);
       end if;
 
-      -- reg1: sw ro, hardware-driven.
-      if from_hw.reg1.field0.we = '1' then          -- field0: hw w, we
+      -- reg1: sw ro, hardware-driven. field0 is hw w with we, field2 hw w with
+      -- the active-low wel.
+      if from_hw.reg1.field0.we = '1' then
         regs.reg1.field0 <= from_hw.reg1.field0.value;
       end if;
-      if from_hw.reg1.field2.wel = '0' then          -- field2: hw w, active-low we
+      if from_hw.reg1.field2.wel = '0' then
         regs.reg1.field2 <= from_hw.reg1.field2.value;
       end if;
 
@@ -140,24 +146,27 @@ begin
         regs.reg5.field1 <= lb_m2s.wdata(7 downto 4);
       end if;
 
-      -- reg6: onwrite write-1 effects, with stored value f and write data w.
+      -- reg6: onwrite write-1 effects, woset on field0, woclr on field1 and wot
+      -- on field2.
       if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG6_OFFSET) then
-        regs.reg6.field0 <= regs.reg6.field0 or lb_m2s.wdata(3 downto 0);        -- woset
-        regs.reg6.field1 <= regs.reg6.field1 and not lb_m2s.wdata(7 downto 4);   -- woclr
-        regs.reg6.field2 <= regs.reg6.field2 xor lb_m2s.wdata(11 downto 8);      -- wot
+        regs.reg6.field0 <= regs.reg6.field0 or lb_m2s.wdata(3 downto 0);
+        regs.reg6.field1 <= regs.reg6.field1 and not lb_m2s.wdata(7 downto 4);
+        regs.reg6.field2 <= regs.reg6.field2 xor lb_m2s.wdata(11 downto 8);
       end if;
 
-      -- reg7: onwrite write-0 effects (the write-1 family with w inverted).
+      -- reg7: onwrite write-0 effects (the write-1 family with the write data
+      -- inverted), wzs on field0, wzc on field1 and wzt on field2.
       if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG7_OFFSET) then
-        regs.reg7.field0 <= regs.reg7.field0 or not lb_m2s.wdata(3 downto 0);    -- wzs
-        regs.reg7.field1 <= regs.reg7.field1 and lb_m2s.wdata(7 downto 4);       -- wzc
-        regs.reg7.field2 <= regs.reg7.field2 xor not lb_m2s.wdata(11 downto 8);  -- wzt
+        regs.reg7.field0 <= regs.reg7.field0 or not lb_m2s.wdata(3 downto 0);
+        regs.reg7.field1 <= regs.reg7.field1 and lb_m2s.wdata(7 downto 4);
+        regs.reg7.field2 <= regs.reg7.field2 xor not lb_m2s.wdata(11 downto 8);
       end if;
 
-      -- reg8: onwrite whole-field effects (data-independent).
+      -- reg8: onwrite whole-field effects (data-independent), wclr on field0
+      -- and wset on field1.
       if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG8_OFFSET) then
-        regs.reg8.field0 <= (others => '0');   -- wclr
-        regs.reg8.field1 <= (others => '1');   -- wset
+        regs.reg8.field0 <= (others => '0');
+        regs.reg8.field1 <= (others => '1');
       end if;
 
       -- reg9: sw rw, hw r. Plain storage; swmod/swacc strobes generated below.
@@ -179,12 +188,12 @@ begin
         regs.reg11.field0 <= to_prototype_reg11_field0(lb_m2s.wdata(1 downto 0));
       end if;
 
-      -- reg5 onread effects: applied on the cycle the software read is serviced.
-      -- The read returns the pre-effect value; storage updates here on the same
-      -- edge.
+      -- reg5 onread effects, rclr on field0 and rset on field1: applied on the
+      -- cycle the software read is serviced. The read returns the pre-effect
+      -- value; storage updates here on the same edge.
       if rd_service and reg_addr_match(reg_offset, C_PROTOTYPE_REG5_OFFSET) then
-        regs.reg5.field0 <= (others => '0');   -- onread rclr
-        regs.reg5.field1 <= (others => '1');   -- onread rset
+        regs.reg5.field0 <= (others => '0');
+        regs.reg5.field1 <= (others => '1');
       end if;
 
       -- reg9 software-access strobes: swmod pulses when software modifies
@@ -216,6 +225,7 @@ begin
         swacc_r9f1 <= '0';
       end if;
     end if;
+
   end process p_write;
 
   -- Read mux and read response. The onread side effects live in p_write (sole
@@ -223,16 +233,19 @@ begin
   -- Reads of non-readable fields (sw wo / na) return 0 and ack; err is reserved
   -- for address-decode failures, matching SystemRDL and the legacy bus PIFs.
   p_read : process (clk) is
-    variable reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0);
-    variable mapped     : boolean;     -- a register sits at this address
+
+    variable reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH - 1 downto 0);
+    variable mapped     : boolean; -- a register sits at this address
+
   begin
+
     if rising_edge(clk) then
       rd_ack <= '0';
       rd_err <= '0';
 
       if lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' then
-        rdata <= (others => '0');
-        reg_offset := lb_m2s.address(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0);
+        rdata      <= (others => '0');
+        reg_offset := lb_m2s.address(C_PROTOTYPE_MODULE_ADDR_WIDTH - 1 downto 0);
         mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
                                  G_MODULE_ADDR_WIDTH)
                       and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
@@ -242,49 +255,52 @@ begin
         elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG0_OFFSET) then
           rdata(0)          <= regs.reg0.field0;
           rdata(2 downto 1) <= regs.reg0.field1;
-          rd_ack <= '1';
+          rd_ack            <= '1';
         elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG1_OFFSET) then
+          -- field1 is a status field, read from hardware and not stored.
           rdata(3 downto 0) <= regs.reg1.field0;
-          rdata(4)          <= from_hw.reg1.field1;  -- status field, not stored
+          rdata(4)          <= from_hw.reg1.field1;
           rdata(5)          <= regs.reg1.field2;
-          rd_ack <= '1';
+          rd_ack            <= '1';
         elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG2_OFFSET) then
-          rd_ack <= '1';                            -- reg2.field0 sw wo: reads 0
+          -- reg2.field0 is sw wo, so it reads 0.
+          rd_ack <= '1';
         elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG3_OFFSET) then
           rdata(7 downto 0) <= regs.reg3.field0;
-          rd_ack <= '1';
+          rd_ack            <= '1';
         elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG4_OFFSET) then
           rdata(3 downto 0) <= regs.reg4.field0;
           rdata(8)          <= regs.reg4.field1;
-          rd_ack <= '1';
+          rd_ack            <= '1';
         elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG5_OFFSET) then
           rdata(3 downto 0) <= regs.reg5.field0;
           rdata(7 downto 4) <= regs.reg5.field1;
-          rd_ack <= '1';
+          rd_ack            <= '1';
         elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG6_OFFSET) then
           rdata(3 downto 0)  <= regs.reg6.field0;
           rdata(7 downto 4)  <= regs.reg6.field1;
           rdata(11 downto 8) <= regs.reg6.field2;
-          rd_ack <= '1';
+          rd_ack             <= '1';
         elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG7_OFFSET) then
           rdata(3 downto 0)  <= regs.reg7.field0;
           rdata(7 downto 4)  <= regs.reg7.field1;
           rdata(11 downto 8) <= regs.reg7.field2;
-          rd_ack <= '1';
+          rd_ack             <= '1';
         elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG8_OFFSET) then
           rdata(3 downto 0) <= regs.reg8.field0;
           rdata(7 downto 4) <= regs.reg8.field1;
-          rd_ack <= '1';
+          rd_ack            <= '1';
         elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG9_OFFSET) then
           rdata(3 downto 0) <= regs.reg9.field0;
           rdata(7 downto 4) <= regs.reg9.field1;
-          rd_ack <= '1';
+          rd_ack            <= '1';
         elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG10_OFFSET) then
-          rdata(3 downto 0) <= regs.reg10.field0;  -- usually 0 (pulse self-cleared)
-          rd_ack <= '1';
+          -- Usually 0, since the pulse self-clears.
+          rdata(3 downto 0) <= regs.reg10.field0;
+          rd_ack            <= '1';
         elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG11_OFFSET) then
           rdata(1 downto 0) <= to_slv(regs.reg11.field0);
-          rd_ack <= '1';
+          rd_ack            <= '1';
         end if;
       end if;
 
@@ -294,18 +310,22 @@ begin
         rd_err <= '0';
       end if;
     end if;
+
   end process p_read;
 
   -- Hardware-side outputs, one aggregate per register.
-  to_hw.reg0 <= (field0 => regs.reg0.field0, field1 => regs.reg0.field1);
-  to_hw.reg2 <= (field0 => regs.reg2.field0);
-  to_hw.reg4 <= (field0 => regs.reg4.field0, field1 => regs.reg4.field1);
-  to_hw.reg5 <= (field0 => regs.reg5.field0, field1 => regs.reg5.field1);
-  to_hw.reg6 <= (field0 => regs.reg6.field0, field1 => regs.reg6.field1, field2 => regs.reg6.field2);
-  to_hw.reg7 <= (field0 => regs.reg7.field0, field1 => regs.reg7.field1, field2 => regs.reg7.field2);
-  to_hw.reg8 <= (field0 => regs.reg8.field0, field1 => regs.reg8.field1);
-  to_hw.reg9 <= (field0 => (value => regs.reg9.field0, swmod => swmod_r9f0),
-                 field1 => (value => regs.reg9.field1, swacc => swacc_r9f1));
+  to_hw.reg0  <= (field0 => regs.reg0.field0, field1 => regs.reg0.field1);
+  to_hw.reg2  <= (field0 => regs.reg2.field0);
+  to_hw.reg4  <= (field0 => regs.reg4.field0, field1 => regs.reg4.field1);
+  to_hw.reg5  <= (field0 => regs.reg5.field0, field1 => regs.reg5.field1);
+  to_hw.reg6  <= (field0 => regs.reg6.field0, field1 => regs.reg6.field1, field2 => regs.reg6.field2);
+  to_hw.reg7  <= (field0 => regs.reg7.field0, field1 => regs.reg7.field1, field2 => regs.reg7.field2);
+  to_hw.reg8  <= (field0 => regs.reg8.field0, field1 => regs.reg8.field1);
+  to_hw.reg9  <=
+  (
+    field0 => (value => regs.reg9.field0, swmod => swmod_r9f0),
+    field1 => (value => regs.reg9.field1, swacc => swacc_r9f1)
+  );
   to_hw.reg10 <= (field0 => regs.reg10.field0);
   to_hw.reg11 <= (field0 => regs.reg11.field0);
 
