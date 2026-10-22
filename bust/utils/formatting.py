@@ -58,34 +58,6 @@ def fix_last_indent_only_line(string: str, tabs: int) -> str:
     return string
 
 
-def add_line_breaks(string: str, min_length: int) -> str:
-    """Add line breaks to long strings at word boundaries.
-
-    Inserts newlines after spaces once a line exceeds the minimum length.
-
-    Args:
-        string: Input string to process.
-        min_length: Minimum line length before inserting break.
-
-    Returns:
-        String with line breaks added at appropriate positions.
-    """
-    requirement = min_length
-    replace = False
-    positions = []
-    for i, char in enumerate(string):
-        if i > requirement:
-            replace = True
-        if replace and char == " ":
-            positions.append(i)
-            requirement = i + min_length
-            replace = False
-    for rep in positions:
-        string = string[:rep] + "\n" + string[rep + 1 :]
-
-    return string
-
-
 def is_mixed(string: str) -> bool:
     """Check if string contains both uppercase and lowercase letters.
 

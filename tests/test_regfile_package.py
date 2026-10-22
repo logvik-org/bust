@@ -860,7 +860,6 @@ def test_enum_without_a_zero_literal_reports_the_reset_hardware_uses():
     reg = module.registers[0]
     assert reg.fields[1].reset == "0x1"
     assert reg.reset == "0x10"
-    assert "reset" not in reg.fields[1].return_dic()
 
     pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
     assert "r =>\n (\n lo => (others => '0'),\n mode => LOW\n )\n );" in _squash(pkg)

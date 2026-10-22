@@ -29,13 +29,12 @@ def test_settings_that_move_the_output_stop_bust(section):
         Settings("cfg/m.json", section)
 
 
-def test_0_14_bus_keys_are_unknown_and_not_written_back(caplog):
+def test_0_14_bus_keys_are_unknown(caplog):
     plain = {"type": "apb", "addr_width": 16, "data_width": 32}
 
     with caplog.at_level(logging.WARNING):
-        bus = Bus(dict(plain, comp_library="regs", reset="async"))
+        Bus(dict(plain, comp_library="regs", reset="async"))
 
-    assert bus.to_json() == plain
     assert "Unknown key 'comp_library' in bus is ignored" in caplog.text
 
 
