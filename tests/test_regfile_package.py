@@ -68,6 +68,11 @@ def _build_ipbus_module():
     return Module(cfg["module"], bus, settings=None)
 
 
+def _squash(text):
+    """`text` with each run of spaces as one space, so alignment does not count."""
+    return re.sub(" +", " ", text)
+
+
 def _structural_lines(text):
     """Declaration lines with comments, blanks, and whitespace normalized away.
 
@@ -217,11 +222,11 @@ def test_register_without_fields_is_a_bare_member_of_to_hw_and_from_hw():
         settings=None,
     )
     pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
-    assert "    level : std_logic_vector(7 downto 0);" in pkg
-    assert "    kick : t_m_kick_kick_out;" in pkg
-    assert "    count : std_logic_vector(3 downto 0);" in pkg
-    assert "    load : t_m_load_load_in;" in pkg
-    assert "    ctrl : t_m_ctrl_to_hw;" in pkg
+    assert " level : std_logic_vector(7 downto 0);" in _squash(pkg)
+    assert " kick : t_m_kick_kick_out;" in _squash(pkg)
+    assert " count : std_logic_vector(3 downto 0);" in _squash(pkg)
+    assert " load : t_m_load_load_in;" in _squash(pkg)
+    assert " ctrl : t_m_ctrl_to_hw;" in _squash(pkg)
     assert "type t_m_level_to_hw" not in pkg
     assert "type t_m_count_from_hw" not in pkg
 
@@ -407,7 +412,7 @@ def test_sparse_enum_encodes_by_value_not_position():
     pkg = GeneratorFactory.generate_regfile_package_vhdl(
         Module(cfg, bus, settings=None)
     )
-    assert 'when D => slv := "11";' in pkg
+    assert 'when D =>\n\n        slv := "11";' in pkg
     assert "'pos(v)" not in pkg
 
 
@@ -490,8 +495,8 @@ def test_constant_only_entity_uses_literals_not_regs():
 
     assert "signal regs " not in out
     assert "regs." not in out
-    assert 'rdata(7 downto 0) <= 8X"AB";' in out
-    assert 'to_hw.stat <= (id => 8X"AB");' in out
+    assert 'rdata(7 downto 0) <= 8x"AB";' in out
+    assert 'to_hw.stat <= (id => 8x"AB");' in out
 
 
 def test_non_fields_registers_normalize_to_implicit_field():
@@ -601,9 +606,12 @@ def test_bit_enum_encodes_as_one_element_vector():
     )
     pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
     regfile = GeneratorFactory.generate_regfile_vhdl(module)
-    assert "function to_m_r_f(s : std_logic_vector(0 downto 0)) return t_m_r_f;" in pkg
+    assert (
+        "  function to_m_r_f (\n    s : std_logic_vector(0 downto 0)\n"
+        "  ) return t_m_r_f;" in pkg
+    )
     assert "variable slv : std_logic_vector(0 downto 0);" in pkg
-    assert 'when "1" => return ENABLED;' in pkg
+    assert 'when "1" =>\n\n        return ENABLED;' in pkg
     assert "regs.r.f <= to_m_r_f(lb_m2s.wdata(1 downto 1));" in regfile
     assert "rdata(1 downto 1) <= to_slv(regs.r.f);" in regfile
 
@@ -707,7 +715,7 @@ def test_singlepulse_returns_to_its_reset_value():
         singlepulse=True,
     )
     regfile = GeneratorFactory.generate_regfile_vhdl(module)
-    assert 'regs.r.go <= 4X"A";' in regfile
+    assert 'regs.r.go <= 4x"A";' in regfile
     assert "regs.r.go <= (others => '0');" not in regfile
 
 
@@ -722,7 +730,7 @@ def test_singlepulse_testbench_detects_the_pulse_against_the_reset_value():
         singlepulse=True,
     )
     tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
-    assert 'signal r_go_sp_value : std_logic_vector(3 downto 0) := 4X"A";' in tb
+    assert 'signal r_go_sp_value : std_logic_vector(3 downto 0) := 4x"A";' in tb
     assert 'if to_hw.r.go /= 4x"A" then' in tb
     assert "if to_hw.r.arm /= '1' then" in tb
     # go=0x5 (inverse of 0xA) in bits 3:0, arm=0 (inverse of 1) in bit 4.
@@ -850,7 +858,7 @@ def test_enum_without_a_zero_literal_reports_the_reset_hardware_uses():
     assert "reset" not in reg.fields[1].return_dic()
 
     pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
-    assert "r => (lo => (others => '0'), mode => LOW));" in pkg
+    assert "r =>\n (\n lo => (others => '0'),\n mode => LOW\n )\n );" in _squash(pkg)
     header = HeaderGenerator(module)
     assert "#define M_R_RESET 0x10" in header.generate_c_header()
     assert "#define M_R_MODE_RESET 0x1" in header.generate_c_header()

@@ -1,0 +1,29 @@
+# The style of the generated VHDL: the default style of vsg (VHDL Style Guide)
+# with the names bust uses. tests/test_vsg.py checks the generated examples and
+# the hand-written prototype against it.
+rule:
+  # Constants and generics are in upper case, such as C_<MODULE>_TO_HW_RESET
+  # and G_BASE_ADDRESS.
+  constant_004:
+    case: upper
+  generic_007:
+    case: upper
+  generic_map_002:
+    case: upper
+  # Enumeration literals keep the case of the names in the JSON file.
+  type_500:
+    disable: true
+  # Modules are instantiated as entities, not as components.
+  instantiation_034:
+    method: entity
+  # Signals of the register file have initial values, so a read before the
+  # first reset gets an answer in simulation.
+  signal_007:
+    disable: true
+  # A function keeps its one-line comment directly above it.
+  function_006:
+    style: allow_comment
+  # The reset of a register with several fields in a constant has one field per
+  # line, so the line stays short however many fields the register has.
+  constant_016:
+    disable: true

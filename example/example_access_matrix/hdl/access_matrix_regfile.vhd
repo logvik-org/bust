@@ -373,7 +373,7 @@ begin
           elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_COMMAND_OFFSET) then
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_IDENTITY_OFFSET) then
-            rdata(7 downto 0) <= 8X"A5";
+            rdata(7 downto 0) <= 8x"A5";
             rdata(8 downto 8) <= to_slv(t_access_matrix_identity_pwr_default'(PWR_ON));
             rdata(9 downto 9) <= to_slv(t_access_matrix_identity_pwr_spare'(PWR_OFF));
             rd_ack <= '1';
@@ -419,7 +419,7 @@ begin
           elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_MIXED_SWACC_OFFSET) then
             rdata(3 downto 0) <= regs.mixed_swacc.clear_bits;
             rdata(7 downto 4) <= regs.mixed_swacc.toggle_bits;
-            rdata(11 downto 8) <= 4X"9";
+            rdata(11 downto 8) <= 4x"9";
             rdata(16) <= regs.mixed_swacc.go;
             rdata(17 downto 17) <= to_slv(regs.mixed_swacc.power);
             rdata(18 downto 18) <= to_slv(t_access_matrix_mixed_swacc_power_fixed'(PWR_ON));
@@ -464,7 +464,7 @@ begin
   -- Hardware-side outputs, one aggregate per register.
   to_hw.plain <= (flag => regs.plain.flag, level => regs.plain.level);
   to_hw.command <= (opcode => regs.command.opcode);
-  to_hw.identity <= (id => 8X"A5", pwr_default => t_access_matrix_identity_pwr_default'(PWR_ON), pwr_spare => t_access_matrix_identity_pwr_spare'(PWR_OFF));
+  to_hw.identity <= (id => 8x"A5", pwr_default => t_access_matrix_identity_pwr_default'(PWR_ON), pwr_spare => t_access_matrix_identity_pwr_spare'(PWR_OFF));
   to_hw.hw_modify <= (override => regs.hw_modify.override, sticky => regs.hw_modify.sticky);
   to_hw.hw_set_clear <= (clr_only => (value => regs.hw_set_clear.clr_only, swacc => swacc_hw_set_clear_clr_only));
   to_hw.read_effects <= (clear_on_read => regs.read_effects.clear_on_read, set_on_read => regs.read_effects.set_on_read);
@@ -475,7 +475,7 @@ begin
   to_hw.enum_bit <= (power => regs.enum_bit.power);
   to_hw.enum_hw <= (supply => regs.enum_hw.supply);
   to_hw.enum_swacc <= (phase => (value => regs.enum_swacc.phase, swacc => swacc_enum_swacc_phase));
-  to_hw.mixed_swacc <= (clear_bits => (value => regs.mixed_swacc.clear_bits, swacc => swacc_mixed_swacc_clear_bits), toggle_bits => regs.mixed_swacc.toggle_bits, fixed => 4X"9", arg => regs.mixed_swacc.arg, go => regs.mixed_swacc.go, power => regs.mixed_swacc.power, power_fixed => t_access_matrix_mixed_swacc_power_fixed'(PWR_ON));
+  to_hw.mixed_swacc <= (clear_bits => (value => regs.mixed_swacc.clear_bits, swacc => swacc_mixed_swacc_clear_bits), toggle_bits => regs.mixed_swacc.toggle_bits, fixed => 4x"9", arg => regs.mixed_swacc.arg, go => regs.mixed_swacc.go, power => regs.mixed_swacc.power, power_fixed => t_access_matrix_mixed_swacc_power_fixed'(PWR_ON));
   to_hw.mixed_history <= (toggle => (value => regs.mixed_history.toggle, swacc => swacc_mixed_history_toggle), set_on_zero => regs.mixed_history.set_on_zero, clear_on_zero => regs.mixed_history.clear_on_zero, toggle_on_zero => regs.mixed_history.toggle_on_zero);
   to_hw.hw_status_swacc <= (level => (value => regs.hw_status_swacc.level, swacc => swacc_hw_status_swacc_level), latched => regs.hw_status_swacc.latched);
   to_hw.hw_only <= (shadow => regs.hw_only.shadow, enable => regs.hw_only.enable);
