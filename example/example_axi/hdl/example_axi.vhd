@@ -3,9 +3,10 @@
 -- To replace this file with a fresh copy, run bust with --replace-top.
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
-  use work.example_axi_regfile_pkg.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+use work.example_axi_regfile_pkg.all;
 
 entity example_axi is
   generic (

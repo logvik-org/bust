@@ -2,16 +2,17 @@
 -- UVVM testbench for the example_axi module (AXI4-Lite).
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 library uvvm_util;
-  context uvvm_util.uvvm_util_context;
+context uvvm_util.uvvm_util_context;
 
 library bitvis_vip_axilite;
-  use bitvis_vip_axilite.axilite_bfm_pkg.all;
-  use work.example_axi_localbus_pkg.all;
-  use work.example_axi_regfile_pkg.all;
+use bitvis_vip_axilite.axilite_bfm_pkg.all;
+
+use work.example_axi_localbus_pkg.all;
+use work.example_axi_regfile_pkg.all;
 
 entity example_axi_tb is
 end entity example_axi_tb;
@@ -120,19 +121,19 @@ begin
   begin
 
     if rising_edge(clk) then
-      if (to_hw.reg9 /= '1') then
+      if to_hw.reg9 /= '1' then
         reg9_reg9_sp_count <= reg9_reg9_sp_count + 1;
         reg9_reg9_sp_value <= to_hw.reg9;
       end if;
-      if (to_hw.reg10 /= 4x"A") then
+      if to_hw.reg10 /= 4x"A" then
         reg10_reg10_sp_count <= reg10_reg10_sp_count + 1;
         reg10_reg10_sp_value <= to_hw.reg10;
       end if;
-      if (to_hw.reg11.field0 /= 15x"0003") then
+      if to_hw.reg11.field0 /= 15x"0003" then
         reg11_field0_sp_count <= reg11_field0_sp_count + 1;
         reg11_field0_sp_value <= to_hw.reg11.field0;
       end if;
-      if (to_hw.reg11.field1 /= '0') then
+      if to_hw.reg11.field1 /= '0' then
         reg11_field1_sp_count <= reg11_field1_sp_count + 1;
         reg11_field1_sp_value <= to_hw.reg11.field1;
       end if;

@@ -3,10 +3,11 @@
 --   Wishbone -> local bus (t_lb_m2s / t_lb_s2m) -> regfile
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
-  use work.{{ module.name }}_localbus_pkg.all;
-  use work.{{ module.name }}_regfile_pkg.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+use work.{{ module.name }}_localbus_pkg.all;
+use work.{{ module.name }}_regfile_pkg.all;
 
 entity {{ module.name }}_wishbone_endpoint is
   generic (

@@ -43,9 +43,10 @@
 --   reg11 0x2C  field0 [1:0]   sw rw  hw r   enum {STATE0..STATE3}
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
-  use work.prototype_localbus_pkg.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+use work.prototype_localbus_pkg.all;
 
 package prototype_regfile_pkg is
 
@@ -515,7 +516,7 @@ package body prototype_regfile_pkg is
 
   begin
 
-    if (not check) then
+    if not check then
       return true;
     end if;
 
@@ -532,7 +533,7 @@ package body prototype_regfile_pkg is
 
     for i in C_PROTOTYPE_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
 
-      if (addr(i) /= '0') then
+      if addr(i) /= '0' then
         return true;
       end if;
 

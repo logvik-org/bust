@@ -3,12 +3,13 @@
 -- To replace this file with a fresh copy, run bust with --replace-top.
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 library ipbus;
-  use ipbus.ipbus.all;
-  use work.example_ipbus_regfile_pkg.all;
+use ipbus.ipbus.all;
+
+use work.example_ipbus_regfile_pkg.all;
 
 entity example_ipbus is
   generic (

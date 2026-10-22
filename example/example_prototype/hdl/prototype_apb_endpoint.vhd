@@ -3,10 +3,11 @@
 --   APB -> local bus (t_lb_m2s / t_lb_s2m) -> regfile
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
-  use work.prototype_localbus_pkg.all;
-  use work.prototype_regfile_pkg.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+use work.prototype_localbus_pkg.all;
+use work.prototype_regfile_pkg.all;
 
 entity prototype_apb_endpoint is
   generic (
@@ -76,13 +77,13 @@ begin
   p_busy : process (pclk, presetn) is
   begin
 
-    if (presetn = '0') then
+    if presetn = '0' then
       busy <= '0';
     elsif rising_edge(pclk) then
-      if (psel = '1' and penable = '0') then
+      if psel = '1' and penable = '0' then
         -- Hold the transaction from its SETUP cycle.
         busy <= '1';
-      elsif (s2m.ack = '1' or s2m.err = '1') then
+      elsif s2m.ack = '1' or s2m.err = '1' then
         -- Release it once the regfile answers.
         busy <= '0';
       end if;
