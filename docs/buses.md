@@ -64,7 +64,7 @@ Only an address that does not decode produces an error:
 
 - a register offset where no register sits, or an address above the
   registers in the module's address range when `G_MODULE_ADDR_WIDTH` is larger
-  than `C_MODULE_ADDR_WIDTH`, or
+  than `C_<MODULE>_MODULE_ADDR_WIDTH`, or
 - with `G_CHECK_BASE_ADDRESS` set to `true`, an address whose base address
   bits differ from `G_BASE_ADDRESS`.
 

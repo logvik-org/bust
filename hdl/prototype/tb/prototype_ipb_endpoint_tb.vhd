@@ -105,14 +105,14 @@ begin
     gen_pulse(reset, '1', 500 ns, BLOCKING, "Reset for 500 ns");
 
     log(ID_LOG_HDR, "reg0: sw rw write/read over IPBus", C_SCOPE);
-    ipb_wr(f_addr(C_ADDR_REG0), 32x"5", "reg0 = field1=10, field0=1");
-    ipb_rd_check(f_addr(C_ADDR_REG0), 32x"5", "reg0 reads back");
+    ipb_wr(f_addr(C_PROTOTYPE_REG0_OFFSET), 32x"5", "reg0 = field1=10, field0=1");
+    ipb_rd_check(f_addr(C_PROTOTYPE_REG0_OFFSET), 32x"5", "reg0 reads back");
     check_value(to_hw.reg0.field0, '1', error, "reg0.field0 to hw", C_SCOPE);
     check_value(to_hw.reg0.field1, "10", error, "reg0.field1 to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg3: sw rw + hw na round-trip", C_SCOPE);
-    ipb_wr(f_addr(C_ADDR_REG3), 32x"A5", "reg3 = 0xA5");
-    ipb_rd_check(f_addr(C_ADDR_REG3), 32x"A5", "reg3 reads back");
+    ipb_wr(f_addr(C_PROTOTYPE_REG3_OFFSET), 32x"A5", "reg3 = 0xA5");
+    ipb_rd_check(f_addr(C_PROTOTYPE_REG3_OFFSET), 32x"A5", "reg3 reads back");
 
     log(ID_LOG_HDR, "reg1: sw ro, hardware-driven, read over IPBus", C_SCOPE);
     wait until falling_edge(clk);
@@ -125,11 +125,11 @@ begin
     from_hw.reg1.field0.we    <= '0';
     from_hw.reg1.field2.wel   <= '1';
     -- reg1 = field2(5)|field1(4)|field0(3:0) = 1|1|1011 = 0x3B
-    ipb_rd_check(f_addr(C_ADDR_REG1), 32x"3B", "reg1 reflects hw over IPBus");
+    ipb_rd_check(f_addr(C_PROTOTYPE_REG1_OFFSET), 32x"3B", "reg1 reflects hw over IPBus");
 
     log(ID_LOG_HDR, "reg11: enumerated field0 over IPBus", C_SCOPE);
-    ipb_wr(f_addr(C_ADDR_REG11), 32x"2", "reg11.field0 = STATE2");
-    ipb_rd_check(f_addr(C_ADDR_REG11), 32x"2", "reg11 reads back encoded value");
+    ipb_wr(f_addr(C_PROTOTYPE_REG11_OFFSET), 32x"2", "reg11.field0 = STATE2");
+    ipb_rd_check(f_addr(C_PROTOTYPE_REG11_OFFSET), 32x"2", "reg11 reads back encoded value");
     check_value(to_hw.reg11.field0 = STATE2, error, "reg11.field0 is STATE2 to hw", C_SCOPE);
 
     wait for 10*C_CLK_PERIOD;

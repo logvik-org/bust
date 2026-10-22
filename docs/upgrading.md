@@ -71,9 +71,9 @@ For an IPBus module with 16-bit addresses, steps 2 and 3 give:
 ```
 
 `g_module_addr_width` of 0 meant "just the bits the registers need" in 0.14.
-In 1.0 a value below `C_MODULE_ADDR_WIDTH`, 0 included, stops the simulation,
-so map `C_MODULE_ADDR_WIDTH` instead if your design uses 0. Better, set the
-width of the module's address range, such as 16.
+In 1.0 a value below `C_<MODULE>_MODULE_ADDR_WIDTH`, 0 included, stops the
+simulation, so map `C_<MODULE>_MODULE_ADDR_WIDTH` instead if your design uses
+the value 0. Better, set the width of the module's address range, such as 16.
 [Base address and address range](addressing.md) describes the three generics.
 
 | bust 0.14 | bust 1.0 |

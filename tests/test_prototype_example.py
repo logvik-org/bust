@@ -105,8 +105,8 @@ def test_to_hw_record_shapes(prototype):
 
 def test_enum_field_typing(prototype):
     f = field(prototype, "reg11", "field0")
-    assert f.enum_type_name == "t_reg11_field0"
-    assert f.value_type_vhdl == "t_reg11_field0"
+    assert f.enum_type_name == "t_prototype_reg11_field0"
+    assert f.value_type_vhdl == "t_prototype_reg11_field0"
     assert prototype.enum_fields == [f]
 
 

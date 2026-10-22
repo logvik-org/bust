@@ -7,77 +7,77 @@ use work.access_matrix_localbus_pkg.all;
 
 package access_matrix_regfile_pkg is
 
-  constant C_ADDR_PLAIN : std_logic_vector(31 downto 0) := 32x"00";
-  constant C_ADDR_STATUS : std_logic_vector(31 downto 0) := 32x"04";
-  constant C_ADDR_COMMAND : std_logic_vector(31 downto 0) := 32x"08";
-  constant C_ADDR_IDENTITY : std_logic_vector(31 downto 0) := 32x"0C";
-  constant C_ADDR_HW_MODIFY : std_logic_vector(31 downto 0) := 32x"10";
-  constant C_ADDR_HW_SET_CLEAR : std_logic_vector(31 downto 0) := 32x"14";
-  constant C_ADDR_READ_EFFECTS : std_logic_vector(31 downto 0) := 32x"18";
-  constant C_ADDR_WRITE_EFFECTS : std_logic_vector(31 downto 0) := 32x"1C";
-  constant C_ADDR_PULSES : std_logic_vector(31 downto 0) := 32x"20";
-  constant C_ADDR_STROBES : std_logic_vector(31 downto 0) := 32x"24";
-  constant C_ADDR_ENUM_VECTOR : std_logic_vector(31 downto 0) := 32x"28";
-  constant C_ADDR_ENUM_BIT : std_logic_vector(31 downto 0) := 32x"2C";
-  constant C_ADDR_ENUM_HW : std_logic_vector(31 downto 0) := 32x"30";
-  constant C_ADDR_ENUM_SWACC : std_logic_vector(31 downto 0) := 32x"34";
-  constant C_ADDR_MIXED_SWACC : std_logic_vector(31 downto 0) := 32x"38";
-  constant C_ADDR_MIXED_HISTORY : std_logic_vector(31 downto 0) := 32x"3C";
-  constant C_ADDR_HW_STATUS_SWACC : std_logic_vector(31 downto 0) := 32x"40";
-  constant C_ADDR_HW_ONLY : std_logic_vector(31 downto 0) := 32x"44";
-  constant C_ADDR_IRQ_STATUS : std_logic_vector(31 downto 0) := 32x"48";
-  constant C_ADDR_FLAT_LEVEL : std_logic_vector(31 downto 0) := 32x"4C";
-  constant C_ADDR_FLAT_STROBE : std_logic_vector(31 downto 0) := 32x"50";
-  constant C_ADDR_FLAT_OVERRIDE : std_logic_vector(31 downto 0) := 32x"54";
-  constant C_ADDR_FLAT_STATUS : std_logic_vector(31 downto 0) := 32x"58";
-  constant C_ADDR_FLAT_FLAG : std_logic_vector(31 downto 0) := 32x"5C";
+  constant C_ACCESS_MATRIX_PLAIN_OFFSET : std_logic_vector(31 downto 0) := 32x"00";
+  constant C_ACCESS_MATRIX_STATUS_OFFSET : std_logic_vector(31 downto 0) := 32x"04";
+  constant C_ACCESS_MATRIX_COMMAND_OFFSET : std_logic_vector(31 downto 0) := 32x"08";
+  constant C_ACCESS_MATRIX_IDENTITY_OFFSET : std_logic_vector(31 downto 0) := 32x"0C";
+  constant C_ACCESS_MATRIX_HW_MODIFY_OFFSET : std_logic_vector(31 downto 0) := 32x"10";
+  constant C_ACCESS_MATRIX_HW_SET_CLEAR_OFFSET : std_logic_vector(31 downto 0) := 32x"14";
+  constant C_ACCESS_MATRIX_READ_EFFECTS_OFFSET : std_logic_vector(31 downto 0) := 32x"18";
+  constant C_ACCESS_MATRIX_WRITE_EFFECTS_OFFSET : std_logic_vector(31 downto 0) := 32x"1C";
+  constant C_ACCESS_MATRIX_PULSES_OFFSET : std_logic_vector(31 downto 0) := 32x"20";
+  constant C_ACCESS_MATRIX_STROBES_OFFSET : std_logic_vector(31 downto 0) := 32x"24";
+  constant C_ACCESS_MATRIX_ENUM_VECTOR_OFFSET : std_logic_vector(31 downto 0) := 32x"28";
+  constant C_ACCESS_MATRIX_ENUM_BIT_OFFSET : std_logic_vector(31 downto 0) := 32x"2C";
+  constant C_ACCESS_MATRIX_ENUM_HW_OFFSET : std_logic_vector(31 downto 0) := 32x"30";
+  constant C_ACCESS_MATRIX_ENUM_SWACC_OFFSET : std_logic_vector(31 downto 0) := 32x"34";
+  constant C_ACCESS_MATRIX_MIXED_SWACC_OFFSET : std_logic_vector(31 downto 0) := 32x"38";
+  constant C_ACCESS_MATRIX_MIXED_HISTORY_OFFSET : std_logic_vector(31 downto 0) := 32x"3C";
+  constant C_ACCESS_MATRIX_HW_STATUS_SWACC_OFFSET : std_logic_vector(31 downto 0) := 32x"40";
+  constant C_ACCESS_MATRIX_HW_ONLY_OFFSET : std_logic_vector(31 downto 0) := 32x"44";
+  constant C_ACCESS_MATRIX_IRQ_STATUS_OFFSET : std_logic_vector(31 downto 0) := 32x"48";
+  constant C_ACCESS_MATRIX_FLAT_LEVEL_OFFSET : std_logic_vector(31 downto 0) := 32x"4C";
+  constant C_ACCESS_MATRIX_FLAT_STROBE_OFFSET : std_logic_vector(31 downto 0) := 32x"50";
+  constant C_ACCESS_MATRIX_FLAT_OVERRIDE_OFFSET : std_logic_vector(31 downto 0) := 32x"54";
+  constant C_ACCESS_MATRIX_FLAT_STATUS_OFFSET : std_logic_vector(31 downto 0) := 32x"58";
+  constant C_ACCESS_MATRIX_FLAT_FLAG_OFFSET : std_logic_vector(31 downto 0) := 32x"5C";
 
-  constant C_MODULE_ADDR_WIDTH : natural := 7;
+  constant C_ACCESS_MATRIX_MODULE_ADDR_WIDTH : natural := 7;
 
-  type t_identity_pwr_default is (PWR_OFF, PWR_ON);
-  -- Convert t_identity_pwr_default to and from its encoded bits.
-  function to_slv(v : t_identity_pwr_default) return std_logic_vector;
-  function to_identity_pwr_default(s : std_logic_vector(0 downto 0)) return t_identity_pwr_default;
+  type t_access_matrix_identity_pwr_default is (PWR_OFF, PWR_ON);
+  -- Convert t_access_matrix_identity_pwr_default to and from its encoded bits.
+  function to_slv(v : t_access_matrix_identity_pwr_default) return std_logic_vector;
+  function to_access_matrix_identity_pwr_default(s : std_logic_vector(0 downto 0)) return t_access_matrix_identity_pwr_default;
 
-  type t_identity_pwr_spare is (PWR_OFF, PWR_ON);
-  -- Convert t_identity_pwr_spare to and from its encoded bits.
-  function to_slv(v : t_identity_pwr_spare) return std_logic_vector;
-  function to_identity_pwr_spare(s : std_logic_vector(0 downto 0)) return t_identity_pwr_spare;
+  type t_access_matrix_identity_pwr_spare is (PWR_OFF, PWR_ON);
+  -- Convert t_access_matrix_identity_pwr_spare to and from its encoded bits.
+  function to_slv(v : t_access_matrix_identity_pwr_spare) return std_logic_vector;
+  function to_access_matrix_identity_pwr_spare(s : std_logic_vector(0 downto 0)) return t_access_matrix_identity_pwr_spare;
 
-  type t_enum_vector_mode is (MODE_SLOW, MODE_FAST);
-  -- Convert t_enum_vector_mode to and from its encoded bits.
-  function to_slv(v : t_enum_vector_mode) return std_logic_vector;
-  function to_enum_vector_mode(s : std_logic_vector(1 downto 0)) return t_enum_vector_mode;
+  type t_access_matrix_enum_vector_mode is (MODE_SLOW, MODE_FAST);
+  -- Convert t_access_matrix_enum_vector_mode to and from its encoded bits.
+  function to_slv(v : t_access_matrix_enum_vector_mode) return std_logic_vector;
+  function to_access_matrix_enum_vector_mode(s : std_logic_vector(1 downto 0)) return t_access_matrix_enum_vector_mode;
 
-  type t_enum_bit_power is (PWR_OFF, PWR_ON);
-  -- Convert t_enum_bit_power to and from its encoded bits.
-  function to_slv(v : t_enum_bit_power) return std_logic_vector;
-  function to_enum_bit_power(s : std_logic_vector(0 downto 0)) return t_enum_bit_power;
+  type t_access_matrix_enum_bit_power is (PWR_OFF, PWR_ON);
+  -- Convert t_access_matrix_enum_bit_power to and from its encoded bits.
+  function to_slv(v : t_access_matrix_enum_bit_power) return std_logic_vector;
+  function to_access_matrix_enum_bit_power(s : std_logic_vector(0 downto 0)) return t_access_matrix_enum_bit_power;
 
-  type t_enum_hw_state is (ST_RESET, ST_RUN, ST_HALT);
-  -- Convert t_enum_hw_state to and from its encoded bits.
-  function to_slv(v : t_enum_hw_state) return std_logic_vector;
-  function to_enum_hw_state(s : std_logic_vector(1 downto 0)) return t_enum_hw_state;
+  type t_access_matrix_enum_hw_state is (ST_RESET, ST_RUN, ST_HALT);
+  -- Convert t_access_matrix_enum_hw_state to and from its encoded bits.
+  function to_slv(v : t_access_matrix_enum_hw_state) return std_logic_vector;
+  function to_access_matrix_enum_hw_state(s : std_logic_vector(1 downto 0)) return t_access_matrix_enum_hw_state;
 
-  type t_enum_hw_supply is (PWR_OFF, PWR_ON);
-  -- Convert t_enum_hw_supply to and from its encoded bits.
-  function to_slv(v : t_enum_hw_supply) return std_logic_vector;
-  function to_enum_hw_supply(s : std_logic_vector(0 downto 0)) return t_enum_hw_supply;
+  type t_access_matrix_enum_hw_supply is (PWR_OFF, PWR_ON);
+  -- Convert t_access_matrix_enum_hw_supply to and from its encoded bits.
+  function to_slv(v : t_access_matrix_enum_hw_supply) return std_logic_vector;
+  function to_access_matrix_enum_hw_supply(s : std_logic_vector(0 downto 0)) return t_access_matrix_enum_hw_supply;
 
-  type t_enum_swacc_phase is (PH_IDLE, PH_ARM, PH_FIRE);
-  -- Convert t_enum_swacc_phase to and from its encoded bits.
-  function to_slv(v : t_enum_swacc_phase) return std_logic_vector;
-  function to_enum_swacc_phase(s : std_logic_vector(1 downto 0)) return t_enum_swacc_phase;
+  type t_access_matrix_enum_swacc_phase is (PH_IDLE, PH_ARM, PH_FIRE);
+  -- Convert t_access_matrix_enum_swacc_phase to and from its encoded bits.
+  function to_slv(v : t_access_matrix_enum_swacc_phase) return std_logic_vector;
+  function to_access_matrix_enum_swacc_phase(s : std_logic_vector(1 downto 0)) return t_access_matrix_enum_swacc_phase;
 
-  type t_mixed_swacc_power is (PWR_OFF, PWR_ON);
-  -- Convert t_mixed_swacc_power to and from its encoded bits.
-  function to_slv(v : t_mixed_swacc_power) return std_logic_vector;
-  function to_mixed_swacc_power(s : std_logic_vector(0 downto 0)) return t_mixed_swacc_power;
+  type t_access_matrix_mixed_swacc_power is (PWR_OFF, PWR_ON);
+  -- Convert t_access_matrix_mixed_swacc_power to and from its encoded bits.
+  function to_slv(v : t_access_matrix_mixed_swacc_power) return std_logic_vector;
+  function to_access_matrix_mixed_swacc_power(s : std_logic_vector(0 downto 0)) return t_access_matrix_mixed_swacc_power;
 
-  type t_mixed_swacc_power_fixed is (PWR_OFF, PWR_ON);
-  -- Convert t_mixed_swacc_power_fixed to and from its encoded bits.
-  function to_slv(v : t_mixed_swacc_power_fixed) return std_logic_vector;
-  function to_mixed_swacc_power_fixed(s : std_logic_vector(0 downto 0)) return t_mixed_swacc_power_fixed;
+  type t_access_matrix_mixed_swacc_power_fixed is (PWR_OFF, PWR_ON);
+  -- Convert t_access_matrix_mixed_swacc_power_fixed to and from its encoded bits.
+  function to_slv(v : t_access_matrix_mixed_swacc_power_fixed) return std_logic_vector;
+  function to_access_matrix_mixed_swacc_power_fixed(s : std_logic_vector(0 downto 0)) return t_access_matrix_mixed_swacc_power_fixed;
 
   type t_plain_regs is record
     flag : std_logic;
@@ -118,23 +118,23 @@ package access_matrix_regfile_pkg is
     accessed : std_logic_vector(3 downto 0);
   end record;
   type t_enum_vector_regs is record
-    mode : t_enum_vector_mode;
+    mode : t_access_matrix_enum_vector_mode;
   end record;
   type t_enum_bit_regs is record
-    power : t_enum_bit_power;
+    power : t_access_matrix_enum_bit_power;
   end record;
   type t_enum_hw_regs is record
-    supply : t_enum_hw_supply;
+    supply : t_access_matrix_enum_hw_supply;
   end record;
   type t_enum_swacc_regs is record
-    phase : t_enum_swacc_phase;
+    phase : t_access_matrix_enum_swacc_phase;
   end record;
   type t_mixed_swacc_regs is record
     clear_bits : std_logic_vector(3 downto 0);
     toggle_bits : std_logic_vector(3 downto 0);
     arg : std_logic_vector(3 downto 0);
     go : std_logic;
-    power : t_mixed_swacc_power;
+    power : t_access_matrix_mixed_swacc_power;
   end record;
   type t_mixed_history_regs is record
     toggle : std_logic_vector(3 downto 0);
@@ -215,153 +215,153 @@ package access_matrix_regfile_pkg is
     flat_override => (flat_override => (others => '0')),
     flat_flag => (flat_flag => '0'));
 
-  type t_plain_to_hw is record
+  type t_access_matrix_plain_to_hw is record
     flag : std_logic;
     level : std_logic_vector(2 downto 0);
   end record;
-  type t_command_to_hw is record
+  type t_access_matrix_command_to_hw is record
     opcode : std_logic_vector(3 downto 0);
   end record;
-  type t_identity_to_hw is record
+  type t_access_matrix_identity_to_hw is record
     id : std_logic_vector(7 downto 0);
-    pwr_default : t_identity_pwr_default;
-    pwr_spare : t_identity_pwr_spare;
+    pwr_default : t_access_matrix_identity_pwr_default;
+    pwr_spare : t_access_matrix_identity_pwr_spare;
   end record;
-  type t_hw_modify_to_hw is record
+  type t_access_matrix_hw_modify_to_hw is record
     override : std_logic_vector(3 downto 0);
     sticky : std_logic;
   end record;
-  type t_hw_set_clear_clr_only_out is record
+  type t_access_matrix_hw_set_clear_clr_only_out is record
     value : std_logic;
     swacc : std_logic;
   end record;
 
-  type t_hw_set_clear_to_hw is record
-    clr_only : t_hw_set_clear_clr_only_out;
+  type t_access_matrix_hw_set_clear_to_hw is record
+    clr_only : t_access_matrix_hw_set_clear_clr_only_out;
   end record;
-  type t_read_effects_to_hw is record
+  type t_access_matrix_read_effects_to_hw is record
     clear_on_read : std_logic_vector(3 downto 0);
     set_on_read : std_logic_vector(3 downto 0);
   end record;
-  type t_write_effects_to_hw is record
+  type t_access_matrix_write_effects_to_hw is record
     set_bits : std_logic_vector(3 downto 0);
     clear_bits : std_logic_vector(3 downto 0);
     toggle_on_zero : std_logic_vector(3 downto 0);
     set_all : std_logic;
   end record;
-  type t_pulses_kick_out is record
+  type t_access_matrix_pulses_kick_out is record
     value : std_logic_vector(3 downto 0);
     swmod : std_logic;
   end record;
 
-  type t_pulses_to_hw is record
+  type t_access_matrix_pulses_to_hw is record
     go : std_logic;
-    kick : t_pulses_kick_out;
+    kick : t_access_matrix_pulses_kick_out;
   end record;
-  type t_strobes_modified_out is record
+  type t_access_matrix_strobes_modified_out is record
     value : std_logic_vector(3 downto 0);
     swmod : std_logic;
   end record;
 
-  type t_strobes_accessed_out is record
+  type t_access_matrix_strobes_accessed_out is record
     value : std_logic_vector(3 downto 0);
     swacc : std_logic;
   end record;
 
-  type t_strobes_to_hw is record
-    modified : t_strobes_modified_out;
-    accessed : t_strobes_accessed_out;
+  type t_access_matrix_strobes_to_hw is record
+    modified : t_access_matrix_strobes_modified_out;
+    accessed : t_access_matrix_strobes_accessed_out;
   end record;
-  type t_enum_vector_to_hw is record
-    mode : t_enum_vector_mode;
+  type t_access_matrix_enum_vector_to_hw is record
+    mode : t_access_matrix_enum_vector_mode;
   end record;
-  type t_enum_bit_to_hw is record
-    power : t_enum_bit_power;
+  type t_access_matrix_enum_bit_to_hw is record
+    power : t_access_matrix_enum_bit_power;
   end record;
-  type t_enum_hw_to_hw is record
-    supply : t_enum_hw_supply;
+  type t_access_matrix_enum_hw_to_hw is record
+    supply : t_access_matrix_enum_hw_supply;
   end record;
-  type t_enum_swacc_phase_out is record
-    value : t_enum_swacc_phase;
+  type t_access_matrix_enum_swacc_phase_out is record
+    value : t_access_matrix_enum_swacc_phase;
     swacc : std_logic;
   end record;
 
-  type t_enum_swacc_to_hw is record
-    phase : t_enum_swacc_phase_out;
+  type t_access_matrix_enum_swacc_to_hw is record
+    phase : t_access_matrix_enum_swacc_phase_out;
   end record;
-  type t_mixed_swacc_clear_bits_out is record
+  type t_access_matrix_mixed_swacc_clear_bits_out is record
     value : std_logic_vector(3 downto 0);
     swacc : std_logic;
   end record;
 
-  type t_mixed_swacc_to_hw is record
-    clear_bits : t_mixed_swacc_clear_bits_out;
+  type t_access_matrix_mixed_swacc_to_hw is record
+    clear_bits : t_access_matrix_mixed_swacc_clear_bits_out;
     toggle_bits : std_logic_vector(3 downto 0);
     fixed : std_logic_vector(3 downto 0);
     arg : std_logic_vector(3 downto 0);
     go : std_logic;
-    power : t_mixed_swacc_power;
-    power_fixed : t_mixed_swacc_power_fixed;
+    power : t_access_matrix_mixed_swacc_power;
+    power_fixed : t_access_matrix_mixed_swacc_power_fixed;
   end record;
-  type t_mixed_history_toggle_out is record
+  type t_access_matrix_mixed_history_toggle_out is record
     value : std_logic_vector(3 downto 0);
     swacc : std_logic;
   end record;
 
-  type t_mixed_history_to_hw is record
-    toggle : t_mixed_history_toggle_out;
+  type t_access_matrix_mixed_history_to_hw is record
+    toggle : t_access_matrix_mixed_history_toggle_out;
     set_on_zero : std_logic_vector(3 downto 0);
     clear_on_zero : std_logic_vector(3 downto 0);
     toggle_on_zero : std_logic_vector(3 downto 0);
   end record;
-  type t_hw_status_swacc_level_out is record
+  type t_access_matrix_hw_status_swacc_level_out is record
     value : std_logic_vector(3 downto 0);
     swacc : std_logic;
   end record;
 
-  type t_hw_status_swacc_to_hw is record
-    level : t_hw_status_swacc_level_out;
+  type t_access_matrix_hw_status_swacc_to_hw is record
+    level : t_access_matrix_hw_status_swacc_level_out;
     latched : std_logic_vector(3 downto 0);
   end record;
-  type t_hw_only_to_hw is record
+  type t_access_matrix_hw_only_to_hw is record
     shadow : std_logic_vector(3 downto 0);
     enable : std_logic;
   end record;
-  type t_irq_status_pending_out is record
+  type t_access_matrix_irq_status_pending_out is record
     value : std_logic;
     swacc : std_logic;
   end record;
 
-  type t_irq_status_to_hw is record
-    pending : t_irq_status_pending_out;
+  type t_access_matrix_irq_status_to_hw is record
+    pending : t_access_matrix_irq_status_pending_out;
   end record;
-  type t_flat_strobe_flat_strobe_out is record
+  type t_access_matrix_flat_strobe_flat_strobe_out is record
     value : std_logic_vector(3 downto 0);
     swmod : std_logic;
   end record;
 
 
   type t_access_matrix_to_hw is record
-    plain : t_plain_to_hw;
-    command : t_command_to_hw;
-    identity : t_identity_to_hw;
-    hw_modify : t_hw_modify_to_hw;
-    hw_set_clear : t_hw_set_clear_to_hw;
-    read_effects : t_read_effects_to_hw;
-    write_effects : t_write_effects_to_hw;
-    pulses : t_pulses_to_hw;
-    strobes : t_strobes_to_hw;
-    enum_vector : t_enum_vector_to_hw;
-    enum_bit : t_enum_bit_to_hw;
-    enum_hw : t_enum_hw_to_hw;
-    enum_swacc : t_enum_swacc_to_hw;
-    mixed_swacc : t_mixed_swacc_to_hw;
-    mixed_history : t_mixed_history_to_hw;
-    hw_status_swacc : t_hw_status_swacc_to_hw;
-    hw_only : t_hw_only_to_hw;
-    irq_status : t_irq_status_to_hw;
+    plain : t_access_matrix_plain_to_hw;
+    command : t_access_matrix_command_to_hw;
+    identity : t_access_matrix_identity_to_hw;
+    hw_modify : t_access_matrix_hw_modify_to_hw;
+    hw_set_clear : t_access_matrix_hw_set_clear_to_hw;
+    read_effects : t_access_matrix_read_effects_to_hw;
+    write_effects : t_access_matrix_write_effects_to_hw;
+    pulses : t_access_matrix_pulses_to_hw;
+    strobes : t_access_matrix_strobes_to_hw;
+    enum_vector : t_access_matrix_enum_vector_to_hw;
+    enum_bit : t_access_matrix_enum_bit_to_hw;
+    enum_hw : t_access_matrix_enum_hw_to_hw;
+    enum_swacc : t_access_matrix_enum_swacc_to_hw;
+    mixed_swacc : t_access_matrix_mixed_swacc_to_hw;
+    mixed_history : t_access_matrix_mixed_history_to_hw;
+    hw_status_swacc : t_access_matrix_hw_status_swacc_to_hw;
+    hw_only : t_access_matrix_hw_only_to_hw;
+    irq_status : t_access_matrix_irq_status_to_hw;
     flat_level : std_logic_vector(7 downto 0);
-    flat_strobe : t_flat_strobe_flat_strobe_out;
+    flat_strobe : t_access_matrix_flat_strobe_flat_strobe_out;
     flat_override : std_logic_vector(7 downto 0);
     flat_flag : std_logic;
   end record;
@@ -390,99 +390,99 @@ package access_matrix_regfile_pkg is
     flat_override => (others => '0'),
     flat_flag => '0');
 
-  type t_status_count_in is record
+  type t_access_matrix_status_count_in is record
     value : std_logic_vector(3 downto 0);
     we : std_logic;
   end record;
 
-  type t_status_fault_in is record
+  type t_access_matrix_status_fault_in is record
     value : std_logic;
     wel : std_logic;
   end record;
 
-  type t_status_from_hw is record
+  type t_access_matrix_status_from_hw is record
     busy : std_logic;
-    count : t_status_count_in;
-    fault : t_status_fault_in;
+    count : t_access_matrix_status_count_in;
+    fault : t_access_matrix_status_fault_in;
   end record;
-  type t_hw_modify_override_in is record
+  type t_access_matrix_hw_modify_override_in is record
     value : std_logic_vector(3 downto 0);
     we : std_logic;
   end record;
 
-  type t_hw_modify_sticky_in is record
+  type t_access_matrix_hw_modify_sticky_in is record
     set : std_logic;
     clr : std_logic;
   end record;
 
-  type t_hw_modify_from_hw is record
-    override : t_hw_modify_override_in;
-    sticky : t_hw_modify_sticky_in;
+  type t_access_matrix_hw_modify_from_hw is record
+    override : t_access_matrix_hw_modify_override_in;
+    sticky : t_access_matrix_hw_modify_sticky_in;
   end record;
-  type t_hw_set_clear_set_only_in is record
+  type t_access_matrix_hw_set_clear_set_only_in is record
     value : std_logic_vector(3 downto 0);
     set : std_logic;
   end record;
 
-  type t_hw_set_clear_clr_only_in is record
+  type t_access_matrix_hw_set_clear_clr_only_in is record
     value : std_logic;
     clr : std_logic;
   end record;
 
-  type t_hw_set_clear_from_hw is record
-    set_only : t_hw_set_clear_set_only_in;
-    clr_only : t_hw_set_clear_clr_only_in;
+  type t_access_matrix_hw_set_clear_from_hw is record
+    set_only : t_access_matrix_hw_set_clear_set_only_in;
+    clr_only : t_access_matrix_hw_set_clear_clr_only_in;
   end record;
-  type t_enum_hw_supply_in is record
-    value : t_enum_hw_supply;
+  type t_access_matrix_enum_hw_supply_in is record
+    value : t_access_matrix_enum_hw_supply;
     we : std_logic;
   end record;
 
-  type t_enum_hw_from_hw is record
-    state : t_enum_hw_state;
-    supply : t_enum_hw_supply_in;
+  type t_access_matrix_enum_hw_from_hw is record
+    state : t_access_matrix_enum_hw_state;
+    supply : t_access_matrix_enum_hw_supply_in;
   end record;
-  type t_hw_status_swacc_latched_in is record
+  type t_access_matrix_hw_status_swacc_latched_in is record
     value : std_logic_vector(3 downto 0);
     we : std_logic;
   end record;
 
-  type t_hw_status_swacc_from_hw is record
+  type t_access_matrix_hw_status_swacc_from_hw is record
     level : std_logic_vector(3 downto 0);
-    latched : t_hw_status_swacc_latched_in;
+    latched : t_access_matrix_hw_status_swacc_latched_in;
   end record;
-  type t_hw_only_from_hw is record
+  type t_access_matrix_hw_only_from_hw is record
     shadow : std_logic_vector(3 downto 0);
   end record;
-  type t_irq_status_pending_in is record
+  type t_access_matrix_irq_status_pending_in is record
     set : std_logic;
   end record;
 
-  type t_irq_status_from_hw is record
-    pending : t_irq_status_pending_in;
+  type t_access_matrix_irq_status_from_hw is record
+    pending : t_access_matrix_irq_status_pending_in;
   end record;
-  type t_flat_override_flat_override_in is record
+  type t_access_matrix_flat_override_flat_override_in is record
     value : std_logic_vector(7 downto 0);
     we : std_logic;
   end record;
 
-  type t_flat_flag_flat_flag_in is record
+  type t_access_matrix_flat_flag_flat_flag_in is record
     set : std_logic;
     clr : std_logic;
   end record;
 
 
   type t_access_matrix_from_hw is record
-    status : t_status_from_hw;
-    hw_modify : t_hw_modify_from_hw;
-    hw_set_clear : t_hw_set_clear_from_hw;
-    enum_hw : t_enum_hw_from_hw;
-    hw_status_swacc : t_hw_status_swacc_from_hw;
-    hw_only : t_hw_only_from_hw;
-    irq_status : t_irq_status_from_hw;
-    flat_override : t_flat_override_flat_override_in;
+    status : t_access_matrix_status_from_hw;
+    hw_modify : t_access_matrix_hw_modify_from_hw;
+    hw_set_clear : t_access_matrix_hw_set_clear_from_hw;
+    enum_hw : t_access_matrix_enum_hw_from_hw;
+    hw_status_swacc : t_access_matrix_hw_status_swacc_from_hw;
+    hw_only : t_access_matrix_hw_only_from_hw;
+    irq_status : t_access_matrix_irq_status_from_hw;
+    flat_override : t_access_matrix_flat_override_flat_override_in;
     flat_status : std_logic_vector(5 downto 0);
-    flat_flag : t_flat_flag_flat_flag_in;
+    flat_flag : t_access_matrix_flat_flag_flat_flag_in;
   end record;
 
   constant C_ACCESS_MATRIX_FROM_HW_RESET : t_access_matrix_from_hw := (
@@ -508,17 +508,17 @@ package access_matrix_regfile_pkg is
                            module_addr_width : natural) return boolean;
 
   -- True when reg_offset equals the register offset in reg_addr, every bit counting.
-  function reg_addr_match(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+  function reg_addr_match(reg_offset : std_logic_vector(C_ACCESS_MATRIX_MODULE_ADDR_WIDTH-1 downto 0);
                           reg_addr   : std_logic_vector(31 downto 0)) return boolean;
 
   -- True when a register sits at reg_offset.
-  function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+  function is_mapped(reg_offset : std_logic_vector(C_ACCESS_MATRIX_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
 
   -- True when a register with a field software can write sits at reg_offset.
-  function is_sw_writable(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+  function is_sw_writable(reg_offset : std_logic_vector(C_ACCESS_MATRIX_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
 
   -- True when a register with a field software can read sits at reg_offset.
-  function is_sw_readable(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+  function is_sw_readable(reg_offset : std_logic_vector(C_ACCESS_MATRIX_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
 
 end package access_matrix_regfile_pkg;
 
@@ -540,7 +540,7 @@ package body access_matrix_regfile_pkg is
   function above_registers(addr              : std_logic_vector(31 downto 0);
                            module_addr_width : natural) return boolean is
   begin
-    for i in C_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
+    for i in C_ACCESS_MATRIX_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
       if addr(i) /= '0' then
         return true;
       end if;
@@ -548,28 +548,28 @@ package body access_matrix_regfile_pkg is
     return false;
   end function;
 
-  function reg_addr_match(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+  function reg_addr_match(reg_offset : std_logic_vector(C_ACCESS_MATRIX_MODULE_ADDR_WIDTH-1 downto 0);
                           reg_addr   : std_logic_vector(31 downto 0)) return boolean is
   begin
-    return reg_offset = reg_addr(C_MODULE_ADDR_WIDTH-1 downto 0);
+    return reg_offset = reg_addr(C_ACCESS_MATRIX_MODULE_ADDR_WIDTH-1 downto 0);
   end function;
 
-  function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  function is_mapped(reg_offset : std_logic_vector(C_ACCESS_MATRIX_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
   begin
-    return reg_addr_match(reg_offset, C_ADDR_PLAIN) or reg_addr_match(reg_offset, C_ADDR_STATUS) or reg_addr_match(reg_offset, C_ADDR_COMMAND) or reg_addr_match(reg_offset, C_ADDR_IDENTITY) or reg_addr_match(reg_offset, C_ADDR_HW_MODIFY) or reg_addr_match(reg_offset, C_ADDR_HW_SET_CLEAR) or reg_addr_match(reg_offset, C_ADDR_READ_EFFECTS) or reg_addr_match(reg_offset, C_ADDR_WRITE_EFFECTS) or reg_addr_match(reg_offset, C_ADDR_PULSES) or reg_addr_match(reg_offset, C_ADDR_STROBES) or reg_addr_match(reg_offset, C_ADDR_ENUM_VECTOR) or reg_addr_match(reg_offset, C_ADDR_ENUM_BIT) or reg_addr_match(reg_offset, C_ADDR_ENUM_HW) or reg_addr_match(reg_offset, C_ADDR_ENUM_SWACC) or reg_addr_match(reg_offset, C_ADDR_MIXED_SWACC) or reg_addr_match(reg_offset, C_ADDR_MIXED_HISTORY) or reg_addr_match(reg_offset, C_ADDR_HW_STATUS_SWACC) or reg_addr_match(reg_offset, C_ADDR_HW_ONLY) or reg_addr_match(reg_offset, C_ADDR_IRQ_STATUS) or reg_addr_match(reg_offset, C_ADDR_FLAT_LEVEL) or reg_addr_match(reg_offset, C_ADDR_FLAT_STROBE) or reg_addr_match(reg_offset, C_ADDR_FLAT_OVERRIDE) or reg_addr_match(reg_offset, C_ADDR_FLAT_STATUS) or reg_addr_match(reg_offset, C_ADDR_FLAT_FLAG);
+    return reg_addr_match(reg_offset, C_ACCESS_MATRIX_PLAIN_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_STATUS_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_COMMAND_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_IDENTITY_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_MODIFY_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_SET_CLEAR_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_READ_EFFECTS_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_WRITE_EFFECTS_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_PULSES_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_STROBES_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_VECTOR_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_BIT_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_HW_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_SWACC_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_MIXED_SWACC_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_MIXED_HISTORY_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_STATUS_SWACC_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_ONLY_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_IRQ_STATUS_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_LEVEL_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_STROBE_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_OVERRIDE_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_STATUS_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_FLAG_OFFSET);
   end function;
 
-  function is_sw_writable(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  function is_sw_writable(reg_offset : std_logic_vector(C_ACCESS_MATRIX_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
   begin
-    return reg_addr_match(reg_offset, C_ADDR_PLAIN) or reg_addr_match(reg_offset, C_ADDR_COMMAND) or reg_addr_match(reg_offset, C_ADDR_HW_MODIFY) or reg_addr_match(reg_offset, C_ADDR_HW_SET_CLEAR) or reg_addr_match(reg_offset, C_ADDR_READ_EFFECTS) or reg_addr_match(reg_offset, C_ADDR_WRITE_EFFECTS) or reg_addr_match(reg_offset, C_ADDR_PULSES) or reg_addr_match(reg_offset, C_ADDR_STROBES) or reg_addr_match(reg_offset, C_ADDR_ENUM_VECTOR) or reg_addr_match(reg_offset, C_ADDR_ENUM_BIT) or reg_addr_match(reg_offset, C_ADDR_ENUM_SWACC) or reg_addr_match(reg_offset, C_ADDR_MIXED_SWACC) or reg_addr_match(reg_offset, C_ADDR_MIXED_HISTORY) or reg_addr_match(reg_offset, C_ADDR_HW_ONLY) or reg_addr_match(reg_offset, C_ADDR_FLAT_LEVEL) or reg_addr_match(reg_offset, C_ADDR_FLAT_STROBE) or reg_addr_match(reg_offset, C_ADDR_FLAT_OVERRIDE) or reg_addr_match(reg_offset, C_ADDR_FLAT_FLAG);
+    return reg_addr_match(reg_offset, C_ACCESS_MATRIX_PLAIN_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_COMMAND_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_MODIFY_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_SET_CLEAR_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_READ_EFFECTS_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_WRITE_EFFECTS_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_PULSES_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_STROBES_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_VECTOR_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_BIT_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_SWACC_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_MIXED_SWACC_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_MIXED_HISTORY_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_ONLY_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_LEVEL_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_STROBE_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_OVERRIDE_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_FLAG_OFFSET);
   end function;
 
-  function is_sw_readable(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  function is_sw_readable(reg_offset : std_logic_vector(C_ACCESS_MATRIX_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
   begin
-    return reg_addr_match(reg_offset, C_ADDR_PLAIN) or reg_addr_match(reg_offset, C_ADDR_STATUS) or reg_addr_match(reg_offset, C_ADDR_IDENTITY) or reg_addr_match(reg_offset, C_ADDR_HW_MODIFY) or reg_addr_match(reg_offset, C_ADDR_HW_SET_CLEAR) or reg_addr_match(reg_offset, C_ADDR_READ_EFFECTS) or reg_addr_match(reg_offset, C_ADDR_WRITE_EFFECTS) or reg_addr_match(reg_offset, C_ADDR_PULSES) or reg_addr_match(reg_offset, C_ADDR_STROBES) or reg_addr_match(reg_offset, C_ADDR_ENUM_VECTOR) or reg_addr_match(reg_offset, C_ADDR_ENUM_BIT) or reg_addr_match(reg_offset, C_ADDR_ENUM_HW) or reg_addr_match(reg_offset, C_ADDR_ENUM_SWACC) or reg_addr_match(reg_offset, C_ADDR_MIXED_SWACC) or reg_addr_match(reg_offset, C_ADDR_MIXED_HISTORY) or reg_addr_match(reg_offset, C_ADDR_HW_STATUS_SWACC) or reg_addr_match(reg_offset, C_ADDR_HW_ONLY) or reg_addr_match(reg_offset, C_ADDR_IRQ_STATUS) or reg_addr_match(reg_offset, C_ADDR_FLAT_LEVEL) or reg_addr_match(reg_offset, C_ADDR_FLAT_STROBE) or reg_addr_match(reg_offset, C_ADDR_FLAT_OVERRIDE) or reg_addr_match(reg_offset, C_ADDR_FLAT_STATUS) or reg_addr_match(reg_offset, C_ADDR_FLAT_FLAG);
+    return reg_addr_match(reg_offset, C_ACCESS_MATRIX_PLAIN_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_STATUS_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_IDENTITY_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_MODIFY_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_SET_CLEAR_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_READ_EFFECTS_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_WRITE_EFFECTS_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_PULSES_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_STROBES_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_VECTOR_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_BIT_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_HW_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_SWACC_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_MIXED_SWACC_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_MIXED_HISTORY_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_STATUS_SWACC_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_ONLY_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_IRQ_STATUS_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_LEVEL_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_STROBE_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_OVERRIDE_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_STATUS_OFFSET) or reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_FLAG_OFFSET);
   end function;
 
-  function to_slv(v : t_identity_pwr_default) return std_logic_vector is
+  function to_slv(v : t_access_matrix_identity_pwr_default) return std_logic_vector is
     variable slv : std_logic_vector(0 downto 0);
   begin
     case v is
@@ -579,7 +579,7 @@ package body access_matrix_regfile_pkg is
     return slv;
   end function;
 
-  function to_identity_pwr_default(s : std_logic_vector(0 downto 0)) return t_identity_pwr_default is
+  function to_access_matrix_identity_pwr_default(s : std_logic_vector(0 downto 0)) return t_access_matrix_identity_pwr_default is
   begin
     case s is
       when "0" => return PWR_OFF;
@@ -588,7 +588,7 @@ package body access_matrix_regfile_pkg is
     end case;
   end function;
 
-  function to_slv(v : t_identity_pwr_spare) return std_logic_vector is
+  function to_slv(v : t_access_matrix_identity_pwr_spare) return std_logic_vector is
     variable slv : std_logic_vector(0 downto 0);
   begin
     case v is
@@ -598,7 +598,7 @@ package body access_matrix_regfile_pkg is
     return slv;
   end function;
 
-  function to_identity_pwr_spare(s : std_logic_vector(0 downto 0)) return t_identity_pwr_spare is
+  function to_access_matrix_identity_pwr_spare(s : std_logic_vector(0 downto 0)) return t_access_matrix_identity_pwr_spare is
   begin
     case s is
       when "0" => return PWR_OFF;
@@ -607,7 +607,7 @@ package body access_matrix_regfile_pkg is
     end case;
   end function;
 
-  function to_slv(v : t_enum_vector_mode) return std_logic_vector is
+  function to_slv(v : t_access_matrix_enum_vector_mode) return std_logic_vector is
     variable slv : std_logic_vector(1 downto 0);
   begin
     case v is
@@ -617,7 +617,7 @@ package body access_matrix_regfile_pkg is
     return slv;
   end function;
 
-  function to_enum_vector_mode(s : std_logic_vector(1 downto 0)) return t_enum_vector_mode is
+  function to_access_matrix_enum_vector_mode(s : std_logic_vector(1 downto 0)) return t_access_matrix_enum_vector_mode is
   begin
     case s is
       when "00" => return MODE_SLOW;
@@ -626,7 +626,7 @@ package body access_matrix_regfile_pkg is
     end case;
   end function;
 
-  function to_slv(v : t_enum_bit_power) return std_logic_vector is
+  function to_slv(v : t_access_matrix_enum_bit_power) return std_logic_vector is
     variable slv : std_logic_vector(0 downto 0);
   begin
     case v is
@@ -636,7 +636,7 @@ package body access_matrix_regfile_pkg is
     return slv;
   end function;
 
-  function to_enum_bit_power(s : std_logic_vector(0 downto 0)) return t_enum_bit_power is
+  function to_access_matrix_enum_bit_power(s : std_logic_vector(0 downto 0)) return t_access_matrix_enum_bit_power is
   begin
     case s is
       when "0" => return PWR_OFF;
@@ -645,7 +645,7 @@ package body access_matrix_regfile_pkg is
     end case;
   end function;
 
-  function to_slv(v : t_enum_hw_state) return std_logic_vector is
+  function to_slv(v : t_access_matrix_enum_hw_state) return std_logic_vector is
     variable slv : std_logic_vector(1 downto 0);
   begin
     case v is
@@ -656,7 +656,7 @@ package body access_matrix_regfile_pkg is
     return slv;
   end function;
 
-  function to_enum_hw_state(s : std_logic_vector(1 downto 0)) return t_enum_hw_state is
+  function to_access_matrix_enum_hw_state(s : std_logic_vector(1 downto 0)) return t_access_matrix_enum_hw_state is
   begin
     case s is
       when "00" => return ST_RESET;
@@ -666,7 +666,7 @@ package body access_matrix_regfile_pkg is
     end case;
   end function;
 
-  function to_slv(v : t_enum_hw_supply) return std_logic_vector is
+  function to_slv(v : t_access_matrix_enum_hw_supply) return std_logic_vector is
     variable slv : std_logic_vector(0 downto 0);
   begin
     case v is
@@ -676,7 +676,7 @@ package body access_matrix_regfile_pkg is
     return slv;
   end function;
 
-  function to_enum_hw_supply(s : std_logic_vector(0 downto 0)) return t_enum_hw_supply is
+  function to_access_matrix_enum_hw_supply(s : std_logic_vector(0 downto 0)) return t_access_matrix_enum_hw_supply is
   begin
     case s is
       when "0" => return PWR_OFF;
@@ -685,7 +685,7 @@ package body access_matrix_regfile_pkg is
     end case;
   end function;
 
-  function to_slv(v : t_enum_swacc_phase) return std_logic_vector is
+  function to_slv(v : t_access_matrix_enum_swacc_phase) return std_logic_vector is
     variable slv : std_logic_vector(1 downto 0);
   begin
     case v is
@@ -696,7 +696,7 @@ package body access_matrix_regfile_pkg is
     return slv;
   end function;
 
-  function to_enum_swacc_phase(s : std_logic_vector(1 downto 0)) return t_enum_swacc_phase is
+  function to_access_matrix_enum_swacc_phase(s : std_logic_vector(1 downto 0)) return t_access_matrix_enum_swacc_phase is
   begin
     case s is
       when "00" => return PH_IDLE;
@@ -706,7 +706,7 @@ package body access_matrix_regfile_pkg is
     end case;
   end function;
 
-  function to_slv(v : t_mixed_swacc_power) return std_logic_vector is
+  function to_slv(v : t_access_matrix_mixed_swacc_power) return std_logic_vector is
     variable slv : std_logic_vector(0 downto 0);
   begin
     case v is
@@ -716,7 +716,7 @@ package body access_matrix_regfile_pkg is
     return slv;
   end function;
 
-  function to_mixed_swacc_power(s : std_logic_vector(0 downto 0)) return t_mixed_swacc_power is
+  function to_access_matrix_mixed_swacc_power(s : std_logic_vector(0 downto 0)) return t_access_matrix_mixed_swacc_power is
   begin
     case s is
       when "0" => return PWR_OFF;
@@ -725,7 +725,7 @@ package body access_matrix_regfile_pkg is
     end case;
   end function;
 
-  function to_slv(v : t_mixed_swacc_power_fixed) return std_logic_vector is
+  function to_slv(v : t_access_matrix_mixed_swacc_power_fixed) return std_logic_vector is
     variable slv : std_logic_vector(0 downto 0);
   begin
     case v is
@@ -735,7 +735,7 @@ package body access_matrix_regfile_pkg is
     return slv;
   end function;
 
-  function to_mixed_swacc_power_fixed(s : std_logic_vector(0 downto 0)) return t_mixed_swacc_power_fixed is
+  function to_access_matrix_mixed_swacc_power_fixed(s : std_logic_vector(0 downto 0)) return t_access_matrix_mixed_swacc_power_fixed is
   begin
     case s is
       when "0" => return PWR_OFF;

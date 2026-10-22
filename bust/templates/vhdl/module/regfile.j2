@@ -1,7 +1,7 @@
 {% macro sw_action(reg, f) -%}
 {% set lhs = "regs." ~ reg.name ~ "." ~ f.name -%}
 {% set wslice = "lb_m2s.wdata(" ~ (f.vector_pos_vhdl if f.is_enum else f.get_pos_vhdl()) ~ ")" -%}
-{%- if f.is_enum -%}{{ lhs }} <= to_{{ reg.name }}_{{ f.name }}({{ wslice }}){%- elif f.onwrite -%}{{ lhs }} <= {{ f.onwrite_rhs(lhs, wslice) }}{%- else -%}{{ lhs }} <= {{ wslice }}{%- endif -%}
+{%- if f.is_enum -%}{{ lhs }} <= {{ f.from_slv_name }}({{ wslice }}){%- elif f.onwrite -%}{{ lhs }} <= {{ f.onwrite_rhs(lhs, wslice) }}{%- else -%}{{ lhs }} <= {{ wslice }}{%- endif -%}
 {%- endmacro -%}
 {% macro field_chain(reg, f) -%}
 {% set lhs = "regs." ~ reg.name ~ "." ~ f.name -%}
@@ -11,7 +11,7 @@
 {% if f.hwset %}{% set ns.branches = ns.branches + [(fin ~ ".set = '1'", lhs ~ " <= " ~ f.ones_literal)] %}{% endif %}
 {% if f.we %}{% set ns.branches = ns.branches + [(fin ~ ".we = '1'", lhs ~ " <= " ~ fin ~ ".value")] %}{% endif %}
 {% if f.wel %}{% set ns.branches = ns.branches + [(fin ~ ".wel = '0'", lhs ~ " <= " ~ fin ~ ".value")] %}{% endif %}
-{% if f.sw_writable %}{% set ns.branches = ns.branches + [("sw_write and reg_addr_match(reg_offset, C_ADDR_" ~ reg.name | upper ~ ")", sw_action(reg, f))] %}{% endif %}
+{% if f.sw_writable %}{% set ns.branches = ns.branches + [("sw_write and reg_addr_match(reg_offset, " ~ reg.offset_constant ~ ")", sw_action(reg, f))] %}{% endif %}
 {% for cond, act in ns.branches %}
 {% if loop.first %}
         if {{ cond }} then
@@ -37,7 +37,7 @@
 {% for f in reg.stored_fields if f.sw_writable or f.we or f.wel or f.hwset or f.hwclr %}{% set later.writes = True %}{% endfor %}
 {% if onread_fields %}
         -- {{ reg.name }} onread effects.
-        if rd_service and reg_addr_match(reg_offset, C_ADDR_{{ reg.name | upper }}) then
+        if rd_service and reg_addr_match(reg_offset, {{ reg.offset_constant }}) then
 {% for f in onread_fields %}
           regs.{{ reg.name }}.{{ f.name }} <= {{ f.ones_literal if f.onread.value == 'rset' else f.zeros_literal }};
 {% endfor %}
@@ -51,7 +51,7 @@
 {% endfor %}
 {% set sw_fields = reg.stored_fields | selectattr('sw_writable') | rejectattr('we') | rejectattr('wel') | rejectattr('hwset') | rejectattr('hwclr') | list %}
 {% if sw_fields %}
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_{{ reg.name | upper }}) then
+        if sw_write and reg_addr_match(reg_offset, {{ reg.offset_constant }}) then
 {% for f in sw_fields %}
           {{ sw_action(reg, f) }};
 {% endfor %}
@@ -86,7 +86,7 @@ entity {{ module.name }}_regfile is
   generic (
     G_BASE_ADDRESS       : unsigned({{ module.addr_width - 1 }} downto 0) := {{ module.addr_width }}x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
+    G_MODULE_ADDR_WIDTH  : natural := C_{{ module.name | upper }}_MODULE_ADDR_WIDTH;
     G_UNMAPPED_READ_DATA : std_logic_vector({{ module.data_width - 1 }} downto 0) := (others => '0');
     G_ERR_ON_BAD_ACCESS  : boolean := false;
     G_RESET_ACTIVE_LOW   : boolean := false
@@ -140,9 +140,9 @@ architecture rtl of {{ module.name }}_regfile is
 begin
 
   -- G_MODULE_ADDR_WIDTH must hold the registers and fit in the address.
-  assert G_MODULE_ADDR_WIDTH >= C_MODULE_ADDR_WIDTH and G_MODULE_ADDR_WIDTH <= {{ module.addr_width }}
-    report "G_MODULE_ADDR_WIDTH must be from C_MODULE_ADDR_WIDTH ("
-           & natural'image(C_MODULE_ADDR_WIDTH) & ") to {{ module.addr_width }}"
+  assert G_MODULE_ADDR_WIDTH >= C_{{ module.name | upper }}_MODULE_ADDR_WIDTH and G_MODULE_ADDR_WIDTH <= {{ module.addr_width }}
+    report "G_MODULE_ADDR_WIDTH must be from C_{{ module.name | upper }}_MODULE_ADDR_WIDTH ("
+           & natural'image(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH) & ") to {{ module.addr_width }}"
     severity failure;
 
   -- The base address must be a multiple of the size of the address range.
@@ -155,7 +155,7 @@ begin
   -- Same-cycle precedence: hwclr > hwset > we/wel write > software write or onread.
 {% endif %}
   p_write : process (clk) is
-    variable reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+    variable reg_offset : std_logic_vector(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0);
     variable mapped     : boolean;     -- a register sits at this address
     variable sw_write   : boolean;     -- a new software write to a register
 {% if uses.rd_service %}
@@ -182,7 +182,7 @@ begin
         wr_err <= '0';
 
         -- A held request takes effect once, while its response is still low.
-        reg_offset := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
+        reg_offset := lb_m2s.address(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0);
         mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
                                  G_MODULE_ADDR_WIDTH)
                       and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
@@ -207,7 +207,7 @@ begin
 {% for f in swacc_fields %}
         swacc_{{ reg.name }}_{{ f.name }} <= '0';
 {% endfor %}
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_{{ reg.name | upper }}) then
+        if sw_write and reg_addr_match(reg_offset, {{ reg.offset_constant }}) then
 {% for f in swmod_fields %}
           swmod_{{ reg.name }}_{{ f.name }} <= '1';
 {% endfor %}
@@ -215,7 +215,7 @@ begin
           swacc_{{ reg.name }}_{{ f.name }} <= '1';
 {% endfor %}
 {% if swacc_fields %}
-        elsif rd_service and reg_addr_match(reg_offset, C_ADDR_{{ reg.name | upper }}) then
+        elsif rd_service and reg_addr_match(reg_offset, {{ reg.offset_constant }}) then
 {% for f in swacc_fields %}
           swacc_{{ reg.name }}_{{ f.name }} <= '1';
 {% endfor %}
@@ -238,7 +238,7 @@ begin
 
   -- Unreadable fields read 0. A read that gets err returns G_UNMAPPED_READ_DATA.
   p_read : process (clk) is
-    variable reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+    variable reg_offset : std_logic_vector(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0);
     variable mapped     : boolean;     -- a register sits at this address
   begin
     if rising_edge(clk) then
@@ -252,7 +252,7 @@ begin
 
         if lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' then
           rdata <= (others => '0');
-          reg_offset := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
+          reg_offset := lb_m2s.address(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0);
           mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
                                    G_MODULE_ADDR_WIDTH)
                         and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
@@ -261,7 +261,7 @@ begin
             rd_err <= '1';
             rdata  <= G_UNMAPPED_READ_DATA;
 {% for reg in module.registers %}
-          elsif reg_addr_match(reg_offset, C_ADDR_{{ reg.name | upper }}) then
+          elsif reg_addr_match(reg_offset, {{ reg.offset_constant }}) then
 {% for f in reg.effective_fields if f.sw_readable %}
             rdata({{ f.vector_pos_vhdl if f.is_enum else f.get_pos_vhdl() }}) <= {{ ("to_slv(" ~ field_value(reg, f) ~ ")") if f.is_enum else field_value(reg, f) }};
 {% endfor %}

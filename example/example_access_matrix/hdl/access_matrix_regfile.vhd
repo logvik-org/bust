@@ -13,7 +13,7 @@ entity access_matrix_regfile is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
+    G_MODULE_ADDR_WIDTH  : natural := C_ACCESS_MATRIX_MODULE_ADDR_WIDTH;
     G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0');
     G_ERR_ON_BAD_ACCESS  : boolean := false;
     G_RESET_ACTIVE_LOW   : boolean := false
@@ -61,9 +61,9 @@ architecture rtl of access_matrix_regfile is
 begin
 
   -- G_MODULE_ADDR_WIDTH must hold the registers and fit in the address.
-  assert G_MODULE_ADDR_WIDTH >= C_MODULE_ADDR_WIDTH and G_MODULE_ADDR_WIDTH <= 32
-    report "G_MODULE_ADDR_WIDTH must be from C_MODULE_ADDR_WIDTH ("
-           & natural'image(C_MODULE_ADDR_WIDTH) & ") to 32"
+  assert G_MODULE_ADDR_WIDTH >= C_ACCESS_MATRIX_MODULE_ADDR_WIDTH and G_MODULE_ADDR_WIDTH <= 32
+    report "G_MODULE_ADDR_WIDTH must be from C_ACCESS_MATRIX_MODULE_ADDR_WIDTH ("
+           & natural'image(C_ACCESS_MATRIX_MODULE_ADDR_WIDTH) & ") to 32"
     severity failure;
 
   -- The base address must be a multiple of the size of the address range.
@@ -74,7 +74,7 @@ begin
 
   -- Same-cycle precedence: hwclr > hwset > we/wel write > software write or onread.
   p_write : process (clk) is
-    variable reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+    variable reg_offset : std_logic_vector(C_ACCESS_MATRIX_MODULE_ADDR_WIDTH-1 downto 0);
     variable mapped     : boolean;     -- a register sits at this address
     variable sw_write   : boolean;     -- a new software write to a register
     variable rd_service : boolean;     -- a new software read from a register
@@ -99,7 +99,7 @@ begin
         wr_err <= '0';
 
         -- A held request takes effect once, while its response is still low.
-        reg_offset := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
+        reg_offset := lb_m2s.address(C_ACCESS_MATRIX_MODULE_ADDR_WIDTH-1 downto 0);
         mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
                                  G_MODULE_ADDR_WIDTH)
                       and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
@@ -107,7 +107,7 @@ begin
         sw_write   := lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' and mapped;
         rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' and mapped;
 
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_PLAIN) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_PLAIN_OFFSET) then
           regs.plain.flag <= lb_m2s.wdata(0);
           regs.plain.level <= lb_m2s.wdata(3 downto 1);
           regs.plain.scratch <= lb_m2s.wdata(7 downto 4);
@@ -121,13 +121,13 @@ begin
           regs.status.fault <= from_hw.status.fault.value;
         end if;
 
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_COMMAND) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_COMMAND_OFFSET) then
           regs.command.opcode <= lb_m2s.wdata(3 downto 0);
         end if;
 
         if from_hw.hw_modify.override.we = '1' then
           regs.hw_modify.override <= from_hw.hw_modify.override.value;
-        elsif sw_write and reg_addr_match(reg_offset, C_ADDR_HW_MODIFY) then
+        elsif sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_MODIFY_OFFSET) then
           regs.hw_modify.override <= lb_m2s.wdata(3 downto 0);
         end if;
 
@@ -135,7 +135,7 @@ begin
           regs.hw_modify.sticky <= '0';
         elsif from_hw.hw_modify.sticky.set = '1' then
           regs.hw_modify.sticky <= '1';
-        elsif sw_write and reg_addr_match(reg_offset, C_ADDR_HW_MODIFY) then
+        elsif sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_MODIFY_OFFSET) then
           regs.hw_modify.sticky <= lb_m2s.wdata(4);
         end if;
 
@@ -147,22 +147,22 @@ begin
 
         if from_hw.hw_set_clear.clr_only.clr = '1' then
           regs.hw_set_clear.clr_only <= '0';
-        elsif sw_write and reg_addr_match(reg_offset, C_ADDR_HW_SET_CLEAR) then
+        elsif sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_SET_CLEAR_OFFSET) then
           regs.hw_set_clear.clr_only <= lb_m2s.wdata(4);
         end if;
 
         -- read_effects onread effects.
-        if rd_service and reg_addr_match(reg_offset, C_ADDR_READ_EFFECTS) then
+        if rd_service and reg_addr_match(reg_offset, C_ACCESS_MATRIX_READ_EFFECTS_OFFSET) then
           regs.read_effects.clear_on_read <= (others => '0');
           regs.read_effects.set_on_read <= (others => '1');
         end if;
 
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_READ_EFFECTS) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_READ_EFFECTS_OFFSET) then
           regs.read_effects.clear_on_read <= lb_m2s.wdata(3 downto 0);
           regs.read_effects.set_on_read <= lb_m2s.wdata(7 downto 4);
         end if;
 
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_WRITE_EFFECTS) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_WRITE_EFFECTS_OFFSET) then
           regs.write_effects.set_bits <= regs.write_effects.set_bits or lb_m2s.wdata(3 downto 0);
           regs.write_effects.clear_bits <= regs.write_effects.clear_bits and not lb_m2s.wdata(7 downto 4);
           regs.write_effects.toggle_on_zero <= regs.write_effects.toggle_on_zero xor not lb_m2s.wdata(11 downto 8);
@@ -171,42 +171,42 @@ begin
 
         regs.pulses.go <= '0';
         regs.pulses.kick <= (others => '0');
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_PULSES) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_PULSES_OFFSET) then
           regs.pulses.go <= lb_m2s.wdata(0);
           regs.pulses.kick <= lb_m2s.wdata(4 downto 1);
         end if;
 
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_STROBES) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_STROBES_OFFSET) then
           regs.strobes.modified <= lb_m2s.wdata(3 downto 0);
           regs.strobes.accessed <= lb_m2s.wdata(7 downto 4);
         end if;
 
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_ENUM_VECTOR) then
-          regs.enum_vector.mode <= to_enum_vector_mode(lb_m2s.wdata(1 downto 0));
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_VECTOR_OFFSET) then
+          regs.enum_vector.mode <= to_access_matrix_enum_vector_mode(lb_m2s.wdata(1 downto 0));
         end if;
 
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_ENUM_BIT) then
-          regs.enum_bit.power <= to_enum_bit_power(lb_m2s.wdata(0 downto 0));
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_BIT_OFFSET) then
+          regs.enum_bit.power <= to_access_matrix_enum_bit_power(lb_m2s.wdata(0 downto 0));
         end if;
 
         if from_hw.enum_hw.supply.we = '1' then
           regs.enum_hw.supply <= from_hw.enum_hw.supply.value;
         end if;
 
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_ENUM_SWACC) then
-          regs.enum_swacc.phase <= to_enum_swacc_phase(lb_m2s.wdata(1 downto 0));
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_SWACC_OFFSET) then
+          regs.enum_swacc.phase <= to_access_matrix_enum_swacc_phase(lb_m2s.wdata(1 downto 0));
         end if;
 
         regs.mixed_swacc.go <= '0';
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_MIXED_SWACC) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_MIXED_SWACC_OFFSET) then
           regs.mixed_swacc.clear_bits <= regs.mixed_swacc.clear_bits and not lb_m2s.wdata(3 downto 0);
           regs.mixed_swacc.toggle_bits <= regs.mixed_swacc.toggle_bits xor lb_m2s.wdata(7 downto 4);
           regs.mixed_swacc.arg <= lb_m2s.wdata(15 downto 12);
           regs.mixed_swacc.go <= lb_m2s.wdata(16);
-          regs.mixed_swacc.power <= to_mixed_swacc_power(lb_m2s.wdata(17 downto 17));
+          regs.mixed_swacc.power <= to_access_matrix_mixed_swacc_power(lb_m2s.wdata(17 downto 17));
         end if;
 
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_MIXED_HISTORY) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_MIXED_HISTORY_OFFSET) then
           regs.mixed_history.toggle <= regs.mixed_history.toggle xor lb_m2s.wdata(3 downto 0);
           regs.mixed_history.set_on_zero <= regs.mixed_history.set_on_zero or not lb_m2s.wdata(7 downto 4);
           regs.mixed_history.clear_on_zero <= regs.mixed_history.clear_on_zero and lb_m2s.wdata(11 downto 8);
@@ -219,12 +219,12 @@ begin
         end if;
 
         regs.hw_only.shadow <= from_hw.hw_only.shadow;
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_HW_ONLY) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_ONLY_OFFSET) then
           regs.hw_only.enable <= lb_m2s.wdata(4);
         end if;
 
         -- irq_status onread effects.
-        if rd_service and reg_addr_match(reg_offset, C_ADDR_IRQ_STATUS) then
+        if rd_service and reg_addr_match(reg_offset, C_ACCESS_MATRIX_IRQ_STATUS_OFFSET) then
           regs.irq_status.pending <= '0';
         end if;
 
@@ -232,17 +232,17 @@ begin
           regs.irq_status.pending <= '1';
         end if;
 
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_FLAT_LEVEL) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_LEVEL_OFFSET) then
           regs.flat_level.flat_level <= lb_m2s.wdata(7 downto 0);
         end if;
 
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_FLAT_STROBE) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_STROBE_OFFSET) then
           regs.flat_strobe.flat_strobe <= lb_m2s.wdata(3 downto 0);
         end if;
 
         if from_hw.flat_override.we = '1' then
           regs.flat_override.flat_override <= from_hw.flat_override.value;
-        elsif sw_write and reg_addr_match(reg_offset, C_ADDR_FLAT_OVERRIDE) then
+        elsif sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_OVERRIDE_OFFSET) then
           regs.flat_override.flat_override <= lb_m2s.wdata(7 downto 0);
         end if;
 
@@ -250,77 +250,77 @@ begin
           regs.flat_flag.flat_flag <= '0';
         elsif from_hw.flat_flag.set = '1' then
           regs.flat_flag.flat_flag <= '1';
-        elsif sw_write and reg_addr_match(reg_offset, C_ADDR_FLAT_FLAG) then
+        elsif sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_FLAG_OFFSET) then
           regs.flat_flag.flat_flag <= lb_m2s.wdata(0);
         end if;
 
         -- hw_set_clear swmod and swacc strobes.
         swacc_hw_set_clear_clr_only <= '0';
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_HW_SET_CLEAR) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_SET_CLEAR_OFFSET) then
           swacc_hw_set_clear_clr_only <= '1';
-        elsif rd_service and reg_addr_match(reg_offset, C_ADDR_HW_SET_CLEAR) then
+        elsif rd_service and reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_SET_CLEAR_OFFSET) then
           swacc_hw_set_clear_clr_only <= '1';
         end if;
 
         -- pulses swmod and swacc strobes.
         swmod_pulses_kick <= '0';
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_PULSES) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_PULSES_OFFSET) then
           swmod_pulses_kick <= '1';
         end if;
 
         -- strobes swmod and swacc strobes.
         swmod_strobes_modified <= '0';
         swacc_strobes_accessed <= '0';
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_STROBES) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_STROBES_OFFSET) then
           swmod_strobes_modified <= '1';
           swacc_strobes_accessed <= '1';
-        elsif rd_service and reg_addr_match(reg_offset, C_ADDR_STROBES) then
+        elsif rd_service and reg_addr_match(reg_offset, C_ACCESS_MATRIX_STROBES_OFFSET) then
           swacc_strobes_accessed <= '1';
         end if;
 
         -- enum_swacc swmod and swacc strobes.
         swacc_enum_swacc_phase <= '0';
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_ENUM_SWACC) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_SWACC_OFFSET) then
           swacc_enum_swacc_phase <= '1';
-        elsif rd_service and reg_addr_match(reg_offset, C_ADDR_ENUM_SWACC) then
+        elsif rd_service and reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_SWACC_OFFSET) then
           swacc_enum_swacc_phase <= '1';
         end if;
 
         -- mixed_swacc swmod and swacc strobes.
         swacc_mixed_swacc_clear_bits <= '0';
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_MIXED_SWACC) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_MIXED_SWACC_OFFSET) then
           swacc_mixed_swacc_clear_bits <= '1';
-        elsif rd_service and reg_addr_match(reg_offset, C_ADDR_MIXED_SWACC) then
+        elsif rd_service and reg_addr_match(reg_offset, C_ACCESS_MATRIX_MIXED_SWACC_OFFSET) then
           swacc_mixed_swacc_clear_bits <= '1';
         end if;
 
         -- mixed_history swmod and swacc strobes.
         swacc_mixed_history_toggle <= '0';
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_MIXED_HISTORY) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_MIXED_HISTORY_OFFSET) then
           swacc_mixed_history_toggle <= '1';
-        elsif rd_service and reg_addr_match(reg_offset, C_ADDR_MIXED_HISTORY) then
+        elsif rd_service and reg_addr_match(reg_offset, C_ACCESS_MATRIX_MIXED_HISTORY_OFFSET) then
           swacc_mixed_history_toggle <= '1';
         end if;
 
         -- hw_status_swacc swmod and swacc strobes.
         swacc_hw_status_swacc_level <= '0';
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_HW_STATUS_SWACC) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_STATUS_SWACC_OFFSET) then
           swacc_hw_status_swacc_level <= '1';
-        elsif rd_service and reg_addr_match(reg_offset, C_ADDR_HW_STATUS_SWACC) then
+        elsif rd_service and reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_STATUS_SWACC_OFFSET) then
           swacc_hw_status_swacc_level <= '1';
         end if;
 
         -- irq_status swmod and swacc strobes.
         swacc_irq_status_pending <= '0';
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_IRQ_STATUS) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_IRQ_STATUS_OFFSET) then
           swacc_irq_status_pending <= '1';
-        elsif rd_service and reg_addr_match(reg_offset, C_ADDR_IRQ_STATUS) then
+        elsif rd_service and reg_addr_match(reg_offset, C_ACCESS_MATRIX_IRQ_STATUS_OFFSET) then
           swacc_irq_status_pending <= '1';
         end if;
 
         -- flat_strobe swmod and swacc strobes.
         swmod_flat_strobe_flat_strobe <= '0';
-        if sw_write and reg_addr_match(reg_offset, C_ADDR_FLAT_STROBE) then
+        if sw_write and reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_STROBE_OFFSET) then
           swmod_flat_strobe_flat_strobe <= '1';
         end if;
 
@@ -338,7 +338,7 @@ begin
 
   -- Unreadable fields read 0. A read that gets err returns G_UNMAPPED_READ_DATA.
   p_read : process (clk) is
-    variable reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+    variable reg_offset : std_logic_vector(C_ACCESS_MATRIX_MODULE_ADDR_WIDTH-1 downto 0);
     variable mapped     : boolean;     -- a register sits at this address
   begin
     if rising_edge(clk) then
@@ -352,7 +352,7 @@ begin
 
         if lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' then
           rdata <= (others => '0');
-          reg_offset := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
+          reg_offset := lb_m2s.address(C_ACCESS_MATRIX_MODULE_ADDR_WIDTH-1 downto 0);
           mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
                                    G_MODULE_ADDR_WIDTH)
                         and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
@@ -360,99 +360,99 @@ begin
           if not mapped or (G_ERR_ON_BAD_ACCESS and not is_sw_readable(reg_offset)) then
             rd_err <= '1';
             rdata  <= G_UNMAPPED_READ_DATA;
-          elsif reg_addr_match(reg_offset, C_ADDR_PLAIN) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_PLAIN_OFFSET) then
             rdata(0) <= regs.plain.flag;
             rdata(3 downto 1) <= regs.plain.level;
             rdata(7 downto 4) <= regs.plain.scratch;
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_STATUS) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_STATUS_OFFSET) then
             rdata(0) <= from_hw.status.busy;
             rdata(4 downto 1) <= regs.status.count;
             rdata(5) <= regs.status.fault;
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_COMMAND) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_COMMAND_OFFSET) then
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_IDENTITY) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_IDENTITY_OFFSET) then
             rdata(7 downto 0) <= 8X"A5";
-            rdata(8 downto 8) <= to_slv(t_identity_pwr_default'(PWR_ON));
-            rdata(9 downto 9) <= to_slv(t_identity_pwr_spare'(PWR_OFF));
+            rdata(8 downto 8) <= to_slv(t_access_matrix_identity_pwr_default'(PWR_ON));
+            rdata(9 downto 9) <= to_slv(t_access_matrix_identity_pwr_spare'(PWR_OFF));
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_HW_MODIFY) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_MODIFY_OFFSET) then
             rdata(3 downto 0) <= regs.hw_modify.override;
             rdata(4) <= regs.hw_modify.sticky;
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_HW_SET_CLEAR) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_SET_CLEAR_OFFSET) then
             rdata(3 downto 0) <= regs.hw_set_clear.set_only;
             rdata(4) <= regs.hw_set_clear.clr_only;
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_READ_EFFECTS) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_READ_EFFECTS_OFFSET) then
             rdata(3 downto 0) <= regs.read_effects.clear_on_read;
             rdata(7 downto 4) <= regs.read_effects.set_on_read;
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_WRITE_EFFECTS) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_WRITE_EFFECTS_OFFSET) then
             rdata(3 downto 0) <= regs.write_effects.set_bits;
             rdata(7 downto 4) <= regs.write_effects.clear_bits;
             rdata(11 downto 8) <= regs.write_effects.toggle_on_zero;
             rdata(12) <= regs.write_effects.set_all;
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_PULSES) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_PULSES_OFFSET) then
             rdata(0) <= regs.pulses.go;
             rdata(4 downto 1) <= regs.pulses.kick;
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_STROBES) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_STROBES_OFFSET) then
             rdata(3 downto 0) <= regs.strobes.modified;
             rdata(7 downto 4) <= regs.strobes.accessed;
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_ENUM_VECTOR) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_VECTOR_OFFSET) then
             rdata(1 downto 0) <= to_slv(regs.enum_vector.mode);
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_ENUM_BIT) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_BIT_OFFSET) then
             rdata(0 downto 0) <= to_slv(regs.enum_bit.power);
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_ENUM_HW) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_HW_OFFSET) then
             rdata(1 downto 0) <= to_slv(from_hw.enum_hw.state);
             rdata(2 downto 2) <= to_slv(regs.enum_hw.supply);
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_ENUM_SWACC) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_ENUM_SWACC_OFFSET) then
             rdata(1 downto 0) <= to_slv(regs.enum_swacc.phase);
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_MIXED_SWACC) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_MIXED_SWACC_OFFSET) then
             rdata(3 downto 0) <= regs.mixed_swacc.clear_bits;
             rdata(7 downto 4) <= regs.mixed_swacc.toggle_bits;
             rdata(11 downto 8) <= 4X"9";
             rdata(16) <= regs.mixed_swacc.go;
             rdata(17 downto 17) <= to_slv(regs.mixed_swacc.power);
-            rdata(18 downto 18) <= to_slv(t_mixed_swacc_power_fixed'(PWR_ON));
+            rdata(18 downto 18) <= to_slv(t_access_matrix_mixed_swacc_power_fixed'(PWR_ON));
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_MIXED_HISTORY) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_MIXED_HISTORY_OFFSET) then
             rdata(3 downto 0) <= regs.mixed_history.toggle;
             rdata(7 downto 4) <= regs.mixed_history.set_on_zero;
             rdata(11 downto 8) <= regs.mixed_history.clear_on_zero;
             rdata(15 downto 12) <= regs.mixed_history.toggle_on_zero;
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_HW_STATUS_SWACC) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_STATUS_SWACC_OFFSET) then
             rdata(3 downto 0) <= regs.hw_status_swacc.level;
             rdata(7 downto 4) <= regs.hw_status_swacc.latched;
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_HW_ONLY) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_HW_ONLY_OFFSET) then
             rdata(4) <= regs.hw_only.enable;
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_IRQ_STATUS) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_IRQ_STATUS_OFFSET) then
             rdata(0) <= regs.irq_status.pending;
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_FLAT_LEVEL) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_LEVEL_OFFSET) then
             rdata(7 downto 0) <= regs.flat_level.flat_level;
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_FLAT_STROBE) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_STROBE_OFFSET) then
             rdata(3 downto 0) <= regs.flat_strobe.flat_strobe;
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_FLAT_OVERRIDE) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_OVERRIDE_OFFSET) then
             rdata(7 downto 0) <= regs.flat_override.flat_override;
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_FLAT_STATUS) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_STATUS_OFFSET) then
             rdata(5 downto 0) <= from_hw.flat_status;
             rd_ack <= '1';
-          elsif reg_addr_match(reg_offset, C_ADDR_FLAT_FLAG) then
+          elsif reg_addr_match(reg_offset, C_ACCESS_MATRIX_FLAT_FLAG_OFFSET) then
             rdata(0) <= regs.flat_flag.flat_flag;
             rd_ack <= '1';
           end if;
@@ -464,7 +464,7 @@ begin
   -- Hardware-side outputs, one aggregate per register.
   to_hw.plain <= (flag => regs.plain.flag, level => regs.plain.level);
   to_hw.command <= (opcode => regs.command.opcode);
-  to_hw.identity <= (id => 8X"A5", pwr_default => t_identity_pwr_default'(PWR_ON), pwr_spare => t_identity_pwr_spare'(PWR_OFF));
+  to_hw.identity <= (id => 8X"A5", pwr_default => t_access_matrix_identity_pwr_default'(PWR_ON), pwr_spare => t_access_matrix_identity_pwr_spare'(PWR_OFF));
   to_hw.hw_modify <= (override => regs.hw_modify.override, sticky => regs.hw_modify.sticky);
   to_hw.hw_set_clear <= (clr_only => (value => regs.hw_set_clear.clr_only, swacc => swacc_hw_set_clear_clr_only));
   to_hw.read_effects <= (clear_on_read => regs.read_effects.clear_on_read, set_on_read => regs.read_effects.set_on_read);
@@ -475,7 +475,7 @@ begin
   to_hw.enum_bit <= (power => regs.enum_bit.power);
   to_hw.enum_hw <= (supply => regs.enum_hw.supply);
   to_hw.enum_swacc <= (phase => (value => regs.enum_swacc.phase, swacc => swacc_enum_swacc_phase));
-  to_hw.mixed_swacc <= (clear_bits => (value => regs.mixed_swacc.clear_bits, swacc => swacc_mixed_swacc_clear_bits), toggle_bits => regs.mixed_swacc.toggle_bits, fixed => 4X"9", arg => regs.mixed_swacc.arg, go => regs.mixed_swacc.go, power => regs.mixed_swacc.power, power_fixed => t_mixed_swacc_power_fixed'(PWR_ON));
+  to_hw.mixed_swacc <= (clear_bits => (value => regs.mixed_swacc.clear_bits, swacc => swacc_mixed_swacc_clear_bits), toggle_bits => regs.mixed_swacc.toggle_bits, fixed => 4X"9", arg => regs.mixed_swacc.arg, go => regs.mixed_swacc.go, power => regs.mixed_swacc.power, power_fixed => t_access_matrix_mixed_swacc_power_fixed'(PWR_ON));
   to_hw.mixed_history <= (toggle => (value => regs.mixed_history.toggle, swacc => swacc_mixed_history_toggle), set_on_zero => regs.mixed_history.set_on_zero, clear_on_zero => regs.mixed_history.clear_on_zero, toggle_on_zero => regs.mixed_history.toggle_on_zero);
   to_hw.hw_status_swacc <= (level => (value => regs.hw_status_swacc.level, swacc => swacc_hw_status_swacc_level), latched => regs.hw_status_swacc.latched);
   to_hw.hw_only <= (shadow => regs.hw_only.shadow, enable => regs.hw_only.enable);
