@@ -60,7 +60,7 @@ For a module named `<module>`, bust writes these files:
 | `<module>.vhd` | The top level of the module, the entity your design instantiates. This file is yours, see [Your top level](#your-top-level). |
 | `<module>_<bus>_endpoint.vhd` | The bus endpoint. It translates the bus protocol to the local bus and instantiates the register file. |
 | `<module>_regfile.vhd` | The register file: storage, access-mode behaviour, hardware updates, the read mux and the bus response. |
-| `<module>_regfile_pkg.vhd` | Register addresses, enumeration types, and the `to_hw` and `from_hw` record types you connect to. |
+| `<module>_regfile_pkg.vhd` | Register offsets, enumeration types, and the `to_hw` and `from_hw` record types you connect to. |
 | `<module>_localbus_pkg.vhd` | The local-bus records `t_lb_m2s` and `t_lb_s2m`, sized for this module. |
 | `<module>_tb.vhd` | A self-checking UVVM testbench for the bus endpoint. See [Testbenches](testbenches.md). |
 
@@ -192,8 +192,9 @@ entity timer_regfile is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
+    G_MODULE_ADDR_WIDTH  : natural := C_TIMER_MODULE_ADDR_WIDTH;
     G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0');
+    G_ERR_ON_BAD_ACCESS  : boolean := false;
     G_RESET_ACTIVE_LOW   : boolean := false
   );
   port (
@@ -221,35 +222,36 @@ use work.timer_regfile_pkg.all;
 
 | Name | What it is |
 |------|------------|
-| `C_ADDR_<REG>` | The address of each register within the module, `addr_width` bits wide. |
-| `C_MODULE_ADDR_WIDTH` | The number of low address bits that select a register, and the default of `G_MODULE_ADDR_WIDTH`. |
-| `t_<reg>_<field>` | The enumeration type of an enumerated field. |
-| `to_slv`, `to_<reg>_<field>` | Conversions between an enumeration type and its bits. |
+| `C_<MODULE>_<REG>_OFFSET` | The register offset of each register, `addr_width` bits wide. |
+| `C_<MODULE>_MODULE_ADDR_WIDTH` | The number of low address bits that select a register, and the default of `G_MODULE_ADDR_WIDTH`. |
+| `t_<module>_<reg>_<field>` | The enumeration type of an enumerated field. |
+| `to_slv`, `to_<module>_<reg>_<field>` | Conversions between an enumeration type and its bits. |
 | `t_<module>_to_hw` | Everything the hardware reads, one member per register. |
-| `t_<reg>_to_hw` | The fields of one register that the hardware reads. A register without fields has none. |
-| `t_<reg>_<field>_out` | One field's value together with its `swmod` or `swacc` strobe. |
+| `t_<module>_<reg>_to_hw` | The fields of one register that the hardware reads. A register without fields has none. |
+| `t_<module>_<reg>_<field>_out` | One field's value together with its `swmod` or `swacc` strobe. |
 | `t_<module>_from_hw` | Everything the hardware drives, one member per register. |
+| `C_<MODULE>_TO_HW_RESET` | A `t_<module>_to_hw` with every value at its `reset` and every strobe inactive, for a model or testbench that drives `to_hw`. |
 | `C_<MODULE>_FROM_HW_RESET` | A `t_<module>_from_hw` with every value at its `reset` and every strobe inactive. Use it to tie off `from_hw` or as its initial value. |
-| `t_<reg>_from_hw` | The fields of one register that the hardware drives. A register without fields has none. |
-| `t_<reg>_<field>_in` | One field's value together with its `we`, `wel`, `set` or `clr` input. |
-| `t_<module>_regs`, `t_<reg>_regs`, `C_<MODULE>_REGS_RESET`, `base_match`, `above_registers`, `reg_addr_match`, `is_mapped` | The register file's internal storage, its reset value and its address decoding. Your design does not need them. |
+| `t_<module>_<reg>_from_hw` | The fields of one register that the hardware drives. A register without fields has none. |
+| `t_<module>_<reg>_<field>_in` | One field's value together with its `we`, `wel`, `set` or `clr` input. |
+| `t_<module>_regs`, `t_<reg>_regs`, `C_<MODULE>_REGS_RESET`, `base_match`, `above_registers`, `reg_addr_match`, `is_mapped`, `is_sw_writable`, `is_sw_readable` | The register file's internal storage, its reset value and its address decoding. Your design does not need them. |
 
-Register and field names keep the case you gave them in the JSON. The
-`C_ADDR_` constants use the register name in upper case.
+Module, register and field names keep the case you gave them in the JSON. The
+constants are in upper case.
 
-The timer's addresses and its enumeration type:
+The timer's register offsets and its enumeration type:
 
 ```vhdl
-  constant C_ADDR_CTRL : std_logic_vector(31 downto 0) := 32x"00";
-  constant C_ADDR_LOAD : std_logic_vector(31 downto 0) := 32x"04";
-  constant C_ADDR_STATUS : std_logic_vector(31 downto 0) := 32x"08";
-  constant C_ADDR_IRQ : std_logic_vector(31 downto 0) := 32x"0C";
+  constant C_TIMER_CTRL_OFFSET : std_logic_vector(31 downto 0) := 32x"00";
+  constant C_TIMER_LOAD_OFFSET : std_logic_vector(31 downto 0) := 32x"04";
+  constant C_TIMER_STATUS_OFFSET : std_logic_vector(31 downto 0) := 32x"08";
+  constant C_TIMER_IRQ_OFFSET : std_logic_vector(31 downto 0) := 32x"0C";
 
-  constant C_MODULE_ADDR_WIDTH : natural := 4;
+  constant C_TIMER_MODULE_ADDR_WIDTH : natural := 4;
 
-  type t_ctrl_mode is (ONESHOT, PERIODIC);
-  function to_slv(v : t_ctrl_mode) return std_logic_vector;
-  function to_ctrl_mode(s : std_logic_vector(1 downto 0)) return t_ctrl_mode;
+  type t_timer_ctrl_mode is (ONESHOT, PERIODIC);
+  function to_slv(v : t_timer_ctrl_mode) return std_logic_vector;
+  function to_timer_ctrl_mode(s : std_logic_vector(1 downto 0)) return t_timer_ctrl_mode;
 ```
 
 ### Hardware reads: `to_hw`
@@ -260,24 +262,24 @@ per such field. A register without fields has no record of its own, and its
 member is its value:
 
 ```vhdl
-  type t_ctrl_to_hw is record
+  type t_timer_ctrl_to_hw is record
     enable : std_logic;
-    mode : t_ctrl_mode;
+    mode : t_timer_ctrl_mode;
     start : std_logic;
   end record;
-  type t_load_load_out is record
+  type t_timer_load_load_out is record
     value : std_logic_vector(31 downto 0);
     swmod : std_logic;
   end record;
 
-  type t_irq_to_hw is record
+  type t_timer_irq_to_hw is record
     expired : std_logic;
   end record;
 
   type t_timer_to_hw is record
-    ctrl : t_ctrl_to_hw;
-    load : t_load_load_out;
-    irq : t_irq_to_hw;
+    ctrl : t_timer_ctrl_to_hw;
+    load : t_timer_load_load_out;
+    irq : t_timer_irq_to_hw;
   end record;
 ```
 
@@ -285,7 +287,7 @@ member is its value:
 |-------|---------------------------------|
 | A bit field | `std_logic` |
 | A vector field | `std_logic_vector(width - 1 downto 0)` |
-| An enumerated field | Its enumeration type, such as `t_ctrl_mode` |
+| An enumerated field | Its enumeration type, such as `t_timer_ctrl_mode` |
 | A field with `swmod` or `swacc` | A record with `value` and the strobe, such as `to_hw.<reg>.<field>.swmod` |
 
 A register without fields, such as `load` of type `default`, is read as
@@ -302,26 +304,26 @@ writes (`hw: w` or `hw: rw`) or sets or clears (`hwset`, `hwclr`). As in
 `to_hw`, a register without fields is driven directly, as `from_hw.<reg>`:
 
 ```vhdl
-  type t_status_count_in is record
+  type t_timer_status_count_in is record
     value : std_logic_vector(15 downto 0);
     we : std_logic;
   end record;
 
-  type t_status_from_hw is record
-    count : t_status_count_in;
+  type t_timer_status_from_hw is record
+    count : t_timer_status_count_in;
     running : std_logic;
   end record;
-  type t_irq_expired_in is record
+  type t_timer_irq_expired_in is record
     set : std_logic;
   end record;
 
-  type t_irq_from_hw is record
-    expired : t_irq_expired_in;
+  type t_timer_irq_from_hw is record
+    expired : t_timer_irq_expired_in;
   end record;
 
   type t_timer_from_hw is record
-    status : t_status_from_hw;
-    irq : t_irq_from_hw;
+    status : t_timer_status_from_hw;
+    irq : t_timer_irq_from_hw;
   end record;
 ```
 
@@ -421,8 +423,9 @@ entity timer is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
-    G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0')
+    G_MODULE_ADDR_WIDTH  : natural := C_TIMER_MODULE_ADDR_WIDTH;
+    G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0');
+    G_ERR_ON_BAD_ACCESS  : boolean := false
   );
 ```
 
@@ -434,6 +437,9 @@ address. [Base address and address range](addressing.md)
 shows how the register file decodes an address with each setting.
 `G_UNMAPPED_READ_DATA` is the data a read gets from an address where no
 register sits, such as `x"DEADBEEF"` to make it stand out in a register dump.
+`G_ERR_ON_BAD_ACCESS` adds an error response for a write to a register software
+cannot write and a read of one it cannot read, see
+[Access modes](access-modes.md#fields-software-cannot-reach).
 
 ## Several modules in one design
 
@@ -444,15 +450,12 @@ library. A timer with 32-bit addresses and data and a GPIO module with 16-bit
 addresses and data can both be compiled into `periph`. Compile each module's
 files in the order above. The order between the modules does not matter.
 
-The per-register type names, such as `t_ctrl_to_hw`, carry the register name
-but not the module name. If two modules both have a register called `ctrl`, a
-file that uses both packages with `.all` cannot refer to `t_ctrl_to_hw`
-directly. Use the module-level types, `t_timer_to_hw` and `t_gpio_to_hw`, or
-a selected name:
-
-```vhdl
-signal gpio_ctrl : work.gpio_regfile_pkg.t_ctrl_to_hw;
-```
+The names your design uses from `<module>_regfile_pkg` carry the module name,
+such as `t_timer_ctrl_to_hw` and `C_TIMER_CTRL_OFFSET`, so one file can use the
+packages of several modules with `.all`. The internal names of the register
+file, such as `t_ctrl_regs` and `reg_addr_match`, are the same in every
+package. VHDL hides a name that two such packages declare, so refer to one of
+them with a selected name, such as `work.gpio_regfile_pkg.reg_addr_match`.
 
 ## Your top level
 

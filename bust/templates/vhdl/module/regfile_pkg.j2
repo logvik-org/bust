@@ -1,6 +1,9 @@
 {% macro member_type(field, member) -%}
 {%- if member == 'value' -%}{{ field.value_type_vhdl }}{%- else -%}std_logic{%- endif -%}
 {%- endmacro -%}
+{% macro thw_reset(f) -%}
+{%- if f.to_hw_is_record -%}({% for m in f.to_hw_members %}{{ m }} => {{ f.reset_value_vhdl if m == 'value' else "'0'" }}{% if not loop.last %}, {% endif %}{% endfor %}){%- else -%}{{ f.reset_value_vhdl }}{%- endif -%}
+{%- endmacro -%}
 {% macro fhw_reset(f) -%}
 {%- if f.from_hw_is_record -%}({% for m in f.from_hw_members %}{{ m }} => {{ f.reset_value_vhdl if m == 'value' else ("'1'" if m == 'wel' else "'0'") }}{% if not loop.last %}, {% endif %}{% endfor %}){%- else -%}{{ f.reset_value_vhdl }}{%- endif -%}
 {%- endmacro -%}
@@ -14,16 +17,16 @@ use work.{{ module.name }}_localbus_pkg.all;
 package {{ module.name }}_regfile_pkg is
 
 {% for reg in module.registers %}
-  constant C_ADDR_{{ reg.name | upper }} : std_logic_vector({{ module.addr_width - 1 }} downto 0) := {{ module.addr_width }}x"{{ "%02X" | format(reg.address) }}";
+  constant {{ reg.offset_constant }} : std_logic_vector({{ module.addr_width - 1 }} downto 0) := {{ module.addr_width }}x"{{ "%02X" | format(reg.address) }}";
 {% endfor %}
 
-  constant C_MODULE_ADDR_WIDTH : natural := {{ module.register_select_width }};
+  constant C_{{ module.name | upper }}_MODULE_ADDR_WIDTH : natural := {{ module.register_select_width }};
 {% for f in module.enum_fields %}
 
   type {{ f.enum_type_name }} is ({{ f.enums | map(attribute='name') | join(', ') }});
   -- Convert {{ f.enum_type_name }} to and from its encoded bits.
   function to_slv(v : {{ f.enum_type_name }}) return std_logic_vector;
-  function to_{{ f.parent_register_name }}_{{ f.name }}(s : std_logic_vector({{ f.vector_range_vhdl }})) return {{ f.enum_type_name }};
+  function {{ f.from_slv_name }}(s : std_logic_vector({{ f.vector_range_vhdl }})) return {{ f.enum_type_name }};
 {% endfor %}
 
 {% for reg in module.stored_registers %}
@@ -58,7 +61,7 @@ package {{ module.name }}_regfile_pkg is
 
 {% endfor %}
 {% if reg.fields %}
-  type t_{{ reg.name }}_to_hw is record
+  type {{ reg.to_hw_type_name }} is record
 {% for f in reg.to_hw_fields %}
     {{ f.name }} : {{ f.to_hw_record_name if f.to_hw_is_record else f.value_type_vhdl }};
 {% endfor %}
@@ -72,6 +75,12 @@ package {{ module.name }}_regfile_pkg is
     {{ reg.name }} : {{ reg.to_hw_type_name }};
 {% endfor %}
   end record;
+
+  constant C_{{ module.name | upper }}_TO_HW_RESET : t_{{ module.name }}_to_hw := (
+{% for reg in module.to_hw_registers %}
+    {{ reg.name }} => {% if reg.fields %}({% for f in reg.to_hw_fields %}{{ f.name }} => {{ thw_reset(f) }}{% if not loop.last %}, {% endif %}{% endfor %}){% else %}{{ thw_reset(reg.to_hw_fields[0]) }}{% endif %}{% if not loop.last %},{% else %});{% endif %}
+
+{% endfor %}
 {% endif %}
 
 {% for reg in module.from_hw_registers %}
@@ -84,7 +93,7 @@ package {{ module.name }}_regfile_pkg is
 
 {% endfor %}
 {% if reg.fields %}
-  type t_{{ reg.name }}_from_hw is record
+  type {{ reg.from_hw_type_name }} is record
 {% for f in reg.from_hw_fields %}
     {{ f.name }} : {{ f.from_hw_record_name if f.from_hw_is_record else f.value_type_vhdl }};
 {% endfor %}
@@ -117,11 +126,17 @@ package {{ module.name }}_regfile_pkg is
                            module_addr_width : natural) return boolean;
 
   -- True when reg_offset equals the register offset in reg_addr, every bit counting.
-  function reg_addr_match(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+  function reg_addr_match(reg_offset : std_logic_vector(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0);
                           reg_addr   : std_logic_vector({{ module.addr_width - 1 }} downto 0)) return boolean;
 
   -- True when a register sits at reg_offset.
-  function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+  function is_mapped(reg_offset : std_logic_vector(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+
+  -- True when a register with a field software can write sits at reg_offset.
+  function is_sw_writable(reg_offset : std_logic_vector(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+
+  -- True when a register with a field software can read sits at reg_offset.
+  function is_sw_readable(reg_offset : std_logic_vector(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
 
 end package {{ module.name }}_regfile_pkg;
 
@@ -143,7 +158,7 @@ package body {{ module.name }}_regfile_pkg is
   function above_registers(addr              : std_logic_vector({{ module.addr_width - 1 }} downto 0);
                            module_addr_width : natural) return boolean is
   begin
-    for i in C_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
+    for i in C_{{ module.name | upper }}_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
       if addr(i) /= '0' then
         return true;
       end if;
@@ -151,15 +166,25 @@ package body {{ module.name }}_regfile_pkg is
     return false;
   end function;
 
-  function reg_addr_match(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+  function reg_addr_match(reg_offset : std_logic_vector(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0);
                           reg_addr   : std_logic_vector({{ module.addr_width - 1 }} downto 0)) return boolean is
   begin
-    return reg_offset = reg_addr(C_MODULE_ADDR_WIDTH-1 downto 0);
+    return reg_offset = reg_addr(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0);
   end function;
 
-  function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  function is_mapped(reg_offset : std_logic_vector(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
   begin
-    return {% if module.registers %}{% for reg in module.registers %}reg_addr_match(reg_offset, C_ADDR_{{ reg.name | upper }}){% if not loop.last %} or {% endif %}{% endfor %}{% else %}false{% endif %};
+    return {% if module.registers %}{% for reg in module.registers %}reg_addr_match(reg_offset, {{ reg.offset_constant }}){% if not loop.last %} or {% endif %}{% endfor %}{% else %}false{% endif %};
+  end function;
+
+  function is_sw_writable(reg_offset : std_logic_vector(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  begin
+    return {% for reg in module.registers | selectattr('sw_writable') %}reg_addr_match(reg_offset, {{ reg.offset_constant }}){% if not loop.last %} or {% endif %}{% else %}false{% endfor %};
+  end function;
+
+  function is_sw_readable(reg_offset : std_logic_vector(C_{{ module.name | upper }}_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  begin
+    return {% for reg in module.registers | selectattr('sw_readable') %}reg_addr_match(reg_offset, {{ reg.offset_constant }}){% if not loop.last %} or {% endif %}{% else %}false{% endfor %};
   end function;
 {% for f in module.enum_fields %}
 
@@ -174,7 +199,7 @@ package body {{ module.name }}_regfile_pkg is
     return slv;
   end function;
 
-  function to_{{ f.parent_register_name }}_{{ f.name }}(s : std_logic_vector({{ f.vector_range_vhdl }})) return {{ f.enum_type_name }} is
+  function {{ f.from_slv_name }}(s : std_logic_vector({{ f.vector_range_vhdl }})) return {{ f.enum_type_name }} is
   begin
     case s is
 {% for e in f.enums %}

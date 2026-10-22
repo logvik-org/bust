@@ -233,7 +233,13 @@ class Register:
         cfg: Dict = {"name": self.name, "type": field_type, "reset": self.reset}
         if field_type == "vector":
             cfg["width"] = self.width
-        field = Field(cfg, 0, self.name, inherited=self.access_defaults)
+        field = Field(
+            cfg,
+            0,
+            self.name,
+            inherited=self.access_defaults,
+            module_name=self.module_name,
+        )
         field.implicit = True
         return field
 
@@ -415,6 +421,21 @@ class Register:
         ]
 
     @property
+    def offset_constant(self) -> str:
+        """Name of the VHDL constant that holds the register offset."""
+        return f"C_{self.module_name}_{self.name}_OFFSET".upper()
+
+    @property
+    def sw_writable(self) -> bool:
+        """True when software can write at least one field."""
+        return any(f.sw_writable for f in self.effective_fields)
+
+    @property
+    def sw_readable(self) -> bool:
+        """True when software can read at least one field."""
+        return any(f.sw_readable for f in self.effective_fields)
+
+    @property
     def stored_fields(self) -> List[Field]:
         """Fields that hold state (members of t_<reg>_regs)."""
         return [f for f in self.effective_fields if f.holds_state]
@@ -431,19 +452,19 @@ class Register:
 
     @property
     def to_hw_type_name(self) -> str:
-        """The type of to_hw.<reg>: the record type t_<reg>_to_hw, or for a
-        register without fields the type of its value."""
+        """The type of to_hw.<reg>: the record type t_<module>_<reg>_to_hw, or
+        for a register without fields the type of its value."""
         if self.fields:
-            return f"t_{self.name}_to_hw"
+            return f"t_{self.module_name}_{self.name}_to_hw"
         f = self._implicit_field
         return f.to_hw_record_name if f.to_hw_is_record else f.value_type_vhdl
 
     @property
     def from_hw_type_name(self) -> str:
-        """The type of from_hw.<reg>: the record type t_<reg>_from_hw, or for a
-        register without fields the type of its value."""
+        """The type of from_hw.<reg>: the record type t_<module>_<reg>_from_hw,
+        or for a register without fields the type of its value."""
         if self.fields:
-            return f"t_{self.name}_from_hw"
+            return f"t_{self.module_name}_{self.name}_from_hw"
         f = self._implicit_field
         return f.from_hw_record_name if f.from_hw_is_record else f.value_type_vhdl
 
@@ -964,6 +985,7 @@ class Register:
             pos_low,
             self.name,
             inherited=self.access_defaults,
+            module_name=self.module_name,
         )
 
         # Validate uniqueness of field name

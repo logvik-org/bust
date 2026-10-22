@@ -77,7 +77,7 @@ def figure() -> str:
     text(xm + W_MID / 2, y + 20, "above the registers")
     text(xr + W_REG / 2, y + 20, "register", "t-reg")
     yb = y + BAR_H + 8
-    bracket(xr, xe, yb, "C_MODULE_ADDR_WIDTH bits", "end")
+    bracket(xr, xe, yb, "C_TIMER_MODULE_ADDR_WIDTH bits", "end")
     bracket(xm, xe, yb + 28, "range: G_MODULE_ADDR_WIDTH bits")
     bracket(xb, xm, yb + 28, "the rest of addr_width")
 

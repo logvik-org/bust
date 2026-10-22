@@ -7,20 +7,20 @@ use work.example_axi_localbus_pkg.all;
 
 package example_axi_regfile_pkg is
 
-  constant C_ADDR_REG0 : std_logic_vector(31 downto 0) := 32x"00";
-  constant C_ADDR_REG1 : std_logic_vector(31 downto 0) := 32x"04";
-  constant C_ADDR_REG2 : std_logic_vector(31 downto 0) := 32x"08";
-  constant C_ADDR_REG3 : std_logic_vector(31 downto 0) := 32x"0C";
-  constant C_ADDR_REG4 : std_logic_vector(31 downto 0) := 32x"10";
-  constant C_ADDR_REG5 : std_logic_vector(31 downto 0) := 32x"14";
-  constant C_ADDR_REG6 : std_logic_vector(31 downto 0) := 32x"18";
-  constant C_ADDR_REG7 : std_logic_vector(31 downto 0) := 32x"1C";
-  constant C_ADDR_REG8 : std_logic_vector(31 downto 0) := 32x"20";
-  constant C_ADDR_REG9 : std_logic_vector(31 downto 0) := 32x"24";
-  constant C_ADDR_REG10 : std_logic_vector(31 downto 0) := 32x"28";
-  constant C_ADDR_REG11 : std_logic_vector(31 downto 0) := 32x"2C";
+  constant C_EXAMPLE_AXI_REG0_OFFSET : std_logic_vector(31 downto 0) := 32x"00";
+  constant C_EXAMPLE_AXI_REG1_OFFSET : std_logic_vector(31 downto 0) := 32x"04";
+  constant C_EXAMPLE_AXI_REG2_OFFSET : std_logic_vector(31 downto 0) := 32x"08";
+  constant C_EXAMPLE_AXI_REG3_OFFSET : std_logic_vector(31 downto 0) := 32x"0C";
+  constant C_EXAMPLE_AXI_REG4_OFFSET : std_logic_vector(31 downto 0) := 32x"10";
+  constant C_EXAMPLE_AXI_REG5_OFFSET : std_logic_vector(31 downto 0) := 32x"14";
+  constant C_EXAMPLE_AXI_REG6_OFFSET : std_logic_vector(31 downto 0) := 32x"18";
+  constant C_EXAMPLE_AXI_REG7_OFFSET : std_logic_vector(31 downto 0) := 32x"1C";
+  constant C_EXAMPLE_AXI_REG8_OFFSET : std_logic_vector(31 downto 0) := 32x"20";
+  constant C_EXAMPLE_AXI_REG9_OFFSET : std_logic_vector(31 downto 0) := 32x"24";
+  constant C_EXAMPLE_AXI_REG10_OFFSET : std_logic_vector(31 downto 0) := 32x"28";
+  constant C_EXAMPLE_AXI_REG11_OFFSET : std_logic_vector(31 downto 0) := 32x"2C";
 
-  constant C_MODULE_ADDR_WIDTH : natural := 6;
+  constant C_EXAMPLE_AXI_MODULE_ADDR_WIDTH : natural := 6;
 
   type t_reg0_regs is record
     reg0 : std_logic;
@@ -72,13 +72,13 @@ package example_axi_regfile_pkg is
     reg10 => (reg10 => 4X"A"),
     reg11 => (field0 => 15X"3", field1 => '0'));
 
-  type t_reg7_to_hw is record
+  type t_example_axi_reg7_to_hw is record
     field0 : std_logic;
     field1 : std_logic_vector(3 downto 0);
     field2 : std_logic;
     field3 : std_logic_vector(14 downto 0);
   end record;
-  type t_reg11_to_hw is record
+  type t_example_axi_reg11_to_hw is record
     field0 : std_logic_vector(14 downto 0);
     field1 : std_logic;
   end record;
@@ -88,13 +88,23 @@ package example_axi_regfile_pkg is
     reg1 : std_logic;
     reg3 : std_logic_vector(7 downto 0);
     reg5 : std_logic_vector(31 downto 0);
-    reg7 : t_reg7_to_hw;
+    reg7 : t_example_axi_reg7_to_hw;
     reg9 : std_logic;
     reg10 : std_logic_vector(3 downto 0);
-    reg11 : t_reg11_to_hw;
+    reg11 : t_example_axi_reg11_to_hw;
   end record;
 
-  type t_reg8_from_hw is record
+  constant C_EXAMPLE_AXI_TO_HW_RESET : t_example_axi_to_hw := (
+    reg0 => '0',
+    reg1 => '1',
+    reg3 => 8X"3",
+    reg5 => 32X"FFFFFFFF",
+    reg7 => (field0 => '1', field1 => 4X"B", field2 => '0', field3 => 15X"2B"),
+    reg9 => '1',
+    reg10 => 4X"A",
+    reg11 => (field0 => 15X"3", field1 => '0'));
+
+  type t_example_axi_reg8_from_hw is record
     field0 : std_logic;
     field1 : std_logic_vector(18 downto 0);
     field2 : std_logic;
@@ -105,7 +115,7 @@ package example_axi_regfile_pkg is
     reg2 : std_logic;
     reg4 : std_logic_vector(13 downto 0);
     reg6 : std_logic_vector(31 downto 0);
-    reg8 : t_reg8_from_hw;
+    reg8 : t_example_axi_reg8_from_hw;
   end record;
 
   constant C_EXAMPLE_AXI_FROM_HW_RESET : t_example_axi_from_hw := (
@@ -125,11 +135,17 @@ package example_axi_regfile_pkg is
                            module_addr_width : natural) return boolean;
 
   -- True when reg_offset equals the register offset in reg_addr, every bit counting.
-  function reg_addr_match(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+  function reg_addr_match(reg_offset : std_logic_vector(C_EXAMPLE_AXI_MODULE_ADDR_WIDTH-1 downto 0);
                           reg_addr   : std_logic_vector(31 downto 0)) return boolean;
 
   -- True when a register sits at reg_offset.
-  function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+  function is_mapped(reg_offset : std_logic_vector(C_EXAMPLE_AXI_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+
+  -- True when a register with a field software can write sits at reg_offset.
+  function is_sw_writable(reg_offset : std_logic_vector(C_EXAMPLE_AXI_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+
+  -- True when a register with a field software can read sits at reg_offset.
+  function is_sw_readable(reg_offset : std_logic_vector(C_EXAMPLE_AXI_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
 
 end package example_axi_regfile_pkg;
 
@@ -151,7 +167,7 @@ package body example_axi_regfile_pkg is
   function above_registers(addr              : std_logic_vector(31 downto 0);
                            module_addr_width : natural) return boolean is
   begin
-    for i in C_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
+    for i in C_EXAMPLE_AXI_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
       if addr(i) /= '0' then
         return true;
       end if;
@@ -159,15 +175,25 @@ package body example_axi_regfile_pkg is
     return false;
   end function;
 
-  function reg_addr_match(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+  function reg_addr_match(reg_offset : std_logic_vector(C_EXAMPLE_AXI_MODULE_ADDR_WIDTH-1 downto 0);
                           reg_addr   : std_logic_vector(31 downto 0)) return boolean is
   begin
-    return reg_offset = reg_addr(C_MODULE_ADDR_WIDTH-1 downto 0);
+    return reg_offset = reg_addr(C_EXAMPLE_AXI_MODULE_ADDR_WIDTH-1 downto 0);
   end function;
 
-  function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  function is_mapped(reg_offset : std_logic_vector(C_EXAMPLE_AXI_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
   begin
-    return reg_addr_match(reg_offset, C_ADDR_REG0) or reg_addr_match(reg_offset, C_ADDR_REG1) or reg_addr_match(reg_offset, C_ADDR_REG2) or reg_addr_match(reg_offset, C_ADDR_REG3) or reg_addr_match(reg_offset, C_ADDR_REG4) or reg_addr_match(reg_offset, C_ADDR_REG5) or reg_addr_match(reg_offset, C_ADDR_REG6) or reg_addr_match(reg_offset, C_ADDR_REG7) or reg_addr_match(reg_offset, C_ADDR_REG8) or reg_addr_match(reg_offset, C_ADDR_REG9) or reg_addr_match(reg_offset, C_ADDR_REG10) or reg_addr_match(reg_offset, C_ADDR_REG11);
+    return reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG0_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG1_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG2_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG3_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG4_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG5_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG6_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG7_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG8_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG9_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG10_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG11_OFFSET);
+  end function;
+
+  function is_sw_writable(reg_offset : std_logic_vector(C_EXAMPLE_AXI_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  begin
+    return reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG0_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG1_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG3_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG5_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG7_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG9_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG10_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG11_OFFSET);
+  end function;
+
+  function is_sw_readable(reg_offset : std_logic_vector(C_EXAMPLE_AXI_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  begin
+    return reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG0_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG1_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG2_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG3_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG4_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG5_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG6_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG7_OFFSET) or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG8_OFFSET);
   end function;
 
 end package body example_axi_regfile_pkg;

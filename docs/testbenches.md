@@ -36,8 +36,10 @@ unused register offset if there is one, an address one byte into a register
 when addresses count bytes, an address above the registers, and an address with
 another base address. Each access must get an
 [error response](buses.md#errors), and each read must return the
-`G_UNMAPPED_READ_DATA` that the testbench sets. A plain read-write register is then read again to check that none of
-these writes reached it.
+`G_UNMAPPED_READ_DATA` that the testbench sets. A plain read-write register is
+then read again to check that none of these writes reached it. The testbench
+also sets `G_ERR_ON_BAD_ACCESS`, and checks that a write to each register
+software cannot write, and a read of each one it cannot read, get an error.
 
 The groups run in the order of the table, not in register order. A register
 can be in more than one group. A read-write register with a `swmod` field, for
@@ -56,9 +58,9 @@ testbench of the prototype example in the repository, where `reg5` has an
 
 ```vhdl
 log(ID_LOG_HDR, "reg5: onread software side effects", C_SCOPE);
-bus_write(f_addr(C_ADDR_REG5), 32x"00000055", "write reg5");
-bus_check(f_addr(C_ADDR_REG5), 32x"00000055", "reg5 first read returns stored value");
-bus_check(f_addr(C_ADDR_REG5), 32x"000000F0", "reg5 second read reflects onread");
+bus_write(f_addr(C_PROTOTYPE_REG5_OFFSET), 32x"00000055", "write reg5");
+bus_check(f_addr(C_PROTOTYPE_REG5_OFFSET), 32x"00000055", "reg5 first read returns stored value");
+bus_check(f_addr(C_PROTOTYPE_REG5_OFFSET), 32x"000000F0", "reg5 second read reflects onread");
 
 log(ID_LOG_HDR, "reg4: hardware we overrides the stored value", C_SCOPE);
 wait until falling_edge(clk);
@@ -66,7 +68,7 @@ from_hw.reg4.field0.value <= 4x"A";
 from_hw.reg4.field0.we <= '1';
 wait until falling_edge(clk);
 from_hw.reg4.field0.we <= '0';
-bus_check(f_addr(C_ADDR_REG4), 32x"0000010A", "reg4 reflects the hardware we override");
+bus_check(f_addr(C_PROTOTYPE_REG4_OFFSET), 32x"0000010A", "reg4 reflects the hardware we override");
 
 log(ID_LOG_HDR, "reg4: hwclr clears fields (and beats hwset)", C_SCOPE);
 wait until falling_edge(clk);
@@ -75,11 +77,12 @@ from_hw.reg4.field1.clr <= '1';
 wait until falling_edge(clk);
 from_hw.reg4.field1.set <= '0';
 from_hw.reg4.field1.clr <= '0';
-bus_check(f_addr(C_ADDR_REG4), 32x"0000000A", "reg4 reflects hwclr");
+bus_check(f_addr(C_PROTOTYPE_REG4_OFFSET), 32x"0000000A", "reg4 reflects hwclr");
 ```
 
-`bus_write` and `bus_check` wrap the BFM of the bus. `C_ADDR_REG5` and
-`C_ADDR_REG4` are the register addresses from `<module>_regfile_pkg`.
+`bus_write` and `bus_check` wrap the BFM of the bus. `C_PROTOTYPE_REG5_OFFSET`
+and `C_PROTOTYPE_REG4_OFFSET` are the register offsets from
+`<module>_regfile_pkg`.
 
 ## Pass or fail
 
