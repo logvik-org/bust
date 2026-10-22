@@ -66,6 +66,11 @@
 {% macro field_value(reg, f) -%}
 {%- if f.holds_state -%}regs.{{ reg.name }}.{{ f.name }}{%- elif f.hw_wire -%}from_hw.{{ f.hw_path }}{%- elif f.is_enum -%}{{ f.enum_type_name }}'({{ f.reset_value_vhdl }}){%- else -%}{{ f.reset_value_vhdl }}{%- endif -%}
 {%- endmacro -%}
+{% set uses = namespace(rd_service=false, precedence=false) %}
+{% for reg in module.registers %}{% for f in reg.effective_fields %}
+{% if f.onread or f.swacc %}{% set uses.rd_service = true %}{% endif %}
+{% if f.hwset or f.hwclr or f.we or f.wel %}{% set uses.precedence = true %}{% endif %}
+{% endfor %}{% endfor %}
 -- {{ generated_by() }}
 -- Protocol-agnostic register file for the {{ module.name }} module.
 -- p_write: register storage and write response.
@@ -83,6 +88,7 @@ entity {{ module.name }}_regfile is
     G_CHECK_BASE_ADDRESS : boolean := true;
     G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
     G_UNMAPPED_READ_DATA : std_logic_vector({{ module.data_width - 1 }} downto 0) := (others => '0');
+    G_ERR_ON_BAD_ACCESS  : boolean := false;
     G_RESET_ACTIVE_LOW   : boolean := false
   );
   port (
@@ -107,7 +113,6 @@ architecture rtl of {{ module.name }}_regfile is
   signal regs : t_{{ module.name }}_regs := C_{{ module.name | upper }}_REGS_RESET;
 
 {% endif %}
-  signal rst    : std_logic;            -- reset normalized to active high
   signal rdata  : std_logic_vector({{ module.data_width - 1 }} downto 0) := (others => '0');
   signal wr_ack : std_logic := '0';
   signal wr_err : std_logic := '0';
@@ -122,9 +127,17 @@ architecture rtl of {{ module.name }}_regfile is
 {% endfor %}
 {% endfor %}
 
-begin
+  -- reset is compared with this level directly, so it adds no delta cycle.
+  function reset_level(active_low : boolean) return std_logic is
+  begin
+    if active_low then
+      return '0';
+    end if;
+    return '1';
+  end function;
+  constant C_RESET_LEVEL : std_logic := reset_level(G_RESET_ACTIVE_LOW);
 
-  rst <= (reset xor '1') when G_RESET_ACTIVE_LOW else reset;
+begin
 
   -- G_MODULE_ADDR_WIDTH must hold the registers and fit in the address.
   assert G_MODULE_ADDR_WIDTH >= C_MODULE_ADDR_WIDTH and G_MODULE_ADDR_WIDTH <= {{ module.addr_width }}
@@ -138,15 +151,19 @@ begin
     report "G_BASE_ADDRESS must be a multiple of 2**G_MODULE_ADDR_WIDTH"
     severity failure;
 
+{% if uses.precedence %}
   -- Same-cycle precedence: hwclr > hwset > we/wel write > software write or onread.
+{% endif %}
   p_write : process (clk) is
     variable reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
     variable mapped     : boolean;     -- a register sits at this address
     variable sw_write   : boolean;     -- a new software write to a register
+{% if uses.rd_service %}
     variable rd_service : boolean;     -- a new software read from a register
+{% endif %}
   begin
     if rising_edge(clk) then
-      if rst = '1' then
+      if reset = C_RESET_LEVEL then
 {% if module.stored_registers %}
         regs       <= C_{{ module.name | upper }}_REGS_RESET;
 {% endif %}
@@ -171,7 +188,9 @@ begin
                       and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
                       and is_mapped(reg_offset);
         sw_write   := lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' and mapped;
+{% if uses.rd_service %}
         rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' and mapped;
+{% endif %}
 
 {% for reg in module.registers if reg.stored_fields %}
 {{ register_write(reg) }}
@@ -205,9 +224,9 @@ begin
 
 {% endif %}
 {% endfor %}
-        -- Write response: ack for a register, err for any other address.
+        -- Write response: err for an address without a register or a bad access.
         if lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' then
-          if mapped then
+          if mapped and (is_sw_writable(reg_offset) or not G_ERR_ON_BAD_ACCESS) then
             wr_ack <= '1';
           else
             wr_err <= '1';
@@ -217,13 +236,13 @@ begin
     end if;
   end process p_write;
 
-  -- Unreadable fields read 0. An address without a register reads G_UNMAPPED_READ_DATA.
+  -- Unreadable fields read 0. A read that gets err returns G_UNMAPPED_READ_DATA.
   p_read : process (clk) is
     variable reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
     variable mapped     : boolean;     -- a register sits at this address
   begin
     if rising_edge(clk) then
-      if rst = '1' then
+      if reset = C_RESET_LEVEL then
         rdata  <= (others => '0');
         rd_ack <= '0';
         rd_err <= '0';
@@ -238,7 +257,7 @@ begin
                                    G_MODULE_ADDR_WIDTH)
                         and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
                         and is_mapped(reg_offset);
-          if not mapped then
+          if not mapped or (G_ERR_ON_BAD_ACCESS and not is_sw_readable(reg_offset)) then
             rd_err <= '1';
             rdata  <= G_UNMAPPED_READ_DATA;
 {% for reg in module.registers %}

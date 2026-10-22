@@ -329,6 +329,11 @@ elsif reg_addr_match(reg_offset, C_ADDR_REG2) then
   rd_ack <= '1';
 ```
 
+An instance with `G_ERR_ON_BAD_ACCESS => true` also answers with an error a
+write to a register that has no field software can write, and a read of a
+register that has no field software can read. Such a read returns
+`G_UNMAPPED_READ_DATA`. Nothing else about the access changes.
+
 ### Unmapped addresses
 
 An access to a register offset where no register sits gets an error response.
@@ -337,8 +342,8 @@ at `0x0` on a bus whose addresses count bytes. So does an address above the
 registers in the module's address range, and an address with another base
 address, unless the module was instantiated with
 `G_CHECK_BASE_ADDRESS => false`. A write to such an address has no effect, and
-a read returns `G_UNMAPPED_READ_DATA`, which is 0 unless the instance sets it. [Base address and address range](addressing.md) explains these
-checks. How the error reaches the bus master depends on the bus:
+a read returns `G_UNMAPPED_READ_DATA`, which is 0 unless the instance sets it.
+[Base address and address range](addressing.md) explains these checks. How the error reaches the bus master depends on the bus:
 
 | Bus | Error response |
 |---|---|

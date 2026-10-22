@@ -166,6 +166,18 @@ package prototype_regfile_pkg is
     reg11 : t_reg11_to_hw;
   end record;
 
+  constant C_PROTOTYPE_TO_HW_RESET : t_prototype_to_hw := (
+    reg0 => (field0 => '0', field1 => (others => '0')),
+    reg2 => (field0 => '0'),
+    reg4 => (field0 => (others => '0'), field1 => '0'),
+    reg5 => (field0 => (others => '0'), field1 => (others => '0')),
+    reg6 => (field0 => (others => '0'), field1 => 4X"F", field2 => (others => '0')),
+    reg7 => (field0 => (others => '0'), field1 => 4X"F", field2 => (others => '0')),
+    reg8 => (field0 => 4X"F", field1 => (others => '0')),
+    reg9 => (field0 => (value => (others => '0'), swmod => '0'), field1 => (value => (others => '0'), swacc => '0')),
+    reg10 => (field0 => (others => '0')),
+    reg11 => (field0 => STATE0));
+
   type t_reg1_field0_in is record
     value : std_logic_vector(3 downto 0);
     we : std_logic;
@@ -222,6 +234,12 @@ package prototype_regfile_pkg is
   -- True when a register sits at reg_offset.
   function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
 
+  -- True when a register with a field software can write sits at reg_offset.
+  function is_sw_writable(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+
+  -- True when a register with a field software can read sits at reg_offset.
+  function is_sw_readable(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+
 end package prototype_regfile_pkg;
 
 package body prototype_regfile_pkg is
@@ -259,6 +277,16 @@ package body prototype_regfile_pkg is
   function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
   begin
     return reg_addr_match(reg_offset, C_ADDR_REG0) or reg_addr_match(reg_offset, C_ADDR_REG1) or reg_addr_match(reg_offset, C_ADDR_REG2) or reg_addr_match(reg_offset, C_ADDR_REG3) or reg_addr_match(reg_offset, C_ADDR_REG4) or reg_addr_match(reg_offset, C_ADDR_REG5) or reg_addr_match(reg_offset, C_ADDR_REG6) or reg_addr_match(reg_offset, C_ADDR_REG7) or reg_addr_match(reg_offset, C_ADDR_REG8) or reg_addr_match(reg_offset, C_ADDR_REG9) or reg_addr_match(reg_offset, C_ADDR_REG10) or reg_addr_match(reg_offset, C_ADDR_REG11);
+  end function;
+
+  function is_sw_writable(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  begin
+    return reg_addr_match(reg_offset, C_ADDR_REG0) or reg_addr_match(reg_offset, C_ADDR_REG2) or reg_addr_match(reg_offset, C_ADDR_REG3) or reg_addr_match(reg_offset, C_ADDR_REG4) or reg_addr_match(reg_offset, C_ADDR_REG5) or reg_addr_match(reg_offset, C_ADDR_REG6) or reg_addr_match(reg_offset, C_ADDR_REG7) or reg_addr_match(reg_offset, C_ADDR_REG8) or reg_addr_match(reg_offset, C_ADDR_REG9) or reg_addr_match(reg_offset, C_ADDR_REG10) or reg_addr_match(reg_offset, C_ADDR_REG11);
+  end function;
+
+  function is_sw_readable(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  begin
+    return reg_addr_match(reg_offset, C_ADDR_REG0) or reg_addr_match(reg_offset, C_ADDR_REG1) or reg_addr_match(reg_offset, C_ADDR_REG3) or reg_addr_match(reg_offset, C_ADDR_REG4) or reg_addr_match(reg_offset, C_ADDR_REG5) or reg_addr_match(reg_offset, C_ADDR_REG6) or reg_addr_match(reg_offset, C_ADDR_REG7) or reg_addr_match(reg_offset, C_ADDR_REG8) or reg_addr_match(reg_offset, C_ADDR_REG9) or reg_addr_match(reg_offset, C_ADDR_REG10) or reg_addr_match(reg_offset, C_ADDR_REG11);
   end function;
 
   function to_slv(v : t_reg11_field0) return std_logic_vector is

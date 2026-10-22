@@ -19,7 +19,11 @@
 
     log(ID_LOG_HDR, "{{ reg.name }}: write-only / pulse reads back zero", C_SCOPE);
     bus_write(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "write {{ reg.name }}");
+{% if reg.sw_readable %}
     bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ module.data_width }}x"0", "{{ reg.name }} reads back zero");
+{% else %}
+    bus_check_unmapped(f_addr(C_ADDR_{{ reg.name | upper }}), "read {{ reg.name }}, which software cannot read");
+{% endif %}
 {% endfor %}
 {% for reg in module.registers if reg.is_onwrite_readback %}
 
@@ -94,9 +98,15 @@
 {% for f in reg.singlepulse_fields %}
     v_{{ reg.name }}_{{ f.name }}_sp := {{ reg.name }}_{{ f.name }}_sp_count;
 {% endfor %}
+{% if reg.sw_writable %}
     bus_write(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.strobe_write_value_vhdl }}, "write {{ reg.name }}");
-{% if reg.swacc_fields %}
+{% else %}
+    bus_write_unmapped(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.strobe_write_value_vhdl }}, "write {{ reg.name }}, which software cannot write");
+{% endif %}
+{% if reg.swacc_fields and reg.sw_readable %}
     bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.strobe_readback_value_vhdl }}, "read {{ reg.name }}");
+{% elif reg.swacc_fields %}
+    bus_check_unmapped(f_addr(C_ADDR_{{ reg.name | upper }}), "read {{ reg.name }}, which software cannot read");
 {% endif %}
     wait until rising_edge(clk);
     wait until rising_edge(clk);
@@ -127,6 +137,20 @@
     bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ reg.selftest_value_vhdl }}, "{{ reg.name }} still set after that read");
     bus_check(f_addr(C_ADDR_{{ reg.name | upper }}), {{ module.data_width }}x"0", "{{ reg.name }} cleared by a read without hwset");
 {% endfor %}
+{% set read_only = module.registers | rejectattr('sw_writable') | list %}
+{% set write_only = module.registers | rejectattr('sw_readable') | list %}
+{% if read_only or write_only %}
+
+    -- With G_ERR_ON_BAD_ACCESS, a write to a register software cannot write and
+    -- a read of one it cannot read get an error response where the bus has one.
+    log(ID_LOG_HDR, "accesses in the wrong direction get an error", C_SCOPE);
+{% for reg in read_only %}
+    bus_write_unmapped(f_addr(C_ADDR_{{ reg.name | upper }}), {{ module.data_width }}x"0", "write {{ reg.name }}, which software cannot write");
+{% endfor %}
+{% for reg in write_only %}
+    bus_check_unmapped(f_addr(C_ADDR_{{ reg.name | upper }}), "read {{ reg.name }}, which software cannot read");
+{% endfor %}
+{% endif %}
 {% if tb.unmapped_addresses %}
 {% set alias = tb.alias_register %}
 

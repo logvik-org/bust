@@ -13,7 +13,8 @@ entity {{ module.name }}_sbi_endpoint is
     G_BASE_ADDRESS       : unsigned({{ module.addr_width - 1 }} downto 0) := {{ module.addr_width }}x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
     G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
-    G_UNMAPPED_READ_DATA : std_logic_vector({{ module.data_width - 1 }} downto 0) := (others => '0')
+    G_UNMAPPED_READ_DATA : std_logic_vector({{ module.data_width - 1 }} downto 0) := (others => '0');
+    G_ERR_ON_BAD_ACCESS  : boolean := false
   );
   port (
     clk     : in  std_logic;
@@ -51,6 +52,7 @@ begin
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
       G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
       G_UNMAPPED_READ_DATA => G_UNMAPPED_READ_DATA,
+      G_ERR_ON_BAD_ACCESS  => G_ERR_ON_BAD_ACCESS,
       G_RESET_ACTIVE_LOW   => false)      -- SBI carries no reset; use sync active-high
     port map (
       clk     => clk,

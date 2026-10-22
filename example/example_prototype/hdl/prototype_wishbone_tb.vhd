@@ -62,7 +62,8 @@ begin
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
       G_MODULE_ADDR_WIDTH  => 8,
-      G_UNMAPPED_READ_DATA => C_UNMAPPED_READ_DATA)
+      G_UNMAPPED_READ_DATA => C_UNMAPPED_READ_DATA,
+      G_ERR_ON_BAD_ACCESS  => true)
     port map (
       clk_i   => clk,
       rst_i   => reset,
@@ -203,7 +204,7 @@ begin
 
     log(ID_LOG_HDR, "reg2: write-only / pulse reads back zero", C_SCOPE);
     bus_write(f_addr(C_ADDR_REG2), 32x"00000001", "write reg2");
-    bus_check(f_addr(C_ADDR_REG2), 32x"0", "reg2 reads back zero");
+    bus_check_unmapped(f_addr(C_ADDR_REG2), "read reg2, which software cannot read");
 
     log(ID_LOG_HDR, "reg10: write-only / pulse reads back zero", C_SCOPE);
     bus_write(f_addr(C_ADDR_REG10), 32x"0000000F", "write reg10");
@@ -285,6 +286,12 @@ begin
     wait until rising_edge(clk);
     check_value(reg10_field0_sp_count - v_reg10_field0_sp, 1, error, "reg10.field0 singlepulse lasts exactly one cycle", C_SCOPE);
     check_value(reg10_field0_sp_value, 4x"F", error, "reg10.field0 hw saw the pulse value", C_SCOPE);
+
+    -- With G_ERR_ON_BAD_ACCESS, a write to a register software cannot write and
+    -- a read of one it cannot read get an error response where the bus has one.
+    log(ID_LOG_HDR, "accesses in the wrong direction get an error", C_SCOPE);
+    bus_write_unmapped(f_addr(C_ADDR_REG1), 32x"0", "write reg1, which software cannot write");
+    bus_check_unmapped(f_addr(C_ADDR_REG2), "read reg2, which software cannot read");
 
     -- An address where no register sits gets an error response where the bus
     -- has one, reads as G_UNMAPPED_READ_DATA, and a write to it changes no register.

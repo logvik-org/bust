@@ -3,7 +3,10 @@
     generic map (
       G_BASE_ADDRESS       => unsigned(g_{{ prefix }}_baseaddr),
       G_CHECK_BASE_ADDRESS => g_check_baseaddr,
-      G_MODULE_ADDR_WIDTH  => maximum(g_module_addr_width, C_MODULE_ADDR_WIDTH))
+      G_MODULE_ADDR_WIDTH  => maximum(g_module_addr_width, C_MODULE_ADDR_WIDTH){% if bus.bus_type == 'ipbus' %},
+      -- The responses of bust 0.14 on IPBus.
+      G_UNMAPPED_READ_DATA => x"DEADBEEF",
+      G_ERR_ON_BAD_ACCESS  => true{% endif %})
     port map (
 {% if bus.bus_type == 'ipbus' %}
       clk      => ipb_clk,

@@ -87,7 +87,8 @@ begin
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
       G_MODULE_ADDR_WIDTH  => 9,
-      G_UNMAPPED_READ_DATA => C_UNMAPPED_READ_DATA)
+      G_UNMAPPED_READ_DATA => C_UNMAPPED_READ_DATA,
+      G_ERR_ON_BAD_ACCESS  => true)
     port map (
       clk      => clk,
       areset_n => areset_n,
@@ -252,7 +253,7 @@ begin
 
     log(ID_LOG_HDR, "command: write-only / pulse reads back zero", C_SCOPE);
     bus_write(f_addr(C_ADDR_COMMAND), 32x"0000000F", "write command");
-    bus_check(f_addr(C_ADDR_COMMAND), 32x"0", "command reads back zero");
+    bus_check_unmapped(f_addr(C_ADDR_COMMAND), "read command, which software cannot read");
 
     log(ID_LOG_HDR, "pulses: write-only / pulse reads back zero", C_SCOPE);
     bus_write(f_addr(C_ADDR_PULSES), 32x"0000001F", "write pulses");
@@ -422,7 +423,7 @@ begin
 
     log(ID_LOG_HDR, "hw_status_swacc: software-access strobe pulses", C_SCOPE);
     v_hw_status_swacc_level_swacc := hw_status_swacc_level_swacc_count;
-    bus_write(f_addr(C_ADDR_HW_STATUS_SWACC), 32x"000000FF", "write hw_status_swacc");
+    bus_write_unmapped(f_addr(C_ADDR_HW_STATUS_SWACC), 32x"000000FF", "write hw_status_swacc, which software cannot write");
     bus_check(f_addr(C_ADDR_HW_STATUS_SWACC), 32x"00000055", "read hw_status_swacc");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
@@ -430,7 +431,7 @@ begin
 
     log(ID_LOG_HDR, "irq_status: software-access strobe pulses", C_SCOPE);
     v_irq_status_pending_swacc := irq_status_pending_swacc_count;
-    bus_write(f_addr(C_ADDR_IRQ_STATUS), 32x"00000001", "write irq_status");
+    bus_write_unmapped(f_addr(C_ADDR_IRQ_STATUS), 32x"00000001", "write irq_status, which software cannot write");
     bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"00000000", "read irq_status");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
@@ -455,6 +456,17 @@ begin
     check_value(irq_status_pending_at_swacc, '1', error, "irq_status.pending still set in the cycle after the read clear", C_SCOPE);
     bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"00000001", "irq_status still set after that read");
     bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"0", "irq_status cleared by a read without hwset");
+
+    -- With G_ERR_ON_BAD_ACCESS, a write to a register software cannot write and
+    -- a read of one it cannot read get an error response where the bus has one.
+    log(ID_LOG_HDR, "accesses in the wrong direction get an error", C_SCOPE);
+    bus_write_unmapped(f_addr(C_ADDR_STATUS), 32x"0", "write status, which software cannot write");
+    bus_write_unmapped(f_addr(C_ADDR_IDENTITY), 32x"0", "write identity, which software cannot write");
+    bus_write_unmapped(f_addr(C_ADDR_ENUM_HW), 32x"0", "write enum_hw, which software cannot write");
+    bus_write_unmapped(f_addr(C_ADDR_HW_STATUS_SWACC), 32x"0", "write hw_status_swacc, which software cannot write");
+    bus_write_unmapped(f_addr(C_ADDR_IRQ_STATUS), 32x"0", "write irq_status, which software cannot write");
+    bus_write_unmapped(f_addr(C_ADDR_FLAT_STATUS), 32x"0", "write flat_status, which software cannot write");
+    bus_check_unmapped(f_addr(C_ADDR_COMMAND), "read command, which software cannot read");
 
     -- An address where no register sits gets an error response where the bus
     -- has one, reads as G_UNMAPPED_READ_DATA, and a write to it changes no register.

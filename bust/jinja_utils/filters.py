@@ -11,6 +11,8 @@ Copyright (c) 2025 Ola Groettvik
 Licensed under the Apache License, Version 2.0. See the LICENSE file for details.
 """
 
+import re
+
 
 def to_binary(value, width):
     """Format an integer as a width-bit binary string for VHDL literals."""
@@ -18,8 +20,26 @@ def to_binary(value, width):
 
 
 def utf8tolatex(text):
-    """Convert UTF-8 text to LaTeX-safe encoding."""
-    # Imported lazily so VHDL/header rendering does not require pylatexenc.
-    from pylatexenc.latexencode import utf8tolatex as _utf8tolatex
+    """Convert UTF-8 text to LaTeX-safe encoding.
 
-    return _utf8tolatex(text)
+    A `code` span becomes \\texttt, and a character LaTeX has no form for, such
+    as an emoji, is left out.
+    """
+    # Imported lazily so VHDL/header rendering does not require pylatexenc.
+    from pylatexenc.latexencode import UnicodeToLatexEncoder
+
+    encoder = UnicodeToLatexEncoder(
+        non_ascii_only=False,
+        replacement_latex_protection="braces-all",
+        unknown_char_policy="ignore",
+        unknown_char_warning=False,
+    )
+    parts = re.split(r"`([^`]*)`", str(text))
+    return "".join(
+        (
+            encoder.unicode_to_latex(part)
+            if i % 2 == 0
+            else "\\texttt{" + encoder.unicode_to_latex(part) + "}"
+        )
+        for i, part in enumerate(parts)
+    )

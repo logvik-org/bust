@@ -175,8 +175,15 @@ A few keys need changes:
   came one cycle later. A design that depends on the old timing can delay
   `to_hw.<reg>` by one register.
 - On IPBus, bust 0.14 returned `0xDEADBEEF` with the error for a read where no
-  register sits. bust 1.0 returns the generic `G_UNMAPPED_READ_DATA`, which is
-  0 unless you set it, on every bus.
+  register sits, and 0 with the error for an address with another base
+  address. bust 1.0 returns the generic `G_UNMAPPED_READ_DATA` for both, which
+  is 0 unless you set it, on every bus.
+- On IPBus, bust 0.14 answered a write to a `ro` register and a read of a
+  `pulse` register with an error. bust 1.0 completes them normally unless the
+  generic `G_ERR_ON_BAD_ACCESS` is true.
+- `bust FILE --migrate` sets `G_UNMAPPED_READ_DATA => x"DEADBEEF"` and
+  `G_ERR_ON_BAD_ACCESS => true` in a migrated IPBus top level, so it keeps the
+  0.14 responses.
 
 ## Update your software
 
