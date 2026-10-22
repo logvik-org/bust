@@ -19,8 +19,15 @@
   (
 {% for reg in module.from_hw_registers %}
 {% set items = [] %}
-{% for f in reg.from_hw_fields %}{% set _ = items.append((f.name ~ " => " if reg.fields else "") ~ fhw_idle(f)) %}{% endfor %}
-{{ reset_entry(reg.name, items, not reg.fields, loop.last) }}
+{% set f0 = reg.from_hw_fields[0] %}
+{% if reg.fields %}
+{% for f in reg.from_hw_fields %}{% set _ = items.append(f.name ~ " => " ~ fhw_idle(f)) %}{% endfor %}
+{% elif f0.from_hw_is_record %}
+{% for m in f0.from_hw_members %}{% set _ = items.append(m ~ " => " ~ fhw_default(m, f0)) %}{% endfor %}
+{% else %}
+{% set _ = items.append(fhw_idle(f0)) %}
+{% endif %}
+{{ reset_entry(reg.name, items, not (reg.fields or f0.from_hw_is_record), loop.last, reg.from_hw_fields | selectattr('from_hw_is_record') | list | length > 0) }}
 {%- endfor %}
   );
 {% endfilter %}

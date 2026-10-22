@@ -232,9 +232,11 @@ def test_register_without_fields_is_a_bare_member_of_to_hw_and_from_hw():
 
     regfile = GeneratorFactory.generate_regfile_vhdl(module)
     assert " to_hw.level <= regs.level.level;" in _squash(regfile)
-    assert " to_hw.kick.value <= regs.kick.kick;" in _squash(regfile)
-    assert " to_hw.kick.swmod <= swmod_kick_kick;" in _squash(regfile)
-    assert " to_hw.ctrl.go <= regs.ctrl.go;" in _squash(regfile)
+    assert (
+        " to_hw.kick <=\n (\n value => regs.kick.kick,\n swmod => swmod_kick_kick\n );"
+        in _squash(regfile)
+    )
+    assert " to_hw.ctrl <= (go => regs.ctrl.go);" in _squash(regfile)
     assert "rdata(3 downto 0) <= from_hw.count;" in _squash(regfile)
     assert "regs.count" not in regfile
     assert "if (from_hw.load.we = '1') then" in regfile
@@ -494,7 +496,7 @@ def test_constant_only_entity_uses_literals_not_regs():
     assert "signal regs " not in out
     assert "regs." not in out
     assert 'rdata(7 downto 0) <= 8x"AB";' in _squash(out)
-    assert 'to_hw.stat.id <= 8x"AB";' in _squash(out)
+    assert 'to_hw.stat <= (id => 8x"AB");' in _squash(out)
 
 
 def test_non_fields_registers_normalize_to_implicit_field():
@@ -638,8 +640,10 @@ def test_constant_enum_read_is_type_qualified():
     out = GeneratorFactory.generate_regfile_vhdl(module)
     assert "rdata(0 downto 0) <= to_slv(t_m_r_a'(ENABLED));" in _squash(out)
     assert "rdata(1 downto 1) <= to_slv(t_m_r_b'(DISABLED));" in _squash(out)
-    assert "to_hw.r.a <= t_m_r_a'(ENABLED);" in _squash(out)
-    assert "to_hw.r.b <= t_m_r_b'(DISABLED);" in _squash(out)
+    assert (
+        "to_hw.r <=\n (\n a => t_m_r_a'(ENABLED),\n b => t_m_r_b'(DISABLED)\n );"
+        in _squash(out)
+    )
 
 
 def _strobe_read(module):

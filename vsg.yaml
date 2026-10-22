@@ -25,7 +25,8 @@ rule:
     style: allow_comment
   procedure_200:
     style: allow_comment
-  # The reset of a register with several fields in a constant has one field per
-  # line, so the line stays short however many fields the register has.
+  # In a constant, a register with several fields, or with a field that is a
+  # record, has one field per line, so the line stays short however many
+  # fields the register has.
   constant_016:
     disable: true
