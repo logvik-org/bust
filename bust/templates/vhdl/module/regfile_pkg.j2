@@ -76,7 +76,7 @@ package {{ module.name }}_regfile_pkg is
 {% set members = [] %}
 {% for reg in module.stored_registers %}{% set _ = members.append((reg.name, "t_" ~ reg.name ~ "_regs")) %}{% endfor %}
 {{ record("t_" ~ module.name ~ "_regs", members) }}
-{% filter align("=>") %}
+{% filter align("=>", nested=true) %}
   constant C_{{ module.name | upper }}_REGS_RESET : t_{{ module.name }}_regs :=
   (
 {% for reg in module.stored_registers %}
@@ -103,7 +103,7 @@ package {{ module.name }}_regfile_pkg is
 {% set members = [] %}
 {% for reg in module.to_hw_registers %}{% set _ = members.append((reg.name, reg.to_hw_type_name)) %}{% endfor %}
 {{ record("t_" ~ module.name ~ "_to_hw", members) }}
-{% filter align("=>") %}
+{% filter align("=>", nested=true) %}
   constant C_{{ module.name | upper }}_TO_HW_RESET : t_{{ module.name }}_to_hw :=
   (
 {% for reg in module.to_hw_registers %}
@@ -130,7 +130,7 @@ package {{ module.name }}_regfile_pkg is
 {% set members = [] %}
 {% for reg in module.from_hw_registers %}{% set _ = members.append((reg.name, reg.from_hw_type_name)) %}{% endfor %}
 {{ record("t_" ~ module.name ~ "_from_hw", members) }}
-{% filter align("=>") %}
+{% filter align("=>", nested=true) %}
   constant C_{{ module.name | upper }}_FROM_HW_RESET : t_{{ module.name }}_from_hw :=
   (
 {% for reg in module.from_hw_registers %}

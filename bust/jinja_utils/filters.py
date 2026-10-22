@@ -20,15 +20,21 @@ def to_binary(value, width):
     return f"{value:0{width}b}"
 
 
-def align(text, *tokens):
+_CONDITION = re.compile(r"(if|elsif|while|when|return|assert|report)\b")
+
+
+def align(text, *tokens, nested=False):
     """Line up each token in a column, as the alignment rules of vsg do.
 
     A token is matched with a space before it and a space or the end of the
-    line after it, such as " : ". A group of lines starts at the first line
-    with the token and ends at a blank line or a line with less indentation.
-    More deeply indented lines, such as a nested aggregate, belong to the
-    group. The token goes one space after the longest text in front of it in
-    the group.
+    line after it, such as " : ". "<=|:=" matches either of the two, so both
+    line up in one column. A group is a run of consecutive lines with the same
+    indentation that contain the token, and the continuation lines of their
+    statements. With `nested`, as in a constant with nested aggregates, a
+    group also takes in the lines between that are indented more or do not
+    contain the token, and ends only at a blank line or a line with less
+    indentation. The token goes one space after the longest text in front of
+    it in the group.
     """
     lines = text.split("\n")
     for token in tokens:
@@ -36,16 +42,33 @@ def align(text, *tokens):
         base = 0
         for number, line in enumerate(lines + [""]):
             indent = len(line) - len(line.lstrip())
-            if group and (not line.strip() or indent < base):
+            position = min(
+                (
+                    p
+                    for t in token.split("|")
+                    for p in [
+                        line.find(f" {t} "),
+                        len(line) - len(t) - 1 if line.endswith(f" {t}") else -1,
+                    ]
+                    if p > indent
+                ),
+                default=-1,
+            )
+            # A comparison in a condition, such as if (a <= b), is no assignment.
+            found = position > indent and not _CONDITION.match(line.strip())
+            if nested:
+                ends = not line.strip() or indent < base
+            else:
+                # A more deeply indented line without the token continues the
+                # statement above it.
+                ends = not line.strip() or indent < base or found != (indent == base)
+            if group and ends:
                 width = max(len(lines[n][:p].rstrip()) for n, p in group)
                 for n, p in group:
                     head, tail = lines[n][:p].rstrip(), lines[n][p:].lstrip()
                     lines[n] = f"{head.ljust(width)} {tail}"
                 group = []
-            position = line.find(f" {token} ")
-            if position < 0 and line.endswith(f" {token}"):
-                position = len(line) - len(token) - 1
-            if position > indent:
+            if found:
                 if not group:
                     base = indent
                 group.append((number, position))
