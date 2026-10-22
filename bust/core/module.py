@@ -6,8 +6,11 @@ to generate VHDL code. It handles register address assignment, validation,
 and coordination with bus interface code generation.
 """
 
+import hashlib
+import json
 import logging
-from typing import TYPE_CHECKING, Dict, List, cast
+import re
+from typing import TYPE_CHECKING, Any, Dict, List, cast
 
 from bust.core.enums import RegisterMode
 from bust.exceptions import (
@@ -30,6 +33,11 @@ if TYPE_CHECKING:
     from bust.core.field import Field
     from bust.settings import Settings
 
+
+# The version goes unescaped into VHDL, C, C++ and Python strings and into the
+# uHAL parameters of the IPBus address table, which separate entries with ; and
+# key from value with =.
+VERSION_PATTERN = re.compile(r"[ !#-:<>-\[\]-~]*")
 
 MODULE_KEYS = (
     "name",
@@ -110,7 +118,7 @@ class Module:
 
         # Store some config values for easy access
         self.description: str = self._config.get("description")
-        self.version = self._config.get("version")
+        self.version = self._read_version()
         self.git_hash = self._config.get("git_hash")  # Currently not used
         self.byte_addressable = self._read_byte_addressable()
 
@@ -164,6 +172,20 @@ class Module:
             )
             return value == "True"
         raise FormatError(f"byte_addressable must be true or false (got {value!r})")
+
+    def _read_version(self) -> str:
+        """Read the version, which every generated file carries as a string."""
+        value = self._config.get("version")
+        if not isinstance(value, str):
+            raise FormatError(
+                f'version must be a string, such as "1.2" (got {value!r})'
+            )
+        if not VERSION_PATTERN.fullmatch(value):
+            raise FormatError(
+                f"version {value!r} may only hold printable ASCII characters "
+                'other than ", \\, ; and ='
+            )
+        return value
 
     def _warn_legacy_type_names(self) -> None:
         """Warn once about the bust 0.14 type names sl and slv."""
@@ -329,6 +351,42 @@ class Module:
         return max(1, (top - 1).bit_length())
 
     @property
+    def regmap_hash(self) -> int:
+        """A 32-bit hash of the register map, which changes when it changes.
+
+        It covers the module name, the data width, the addressing and, for each
+        register and field, the name, register offset, position, width, type,
+        reset, access modes and enumerations. Descriptions and the version do not
+        count, and the hash does not depend on the bus or the bust version. The
+        hash is the first 32 bits of the SHA-256 of the canonical JSON of those
+        values.
+        """
+        content: Dict[str, Any] = {
+            "hash_format": 1,
+            "name": self.name,
+            "data_width": self.data_width,
+            "byte_addressable": self.byte_addressable,
+            "registers": [
+                {
+                    "name": reg.name,
+                    "address": reg.address,
+                    "type": reg.type.value,
+                    "width": reg.width,
+                    "reset": reg.reset,
+                    "fields": [_field_content(f) for f in reg.effective_fields],
+                }
+                for reg in self.registers
+            ],
+        }
+        text = json.dumps(content, sort_keys=True, separators=(",", ":"))
+        return int.from_bytes(hashlib.sha256(text.encode()).digest()[:4], "big")
+
+    @property
+    def regmap_hash_hex(self) -> str:
+        """The register map hash as eight upper-case hexadecimal digits."""
+        return f"{self.regmap_hash:08X}"
+
+    @property
     def num_ro_regs(self) -> int:
         """Count of read-only registers.
 
@@ -364,3 +422,24 @@ class Module:
         for reg in self.registers:
             string += indent_string(str(reg), 1)
         return cast(str, string)
+
+
+def _field_content(field: "Field") -> Dict[str, Any]:
+    """The values of a field that the register map hash covers."""
+    return {
+        "name": field.name,
+        "type": field.type.value,
+        "position": field.pos_low,
+        "width": field.width,
+        "reset": field.reset,
+        "sw": field.sw.value,
+        "hw": field.hw.value,
+        "onread": field.onread.value if field.onread else None,
+        "onwrite": field.onwrite.value if field.onwrite else None,
+        "flags": [
+            key
+            for key in ("singlepulse", "we", "wel", "hwset", "hwclr", "swmod", "swacc")
+            if getattr(field, key)
+        ],
+        "enums": [[e.name, e.value] for e in field.enums],
+    }

@@ -2,6 +2,10 @@
 #ifndef EXAMPLE_AXI_H
 #define EXAMPLE_AXI_H
 
+/* Register map version and content hash */
+#define EXAMPLE_AXI_REGMAP_VERSION "1.0"
+#define EXAMPLE_AXI_REGMAP_HASH 0x2E24D701
+
 
 /* Register: reg0 */
 #define EXAMPLE_AXI_REG0_SW "rw"

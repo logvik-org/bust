@@ -10,6 +10,19 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Added
+- Every output carries the `version` of the module and a 32-bit hash of the
+  register map. The register file package has `C_<MODULE>_REGMAP_VERSION` and
+  `C_<MODULE>_REGMAP_HASH`, the headers `REGMAP_VERSION` and `REGMAP_HASH`, the
+  IPBus address table has both in the `parameters` of its top node, and the
+  documentation shows the hash. The hash changes exactly when something that
+  hardware or software depends on changes, and descriptions do not count (#99).
+
+### Changed
+- `version` must be a string of printable ASCII characters other than `"`,
+  `\`, `;` and `=`, so that it can go into every output as it is. bust stops
+  with an error for any other value.
+
 ## [1.0.0a4] - 2026-10-22
 
 Fifth pre-release of bust 1.0.0, for testing. Install it with

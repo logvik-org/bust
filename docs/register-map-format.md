@@ -173,10 +173,41 @@ the timing of each protocol.
 |---|---|---|---|
 | `name` | string | required | Module name. It names the generated files and VHDL units, such as `uart_regfile` and `uart_regfile_pkg`. See [Names](#names). |
 | `register` | list | required | The registers, see [Registers](#registers). |
-| `version` | string | `""` | Shown in the LaTeX documentation. |
+| `version` | string | `""` | The version of the register map. Every generated file carries it, see [Version and hash](#version-and-hash). Printable ASCII characters other than `"`, `\`, `;` and `=`. |
 | `description` | string | `""` | Shown in the LaTeX documentation. |
 | `byte_addressable` | boolean | from the bus | `true` if an address counts bytes, `false` if it counts data words. See [Byte and word addresses](#byte-and-word-addresses). |
 | `git_hash` | string | none | Accepted and ignored. |
+
+### Version and hash
+
+bust gives software and hardware two ways to tell which register map they
+are built from. `version` is the text you give in the JSON file, such as
+`"1.2"`. bust does not check or change it, so raise it yourself when the
+register map changes. The hash is a 32-bit number that bust computes from the
+register map on every run, so it changes whenever the register map changes,
+with nothing for you to keep up to date.
+
+The hash covers the module name, the data width, `byte_addressable` and, for
+each register and field, the name, register offset, bit position, width, type,
+reset, access modes and enumeration values. Descriptions, `version`, the bus
+type and `addr_width` do not count. Neither does the bust version, so a newer
+bust gives the same hash for the same register map. The value is the first 32
+bits of the SHA-256 of these values written as JSON.
+
+Both appear in every output:
+
+| Output | Version | Hash |
+|---|---|---|
+| `<module>_regfile_pkg` | `C_<MODULE>_REGMAP_VERSION`, a `string` | `C_<MODULE>_REGMAP_HASH`, a 32-bit `std_logic_vector` |
+| C header | `<MODULE>_REGMAP_VERSION` | `<MODULE>_REGMAP_HASH` |
+| C++ and Python headers | `REGMAP_VERSION` | `REGMAP_HASH` |
+| IPBus address table | `regmap_version=` in the `parameters` of the top node | `regmap_hash=` in the same `parameters` |
+| LaTeX documentation | Title page and page footer | Under the module description |
+
+bust does not add a register for them. To let software check at run time
+which register map the hardware holds, add a register with `sw` `ro` and `hw`
+`w`, drive its `from_hw` value from `C_<MODULE>_REGMAP_HASH` in your top
+level, and compare what software reads with the constant in its header.
 
 ## Registers
 

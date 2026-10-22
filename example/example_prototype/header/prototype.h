@@ -2,6 +2,10 @@
 #ifndef PROTOTYPE_H
 #define PROTOTYPE_H
 
+/* Register map version and content hash */
+#define PROTOTYPE_REGMAP_VERSION "1.0"
+#define PROTOTYPE_REGMAP_HASH 0x593FA68E
+
 
 /* Register: reg0 */
 #define PROTOTYPE_REG0_SW "rw"
