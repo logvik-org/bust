@@ -24,7 +24,7 @@ architecture tb of prototype_axi_endpoint_tb is
   constant C_SCOPE      : string := C_TB_SCOPE_DEFAULT;
   constant C_CLK_PERIOD : time   := 10 ns;
 
-  -- 64-byte aligned base (low C_MODULE_ADDR_WIDTH bits zero) so base_match holds.
+  -- 64-byte aligned base (low C_PROTOTYPE_MODULE_ADDR_WIDTH bits zero) so base_match holds.
   constant C_BASE : std_logic_vector(31 downto 0) := 32x"FFAA0000";
 
   signal clk      : std_logic := '0';
@@ -111,14 +111,14 @@ begin
     gen_pulse(areset_n, '0', 500 ns, BLOCKING, "Reset for 500 ns");
 
     log(ID_LOG_HDR, "reg0: sw rw write/read over AXI", C_SCOPE);
-    axi_write(f_addr(C_BASE, C_ADDR_REG0), 32x"5", "reg0 = field1=10, field0=1");
-    axi_check(f_addr(C_BASE, C_ADDR_REG0), 32x"5", "reg0 reads back");
+    axi_write(f_addr(C_BASE, C_PROTOTYPE_REG0_OFFSET), 32x"5", "reg0 = field1=10, field0=1");
+    axi_check(f_addr(C_BASE, C_PROTOTYPE_REG0_OFFSET), 32x"5", "reg0 reads back");
     check_value(to_hw.reg0.field0, '1', error, "reg0.field0 to hw", C_SCOPE);
     check_value(to_hw.reg0.field1, "10", error, "reg0.field1 to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg3: sw rw + hw na round-trip", C_SCOPE);
-    axi_write(f_addr(C_BASE, C_ADDR_REG3), 32x"A5", "reg3 = 0xA5");
-    axi_check(f_addr(C_BASE, C_ADDR_REG3), 32x"A5", "reg3 reads back");
+    axi_write(f_addr(C_BASE, C_PROTOTYPE_REG3_OFFSET), 32x"A5", "reg3 = 0xA5");
+    axi_check(f_addr(C_BASE, C_PROTOTYPE_REG3_OFFSET), 32x"A5", "reg3 reads back");
 
     log(ID_LOG_HDR, "reg1: sw ro, hardware-driven, read over AXI", C_SCOPE);
     wait until falling_edge(clk);
@@ -131,11 +131,11 @@ begin
     from_hw.reg1.field0.we    <= '0';
     from_hw.reg1.field2.wel   <= '1';
     -- reg1 = field2(5)|field1(4)|field0(3:0) = 1|1|1011 = 0x3B
-    axi_check(f_addr(C_BASE, C_ADDR_REG1), 32x"3B", "reg1 reflects hw over AXI");
+    axi_check(f_addr(C_BASE, C_PROTOTYPE_REG1_OFFSET), 32x"3B", "reg1 reflects hw over AXI");
 
     log(ID_LOG_HDR, "reg11: enumerated field0 over AXI", C_SCOPE);
-    axi_write(f_addr(C_BASE, C_ADDR_REG11), 32x"2", "reg11.field0 = STATE2");
-    axi_check(f_addr(C_BASE, C_ADDR_REG11), 32x"2", "reg11 reads back encoded value");
+    axi_write(f_addr(C_BASE, C_PROTOTYPE_REG11_OFFSET), 32x"2", "reg11.field0 = STATE2");
+    axi_check(f_addr(C_BASE, C_PROTOTYPE_REG11_OFFSET), 32x"2", "reg11 reads back encoded value");
     check_value(to_hw.reg11.field0 = STATE2, error, "reg11.field0 is STATE2 to hw", C_SCOPE);
 
     wait for 10*C_CLK_PERIOD;
