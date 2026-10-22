@@ -7,22 +7,7 @@
 {% macro fhw_reset(f) -%}
 {%- if f.from_hw_is_record -%}({% for m in f.from_hw_members %}{{ m }} => {{ f.reset_value_vhdl if m == 'value' else ("'1'" if m == 'wel' else "'0'") }}{% if not loop.last %}, {% endif %}{% endfor %}){%- else -%}{{ f.reset_value_vhdl }}{%- endif -%}
 {%- endmacro -%}
-{#- One register in a reset constant. A register with several fields gets one
-    field per line. -#}
-{% macro reset_entry(name, items, bare, last) -%}
-{% if bare %}
-    {{ name }} => {{ items[0] }}{{ "" if last else "," }}
-{% elif items | length == 1 %}
-    {{ name }} => ({{ items[0] }}){{ "" if last else "," }}
-{% else %}
-    {{ name }} =>
-    (
-{% for item in items %}
-      {{ item }}{{ "" if loop.last else "," }}
-{% endfor %}
-    ){{ "" if last else "," }}
-{% endif %}
-{%- endmacro -%}
+{% from "vhdl/aggregate.j2" import reset_entry %}
 {% macro record(name, members) -%}
 {% filter align(":") %}
 

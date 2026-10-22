@@ -623,7 +623,7 @@ def test_hw_written_enum_testbench_default_is_its_reset_literal():
         hw="w",
     )
     tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
-    assert "r => (a => C, b => (value => DISABLED, we => '0')));" in tb
+    assert "r =>\n (\n a => C,\n b => (value => DISABLED, we => '0')\n )" in _squash(tb)
 
 
 def test_constant_enum_read_is_type_qualified():
@@ -729,9 +729,11 @@ def test_singlepulse_testbench_detects_the_pulse_against_the_reset_value():
         singlepulse=True,
     )
     tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
-    assert 'signal r_go_sp_value : std_logic_vector(3 downto 0) := 4x"A";' in tb
-    assert 'if to_hw.r.go /= 4x"A" then' in tb
-    assert "if to_hw.r.arm /= '1' then" in tb
+    assert 'signal r_go_sp_value : std_logic_vector(3 downto 0) := 4x"A";' in _squash(
+        tb
+    )
+    assert 'if (to_hw.r.go /= 4x"A") then' in tb
+    assert "if (to_hw.r.arm /= '1') then" in tb
     # go=0x5 (inverse of 0xA) in bits 3:0, arm=0 (inverse of 1) in bit 4.
     assert 'bus_write(f_addr(C_M_R_OFFSET), 32x"00000005", "write r");' in tb
     assert 'check_value(r_go_sp_value, 4x"5", error,' in tb
@@ -816,7 +818,7 @@ def test_sticky_flag_testbench_checks_hwset_against_the_read_clear():
     )
     assert module.registers[0].is_hwset_read_clear_register
     tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
-    assert "r_pending_at_swacc <= to_hw.r.pending.value;" in tb
+    assert "r_pending_at_swacc <= to_hw.r.pending.value;" in _squash(tb)
     sequence = tb[tb.index("hwset beats a read clear") :]
     assert sequence.index("from_hw.r.pending.set <= '1';") < sequence.index(
         'bus_check(f_addr(C_M_R_OFFSET), 32x"00000001", "r read while hwset is held");'

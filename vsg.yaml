@@ -20,8 +20,10 @@ rule:
   # first reset gets an answer in simulation.
   signal_007:
     disable: true
-  # A function keeps its one-line comment directly above it.
+  # A function or procedure keeps its comment directly above it.
   function_006:
+    style: allow_comment
+  procedure_200:
     style: allow_comment
   # The reset of a register with several fields in a constant has one field per
   # line, so the line stays short however many fields the register has.

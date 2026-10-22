@@ -3,6 +3,7 @@
   -- Strobe monitors: count the cycles each swmod/swacc output is high and each
   -- singlepulse output differs from its reset value, so single-cycle pulses are
   -- verifiable without cycle-accurate sampling.
+{% filter align(":", ":=") %}
 {% for reg in module.strobe_registers %}
 {% for f in reg.swmod_fields %}
   signal {{ reg.name }}_{{ f.name }}_swmod_count : natural := 0;
@@ -18,4 +19,5 @@
   signal {{ reg.name }}_{{ f.name }}_sp_value : {{ f.type_vhdl }} := {{ f.reset_val_vhdl }};
 {% endfor %}
 {% endfor %}
+{% endfilter %}
 {% endif %}
