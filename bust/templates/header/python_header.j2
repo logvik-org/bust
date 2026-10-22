@@ -1,7 +1,7 @@
 # {{ generated_by() }}
 class {{ module.name.upper() }}_H:
-
     """Register map version and content hash"""
+
     REGMAP_VERSION = "{{ module.version }}"
     REGMAP_HASH = 0x{{ module.regmap_hash_hex }}
 {% for reg in module.registers %}
@@ -10,8 +10,8 @@ class {{ module.name.upper() }}_H:
     {{ reg.name.upper() }}_SW = "{{ reg.sw.value }}"
     {{ reg.name.upper() }}_HW = "{{ reg.hw.value }}"
     {{ reg.name.upper() }}_WIDTH = {{ reg.width }}
-    {{ reg.name.upper() }}_OFFSET = {{ "0x%x" | format(reg.address) }}
-    {{ reg.name.upper() }}_RESET = {{ reg.reset }}
+    {{ reg.name.upper() }}_OFFSET = {{ "0x%X" | format(reg.address) }}
+    {{ reg.name.upper() }}_RESET = {{ "0x%X" | format(reg.reset | int(base=16)) }}
 {% if not reg.fields %}
 {% set f = reg.effective_fields[0] %}
 {% if f.onread %}
@@ -30,8 +30,8 @@ class {{ module.name.upper() }}_H:
     """ Field: {{ field.name }} """
     {{ reg.name.upper() }}_{{ field.name.upper() }}_OFFSET = {{ field.pos_low }}
     {{ reg.name.upper() }}_{{ field.name.upper() }}_WIDTH = {{ field.width }}
-    {{ reg.name.upper() }}_{{ field.name.upper() }}_RESET = {{ field.reset }}
-    {{ reg.name.upper() }}_{{ field.name.upper() }}_MASK = {{ "0x%x" | format(field.mask) }}
+    {{ reg.name.upper() }}_{{ field.name.upper() }}_RESET = {{ "0x%X" | format(field.reset | int(base=16)) }}
+    {{ reg.name.upper() }}_{{ field.name.upper() }}_MASK = {{ "0x%X" | format(field.mask) }}
     {{ reg.name.upper() }}_{{ field.name.upper() }}_SW = "{{ field.sw.value }}"
     {{ reg.name.upper() }}_{{ field.name.upper() }}_HW = "{{ field.hw.value }}"
 {% if field.onread %}
