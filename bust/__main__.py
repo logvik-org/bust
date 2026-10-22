@@ -38,9 +38,12 @@ import logging
 import logging.handlers
 from typing import Dict, Union
 
-from bust.utils.json_utils import json_parser, uses_json5
+from bust.utils.json_utils import json_parser
 from bust.validation.config_validator import warn_unknown_keys
-from bust.utils.file_utils import write_string_to_file
+from bust.utils.file_utils import may_overwrite
+from bust.editing.document import RegisterMapDocument
+from bust.editing.json_source import join_pointer
+from bust.validation.config_validator import parse_number
 from bust.core.module import Module
 from bust.core.bus import Bus
 from bust.generators.header_generator import HeaderGenerator
@@ -95,6 +98,34 @@ class _DebugLog(logging.handlers.BufferingHandler):
                 log.write(formatter.format(record) + "\n")
 
 
+def _save_addresses(json_file: str, module: Module, force: bool) -> None:
+    """Give every register the next address in list order and save the file.
+
+    Only the address values change in the text, and an address that is already
+    right keeps its form.
+    """
+    document = RegisterMapDocument.open(json_file)
+    registers = document.data["module"]["register"]
+    module.update_addresses()
+    operations = [
+        {
+            "op": "add",
+            "path": join_pointer("module", "register", index, "address"),
+            "value": hex(register.address),
+        }
+        for index, register in enumerate(module.registers)
+        if "address" not in registers[index]
+        or parse_number(registers[index]["address"], "address") != register.address
+    ]
+    document.apply(operations)
+    if not document.is_modified:
+        logging.getLogger(__name__).info(
+            f"The addresses in {json_file} are in order already."
+        )
+    elif may_overwrite(json_file, force):
+        document.save(json_file)
+
+
 def main():
     args = docopt(__doc__, help=True, version="bust v" + __VERSION__)
     root = logging.getLogger("")
@@ -134,9 +165,11 @@ def _run(args):
                 exit(1)
 
             if args["-c"] or args["-e"]:
-                start = Editor.create if args["-c"] else Editor.open
                 try:
-                    start(json_file).run()
+                    start = Editor.create if args["-c"] else Editor.open
+                    editor = start(json_file)
+                    if editor is not None:
+                        editor.run()
                 except Exception as e:
                     logger.error(str(e) or type(e).__name__)
                     logger.debug("Detailed traceback:", exc_info=True)
@@ -209,16 +242,8 @@ def _run(args):
             gs["gen_localbus"] = True
 
             if args["-a"]:
-                if uses_json5(json_file):
-                    logger.error(
-                        f"{json_file} uses JSON5 syntax, and -a would lose its "
-                        "comments. Change the addresses by hand."
-                    )
-                    exit(1)
-                module.update_addresses()
-                json = module.to_json(True)
                 try:
-                    write_string_to_file(json, json_file, ".", bool(gs["force_ow"]))
+                    _save_addresses(json_file, module, bool(gs["force_ow"]))
                 except Exception as e:
                     logger.error(f"Saving {json_file} failed: {e}")
                     exit(1)

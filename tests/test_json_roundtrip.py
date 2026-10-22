@@ -1,4 +1,4 @@
-"""Saving a register map (`bust FILE -a`, the editor's save) must be lossless.
+"""Module.to_json must write a register map without losing anything.
 
 The JSON written by Module.to_json has to parse back into a module that generates
 byte-identical output, and a bust 1.0 file has to keep its access-mode keys
@@ -39,7 +39,7 @@ def _build_module(json_file, config):
 
 
 def _save_and_reload(json_file):
-    """What `bust FILE -a` does, followed by parsing the saved file again.
+    """Renumber the addresses, write the module with to_json, and parse it again.
 
     Returns the module as saved, the saved JSON text, and the reloaded module.
     """

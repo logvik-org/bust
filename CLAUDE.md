@@ -48,8 +48,9 @@ cd sim && make build && make sim-axi            # nvc + UVVM in Docker
 - `bust/editing/`: `JsonSource` edits the text of a JSON or JSON5 file one
   value at a time, and `RegisterMapDocument` applies JSON Patch operations
   that it checks through `Bus` and `Module`. `bust/schema.py` is the JSON
-  Schema of the register map. `bust/editor.py`, the prompt-based editor behind
-  `-c` and `-e`, works only through these.
+  Schema of the register map. `bust/editor/`, the prompt-based editor behind
+  `-c` and `-e`, works only through these, and `bust -a` saves through
+  `RegisterMapDocument` too.
 - `bust/validation/`, `bust/utils/` and `bust/jinja_utils/`.
 - Each JSON section has a set of the keys bust reads (`REGISTER_KEYS`,
   `FIELD_KEYS`, `MODULE_KEYS` in `bust/core/`, and the key tuple in `Bus`).
