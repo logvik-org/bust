@@ -126,31 +126,19 @@ def _run(args):
         if args["FILE"] is not None:
             json_file = args["FILE"]
 
-            # The editor's curses menus fail in a background thread without a
-            # terminal, which would leave bust exiting 0 with nothing saved.
+            # Without a terminal the editor's questions get no answers, and bust
+            # would exit 0 with nothing saved.
             is_terminal = sys.stdin.isatty() and sys.stdout.isatty()
             if (args["-c"] or args["-e"]) and not is_terminal:
                 logger.error("The editor (-c, -e) needs an interactive terminal.")
                 exit(1)
 
-            if args["-c"] and json_file is not None:
+            if args["-c"] or args["-e"]:
+                start = Editor.create if args["-c"] else Editor.open
                 try:
-                    e = Editor(False, json_file)
-                    e.show_menu()
+                    start(json_file).run()
                 except Exception as e:
-                    logger.error("Failed to create new JSON file: " + json_file)
-                    logger.error(f"{type(e).__name__}: {e}")
-                    logger.debug("Detailed traceback:", exc_info=True)
-                    exit(1)
-                exit()
-
-            if args["-e"] and json_file is not None:
-                try:
-                    editor = Editor(True, json_file)
-                    editor.show_menu()
-                except Exception as e:
-                    logger.error("Failed to open editor for " + json_file)
-                    logger.error(f"{type(e).__name__}: {e}")
+                    logger.error(str(e) or type(e).__name__)
                     logger.debug("Detailed traceback:", exc_info=True)
                     exit(1)
                 exit()
