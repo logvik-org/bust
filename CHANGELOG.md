@@ -23,20 +23,14 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   bust 0.14 responses.
 
 ### Changed
-- The editor behind `-c` and `-e` works with the bust 1.0 format (#101). It
-  sets `sw`, `hw` and the other access keys, fields, enumerated values and
-  addresses, and it changes existing registers and fields as well as adding
-  and removing them. It checks every change as `bust FILE` does, so it cannot
-  save a register map that bust rejects.
+- The editor behind `-c` and `-e` creates and edits register maps in the bust
+  1.0 format, and cannot save one that bust rejects (#101).
 - The editor writes the file only when the register map changed, and then
   changes only the text of the values that changed. Comments, key order,
   number forms and unknown keys stay as they are, in JSON and JSON5 files.
-- Every register the editor adds gets an `address`, `type`, `sw`, `hw` and
-  `reset`, and every field a `position` and `reset`, even where bust has a
-  default.
-- `-e` on a bust 0.14 register map offers to convert it to the 1.0 format.
-- The editor asks numbered questions instead of using curses menus. `-c` no
-  longer replaces an existing file.
+- `bust FILE -a` changes only the addresses in the file, and works on JSON5
+  files. It keeps comments, unknown keys and a `settings` section, and leaves
+  the bust 0.14 type names and `byte_addressable` strings to `--migrate`.
 - The names in `<module>_regfile_pkg` that a design uses carry the module name,
   so one file can use the packages of several modules with `.all`. Rename them
   in your own files as in the table below. The internal names, such as

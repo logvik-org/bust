@@ -171,8 +171,8 @@ Replaced out/example_axi/hdl/example_axi.vhd with a fresh starter. The old file 
 
 ## Renumber addresses
 
-`-a` reads `FILE`, gives every register a new address, and writes the result
-back to `FILE`. It generates no other output. It asks before it replaces
+`-a` reads `FILE`, gives every register a new address, and writes the
+addresses into `FILE`. It generates no other output. It asks before it replaces
 `FILE`, or, without a terminal, stops as described in
 [Existing files](#existing-files). Add `-f` to save without asking:
 
@@ -180,26 +180,22 @@ back to `FILE`. It generates no other output. It asks before it replaces
 bust timer.json -a -f
 ```
 
-A file that uses JSON5 syntax, such as comments, is not rewritten.
-
 bust numbers the registers in the order they appear, starting at 0. They are
 `data_width / 8` apart, and 1 apart on IPBus or with `"byte_addressable": false`
 in the module. See
 [Byte and word addresses](register-map-format.md#byte-and-word-addresses).
 Addresses you wrote yourself are replaced.
 
-bust then writes the whole file again, with 4-space indentation. Every register
-gets an `address`, and the defaults bust used are written out, such as `type`,
-`reset` and `description`. Keys that bust does not know are dropped, after the
-warning described in [Register map format](register-map-format.md#keys-bust-does-not-know).
-These registers:
+Only the addresses change in the file. A register without an `address` gets
+one, and an address that is already right keeps the form it has, such as `16`
+or `"0x10"`. Comments, keys bust does not know and the layout of the file stay
+as they are, in JSON and JSON5 files. These registers:
 
 ```json
 "register": [
   { "name": "ctrl", "sw": "rw", "hw": "r", "type": "vector", "width": 8, "address": "0x10" },
   { "name": "status", "sw": "ro", "hw": "w" },
-  { "name": "irq", "sw": "rw", "hw": "r", "type": "fields", "address": "0x4",
-    "fields": [ { "name": "done", "type": "bit", "onwrite": "woclr", "hwset": true } ] }
+  { "name": "irq", "sw": "rw", "hw": "r", "address": "0x8" }
 ]
 ```
 
@@ -207,46 +203,14 @@ become:
 
 ```json
 "register": [
-    {
-        "name": "ctrl",
-        "sw": "rw",
-        "hw": "r",
-        "type": "vector",
-        "address": "0x0",
-        "width": 8,
-        "reset": "0x0",
-        "description": ""
-    },
-    {
-        "name": "status",
-        "sw": "ro",
-        "hw": "w",
-        "type": "default",
-        "address": "0x4",
-        "reset": "0x0",
-        "description": ""
-    },
-    {
-        "name": "irq",
-        "sw": "rw",
-        "hw": "r",
-        "type": "fields",
-        "address": "0x8",
-        "fields": [
-            {
-                "name": "done",
-                "type": "bit",
-                "onwrite": "woclr",
-                "hwset": true
-            }
-        ],
-        "description": ""
-    }
+  { "name": "ctrl", "sw": "rw", "hw": "r", "type": "vector", "width": 8, "address": "0x0" },
+  { "name": "status", "sw": "ro", "hw": "w", "address": "0x4" },
+  { "name": "irq", "sw": "rw", "hw": "r", "address": "0x8" }
 ]
 ```
 
-The `bus` and `module` sections get the same treatment, and a `settings`
-section is dropped. Commit or copy the file first if you want to compare.
+When every address is right already, bust says
+`The addresses in FILE are in order already.` and does not write `FILE`.
 
 ## Interactive editor
 
@@ -261,15 +225,17 @@ action and goes back to the menu.
 ### Create a register map
 
 `bust FILE -c` asks for the bus type, the address width, the data width (not
-for IPBus, which has 32-bit data), the module name, the version and a
-description. The module name defaults to the file name. Then it offers to add
+for IPBus, which has 32-bit data), the module name, the version, a
+description, and whether addresses count bytes (`byte_addressable`). The
+module name defaults to the file name, and `byte_addressable` to what the bus
+does. Then it offers to add
 the first register and opens the menu. `FILE` must not exist. If it does, bust
 stops with `FILE exists. Edit it with bust FILE -e.`
 
 The editor writes every key the [register map format](register-map-format.md)
 recommends, even where bust has a default:
 
-- The module gets `name`, `version` and `description`.
+- The module gets `name`, `version`, `description` and `byte_addressable`.
 - Each register gets `name`, `address`, `type`, `sw`, `hw`, `width` for a
   `vector`, `reset` unless it has fields, and `description`. The editor offers
   the next free address.
@@ -333,18 +299,6 @@ saved`.
 For a JSON5 file that bust cannot edit in place, such as one with escaped
 characters in a key, the editor says so when it opens the file. Saving then
 rewrites the file as plain JSON without comments, and asks first.
-
-### bust 0.14 files
-
-When `FILE` is in the bust 0.14 format, `-e` lists the changes that convert
-it and asks `Convert it?`. The changes are those of
-[`--migrate`](upgrading.md#migrate-with---migrate), and in addition each register's `mode`
-becomes the access keys it stands for. Nothing is written until you save.
-Without converting, new registers still get `sw` and `hw`, so the file mixes
-the two formats.
-
-A 0.14 file that bust 1.0 rejects, such as one with an address `"10"` that
-bust 0.14 read as hexadecimal, opens only if you convert it.
 
 ## Messages and debug.log
 

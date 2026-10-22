@@ -119,8 +119,9 @@ Could not parse register baud_div: Reset of register baud_div "1B2" has hexadeci
 
 bust also reads the file as [JSON5](https://json5.org/), whatever its name. A
 JSON5 file can have comments, trailing commas, keys without quotes and
-hexadecimal numbers without quotes, such as `"address": 0x1c`. `bust -a` does
-not rewrite a JSON5 file, because it would lose the comments.
+hexadecimal numbers without quotes, such as `"address": 0x1c`. `bust -a` and
+the [editor](command-line.md#interactive-editor) keep the comments when they
+save a JSON5 file.
 
 ## Bus
 
@@ -490,7 +491,8 @@ misspelt key such as `onwrit` gives:
 Unknown key 'onwrit' in field tx_en of register ctrl is ignored
 ```
 
-`bust -a` does not write unknown keys back into the file.
+`bust -a` and the [editor](command-line.md#interactive-editor) keep unknown
+keys when they save the file.
 
 ## Files from bust 0.14
 
@@ -514,11 +516,11 @@ deprecated:
 The bust 0.14 type names 'sl' and 'slv' are deprecated. Use 'bit' and 'vector' instead (17 registers and fields).
 ```
 
-`bust FILE -a` saves the file with the new names. The types `default` and
+`bust FILE --migrate` saves the file with the new names. The types `default` and
 `fields` are the same in both versions.
 
 bust 0.14 wrote `byte_addressable` as the string `"True"` or `"False"`. bust
-1.0 reads both and warns that they are deprecated, and `bust FILE -a` saves
+1.0 reads both and warns that they are deprecated, and `bust FILE --migrate` saves
 `true` or `false`:
 
 ```text
