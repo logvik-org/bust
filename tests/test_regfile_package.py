@@ -239,7 +239,7 @@ def test_register_without_fields_is_a_bare_member_of_to_hw_and_from_hw():
     assert " to_hw.ctrl <= (go => regs.ctrl.go);" in _squash(regfile)
     assert "rdata(3 downto 0) <= from_hw.count;" in _squash(regfile)
     assert "regs.count" not in regfile
-    assert "if (from_hw.load.we = '1') then" in regfile
+    assert "if from_hw.load.we = '1' then" in regfile
 
 
 def test_module_addr_width_generic_reaches_the_regfile():
@@ -262,7 +262,7 @@ def test_module_addr_width_generic_reaches_the_regfile():
     assert "above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)" in regfile
     assert "and is_mapped(reg_offset);" in regfile
     assert (
-        "if (mapped and (is_sw_writable(reg_offset) or not G_ERR_ON_BAD_ACCESS)) then"
+        "if mapped and (is_sw_writable(reg_offset) or not G_ERR_ON_BAD_ACCESS) then"
         in regfile
     )
 
@@ -736,8 +736,8 @@ def test_singlepulse_testbench_detects_the_pulse_against_the_reset_value():
     assert 'signal r_go_sp_value : std_logic_vector(3 downto 0) := 4x"A";' in _squash(
         tb
     )
-    assert 'if (to_hw.r.go /= 4x"A") then' in tb
-    assert "if (to_hw.r.arm /= '1') then" in tb
+    assert 'if to_hw.r.go /= 4x"A" then' in tb
+    assert "if to_hw.r.arm /= '1' then" in tb
     # go=0x5 (inverse of 0xA) in bits 3:0, arm=0 (inverse of 1) in bit 4.
     assert 'bus_write(f_addr(C_M_R_OFFSET), 32x"00000005", "write r");' in tb
     assert 'check_value(r_go_sp_value, 4x"5", error,' in tb
@@ -799,10 +799,10 @@ def test_hardware_updates_override_onread_effects_in_the_same_cycle():
     )
     p_write = _p_write(module)
     onread = p_write.index(
-        "if (rd_service and reg_addr_match(reg_offset, C_M_R_OFFSET)) then"
+        "if rd_service and reg_addr_match(reg_offset, C_M_R_OFFSET) then"
     )
-    assert onread < p_write.index("if (from_hw.r.f.clr = '1') then")
-    assert onread < p_write.index("if (from_hw.r.g.we = '1') then")
+    assert onread < p_write.index("if from_hw.r.f.clr = '1' then")
+    assert onread < p_write.index("if from_hw.r.g.we = '1' then")
     assert p_write.count("rd_service and reg_addr_match(reg_offset, C_M_R_OFFSET)") == 1
 
 

@@ -2,16 +2,17 @@
 -- UVVM testbench for the prototype module (Avalon-MM).
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 library uvvm_util;
-  context uvvm_util.uvvm_util_context;
+context uvvm_util.uvvm_util_context;
 
 library bitvis_vip_avalon_mm;
-  use bitvis_vip_avalon_mm.avalon_mm_bfm_pkg.all;
-  use work.prototype_localbus_pkg.all;
-  use work.prototype_regfile_pkg.all;
+use bitvis_vip_avalon_mm.avalon_mm_bfm_pkg.all;
+
+use work.prototype_localbus_pkg.all;
+use work.prototype_regfile_pkg.all;
 
 entity prototype_tb is
 end entity prototype_tb;
@@ -107,13 +108,13 @@ begin
   begin
 
     if rising_edge(clk) then
-      if (to_hw.reg9.field0.swmod = '1') then
+      if to_hw.reg9.field0.swmod = '1' then
         reg9_field0_swmod_count <= reg9_field0_swmod_count + 1;
       end if;
-      if (to_hw.reg9.field1.swacc = '1') then
+      if to_hw.reg9.field1.swacc = '1' then
         reg9_field1_swacc_count <= reg9_field1_swacc_count + 1;
       end if;
-      if (to_hw.reg10.field0 /= 4x"0") then
+      if to_hw.reg10.field0 /= 4x"0" then
         reg10_field0_sp_count <= reg10_field0_sp_count + 1;
         reg10_field0_sp_value <= to_hw.reg10.field0;
       end if;

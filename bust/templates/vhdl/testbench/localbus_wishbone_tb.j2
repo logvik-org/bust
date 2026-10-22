@@ -2,13 +2,13 @@
 -- Testbench for the {{ module.name }} module (Wishbone B4 classic).
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 library uvvm_util;
-  context uvvm_util.uvvm_util_context;
-  use work.{{ module.name }}_localbus_pkg.all;
-  use work.{{ module.name }}_regfile_pkg.all;
+context uvvm_util.uvvm_util_context;
+use work.{{ module.name }}_localbus_pkg.all;
+use work.{{ module.name }}_regfile_pkg.all;
 
 entity {{ module.name }}_tb is
 end entity {{ module.name }}_tb;
@@ -98,13 +98,13 @@ begin
       wb_dat_w <= data;
       wait until rising_edge(clk);
 
-      while (wb_ack = '0' and wb_err = '0') loop
+      while wb_ack = '0' and wb_err = '0' loop
 
         wait until rising_edge(clk);
 
       end loop;
 
-      if (expect_err) then
+      if expect_err then
         check_value(wb_err, '1', error, "write must terminate on err: " & msg, C_SCOPE);
       else
         check_value(wb_err, '0', error, "write must terminate on ack, not err: " & msg, C_SCOPE);
@@ -134,7 +134,7 @@ begin
       wb_adr <= std_logic_vector(addr);
       wait until rising_edge(clk);
 
-      while (wb_ack = '0' and wb_err = '0') loop
+      while wb_ack = '0' and wb_err = '0' loop
 
         wait until rising_edge(clk);
 

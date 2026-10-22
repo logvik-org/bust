@@ -24,9 +24,10 @@
 -- {{ generated_by() }}
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
-  use work.{{ module.name }}_localbus_pkg.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+use work.{{ module.name }}_localbus_pkg.all;
 
 package {{ module.name }}_regfile_pkg is
 {% if module.registers %}
@@ -191,7 +192,7 @@ package body {{ module.name }}_regfile_pkg is
 
   begin
 
-    if (not check) then
+    if not check then
       return true;
     end if;
 
@@ -208,7 +209,7 @@ package body {{ module.name }}_regfile_pkg is
 
     for i in {{ width }} to module_addr_width - 1 loop
 
-      if (addr(i) /= '0') then
+      if addr(i) /= '0' then
         return true;
       end if;
 

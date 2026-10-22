@@ -2,13 +2,13 @@
 -- Testbench for the {{ module.name }} module (AMBA APB).
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 library uvvm_util;
-  context uvvm_util.uvvm_util_context;
-  use work.{{ module.name }}_localbus_pkg.all;
-  use work.{{ module.name }}_regfile_pkg.all;
+context uvvm_util.uvvm_util_context;
+use work.{{ module.name }}_localbus_pkg.all;
+use work.{{ module.name }}_regfile_pkg.all;
 
 entity {{ module.name }}_tb is
 end entity {{ module.name }}_tb;
@@ -101,13 +101,13 @@ begin
       apb_penable <= '1';
       wait until rising_edge(clk);
 
-      while (apb_pready = '0') loop
+      while apb_pready = '0' loop
 
         wait until rising_edge(clk);
 
       end loop;
 
-      if (expect_err) then
+      if expect_err then
         check_value(apb_pslverr, '1', error, "write must complete with pslverr: " & msg, C_SCOPE);
       else
         check_value(apb_pslverr, '0', error, "write must complete without pslverr: " & msg, C_SCOPE);
@@ -139,7 +139,7 @@ begin
       apb_penable <= '1';
       wait until rising_edge(clk);
 
-      while (apb_pready = '0') loop
+      while apb_pready = '0' loop
 
         wait until rising_edge(clk);
 
