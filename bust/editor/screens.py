@@ -314,3 +314,29 @@ def default_choice(options: Sequence[Tuple[str, str]], value: Any) -> str:
         else str(value).lower() if isinstance(value, bool) else str(value)
     )
     return text if text in values else values[0]
+
+
+class TextScreen(ModalScreen[None]):
+    """A dialog that shows text until it is closed."""
+
+    BINDINGS = [Binding("escape,enter,question_mark", "close", "Close")]
+
+    def __init__(self, title: str, text: str) -> None:
+        """Show `text`, which may use Rich markup."""
+        super().__init__()
+        self.title_text = title
+        self.text = text
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="dialog", classes="wide"):
+            yield Label(self.title_text, classes="dialog-title")
+            yield Static(self.text)
+            with Horizontal(classes="buttons"):
+                yield Button("Close", variant="primary", id="close")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        event.stop()
+        self.dismiss(None)
+
+    def action_close(self) -> None:
+        self.dismiss(None)

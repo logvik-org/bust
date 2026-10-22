@@ -17,7 +17,14 @@ from textual.widgets import Button, DataTable, Input, Select, Static  # noqa: E4
 
 from bust.editor import open_session  # noqa: E402
 from bust.editor.app import EditorApp, MainScreen  # noqa: E402
-from bust.editor.screens import NOT_SET, FormScreen, QuestionScreen  # noqa: E402
+from bust.editor.diagram import bit_diagram  # noqa: E402
+from bust.editor.overview import OverviewScreen  # noqa: E402
+from bust.editor.screens import (  # noqa: E402
+    NOT_SET,
+    FormScreen,
+    QuestionScreen,
+    TextScreen,
+)
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
 _BLINKY = os.path.join(_REPO_ROOT, "tests", "data", "migrate", "axi", "blinky.json")
@@ -628,3 +635,42 @@ def test_add_a_version_register(tmp_path):
         "type": "version",
         "description": "",
     }
+
+
+def test_help_overview_and_pane_keys(tmp_path):
+    path = _timer(tmp_path)
+
+    async def script(editor):
+        await editor.press("3")
+        assert editor.app.focused.id == "properties"
+        await editor.press("2")
+        assert editor.app.focused.id == "fields"
+        await editor.press("question_mark")
+        assert isinstance(editor.screen, TextScreen)
+        await editor.press("escape", "o")
+        assert isinstance(editor.screen, OverviewScreen)
+        shown = "\n".join(
+            str(widget.render()) for widget in editor.screen.query(".diagram")
+        )
+        assert "│ enable │" in shown
+        await editor.press("down", "enter", "escape")
+        assert isinstance(editor.screen, MainScreen)
+
+    _session(path, script)
+
+
+def test_bit_diagram():
+    path = os.path.join(_REPO_ROOT, "example", "example_axi.json")
+    session, _, conversion = open_session(path, create=False)
+    session.document.apply(conversion)
+    reg3 = session.registers[3]
+
+    lines = bit_diagram(reg3, 32)
+
+    assert lines[2].split("│")[1:3] == [
+        " " * 33 + "unused" + " " * 32,
+        " " * 10 + "reg3" + " " * 9,
+    ]
+    assert lines[1].startswith("┌") and lines[1].endswith("┐")
+    assert lines[0].split() == ["31", "8", "7", "0"]
+    assert lines[4].split() == ["-", "0x3"]

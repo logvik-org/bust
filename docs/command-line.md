@@ -240,9 +240,12 @@ The main screen shows the register map in three panes:
   value, and under it what the key does. A key the file does not set shows
   the value bust uses, dimmed, with `(not set)`.
 
-Move with the arrow keys and Tab, or with the mouse. Enter on a register or a
-field moves to its keys, and Enter on a key opens a dialog to change it. These
-keys work on the main screen, and the footer lists them:
+The panes are numbered 1, 2 and 3, and the one with focus has a highlighted
+border. Tab and Shift+Tab move between them, the keys `1`, `2` and `3` jump to
+one, and the mouse works too. The arrow keys move within a pane. Enter on a
+register or a field moves to its keys, and Enter on a key opens a dialog to
+change it. The line under the title repeats this, and `?` lists every key.
+These keys work on the main screen, and the footer lists most of them:
 
 | Key | What it does |
 |---|---|
@@ -251,6 +254,8 @@ keys work on the main screen, and the footer lists them:
 | `Delete` or `d` | Remove the register or field in focus, after asking. |
 | `m` | Change the module's `name`, `description`, `version` and `byte_addressable`, and the bus `type`, `addr_width` and `data_width`. |
 | `g` | Write the address bust gives each register without an `address`. Unlike `-a`, it leaves the other addresses alone. |
+| `o` | Show the overview of the register map. |
+| `?` | List every key. |
 | `s` or `Ctrl+S` | Save `FILE` if the register map changed. |
 | `q` or `Ctrl+Q` | Quit. With unsaved changes, the editor asks whether to save first. |
 
@@ -262,6 +267,23 @@ type needs, such as the first field of a `fields` register, and removes what it
 no longer uses, such as the `width` of a former `vector`. The `enums` row of a
 field lists its enumerated values, where `a` adds one, Enter changes one and
 Delete removes one.
+
+### The overview
+
+`o` shows the whole register map the way the
+[documentation](headers-and-docs.md) does. It has the module's name, version,
+register map hash and bus, then the register list with the number, name,
+software and hardware access, address, type, width and reset of each register.
+Then each register follows with its address, its description and a bit
+diagram. The diagram draws each field as a box over its bits, with the
+numbers of its highest and lowest bit above and its reset value below. Bits no
+field uses show as `unused`. A box is wider than its bits where its name would
+not fit. Under the diagram, each field is listed with its description and its
+access.
+
+Enter on a register in the list moves to its diagram. Escape goes back to the
+editor. The overview shows the register map as it is in the editor, including
+changes that are not saved yet.
 
 ### Create a register map
 
