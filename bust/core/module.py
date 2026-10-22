@@ -7,8 +7,6 @@ and coordination with bus interface code generation.
 """
 
 import logging
-import json
-from collections import OrderedDict
 from typing import TYPE_CHECKING, Dict, List, cast
 
 from bust.core.enums import RegisterMode
@@ -366,39 +364,3 @@ class Module:
         for reg in self.registers:
             string += indent_string(str(reg), 1)
         return cast(str, string)
-
-    def to_json(self, include_address: bool = False) -> str:
-        """Export complete module configuration as JSON string.
-
-        Every register is written in the schema it was authored in (see
-        Register.to_json), so parsing the output rebuilds an identical module.
-
-        Args:
-            include_address: Whether to include explicit address values in output
-                (default: False).
-
-        Returns:
-            JSON string with the bus and module configuration.
-        """
-        dic = OrderedDict()
-        mod = OrderedDict()
-        dic["bus"] = self.bus.to_json()
-        dic["module"] = OrderedDict()
-
-        mod["name"] = self.name
-        if self.version is not None:
-            mod["version"] = self.version
-        mod["description"] = self.description
-        if self.git_hash is not None:
-            mod["git_hash"] = self.git_hash
-        if self._config.is_set("byte_addressable"):
-            mod["byte_addressable"] = self.byte_addressable
-
-        mod["register"] = [reg.to_json(include_address) for reg in self.registers]
-
-        dic["module"] = mod
-
-        s = json.dumps(dic, indent=4)
-        s += "\n"
-
-        return s

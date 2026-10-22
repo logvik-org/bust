@@ -9,7 +9,6 @@ can optionally contain multiple named bitfields.
 """
 
 import logging
-from collections import OrderedDict
 from typing import Any, Dict, List, Optional, cast
 
 from bust.exceptions import (
@@ -277,43 +276,6 @@ class Register:
                 raise InvalidRegisterFormat(
                     "Reset value does not match register: " + self.name
                 )
-
-    def to_json(self, include_address: bool = False) -> OrderedDict:
-        """Export the register configuration in the schema it was authored in.
-
-        A legacy register keeps its `mode`. A bust 1.0 register keeps its
-        register-level access defaults, and each field keeps only the properties
-        it set itself, so re-parsing reproduces the same inheritance.
-
-        Args:
-            include_address: Whether to include the register's address.
-
-        Returns:
-            OrderedDict accepted by Register.__init__.
-        """
-        dic: OrderedDict = OrderedDict()
-        dic["name"] = self.name
-        if self._config.is_set("mode"):
-            dic["mode"] = self.mode.value
-        elif self.uses_new_schema:
-            dic.update(self.access_defaults)
-        # Only the no-op values (pulse_cycles 1, stall_cycles 0) get this far.
-        if self._config.is_set("pulse_cycles"):
-            dic["pulse_cycles"] = self._config.get("pulse_cycles")
-        dic["type"] = self.type.value
-        if include_address:
-            dic["address"] = hex(self.address)
-        if self.type == RegisterType.VECTOR:
-            dic["width"] = self.width
-        if self.type != RegisterType.FIELDS:
-            # The reset as the file wrote it, so saving keeps its form.
-            dic["reset"] = self._config.get("reset")
-        if self._config.is_set("stall_cycles"):
-            dic["stall_cycles"] = self._config.get("stall_cycles")
-        if self.type == RegisterType.FIELDS:
-            dic["fields"] = [field.return_dic() for field in self.fields]
-        dic["description"] = self.description
-        return dic
 
     def __str__(self) -> str:
         string = "Name: " + self.name + "\n"
