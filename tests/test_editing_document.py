@@ -229,7 +229,20 @@ def test_legacy_conversion_keeps_the_generated_hdl(tmp_path):
     _, operations = document.legacy_conversion()
     document.apply(operations)
 
-    assert not any("mode" in reg for reg in document.data["module"]["register"])
+    registers = document.data["module"]["register"]
+    assert list(registers[0]) == [
+        "name",
+        "sw",
+        "hw",
+        "type",
+        "address",
+        "reset",
+        "description",
+    ]
+    assert (
+        '"sw": "rw",\n                "hw": "r",\n                "type"'
+        in document.text
+    )
     for generate in (
         GeneratorFactory.generate_regfile_vhdl,
         GeneratorFactory.generate_regfile_package_vhdl,
