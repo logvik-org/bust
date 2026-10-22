@@ -10,6 +10,11 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+## [1.0.0b1] - 2026-10-22
+
+First beta of bust 1.0.0, and the sixth pre-release, for testing. Install it
+with `pip install --pre bust` or `pip install bust==1.0.0b1`.
+
 ### Added
 - Every output carries the `version` of the module and a 32-bit hash of the
   register map. The register file package has `C_<MODULE>_REGMAP_VERSION` and
@@ -421,7 +426,8 @@ First pre-release of bust 1.0.0, for testing. Install it with
   packages. The wheel also left out the Jinja2 templates, without which an
   installed bust cannot generate anything.
 
-[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0a4...HEAD
+[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0b1...HEAD
+[1.0.0b1]: https://github.com/logvik-org/bust/compare/v1.0.0a4...v1.0.0b1
 [1.0.0a4]: https://github.com/logvik-org/bust/compare/v1.0.0a3...v1.0.0a4
 [1.0.0a3]: https://github.com/logvik-org/bust/compare/v1.0.0a2...v1.0.0a3
 [1.0.0a2]: https://github.com/logvik-org/bust/compare/v1.0.0a1...v1.0.0a2
