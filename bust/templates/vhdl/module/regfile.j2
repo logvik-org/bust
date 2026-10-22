@@ -96,11 +96,9 @@ entity {{ module.name }}_regfile is
     clk : in    std_logic;
     reset : in    std_logic;
     lb_m2s : in    t_lb_m2s;
-    lb_s2m : out   t_lb_s2m{% if module.to_hw_registers or module.from_hw_registers %};{% endif %}
-
+    lb_s2m : out   t_lb_s2m{{ ";" if module.to_hw_registers or module.from_hw_registers else "" }}
 {% if module.to_hw_registers %}
-    to_hw : out   t_{{ module.name }}_to_hw{% if module.from_hw_registers %};{% endif %}
-
+    to_hw : out   t_{{ module.name }}_to_hw{{ ";" if module.from_hw_registers else "" }}
 {% endif %}
 {% if module.from_hw_registers %}
     from_hw : in    t_{{ module.name }}_from_hw
