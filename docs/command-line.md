@@ -250,31 +250,101 @@ section is dropped. Commit or copy the file first if you want to compare.
 
 ## Interactive editor
 
-`-c` and `-e` open a menu-based editor in the terminal. It needs an interactive
-terminal. Without one, bust stops with
+`-c` and `-e` open an editor that asks questions in the terminal. It needs an
+interactive terminal. Without one, bust stops with
 `The editor (-c, -e) needs an interactive terminal.` and exits with status 1.
 
-`bust FILE -c` starts a new register map. It asks for the bus type, the module
-name and a description, then opens the menu. `bust FILE -e` loads `FILE` and
-opens the same menu. The menu has these entries:
+Answer a menu or a list of choices with the number of an entry, or type the
+entry itself. Enter takes the answer in brackets. Ctrl+C cancels the current
+action and goes back to the menu.
 
-| Entry            | What it does                                                         |
-|------------------|----------------------------------------------------------------------|
-| Edit name        | Rename the module.                                                   |
-| List registers   | Show the registers in a table, and the fields of one register.       |
-| Add new register | Ask for the name, description, mode, fields, type, address and reset. |
-| Remove register  | Delete a register.                                                   |
-| Update addresses | Renumber the addresses, as `-a` does.                                |
-| Save JSON        | Write the register map to `FILE`, asking before it replaces a file.  |
-| Exit             | Leave the editor. Changes you did not save are lost.                 |
+### Create a register map
 
-The line under the title shows the module name, the address and data width,
-and whether there are unsaved changes. A new module from `-c` has 32-bit
-addresses and data.
+`bust FILE -c` asks for the bus type, the address width, the data width (not
+for IPBus, which has 32-bit data), the module name, the version and a
+description. The module name defaults to the file name. Then it offers to add
+the first register and opens the menu. `FILE` must not exist. If it does, bust
+stops with `FILE exists. Edit it with bust FILE -e.`
 
-The editor writes registers with the `mode` key (`rw`, `ro` or `pulse`) and a
-register type. It does not know the `sw` and `hw` keys or the other
-[access modes](access-modes.md), so add those in a text editor.
+The editor writes every key the [register map format](register-map-format.md)
+recommends, even where bust has a default:
+
+- The module gets `name`, `version` and `description`.
+- Each register gets `name`, `address`, `type`, `sw`, `hw`, `width` for a
+  `vector`, `reset` unless it has fields, and `description`. The editor offers
+  the next free address.
+- Each field gets `name`, `type`, `position`, `width` for a `vector`, `reset`
+  and `description`. A field gets `sw` and `hw` only where they differ from
+  its register, so it keeps [inheriting](access-modes.md#inheritance) the
+  rest.
+
+This applies to every register and field the editor adds, with `-c` or `-e`.
+
+### Edit a register map
+
+`bust FILE -e` reads `FILE`, in JSON or JSON5, and opens the menu:
+
+| Entry | What it does |
+|---|---|
+| List registers | Show the registers with their address, type, width, `sw`, `hw` and reset. |
+| Add a register | Ask for a new register, as described above. |
+| Edit a register | Change any key of a register, its fields, and their enumerated values. |
+| Remove a register | Delete a register, after asking. |
+| Edit the module and bus | Change the module's `name`, `description`, `version` and `byte_addressable`, and the bus `type`, `addr_width` and `data_width`. |
+| Give an address to each register without one | Write the address bust gives each register without an `address`. Unlike `-a`, it leaves the other addresses alone. |
+| Save | Write `FILE` if the register map changed. |
+| Quit | Leave the editor. With unsaved changes, it asks whether to save first. |
+
+Editing a register or a field lists each of its keys with its value. A key the
+file does not set shows the value bust uses and `(not set)`. Choose `not set`,
+or answer `-`, to remove a key from the file. Changing the `type` of a register
+asks for what the new type needs, such as the first field of a `fields`
+register, and removes what it no longer uses, such as the `width` of a former
+`vector`.
+
+### Checks
+
+The editor checks every change the way `bust FILE` checks the register map.
+While you add a register or a field, it shows bust's message and asks again
+for an answer bust rejects, such as an address that another register uses.
+When you edit a key, it shows `Not changed:` and bust's message, and keeps the
+old value:
+
+```text
+Not changed: Could not parse register count: Invalid field format: onwrite requires a software-writable field (sw rw or wo) (field count in reg count)
+```
+
+So the editor cannot save a register map that bust rejects. It shows each
+warning, such as an unknown key, once.
+
+### Saving
+
+The editor writes `FILE` only when the register map changed. Opening a file
+and quitting leaves it untouched, and changing a value and changing it back is
+no change.
+
+Saving changes only the text of the values that changed. Comments, the order
+of the keys, number forms such as `0x1c`, keys bust does not know and the
+layout of the file stay as they are. New values are written as plain JSON,
+which a JSON5 file accepts too. If `FILE` changed on disk after the editor read
+it, saving stops with `FILE changed after the editor read it, so it was not
+saved`.
+
+For a JSON5 file that bust cannot edit in place, such as one with escaped
+characters in a key, the editor says so when it opens the file. Saving then
+rewrites the file as plain JSON without comments, and asks first.
+
+### bust 0.14 files
+
+When `FILE` is in the bust 0.14 format, `-e` lists the changes that convert
+it and asks `Convert it?`. The changes are those of
+[`--migrate`](upgrading.md#migrate-with---migrate), and in addition each register's `mode`
+becomes the access keys it stands for. Nothing is written until you save.
+Without converting, new registers still get `sw` and `hw`, so the file mixes
+the two formats.
+
+A 0.14 file that bust 1.0 rejects, such as one with an address `"10"` that
+bust 0.14 read as hexadecimal, opens only if you convert it.
 
 ## Messages and debug.log
 
