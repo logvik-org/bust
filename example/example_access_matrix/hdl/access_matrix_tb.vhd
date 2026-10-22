@@ -2,16 +2,17 @@
 -- UVVM testbench for the access_matrix module (AXI4-Lite).
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 library uvvm_util;
-  context uvvm_util.uvvm_util_context;
+context uvvm_util.uvvm_util_context;
 
 library bitvis_vip_axilite;
-  use bitvis_vip_axilite.axilite_bfm_pkg.all;
-  use work.access_matrix_localbus_pkg.all;
-  use work.access_matrix_regfile_pkg.all;
+use bitvis_vip_axilite.axilite_bfm_pkg.all;
+
+use work.access_matrix_localbus_pkg.all;
+use work.access_matrix_regfile_pkg.all;
 
 entity access_matrix_tb is
 end entity access_matrix_tb;
@@ -161,47 +162,47 @@ begin
   begin
 
     if rising_edge(clk) then
-      if (to_hw.hw_set_clear.clr_only.swacc = '1') then
+      if to_hw.hw_set_clear.clr_only.swacc = '1' then
         hw_set_clear_clr_only_swacc_count <= hw_set_clear_clr_only_swacc_count + 1;
       end if;
-      if (to_hw.pulses.kick.swmod = '1') then
+      if to_hw.pulses.kick.swmod = '1' then
         pulses_kick_swmod_count <= pulses_kick_swmod_count + 1;
       end if;
-      if (to_hw.pulses.go /= '0') then
+      if to_hw.pulses.go /= '0' then
         pulses_go_sp_count <= pulses_go_sp_count + 1;
         pulses_go_sp_value <= to_hw.pulses.go;
       end if;
-      if (to_hw.pulses.kick.value /= 4x"0") then
+      if to_hw.pulses.kick.value /= 4x"0" then
         pulses_kick_sp_count <= pulses_kick_sp_count + 1;
         pulses_kick_sp_value <= to_hw.pulses.kick.value;
       end if;
-      if (to_hw.strobes.modified.swmod = '1') then
+      if to_hw.strobes.modified.swmod = '1' then
         strobes_modified_swmod_count <= strobes_modified_swmod_count + 1;
       end if;
-      if (to_hw.strobes.accessed.swacc = '1') then
+      if to_hw.strobes.accessed.swacc = '1' then
         strobes_accessed_swacc_count <= strobes_accessed_swacc_count + 1;
       end if;
-      if (to_hw.enum_swacc.phase.swacc = '1') then
+      if to_hw.enum_swacc.phase.swacc = '1' then
         enum_swacc_phase_swacc_count <= enum_swacc_phase_swacc_count + 1;
       end if;
-      if (to_hw.mixed_swacc.clear_bits.swacc = '1') then
+      if to_hw.mixed_swacc.clear_bits.swacc = '1' then
         mixed_swacc_clear_bits_swacc_count <= mixed_swacc_clear_bits_swacc_count + 1;
       end if;
-      if (to_hw.mixed_swacc.go /= '0') then
+      if to_hw.mixed_swacc.go /= '0' then
         mixed_swacc_go_sp_count <= mixed_swacc_go_sp_count + 1;
         mixed_swacc_go_sp_value <= to_hw.mixed_swacc.go;
       end if;
-      if (to_hw.mixed_history.toggle.swacc = '1') then
+      if to_hw.mixed_history.toggle.swacc = '1' then
         mixed_history_toggle_swacc_count <= mixed_history_toggle_swacc_count + 1;
       end if;
-      if (to_hw.hw_status_swacc.level.swacc = '1') then
+      if to_hw.hw_status_swacc.level.swacc = '1' then
         hw_status_swacc_level_swacc_count <= hw_status_swacc_level_swacc_count + 1;
       end if;
-      if (to_hw.irq_status.pending.swacc = '1') then
+      if to_hw.irq_status.pending.swacc = '1' then
         irq_status_pending_swacc_count <= irq_status_pending_swacc_count + 1;
         irq_status_pending_at_swacc    <= to_hw.irq_status.pending.value;
       end if;
-      if (to_hw.flat_strobe.swmod = '1') then
+      if to_hw.flat_strobe.swmod = '1' then
         flat_strobe_flat_strobe_swmod_count <= flat_strobe_flat_strobe_swmod_count + 1;
       end if;
     end if;

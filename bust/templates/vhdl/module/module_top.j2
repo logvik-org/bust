@@ -3,14 +3,15 @@
 -- To replace this file with a fresh copy, run bust with --replace-top.
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 {% if bus.bus_type == 'ipbus' %}
 
 library ipbus;
-  use ipbus.ipbus.all;
+use ipbus.ipbus.all;
 {% endif %}
-  use work.{{ module.name }}_regfile_pkg.all;
+
+use work.{{ module.name }}_regfile_pkg.all;
 
 entity {{ module.name }} is
   generic (

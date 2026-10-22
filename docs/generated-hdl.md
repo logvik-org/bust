@@ -76,7 +76,8 @@ time in seconds since 1970.
 
 The generated VHDL follows the default style of
 [vsg](https://github.com/jeremiah-c-leary/vhdl-style-guide), the VHDL Style
-Guide, with constants and generics in upper case. The rules are in
+Guide, with constants and generics in upper case, `use` clauses not indented
+and conditions without parentheses. The rules are in
 [vsg.yaml](https://github.com/logvik-org/bust/blob/master/vsg.yaml), and the
 tests of bust check the generated examples against them with vsg 3.35.0. If
 your project checks its VHDL with other vsg rules, leave the generated files

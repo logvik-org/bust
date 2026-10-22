@@ -3,10 +3,11 @@
 --   Avalon-MM -> local bus (t_lb_m2s / t_lb_s2m) -> regfile
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
-  use work.prototype_localbus_pkg.all;
-  use work.prototype_regfile_pkg.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+use work.prototype_localbus_pkg.all;
+use work.prototype_regfile_pkg.all;
 
 entity prototype_avalon_endpoint is
   generic (

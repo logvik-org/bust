@@ -3,10 +3,11 @@
 --   AXI4-Lite -> local bus (t_lb_m2s / t_lb_s2m) -> regfile
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
-  use work.access_matrix_localbus_pkg.all;
-  use work.access_matrix_regfile_pkg.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+use work.access_matrix_localbus_pkg.all;
+use work.access_matrix_regfile_pkg.all;
 
 entity access_matrix_axi_endpoint is
   generic (
@@ -134,7 +135,7 @@ begin
   p_axi : process (clk, areset_n) is
   begin
 
-    if (areset_n = '0') then
+    if areset_n = '0' then
       state   <= ST_IDLE;
       addr_q  <= (others => '0');
       wdata_q <= (others => '0');
@@ -147,19 +148,19 @@ begin
 
         when ST_IDLE =>
 
-          if (start_wr = '1') then
+          if start_wr = '1' then
             addr_q  <= awaddr;
             wdata_q <= wdata;
             state   <= ST_WRITE;
-          elsif (start_rd = '1') then
+          elsif start_rd = '1' then
             addr_q <= araddr;
             state  <= ST_READ;
           end if;
 
         when ST_WRITE =>
 
-          if (resp = '1') then
-            if (bready = '1') then
+          if resp = '1' then
+            if bready = '1' then
               -- The master takes the response in the same cycle.
               state <= ST_IDLE;
             else
@@ -171,14 +172,14 @@ begin
 
         when ST_BHOLD =>
 
-          if (bready = '1') then
+          if bready = '1' then
             state <= ST_IDLE;
           end if;
 
         when ST_READ =>
 
-          if (resp = '1') then
-            if (rready = '1') then
+          if resp = '1' then
+            if rready = '1' then
               -- The master takes the response in the same cycle.
               state <= ST_IDLE;
             else
@@ -191,7 +192,7 @@ begin
 
         when ST_RHOLD =>
 
-          if (rready = '1') then
+          if rready = '1' then
             state <= ST_IDLE;
           end if;
 

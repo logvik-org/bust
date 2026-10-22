@@ -4,10 +4,11 @@
 -- p_read: read mux and read response.
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
-  use work.example_ipbus_localbus_pkg.all;
-  use work.example_ipbus_regfile_pkg.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+use work.example_ipbus_localbus_pkg.all;
+use work.example_ipbus_regfile_pkg.all;
 
 entity example_ipbus_regfile is
   generic (
@@ -44,7 +45,7 @@ architecture rtl of example_ipbus_regfile is
   ) return std_logic is
   begin
 
-    if (active_low) then
+    if active_low then
       return '0';
     end if;
 
@@ -78,7 +79,7 @@ begin
   begin
 
     if rising_edge(clk) then
-      if (reset = C_RESET_LEVEL) then
+      if reset = C_RESET_LEVEL then
         regs   <= C_EXAMPLE_IPBUS_REGS_RESET;
         wr_ack <= '0';
         wr_err <= '0';
@@ -94,23 +95,23 @@ begin
                       and is_mapped(reg_offset);
         sw_write   := lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' and mapped;
 
-        if (sw_write and reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG0_OFFSET)) then
+        if sw_write and reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG0_OFFSET) then
           regs.reg0.reg0 <= lb_m2s.wdata(0);
         end if;
 
-        if (sw_write and reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG1_OFFSET)) then
+        if sw_write and reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG1_OFFSET) then
           regs.reg1.reg1 <= lb_m2s.wdata(0);
         end if;
 
-        if (sw_write and reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG3_OFFSET)) then
+        if sw_write and reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG3_OFFSET) then
           regs.reg3.reg3 <= lb_m2s.wdata(7 downto 0);
         end if;
 
-        if (sw_write and reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG5_OFFSET)) then
+        if sw_write and reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG5_OFFSET) then
           regs.reg5.reg5 <= lb_m2s.wdata(31 downto 0);
         end if;
 
-        if (sw_write and reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG7_OFFSET)) then
+        if sw_write and reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG7_OFFSET) then
           regs.reg7.field0 <= lb_m2s.wdata(0);
           regs.reg7.field1 <= lb_m2s.wdata(4 downto 1);
           regs.reg7.field2 <= lb_m2s.wdata(5);
@@ -118,25 +119,25 @@ begin
         end if;
 
         regs.reg9.reg9 <= '1';
-        if (sw_write and reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG9_OFFSET)) then
+        if sw_write and reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG9_OFFSET) then
           regs.reg9.reg9 <= lb_m2s.wdata(0);
         end if;
 
         regs.reg10.reg10 <= 4x"A";
-        if (sw_write and reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG10_OFFSET)) then
+        if sw_write and reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG10_OFFSET) then
           regs.reg10.reg10 <= lb_m2s.wdata(3 downto 0);
         end if;
 
         regs.reg11.field0 <= 15x"3";
         regs.reg11.field1 <= '0';
-        if (sw_write and reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG11_OFFSET)) then
+        if sw_write and reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG11_OFFSET) then
           regs.reg11.field0 <= lb_m2s.wdata(14 downto 0);
           regs.reg11.field1 <= lb_m2s.wdata(15);
         end if;
 
         -- Write response: err for an address without a register or a bad access.
-        if (lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0') then
-          if (mapped and (is_sw_writable(reg_offset) or not G_ERR_ON_BAD_ACCESS)) then
+        if lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' then
+          if mapped and (is_sw_writable(reg_offset) or not G_ERR_ON_BAD_ACCESS) then
             wr_ack <= '1';
           else
             wr_err <= '1';
@@ -156,7 +157,7 @@ begin
   begin
 
     if rising_edge(clk) then
-      if (reset = C_RESET_LEVEL) then
+      if reset = C_RESET_LEVEL then
         rdata  <= (others => '0');
         rd_ack <= '0';
         rd_err <= '0';
@@ -164,14 +165,14 @@ begin
         rd_ack <= '0';
         rd_err <= '0';
 
-        if (lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0') then
+        if lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' then
           rdata      <= (others => '0');
           reg_offset := lb_m2s.address(C_EXAMPLE_IPBUS_MODULE_ADDR_WIDTH - 1 downto 0);
           mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
                                    G_MODULE_ADDR_WIDTH)
                         and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
                         and is_mapped(reg_offset);
-          if (not mapped or (G_ERR_ON_BAD_ACCESS and not is_sw_readable(reg_offset))) then
+          if not mapped or (G_ERR_ON_BAD_ACCESS and not is_sw_readable(reg_offset)) then
             rd_err <= '1';
             rdata  <= G_UNMAPPED_READ_DATA;
           elsif reg_addr_match(reg_offset, C_EXAMPLE_IPBUS_REG0_OFFSET) then

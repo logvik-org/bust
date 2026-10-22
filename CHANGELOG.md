@@ -39,11 +39,11 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 | `to_<reg>_<field>`, its conversion from bits | `to_<module>_<reg>_<field>` |
 
 - The generated VHDL follows the default style of vsg, the VHDL Style Guide,
-  with constants and generics in upper case. `vsg.yaml` holds the rules, and
-  the tests check the generated examples against them (#62). The layout of
+  with constants and generics in upper case, `use` clauses not indented and
+  conditions without parentheses. `vsg.yaml` holds the rules, and the tests
+  check the generated examples against them (#62). The layout of
   every generated file changes, and the behaviour does not. Among the changes:
-  - Conditions are in parentheses, and records, functions and procedures end
-    with their name.
+  - Records, functions and procedures end with their name.
   - In a reset constant and in the `to_hw` assignments of the register file,
     a register with several fields, or with a field that is a record, has one
     field per line.

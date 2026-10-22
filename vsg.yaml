@@ -13,6 +13,15 @@ rule:
   # Enumeration literals keep the case of the names in the JSON file.
   type_500:
     disable: true
+  # use and context clauses are not indented, and a blank line may separate
+  # those of different libraries.
+  library_007:
+    disable: true
+  context_ref_001:
+    indent_size: 0
+  # A condition may go without parentheses.
+  if_002:
+    disable: true
   # Modules are instantiated as entities, not as components.
   instantiation_034:
     method: entity
@@ -30,3 +39,10 @@ rule:
   # fields the register has.
   constant_016:
     disable: true
+# use clauses start in the first column, under their library clause.
+indent:
+  tokens:
+    use_clause:
+      keyword:
+        token_after_library_clause: current
+        token_if_no_matching_library_clause: current

@@ -117,7 +117,7 @@ The field needs software read access, `sw` `rw` or `ro`. The prototype's
 
 ```vhdl
 -- reg5 onread effects.
-if (rd_service and reg_addr_match(reg_offset, C_PROTOTYPE_REG5_OFFSET)) then
+if rd_service and reg_addr_match(reg_offset, C_PROTOTYPE_REG5_OFFSET) then
   regs.reg5.field0 <= (others => '0');
   regs.reg5.field1 <= (others => '1');
 end if;
@@ -143,7 +143,7 @@ The field needs software write access, `sw` `rw` or `wo`. The prototype's
 `reg6`:
 
 ```vhdl
-if (sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG6_OFFSET)) then
+if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG6_OFFSET) then
   regs.reg6.field0 <= regs.reg6.field0 or lb_m2s.wdata(3 downto 0);
   regs.reg6.field1 <= regs.reg6.field1 and not lb_m2s.wdata(7 downto 4);
   regs.reg6.field2 <= regs.reg6.field2 xor lb_m2s.wdata(11 downto 8);
@@ -163,7 +163,7 @@ cycle. Use it for commands such as start or flush. The prototype's `reg10`:
 
 ```vhdl
 regs.reg10.field0 <= (others => '0');
-if (sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG10_OFFSET)) then
+if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG10_OFFSET) then
   regs.reg10.field0 <= lb_m2s.wdata(3 downto 0);
 end if;
 ```
@@ -298,11 +298,11 @@ The order comes out as an `if`/`elsif` chain in the register file. Here it is
 for the prototype's `reg4.field1`, which has `hwset` and `hwclr`:
 
 ```vhdl
-if (from_hw.reg4.field1.clr = '1') then
+if from_hw.reg4.field1.clr = '1' then
   regs.reg4.field1 <= '0';
-elsif (from_hw.reg4.field1.set = '1') then
+elsif from_hw.reg4.field1.set = '1' then
   regs.reg4.field1 <= '1';
-elsif (sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG4_OFFSET)) then
+elsif sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG4_OFFSET) then
   regs.reg4.field1 <= lb_m2s.wdata(8);
 end if;
 ```

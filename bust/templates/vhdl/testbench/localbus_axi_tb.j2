@@ -2,16 +2,17 @@
 -- UVVM testbench for the {{ module.name }} module (AXI4-Lite).
 
 library ieee;
-  use ieee.std_logic_1164.all;
-  use ieee.numeric_std.all;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 library uvvm_util;
-  context uvvm_util.uvvm_util_context;
+context uvvm_util.uvvm_util_context;
 
 library bitvis_vip_axilite;
-  use bitvis_vip_axilite.axilite_bfm_pkg.all;
-  use work.{{ module.name }}_localbus_pkg.all;
-  use work.{{ module.name }}_regfile_pkg.all;
+use bitvis_vip_axilite.axilite_bfm_pkg.all;
+
+use work.{{ module.name }}_localbus_pkg.all;
+use work.{{ module.name }}_regfile_pkg.all;
 
 entity {{ module.name }}_tb is
 end entity {{ module.name }}_tb;
