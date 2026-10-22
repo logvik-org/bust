@@ -13,7 +13,7 @@ import copy
 import json
 import re
 from dataclasses import dataclass
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import json5
 
@@ -158,7 +158,13 @@ class _Scanner:
         return _Node(start, self.pos, members, is_object)
 
 
-def _split_pointer(path: str) -> List[str]:
+def join_pointer(*tokens: Any) -> str:
+    """The JSON Pointer to the value the keys and list indexes lead to."""
+    return "".join("/" + str(t).replace("~", "~0").replace("/", "~1") for t in tokens)
+
+
+def split_pointer(path: str) -> List[str]:
+    """The keys and list indexes in a JSON Pointer, unescaped."""
     if path == "":
         return []
     if not path.startswith("/"):
@@ -194,9 +200,7 @@ class JsonSource:
     def replace(self, path: str, value: Any) -> None:
         """Replace the value at `path`."""
         node = self._find(self._split_child(path))
-        expected = self._expected(
-            path, lambda parent, token: _put(parent, token, value)
-        )
+        expected = self._expected("replace", path, value)
         old_text = self.text[node.start : node.end]
         inline = node.members is not None and "\n" not in old_text
         rendered = self._render(value, self._line_indent(node.start), inline)
@@ -215,10 +219,10 @@ class JsonSource:
                 return
             index = len(members)
         else:
-            index = len(members) if token == "-" else self._array_index(token, path)
+            index = len(members) if token == "-" else _list_index(token, path)
             if index > len(members):
                 raise JsonSourceError(f"No list position at {path}")
-        expected = self._expected(path, lambda parent, t: _insert(parent, t, value))
+        expected = self._expected("add", path, value)
         key = token if parent.is_object else None
         self._apply(self._insert_edits(parent, index, key, value), expected)
 
@@ -228,11 +232,11 @@ class JsonSource:
         *parent_tokens, token = self._split_child(path)
         parent = self._find(parent_tokens)
         index = self._member_index(parent, token, path)
-        expected = self._expected(path, _delete)
+        expected = self._expected("remove", path)
         self._apply(self._remove_edits(parent, index), expected)
 
     def _split_child(self, path: str) -> List[str]:
-        tokens = _split_pointer(path)
+        tokens = split_pointer(path)
         if not tokens:
             raise JsonSourceError("The whole document cannot be added or removed")
         return tokens
@@ -242,11 +246,6 @@ class JsonSource:
             raise JsonSourceError(f"No object or list holds {path}")
         return node.members
 
-    def _array_index(self, token: str, path: str) -> int:
-        if not _ARRAY_INDEX.fullmatch(token):
-            raise JsonSourceError(f"No list position at {path}")
-        return int(token)
-
     def _member_index(self, node: _Node, token: str, path: str) -> int:
         members = self._members(node, path)
         if node.is_object:
@@ -255,7 +254,7 @@ class JsonSource:
             if matches:
                 return matches[-1]
         else:
-            index = self._array_index(token, path)
+            index = _list_index(token, path)
             if index < len(members):
                 return index
         raise JsonSourceError(f"No value at {path}")
@@ -432,14 +431,10 @@ class JsonSource:
             edits.append((previous.comma, previous.comma + 1, ""))
         return edits
 
-    def _expected(self, path: str, change: Callable[[Any, str], None]) -> Any:
-        """The document's value after `change` is made at `path`."""
-        *parent_tokens, token = self._split_child(path)
+    def _expected(self, op: str, path: str, value: Any = None) -> Any:
+        """The document's value after the operation."""
         document = copy.deepcopy(self.value)
-        parent = document
-        for t in parent_tokens:
-            parent = parent[t] if isinstance(parent, dict) else parent[int(t)]
-        change(parent, token)
+        apply_to_data(document, op, path, value)
         return document
 
     def _apply(self, edits: List[_Edit], expected: Any) -> None:
@@ -459,24 +454,61 @@ class JsonSource:
         self._root = edited._root
 
 
-def _put(parent: Any, token: str, value: Any) -> None:
+def apply_to_data(document: Any, op: str, path: str, value: Any = None) -> None:
+    """Make a JSON Patch ``add``, ``replace`` or ``remove`` on Python data.
+
+    Raises:
+        JsonSourceError: If `path` does not lead to a place for the operation.
+    """
+    tokens = split_pointer(path)
+    if not tokens:
+        raise JsonSourceError("The whole document cannot be added or removed")
+    *parent_tokens, token = tokens
+    parent = document
+    for depth, parent_token in enumerate(parent_tokens):
+        prefix = "/" + "/".join(tokens[: depth + 1])
+        parent = parent[_existing_slot(parent, parent_token, prefix)]
     if isinstance(parent, dict):
-        parent[token] = value
+        if op == "add":
+            parent[token] = value
+            return
+        token_slot: Any = _existing_slot(parent, token, path)
+    elif isinstance(parent, list):
+        if op == "add":
+            if token == "-":
+                parent.append(value)
+                return
+            index = _list_index(token, path)
+            if index > len(parent):
+                raise JsonSourceError(f"No list position at {path}")
+            parent.insert(index, value)
+            return
+        token_slot = _existing_slot(parent, token, path)
     else:
-        parent[int(token)] = value
+        raise JsonSourceError(f"No object or list holds {path}")
+    if op == "replace":
+        parent[token_slot] = value
+    elif op == "remove":
+        del parent[token_slot]
+    else:
+        raise JsonSourceError(f"Unknown operation {op!r}")
 
 
-def _insert(parent: Any, token: str, value: Any) -> None:
+def _list_index(token: str, path: str) -> int:
+    if not _ARRAY_INDEX.fullmatch(token):
+        raise JsonSourceError(f"No list position at {path}")
+    return int(token)
+
+
+def _existing_slot(parent: Any, token: str, path: str) -> Any:
+    """The dict key or list index `token` names in `parent`."""
     if isinstance(parent, dict):
-        parent[token] = value
-    elif token == "-":
-        parent.append(value)
+        if token in parent:
+            return token
+    elif isinstance(parent, list):
+        index = _list_index(token, path)
+        if index < len(parent):
+            return index
     else:
-        parent.insert(int(token), value)
-
-
-def _delete(parent: Any, token: str) -> None:
-    if isinstance(parent, dict):
-        del parent[token]
-    else:
-        del parent[int(token)]
+        raise JsonSourceError(f"No object or list holds {path}")
+    raise JsonSourceError(f"No value at {path}")
