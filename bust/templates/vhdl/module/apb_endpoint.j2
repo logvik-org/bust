@@ -1,42 +1,44 @@
 -- {{ generated_by() }}
 -- APB (AMBA APB) wrapper for the {{ module.name }} local-bus register file.
 --   APB -> local bus (t_lb_m2s / t_lb_s2m) -> regfile
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
 
-use work.{{ module.name }}_localbus_pkg.all;
-use work.{{ module.name }}_regfile_pkg.all;
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+  use work.{{ module.name }}_localbus_pkg.all;
+  use work.{{ module.name }}_regfile_pkg.all;
 
 entity {{ module.name }}_apb_endpoint is
   generic (
+{% filter align(":", ":=") %}
     G_BASE_ADDRESS       : unsigned({{ module.addr_width - 1 }} downto 0) := {{ module.addr_width }}x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
     G_MODULE_ADDR_WIDTH  : natural := C_{{ module.name | upper }}_MODULE_ADDR_WIDTH;
     G_UNMAPPED_READ_DATA : std_logic_vector({{ module.data_width - 1 }} downto 0) := (others => '0');
     G_ERR_ON_BAD_ACCESS  : boolean := false
+{% endfilter %}
   );
   port (
-    pclk    : in  std_logic;
-    presetn : in  std_logic;
+{% filter align(":") %}
+    pclk : in    std_logic;
+    presetn : in    std_logic;
 
     -- APB subordinate interface
-    psel    : in  std_logic;
-    penable : in  std_logic;
-    pwrite  : in  std_logic;
-    paddr   : in  std_logic_vector({{ module.addr_width - 1 }} downto 0);
-    pwdata  : in  std_logic_vector({{ module.data_width - 1 }} downto 0);
-    prdata  : out std_logic_vector({{ module.data_width - 1 }} downto 0);
-    pready  : out std_logic;
-    pslverr : out std_logic{% if module.to_hw_registers or module.from_hw_registers %};{% endif %}
-
+    psel : in    std_logic;
+    penable : in    std_logic;
+    pwrite : in    std_logic;
+    paddr : in    std_logic_vector({{ module.addr_width - 1 }} downto 0);
+    pwdata : in    std_logic_vector({{ module.data_width - 1 }} downto 0);
+    prdata : out   std_logic_vector({{ module.data_width - 1 }} downto 0);
+    pready : out   std_logic;
+    pslverr : out   std_logic{{ ";" if module.to_hw_registers or module.from_hw_registers else "" }}
 {% if module.to_hw_registers %}
-    to_hw   : out t_{{ module.name }}_to_hw{% if module.from_hw_registers %};{% endif %}
-
+    to_hw : out   t_{{ module.name }}_to_hw{{ ";" if module.from_hw_registers else "" }}
 {% endif %}
 {% if module.from_hw_registers %}
-    from_hw : in  t_{{ module.name }}_from_hw
+    from_hw : in    t_{{ module.name }}_from_hw
 {% endif %}
+{% endfilter %}
   );
 end entity {{ module.name }}_apb_endpoint;
 
@@ -51,24 +53,31 @@ architecture rtl of {{ module.name }}_apb_endpoint is
 
 begin
 
-  i_regfile : entity work.{{ module.name }}_regfile
+  -- The APB reset presetn is active low.
+  i_regfile : entity work.{{ module.name }}_regfile(rtl)
     generic map (
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
       G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
       G_UNMAPPED_READ_DATA => G_UNMAPPED_READ_DATA,
       G_ERR_ON_BAD_ACCESS  => G_ERR_ON_BAD_ACCESS,
-      G_RESET_ACTIVE_LOW   => true)       -- APB presetn is active-low
+      G_RESET_ACTIVE_LOW   => true
+    )
     port map (
-      clk     => pclk,
-      reset   => presetn,
-      lb_m2s  => m2s,
-      lb_s2m  => s2m{% if module.to_hw_registers %},
-      to_hw   => to_hw{% endif %}{% if module.from_hw_registers %},
-      from_hw => from_hw{% endif %});
+{% filter align("=>") %}
+      clk => pclk,
+      reset => presetn,
+      lb_m2s => m2s,
+      lb_s2m => s2m{% if module.to_hw_registers %},
+      to_hw => to_hw{% endif %}{% if module.from_hw_registers %},
+      from_hw => from_hw{% endif %}
+
+{% endfilter %}
+    );
 
   -- Active from the SETUP cycle (psel high, penable low) and held while busy.
-  req_active <= '1' when (psel = '1' and penable = '0') or busy = '1' else '0';
+  req_active <= '1' when (psel = '1' and penable = '0') or busy = '1' else
+                '0';
 
   m2s.address <= paddr;
   m2s.wdata   <= pwdata;
@@ -77,15 +86,19 @@ begin
 
   p_busy : process (pclk, presetn) is
   begin
-    if presetn = '0' then
+
+    if (presetn = '0') then
       busy <= '0';
     elsif rising_edge(pclk) then
-      if psel = '1' and penable = '0' then
-        busy <= '1';                      -- latch the in-flight transaction at SETUP
-      elsif s2m.ack = '1' or s2m.err = '1' then
-        busy <= '0';                      -- release once the regfile answers
+      if (psel = '1' and penable = '0') then
+        -- Hold the transaction from its SETUP cycle.
+        busy <= '1';
+      elsif (s2m.ack = '1' or s2m.err = '1') then
+        -- Release it once the regfile answers.
+        busy <= '0';
       end if;
     end if;
+
   end process p_busy;
 
   pready  <= s2m.ack or s2m.err;
