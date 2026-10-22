@@ -290,73 +290,78 @@ class TestRegmapHash:
         assert mod.regmap_hash == module_with().regmap_hash != before
 
 
+def hash_reg(**keys):
+    return {"name": "id_hash", "type": "hash", **keys}
+
+
 class TestHashRegister:
-    def test_off_by_default(self):
-        mod = module_with()
-        assert mod.hash_register is None
-        assert mod.user_registers == mod.registers
+    def test_none_by_default(self):
+        assert module_with().hash_register is None
 
     def test_constant_register_with_the_hash(self):
-        mod = module_with(hash_register=True)
+        mod = module_with(register=regs("R0") + [hash_reg()])
         reg = mod.hash_register
-        assert reg is mod.registers[-1]
-        assert mod.user_registers == mod.registers[:-1]
-        assert (reg.name, reg.sw.value, reg.hw.value, reg.width) == (
-            "regmap_hash",
+        assert reg is mod.registers[1]
+        assert (reg.name, reg.type.value, reg.sw.value, reg.hw.value, reg.width) == (
+            "id_hash",
+            "hash",
             "ro",
             "na",
             32,
         )
+        assert reg.address == 4
         assert int(reg.reset, 16) == mod.regmap_hash
         assert not reg.effective_fields[0].holds_state
 
-    def test_true_takes_the_lowest_free_address(self):
-        mod = module_with(
-            hash_register=True,
-            register=regs("R0") + [{"name": "R1", "address": "0x8"}],
-        )
-        assert mod.hash_register.address == 0x4
+    def test_first_in_the_list_gets_address_zero(self):
+        mod = module_with(register=[hash_reg()] + regs("R0", "R1"))
+        assert [reg.address for reg in mod.registers] == [0, 4, 8]
 
-    def test_address_is_taken_before_other_registers(self):
-        mod = module_with(hash_register="0x0")
-        assert mod.hash_register.address == 0
-        assert [reg.address for reg in mod.user_registers] == [4, 8]
+    def test_name_is_free(self):
+        assert module_with(register=[hash_reg(name="whatever")]).hash_register
 
-    def test_address_used_by_a_register_rejected(self):
-        with pytest.raises(InvalidAddress):
-            module_with(hash_register=4, register=[{"name": "R0", "address": 4}])
+    @pytest.mark.parametrize(
+        "key, value",
+        [("sw", "rw"), ("hw", "w"), ("reset", "0x1"), ("width", 32), ("mode", "ro")],
+    )
+    def test_other_keys_rejected(self, key, value):
+        with pytest.raises(InvalidRegister, match="takes only name"):
+            module_with(register=[hash_reg(**{key: value})])
 
-    def test_address_out_of_range_rejected(self):
-        with pytest.raises(FormatError, match="does not fit"):
-            module_with(hash_register="0x1000")
+    def test_fields_rejected(self):
+        fields = [{"name": "f", "type": "bit"}]
+        with pytest.raises(InvalidRegister, match="fields"):
+            module_with(register=[hash_reg(fields=fields)])
 
-    def test_register_with_its_name_rejected(self):
-        with pytest.raises(InvalidRegisterFormat, match="regmap_hash"):
-            module_with(hash_register=True, register=regs("REGMAP_HASH"))
+    def test_second_hash_register_rejected(self):
+        with pytest.raises(InvalidRegister, match="at most one"):
+            module_with(register=[hash_reg(), hash_reg(name="other")])
 
     def test_narrow_data_width_rejected(self):
-        with pytest.raises(FormatError, match="at least 32 bits"):
-            module_with(hash_register=True, bus=stub_bus(data_width=16))
+        with pytest.raises(InvalidRegister, match="at least 32 bits"):
+            module_with(register=[hash_reg()], bus=stub_bus(data_width=16))
 
     def test_wide_data_width_holds_the_hash(self):
-        mod = module_with(hash_register=True, bus=stub_bus(data_width=64))
+        mod = module_with(register=[hash_reg()], bus=stub_bus(data_width=64))
         assert int(mod.hash_register.reset, 16) == mod.regmap_hash
         assert mod.hash_register_value_vhdl == f'64x"{mod.regmap_hash:016X}"'
 
     def test_counts_in_the_hash(self):
-        assert module_with(hash_register=True).regmap_hash != module_with().regmap_hash
+        with_hash = module_with(register=regs("R0", "R1") + [hash_reg()])
+        assert with_hash.regmap_hash != module_with().regmap_hash
+
+    def test_value_does_not_depend_on_itself(self):
+        mod = module_with(register=[hash_reg()])
+        before = mod.regmap_hash
+        mod._update_hash_register()
+        assert mod.regmap_hash == before
 
     def test_update_addresses_keeps_the_value_right(self):
-        mod = module_with(
-            hash_register=True,
-            register=regs("R0") + [{"name": "R1", "address": "0x10"}],
-        )
+        mod = module_with(register=[hash_reg(address="0x10")] + regs("R0"))
         mod.update_addresses()
-        assert [reg.address for reg in mod.registers] == [0, 4, 8]
+        assert [reg.address for reg in mod.registers] == [0, 4]
         assert int(mod.hash_register.reset, 16) == mod.regmap_hash
-        assert mod.regmap_hash == module_with(hash_register=True).regmap_hash
-
-    def test_update_addresses_keeps_its_own_address(self):
-        mod = module_with(hash_register="0x0", register=[{"name": "R0", "address": 8}])
-        mod.update_addresses()
-        assert [reg.address for reg in mod.registers] == [4, 0]
+        assert (
+            mod.regmap_hash
+            == module_with(register=[hash_reg()] + regs("R0")).regmap_hash
+        )

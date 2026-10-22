@@ -216,7 +216,7 @@ begin
     gen_pulse(areset_n, '0', 500 ns, BLOCKING, "Reset for 500 ns");
 
     log(ID_LOG_HDR, "regmap_hash: reads the register map hash", C_SCOPE);
-    bus_check(f_addr(C_EXAMPLE_AXI_REGMAP_HASH_OFFSET), 32x"8A3B071B", "regmap_hash holds C_EXAMPLE_AXI_REGMAP_HASH");
+    bus_check(f_addr(C_EXAMPLE_AXI_REGMAP_HASH_OFFSET), 32x"55C3AEDF", "regmap_hash holds C_EXAMPLE_AXI_REGMAP_HASH");
 
     log(ID_LOG_HDR, "reg0: software read-write round-trip", C_SCOPE);
     bus_write(f_addr(C_EXAMPLE_AXI_REG0_OFFSET), 32x"00000001", "write reg0");

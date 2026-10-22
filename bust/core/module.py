@@ -12,7 +12,7 @@ import logging
 import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
-from bust.core.enums import RegisterMode
+from bust.core.enums import RegisterMode, RegisterType
 from bust.exceptions import (
     FormatError,
     InvalidAddress,
@@ -39,16 +39,12 @@ if TYPE_CHECKING:
 # key from value with =.
 VERSION_PATTERN = re.compile(r"[ !#-:<>-\[\]-~]*")
 
-# The name of the register that hash_register adds.
-HASH_REGISTER_NAME = "regmap_hash"
-
 MODULE_KEYS = (
     "name",
     "description",
     "version",
     "git_hash",
     "byte_addressable",
-    "hash_register",
     "register",
 )
 
@@ -102,6 +98,9 @@ class Module:
         self.settings = settings
         self.registers: List[Register] = []
         self.addresses: List[int] = []
+        # The JSON of the register with type hash, which is rebuilt with the
+        # hash as its value once the register map is complete.
+        self._hash_register_config: Optional[Dict] = None
 
         self._config = ConfigWrapper(
             mod,
@@ -113,7 +112,6 @@ class Module:
                 "version": "",
                 "git_hash": None,
                 "byte_addressable": bus.byte_addressable,
-                "hash_register": False,
             },
         )
 
@@ -130,18 +128,10 @@ class Module:
         self.addr_width = bus.addr_width
         self.data_width = bus.data_width
 
-        # hash_register is false, true, or the register offset of the register.
-        # An offset is taken first, so that no other register gets it.
-        self.has_hash_register = self._config.get("hash_register") is not False
-        self.hash_register_address = self._read_hash_register_address()
-        if self.hash_register_address is not None:
-            self.addresses.append(self.hash_register_address)
-
         for reg in mod["register"]:
             self.add_register(reg)
         self._warn_legacy_type_names()
-        if self.has_hash_register:
-            self._add_hash_register()
+        self._update_hash_register()
 
     def add_register(self, reg: Dict) -> None:
         """Add a register to the module.
@@ -169,6 +159,9 @@ class Module:
         try:
             register = Register(reg, addr, self.name, self.data_width)
             self._check_register_name(register.name)
+            if register.type == RegisterType.HASH:
+                self._check_one_hash_register(register.name)
+                self._hash_register_config = reg
         except Exception as e:
             self.logger.debug(f"Register configuration: {reg}")
             raise InvalidRegister(reg, e) from e
@@ -200,67 +193,6 @@ class Module:
                 'other than ", \\, ; and ='
             )
         return value
-
-    def _read_hash_register_address(self) -> Optional[int]:
-        """Check hash_register and return its register offset, if it gives one."""
-        value = self._config.get("hash_register")
-        if self.has_hash_register and self.data_width < 32:
-            raise FormatError(
-                "hash_register needs a data_width of at least 32 bits for "
-                f"the 32-bit hash (data_width is {self.data_width})"
-            )
-        if isinstance(value, bool):
-            return None
-        return self._explicit_address({"name": HASH_REGISTER_NAME, "address": value})
-
-    def _add_hash_register(self) -> None:
-        """Add the read-only register that holds the register map hash."""
-        if any(reg.name.lower() == HASH_REGISTER_NAME for reg in self.registers):
-            raise InvalidRegisterFormat(
-                f"hash_register adds a register named {HASH_REGISTER_NAME}, so "
-                "no other register can have that name"
-            )
-        address = self.hash_register_address
-        if address is None:
-            address = self.get_next_address()
-        self.registers.append(self._make_hash_register(address, 0))
-        self._update_hash_register()
-
-    def _make_hash_register(self, address: int, value: int) -> Register:
-        """The hash register at `address`, with `value` as its constant value."""
-        config = {
-            "name": HASH_REGISTER_NAME,
-            "description": "Hash of the register map, the same value as "
-            "REGMAP_HASH in the headers.",
-            "sw": "ro",
-            "hw": "na",
-            "reset": hex(value),
-        }
-        return Register(config, address, self.name, self.data_width)
-
-    def _update_hash_register(self) -> None:
-        """Give the hash register the hash of the register map as its value.
-
-        The hash covers the hash register, apart from its value.
-        """
-        address = self.registers[-1].address
-        self.registers[-1] = self._make_hash_register(address, self.regmap_hash)
-
-    @property
-    def hash_register(self) -> Optional[Register]:
-        """The register that hash_register adds, or None."""
-        return self.registers[-1] if self.has_hash_register else None
-
-    @property
-    def hash_register_value_vhdl(self) -> str:
-        """The value of the hash register as a data-width VHDL literal."""
-        digits = (self.data_width + 3) // 4
-        return f'{self.data_width}x"{self.regmap_hash:0{digits}X}"'
-
-    @property
-    def user_registers(self) -> List[Register]:
-        """The registers of the JSON file, in its order, without the hash register."""
-        return self.registers[:-1] if self.hash_register else self.registers
 
     def _warn_legacy_type_names(self) -> None:
         """Warn once about the bust 0.14 type names sl and slv."""
@@ -300,6 +232,44 @@ class Module:
                 "types would clash"
             )
         is_unique(name, [reg.name for reg in self.registers])
+
+    def _check_one_hash_register(self, name: str) -> None:
+        """Reject a second register with type hash."""
+        if self.hash_register is not None:
+            raise InvalidRegisterFormat(
+                f"Register {name} has type hash, and {self.hash_register.name} "
+                "already holds the hash. A module has at most one hash register."
+            )
+
+    @property
+    def hash_register(self) -> Optional[Register]:
+        """The register with type hash, or None."""
+        return next(
+            (reg for reg in self.registers if reg.type == RegisterType.HASH), None
+        )
+
+    def _update_hash_register(self) -> None:
+        """Give the hash register the register map hash as its value.
+
+        The hash covers the hash register, apart from its value.
+        """
+        hash_register = self.hash_register
+        if hash_register is None:
+            return
+        index = self.registers.index(hash_register)
+        self.registers[index] = Register(
+            cast(Dict, self._hash_register_config),
+            hash_register.address,
+            self.name,
+            self.data_width,
+            hash_value=self.regmap_hash,
+        )
+
+    @property
+    def hash_register_value_vhdl(self) -> str:
+        """The value of the hash register as a data-width VHDL literal."""
+        digits = (self.data_width + 3) // 4
+        return f'{self.data_width}x"{self.regmap_hash:0{digits}X}"'
 
     def get_next_address(self) -> int:
         """Find next available register address.
@@ -385,15 +355,10 @@ class Module:
         using get_next_address() logic.
         """
         self.addresses = []
-        if self.hash_register_address is not None:
-            self.addresses.append(self.hash_register_address)
-        for reg in self.user_registers:
+        for reg in self.registers:
             addr = self.get_next_address()
             reg.address = addr
-        if self.has_hash_register:
-            if self.hash_register_address is None:
-                self.registers[-1].address = self.get_next_address()
-            self._update_hash_register()
+        self._update_hash_register()
 
     @property
     def stored_registers(self) -> List[Register]:

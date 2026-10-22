@@ -131,7 +131,8 @@ _REGISTER: Dict[str, Any] = {
         ),
         "type": _choice(
             "default for data_width bits, vector for width bits, bit for one "
-            "bit, fields for a register made of fields.",
+            "bit, fields for a register made of fields, hash for the read-only "
+            "register map hash.",
             RegisterType.valid_values(),
             default=RegisterType.DEFAULT.value,
         ),
@@ -163,17 +164,6 @@ _MODULE: Dict[str, Any] = {
             default="",
             pattern=f"^{VERSION_PATTERN.pattern}$",
         ),
-        "hash_register": {
-            "description": "Adds the read-only register regmap_hash, which "
-            "holds the register map hash. true puts it at the lowest free "
-            "address, a number at that register offset. Default: false.",
-            "anyOf": [
-                {"type": "boolean"},
-                {"type": "integer", "minimum": 0},
-                {"type": "string", "pattern": _NUMBER_PATTERN},
-            ],
-            "default": False,
-        },
         "git_hash": _string("Accepted and ignored."),
         "byte_addressable": {
             "description": "true if an address counts bytes, false if it counts "

@@ -15,13 +15,13 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   register map. The register file package has `C_<MODULE>_REGMAP_VERSION` and
   `C_<MODULE>_REGMAP_HASH`, the headers `REGMAP_VERSION` and `REGMAP_HASH`, the
   IPBus address table has both in the `parameters` of its top node, and the
-  documentation shows the hash on its title page. The hash changes exactly when something that
-  hardware or software depends on changes, and descriptions do not count (#99).
-- The module key `hash_register` adds the read-only register `regmap_hash`,
-  whose value is the register map hash, so that software can check at run time
-  which register map the hardware holds. It takes `true` for the lowest free
-  register offset or a register offset of its own. The generated testbench
-  reads it back. The AXI4-Lite example uses it (#99).
+  documentation shows the hash on its title page. The hash changes exactly when
+  something that hardware or software depends on changes, and descriptions do
+  not count (#99).
+- The register type `hash`, a read-only constant that holds the register map
+  hash, so that software can check at run time which register map the
+  hardware holds. The generated testbench reads it back, and the AXI4-Lite
+  example has one (#99).
 
 ### Changed
 - `version` must be a string of printable ASCII characters other than `"`,

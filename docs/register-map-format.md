@@ -176,7 +176,6 @@ the timing of each protocol.
 | `version` | string | `""` | The version of the register map. Every generated file carries it, see [Version and hash](#version-and-hash). Printable ASCII characters other than `"`, `\`, `;` and `=`. |
 | `description` | string | `""` | Shown in the LaTeX documentation. |
 | `byte_addressable` | boolean | from the bus | `true` if an address counts bytes, `false` if it counts data words. See [Byte and word addresses](#byte-and-word-addresses). |
-| `hash_register` | boolean or number | `false` | Adds a read-only register that holds the hash. `true` puts it at the lowest free register offset, a number at that register offset. See [Version and hash](#version-and-hash). |
 | `git_hash` | string | none | Accepted and ignored. |
 
 ### Version and hash
@@ -207,35 +206,37 @@ Both appear in every output:
 
 ### The hash register
 
-To let software check at run time which register map the hardware holds, set
-`hash_register`. bust then adds a register named `regmap_hash` with `sw` `ro`
-and `hw` `na` whose value is the hash. It is a constant, so it costs no
-flip-flops. Software reads it and compares it with `REGMAP_HASH` in its
-header. A difference means the software and the hardware come from different
-register maps.
+To let software check at run time which register map the hardware holds, add
+a register with `"type": "hash"`. Its value is the hash, with `sw` `ro` and
+`hw` `na`. It is a constant, so it costs no flip-flops. Software reads it and
+compares it with `REGMAP_HASH` in its header. A difference means the software
+and the hardware come from different register maps.
 
 ```json
-"module": {
-    "name": "uart",
-    "version": "1.2",
-    "hash_register": "0x0",
-    "register": []
-}
+"register": [
+    {
+        "name": "id_hash",
+        "type": "hash",
+        "description": "Register map hash"
+    },
+    {
+        "name": "ctrl",
+        "sw": "rw",
+        "hw": "r"
+    }
+]
 ```
 
-The register appears in the headers, the IPBus address table, the
-documentation and the generated testbench like any other register, and it
-comes after the registers of the JSON file. The hash covers the register,
-apart from its value.
+A hash register takes only `name`, `type`, `address` and `description`, since
+bust sets the rest. It spans `data_width` bits, which must be at least 32, and
+a module has at most one. Otherwise it is a register like any other, with a
+name and an address of your choice, and it appears in the headers, the IPBus
+address table, the documentation and the generated testbench. The hash covers
+the register, apart from its value.
 
-Give it a register offset, as in `"hash_register": "0x0"`, so that it stays in
-one place while the register map changes. bust takes that register offset
-before it places the other registers. With `true`, it gets the lowest free
-register offset after the other registers are placed, so it moves when you add
-a register without an `address`.
-
-`regmap_hash` is then a reserved name, and `hash_register` needs a
-`data_width` of at least 32 bits.
+Put it first, as above, or give it an `address`, so that it keeps its register
+offset while the register map grows. Software built from an older header then
+still finds it.
 
 ## Registers
 
@@ -244,7 +245,7 @@ Each entry in `register` is one register.
 | Key | Type | Default | Meaning |
 |---|---|---|---|
 | `name` | string | required | Register name. See [Names](#names). |
-| `type` | string | `"default"` | `default`, `vector`, `bit` or `fields`. See [Register types](#register-types). |
+| `type` | string | `"default"` | `default`, `vector`, `bit`, `fields` or `hash`. See [Register types](#register-types). |
 | `address` | [number](#numbers) | next free address | Register offset. See [Addresses](#addresses). |
 | `width` | [number](#numbers) | `data_width` | Width of a `vector` register. |
 | `reset` | [number](#numbers) | `0` | Reset value of a register without fields. See [Reset values](#reset-values). |
@@ -260,6 +261,7 @@ Each entry in `register` is one register.
 | `vector` | one `std_logic_vector` of `width` bits, from bit 0 |
 | `bit` | one `std_logic`, at bit 0 |
 | `fields` | the fields listed under `fields` |
+| `hash` | the register map hash, as a read-only constant of `data_width` bits. See [The hash register](#the-hash-register). |
 
 A register without fields works like one field that spans the register. It
 takes the register's `reset` and access keys, and `to_hw` and `from_hw` hold
