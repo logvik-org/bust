@@ -28,6 +28,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 - The editor writes the file only when the register map changed, and then
   changes only the text of the values that changed. Comments, key order,
   number forms and unknown keys stay as they are, in JSON and JSON5 files.
+- `bust FILE --migrate` replaces each register's `mode` with the access keys it
+  stands for, in the same place, and changes only the values it converts, so
+  a JSON5 file keeps its comments (#233).
 - `bust FILE -a` changes only the addresses in the file, and works on JSON5
   files. It keeps comments, unknown keys and a `settings` section, and leaves
   the bust 0.14 type names and `byte_addressable` strings to `--migrate`.
