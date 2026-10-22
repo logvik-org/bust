@@ -25,7 +25,6 @@ from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
 from bust.validation.config_validator import (
     ConfigWrapper,
     parse_number,
-    warn_unknown_keys,
 )
 
 if TYPE_CHECKING:
@@ -120,7 +119,6 @@ class Module:
 
         self.name = self._config.require("name")
         is_valid_VHDL(self.name)
-        warn_unknown_keys(mod, MODULE_KEYS, "module")
 
         # Store some config values for easy access
         self.description: str = self._config.get("description")

@@ -28,7 +28,6 @@ from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
 from bust.validation.config_validator import (
     ConfigWrapper,
     parse_number,
-    warn_unknown_keys,
 )
 from bust.core.enums import (
     HwAccess,
@@ -155,7 +154,6 @@ class Register:
 
         self.name = self._config.require("name")
         is_valid_VHDL(self.name)
-        warn_unknown_keys(reg, REGISTER_KEYS, f"register {self.name}")
         reject_unsupported_timing(reg)
 
         self.description: str = self._config.get("description")

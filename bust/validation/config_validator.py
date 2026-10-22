@@ -5,13 +5,10 @@ with support for required key validation, default fallback values, and simple
 access patterns with clear error reporting.
 """
 
-import logging
 import re
 from typing import Any
 
 from bust.exceptions import FormatError
-
-logger = logging.getLogger(__name__)
 
 
 def parse_number(value: Any, what: str) -> int:
@@ -52,19 +49,6 @@ def parse_number(value: Any, what: str) -> int:
         f'{what} must be a whole number such as 16, "0x10" or "0b10000" '
         f"(got {value!r})"
     )
-
-
-def warn_unknown_keys(config, known_keys, where):
-    """Warn about each key bust does not read, so a misspelt key is not lost silently.
-
-    Args:
-        config (dict): A section of the register-map JSON.
-        known_keys (Iterable[str]): The keys bust reads in that section.
-        where (str): The section, for the message (for example "register ctrl").
-    """
-    for key in config:
-        if key not in known_keys:
-            logger.warning(f"Unknown key '{key}' in {where} is ignored")
 
 
 class ConfigWrapper:
