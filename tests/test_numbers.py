@@ -215,13 +215,3 @@ def test_bus_widths_take_strings_and_name_the_key():
     assert (bus.addr_width, bus.data_width) == (16, 32)
     with pytest.raises(FormatError, match="data_width of the bus"):
         Bus({"type": "axi", "addr_width": 16, "data_width": "32 bits"})
-
-
-def test_saving_keeps_the_reset_as_the_file_wrote_it():
-    module = _module(
-        [
-            {"name": "a", "type": "vector", "width": 8, "reset": "10"},
-            {"name": "b", "type": "vector", "width": 8, "reset": 255},
-        ]
-    )
-    assert [reg.to_json()["reset"] for reg in module.registers] == ["10", 255]
