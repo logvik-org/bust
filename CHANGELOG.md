@@ -10,6 +10,10 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Changed
+- bust no longer warns about a name longer than 16 characters. VHDL has no
+  such limit, and the warning fired for most names in real register maps.
+
 ## [1.0.0b1] - 2026-10-22
 
 First beta of bust 1.0.0, and the sixth pre-release, for testing. Install it
