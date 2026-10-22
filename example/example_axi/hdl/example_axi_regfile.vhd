@@ -112,12 +112,12 @@ begin
           regs.reg9.reg9 <= lb_m2s.wdata(0);
         end if;
 
-        regs.reg10.reg10 <= 4X"A";
+        regs.reg10.reg10 <= 4x"A";
         if sw_write and reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG10_OFFSET) then
           regs.reg10.reg10 <= lb_m2s.wdata(3 downto 0);
         end if;
 
-        regs.reg11.field0 <= 15X"3";
+        regs.reg11.field0 <= 15x"3";
         regs.reg11.field1 <= '0';
         if sw_write and reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG11_OFFSET) then
           regs.reg11.field0 <= lb_m2s.wdata(14 downto 0);

@@ -56,9 +56,9 @@ architecture tb of example_ipbus_tb is
   signal reg9_reg9_sp_count : natural := 0;
   signal reg9_reg9_sp_value : std_logic := '1';
   signal reg10_reg10_sp_count : natural := 0;
-  signal reg10_reg10_sp_value : std_logic_vector(3 downto 0) := 4X"A";
+  signal reg10_reg10_sp_value : std_logic_vector(3 downto 0) := 4x"A";
   signal reg11_field0_sp_count : natural := 0;
-  signal reg11_field0_sp_value : std_logic_vector(14 downto 0) := 15X"3";
+  signal reg11_field0_sp_value : std_logic_vector(14 downto 0) := 15x"3";
   signal reg11_field1_sp_count : natural := 0;
   signal reg11_field1_sp_value : std_logic := '0';
 
