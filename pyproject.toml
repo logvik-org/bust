@@ -39,11 +39,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# mypy is pinned because a new release can report new errors on unchanged code.
+# mypy and vsg are pinned because a new release can report new errors on
+# unchanged code.
 test = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "mypy==1.18.2",
+    "vsg==3.35.0",
 ]
 dev = [
     "bust[test]",
