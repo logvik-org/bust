@@ -1,0 +1,16 @@
+{#- One register in a reset constant. A register with several fields gets one
+    field per line. -#}
+{% macro reset_entry(name, items, bare, last) -%}
+{% if bare %}
+    {{ name }} => {{ items[0] }}{{ "" if last else "," }}
+{% elif items | length == 1 %}
+    {{ name }} => ({{ items[0] }}){{ "" if last else "," }}
+{% else %}
+    {{ name }} =>
+    (
+{% for item in items %}
+      {{ item }}{{ "" if loop.last else "," }}
+{% endfor %}
+    ){{ "" if last else "," }}
+{% endif %}
+{%- endmacro %}
