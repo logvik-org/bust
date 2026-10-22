@@ -93,8 +93,8 @@ bust uses the default when the key is left out. The access keys (`sw`, `hw`, `on
 others) decide what software and hardware can do with each field.
 [Access modes](access-modes.md) describes what each of them does in hardware.
 
-bust reads and checks the whole file before it writes anything. At the first
-error it prints what is wrong and exits with status 1.
+bust reads and checks the whole file before it writes anything. See
+[How bust checks the file](#how-bust-checks-the-file).
 
 ## Numbers
 
@@ -114,7 +114,7 @@ be negative, and a fraction, a space or any other character stops bust. So does
 a string with hexadecimal digits but no `0x`, because it cannot be decimal:
 
 ```text
-Could not parse register baud_div: Reset of register baud_div "1B2" has hexadecimal digits but no 0x. Write "0x1B2" for a hexadecimal number.
+uart.json:31: module.register[2].reset: "1B2" has hexadecimal digits but no 0x. Write "0x1B2" for a hexadecimal number.
 ```
 
 bust also reads the file as [JSON5](https://json5.org/), whatever its name. A
@@ -151,7 +151,7 @@ save a JSON5 file.
 Write the type in lowercase. Any other value stops bust:
 
 ```text
-Bus type is not valid: AXI
+uart.json:2: bus.type: "AXI" is not one of "axi", "ipbus", "sbi", "avalon", "wishbone", "apb". Did you mean "axi"?
 ```
 
 IPBus carries 32-bit data and 32-bit addresses, so an `ipbus` module needs a
@@ -468,7 +468,7 @@ stops bust. `null` counts as `false`. A value that is not in the table stops
 bust and lists the valid ones:
 
 ```text
-Could not parse register ctrl: Invalid SwAccess: 'rx'. Did you mean one of these? ['rw', 'ro', 'wo', 'na']
+uart.json:14: module.register[0].sw: "rx" is not one of "rw", "ro", "wo", "na". Did you mean "rw"?
 ```
 
 ## Settings
@@ -488,11 +488,57 @@ bust warns about each key it does not read, and otherwise ignores it. A
 misspelt key such as `onwrit` gives:
 
 ```text
-Unknown key 'onwrit' in field tx_en of register ctrl is ignored
+uart.json:21: module.register[0].fields[0].onwrit: bust does not know this key and ignores it. Did you mean 'onwrite'?
 ```
 
 `bust -a` and the [editor](command-line.md#interactive-editor) keep unknown
 keys when they save the file.
+
+## How bust checks the file
+
+bust checks a register map in two steps, and stops after the first step that
+finds a problem.
+
+1. The file must be JSON or JSON5. An error in the syntax gives the line and
+   the column, as in `uart.json:12:7: Expecting ',' delimiter`.
+2. Each value must have the type and the form this page gives for its key, and
+   each required key must be present. This is the
+   [JSON Schema](#json-schema) of the register map. bust lists every problem
+   it finds in one run, then the number of problems, and exits with status 1:
+
+   ```text
+   uart.json:14: module.register[0].sw: "rx" is not one of "rw", "ro", "wo", "na". Did you mean "rw"?
+   uart.json:31: module.register[2].reset: "1B2" has hexadecimal digits but no 0x. Write "0x1B2" for a hexadecimal number.
+   uart.json:40: module.register[3]: missing key 'name'
+   3 problems in uart.json
+   ```
+
+   Each line starts with the file and the line in it, so an editor or a
+   terminal that knows the form can jump there. Next comes the path to the
+   value: `module.register[2]` is the third register in the list, counted from
+   0, and `fields[1]` its second field. An unknown key is a warning in the same
+   form, see [Keys bust does not know](#keys-bust-does-not-know).
+3. The rules that tie keys together come last: two registers at one address,
+   a field that does not fit its register, a reset value that does not fit, a
+   name VHDL does not accept, or an access mode bust cannot generate. bust
+   stops at the first of these and names the register, as in:
+
+   ```text
+   Could not parse register ctrl: Register width exceeded module data width by 1 in register ctrl
+   ```
+
+The [editor](command-line.md#interactive-editor) gives the same messages,
+without the file name and the line.
+
+### JSON Schema
+
+`bust.schema.register_map_schema()` returns the JSON Schema (draft 2020-12) of
+the register map, which step 2 checks. It lists each key with its allowed
+values, its default and a short description, for editors and other tools.
+bust also reads a few forms that the schema leaves out: the values of `sw`,
+`hw`, `onread`, `onwrite`, `type` and `mode` in upper case, and the bust 0.14
+forms, which it warns about. Those are the type names `sl` and `slv`, and
+`byte_addressable` as the string `"True"` or `"False"`.
 
 ## Files from bust 0.14
 

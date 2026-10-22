@@ -8,6 +8,7 @@ import pytest
 from bust.core.bus import Bus
 from bust.exceptions import FormatError
 from bust.settings import Settings
+from bust.validation.schema_check import check_register_map
 
 
 def test_output_goes_next_to_the_json_file():
@@ -29,13 +30,17 @@ def test_settings_that_move_the_output_stop_bust(section):
         Settings("cfg/m.json", section)
 
 
-def test_0_14_bus_keys_are_unknown(caplog):
-    plain = {"type": "apb", "addr_width": 16, "data_width": 32}
+def test_0_14_bus_keys_are_unknown():
+    bus = {"type": "apb", "addr_width": 16, "data_width": 32}
+    bus.update(comp_library="regs", reset="async")
 
-    with caplog.at_level(logging.WARNING):
-        Bus(dict(plain, comp_library="regs", reset="async"))
+    report = check_register_map({"bus": bus, "module": {"name": "m", "register": []}})
 
-    assert "Unknown key 'comp_library' in bus is ignored" in caplog.text
+    assert report.errors == []
+    assert [str(problem) for problem in report.warnings] == [
+        "bus.comp_library: bust does not know this key and ignores it",
+        "bus.reset: bust does not know this key and ignores it",
+    ]
 
 
 def test_data_width_must_be_whole_bytes():

@@ -10,6 +10,18 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Changed
+- bust checks the register map against its JSON Schema before anything else,
+  and lists every problem the schema finds in one run instead of stopping at
+  the first. Each message starts with the file, the line and the path to the
+  value, as in `uart.json:14: module.register[0].sw: "rx" is not one of "rw",
+  "ro", "wo", "na". Did you mean "rw"?`. The editor gives the same messages
+  (#234).
+- The warning about an unknown key has the same form, with a suggestion for a
+  misspelt key.
+- A JSON syntax error gives the line and the column, and a missing file says
+  so, instead of `An unknown error has occurred`.
+
 ## [1.0.0a4] - 2026-10-22
 
 Fifth pre-release of bust 1.0.0, for testing. Install it with

@@ -30,16 +30,17 @@ Arguments:
   DIR          Output directory for VHDL, header files and documentation
 
 """
+
 from docopt import docopt
 import sys
 import shlex
 import time
 import logging
 import logging.handlers
-from typing import Dict, Union
+from typing import Any, Dict, Union
 
-from bust.utils.json_utils import json_parser
-from bust.validation.config_validator import warn_unknown_keys
+from bust.utils.json_utils import parse_json_text
+from bust.validation.schema_check import check_register_map
 from bust.utils.file_utils import may_overwrite
 from bust.editing.document import RegisterMapDocument
 from bust.editing.json_source import join_pointer
@@ -60,7 +61,6 @@ from bust.exceptions import (
 from bust.migrate import migrate
 from bust.editor import Editor
 from bust._version import __VERSION__
-
 
 # bust 0.14 options that bust 1.0 accepts and ignores, so that old command lines
 # and Makefiles keep working during the switch. The value is the reason the
@@ -126,6 +126,40 @@ def _save_addresses(json_file: str, module: Module, force: bool) -> None:
         document.save(json_file)
 
 
+def _read_register_map(json_file: str) -> Any:
+    """Read and check the register map, or stop with every problem in it.
+
+    Each problem is printed with the file name, the line and the path to the
+    value, such as ``uart.json:14: module.register[2].sw: ...``.
+    """
+    logger = logging.getLogger(__name__)
+    try:
+        # newline="" keeps the line count of a file with CR line endings.
+        with open(json_file, encoding="utf-8", newline="") as fp:
+            text = fp.read()
+    except OSError as error:
+        logger.error(f"Cannot read {json_file}: {error.strerror or error}")
+        exit(1)
+    except UnicodeDecodeError as error:
+        logger.error(f"Cannot read {json_file}: it is not UTF-8 text ({error.reason})")
+        exit(1)
+    try:
+        data = parse_json_text(text, json_file)
+    except FormatError as error:
+        logger.error(str(error))
+        exit(1)
+    report = check_register_map(data, text)
+    for problem in report.warnings:
+        logger.warning(problem.in_file(json_file))
+    for problem in report.errors:
+        logger.error(problem.in_file(json_file))
+    if len(report.errors) > 1:
+        logger.error(f"{len(report.errors)} problems in {json_file}")
+    if report.errors:
+        exit(1)
+    return data
+
+
 def main():
     args = docopt(__doc__, help=True, version="bust v" + __VERSION__)
     root = logging.getLogger("")
@@ -188,9 +222,9 @@ def _run(args):
 
             logger.info("Parsing file: " + json_file + "...")
 
+            json_dict = _read_register_map(json_file)
+
             try:
-                json_dict = json_parser(json_file)
-                warn_unknown_keys(json_dict, ("settings", "bus", "module"), "the file")
                 settings = Settings(json_file, json_dict.get("settings"))
                 bus = Bus(json_dict["bus"])
                 module = Module(json_dict["module"], bus, settings)
