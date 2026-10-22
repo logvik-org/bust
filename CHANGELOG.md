@@ -44,11 +44,12 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   every generated file changes, and the behaviour does not. Among the changes:
   - Conditions are in parentheses, and records, functions and procedures end
     with their name.
-  - In a reset constant, a register with several fields has one field per line.
+  - In a reset constant and in the `to_hw` assignments of the register file,
+    a register with several fields, or with a field that is a record, has one
+    field per line.
   - A hexadecimal literal has a lower-case base, as in `8x"A5"`.
   - An entity instantiation names the architecture, as in
     `entity work.timer_regfile(rtl)`.
-  - The register file drives each member of `to_hw` in its own assignment.
   - The testbench sets `from_hw` from a constant, `C_FROM_HW_IDLE`.
 
 ### Fixed

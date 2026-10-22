@@ -1,9 +1,11 @@
-{#- One register in a reset constant. A register with several fields gets one
-    field per line. -#}
-{% macro reset_entry(name, items, bare, last) -%}
+{#- One register in a reset constant (reset_entry) or in an assignment to
+    to_hw (assign_entry). `items` are the elements of its aggregate, or with
+    `bare` its value alone. A register with several elements, or with one
+    element that is a record (`nested`), gets one element per line. -#}
+{% macro reset_entry(name, items, bare, last, nested=false) -%}
 {% if bare %}
     {{ name }} => {{ items[0] }}{{ "" if last else "," }}
-{% elif items | length == 1 %}
+{% elif items | length == 1 and not nested %}
     {{ name }} => ({{ items[0] }}){{ "" if last else "," }}
 {% else %}
     {{ name }} =>
@@ -12,5 +14,21 @@
       {{ item }}{{ "" if loop.last else "," }}
 {% endfor %}
     ){{ "" if last else "," }}
+{% endif %}
+{%- endmacro %}
+{% macro assign_entry(target, items, bare, nested=false) -%}
+{% if bare %}
+  {{ target }} <= {{ items[0] }};
+{% elif items | length == 1 and not nested %}
+  {{ target }} <= ({{ items[0] }});
+{% else %}
+  {{ target }} <=
+  (
+{% filter align("=>") %}
+{% for item in items %}
+    {{ item }}{{ "" if loop.last else "," }}
+{% endfor %}
+{% endfilter %}
+  );
 {% endif %}
 {%- endmacro %}

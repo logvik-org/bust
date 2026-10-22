@@ -92,9 +92,12 @@ it as a constant at its reset value. Here is the `identity` register of
 where `id` resets to `0xA5`:
 
 ```vhdl
-to_hw.identity.id          <= 8x"A5";
-to_hw.identity.pwr_default <= t_access_matrix_identity_pwr_default'(PWR_ON);
-to_hw.identity.pwr_spare   <= t_access_matrix_identity_pwr_spare'(PWR_OFF);
+to_hw.identity <=
+(
+  id          => 8x"A5",
+  pwr_default => t_access_matrix_identity_pwr_default'(PWR_ON),
+  pwr_spare   => t_access_matrix_identity_pwr_spare'(PWR_OFF)
+);
 ```
 
 ## Software side effects

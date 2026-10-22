@@ -93,8 +93,15 @@ package {{ module.name }}_regfile_pkg is
   (
 {% for reg in module.to_hw_registers %}
 {% set items = [] %}
-{% for f in reg.to_hw_fields %}{% set _ = items.append((f.name ~ " => " if reg.fields else "") ~ thw_reset(f)) %}{% endfor %}
-{{ reset_entry(reg.name, items, not reg.fields, loop.last) }}
+{% set f0 = reg.to_hw_fields[0] %}
+{% if reg.fields %}
+{% for f in reg.to_hw_fields %}{% set _ = items.append(f.name ~ " => " ~ thw_reset(f)) %}{% endfor %}
+{% elif f0.to_hw_is_record %}
+{% for m in f0.to_hw_members %}{% set _ = items.append(m ~ " => " ~ (f0.reset_value_vhdl if m == 'value' else "'0'")) %}{% endfor %}
+{% else %}
+{% set _ = items.append(thw_reset(f0)) %}
+{% endif %}
+{{ reset_entry(reg.name, items, not (reg.fields or f0.to_hw_is_record), loop.last, reg.to_hw_fields | selectattr('to_hw_is_record') | list | length > 0) }}
 {%- endfor %}
   );
 {% endfilter %}
@@ -120,8 +127,15 @@ package {{ module.name }}_regfile_pkg is
   (
 {% for reg in module.from_hw_registers %}
 {% set items = [] %}
-{% for f in reg.from_hw_fields %}{% set _ = items.append((f.name ~ " => " if reg.fields else "") ~ fhw_reset(f)) %}{% endfor %}
-{{ reset_entry(reg.name, items, not reg.fields, loop.last) }}
+{% set f0 = reg.from_hw_fields[0] %}
+{% if reg.fields %}
+{% for f in reg.from_hw_fields %}{% set _ = items.append(f.name ~ " => " ~ fhw_reset(f)) %}{% endfor %}
+{% elif f0.from_hw_is_record %}
+{% for m in f0.from_hw_members %}{% set _ = items.append(m ~ " => " ~ (f0.reset_value_vhdl if m == 'value' else ("'1'" if m == 'wel' else "'0'"))) %}{% endfor %}
+{% else %}
+{% set _ = items.append(fhw_reset(f0)) %}
+{% endif %}
+{{ reset_entry(reg.name, items, not (reg.fields or f0.from_hw_is_record), loop.last, reg.from_hw_fields | selectattr('from_hw_is_record') | list | length > 0) }}
 {%- endfor %}
   );
 {% endfilter %}

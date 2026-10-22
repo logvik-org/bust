@@ -1,3 +1,4 @@
+{% from "vhdl/aggregate.j2" import assign_entry %}
 {% macro sw_action(reg, f) -%}
 {% set lhs = "regs." ~ reg.name ~ "." ~ f.name -%}
 {% set wslice = "lb_m2s.wdata(" ~ (f.vector_pos_vhdl if f.is_enum else f.get_pos_vhdl()) ~ ")" -%}
@@ -60,6 +61,9 @@
 {%- endmacro -%}
 {# A constant enum is qualified because enum literal names (e.g. IDLE/BUSY) may be
    shared by several enum types, which would make to_slv(<literal>) ambiguous. #}
+{% macro to_hw_value(reg, f) -%}
+{%- if f.to_hw_is_record -%}(value => {{ field_value(reg, f) }}{% if f.swmod %}, swmod => swmod_{{ reg.name }}_{{ f.name }}{% endif %}{% if f.swacc %}, swacc => swacc_{{ reg.name }}_{{ f.name }}{% endif %}){%- else -%}{{ field_value(reg, f) }}{%- endif -%}
+{%- endmacro -%}
 {% macro field_value(reg, f) -%}
 {%- if f.holds_state -%}regs.{{ reg.name }}.{{ f.name }}{%- elif f.hw_wire -%}from_hw.{{ f.hw_path }}{%- elif f.is_enum -%}{{ f.enum_type_name }}'({{ f.reset_value_vhdl }}){%- else -%}{{ f.reset_value_vhdl }}{%- endif -%}
 {%- endmacro -%}
@@ -295,24 +299,22 @@ begin
   end process p_read;
 
 {% if module.to_hw_registers %}
-  -- Hardware-side outputs.
-{% filter align("<=") %}
+  -- Hardware-side outputs, one aggregate per register.
+{% filter align("<=", nested=true) %}
 {% for reg in module.to_hw_registers %}
-{% for f in reg.to_hw_fields %}
-{% set target = "to_hw." ~ reg.name ~ ("." ~ f.name if reg.fields else "") %}
-{% if f.to_hw_is_record %}
-  {{ target }}.value <= {{ field_value(reg, f) }};
-{% if f.swmod %}
-  {{ target }}.swmod <= swmod_{{ reg.name }}_{{ f.name }};
-{% endif %}
-{% if f.swacc %}
-  {{ target }}.swacc <= swacc_{{ reg.name }}_{{ f.name }};
-{% endif %}
+{% set items = [] %}
+{% set f0 = reg.to_hw_fields[0] %}
+{% if reg.fields %}
+{% for f in reg.to_hw_fields %}{% set _ = items.append(f.name ~ " => " ~ to_hw_value(reg, f)) %}{% endfor %}
+{% elif f0.to_hw_is_record %}
+{% set _ = items.append("value => " ~ field_value(reg, f0)) %}
+{% if f0.swmod %}{% set _ = items.append("swmod => swmod_" ~ reg.name ~ "_" ~ f0.name) %}{% endif %}
+{% if f0.swacc %}{% set _ = items.append("swacc => swacc_" ~ reg.name ~ "_" ~ f0.name) %}{% endif %}
 {% else %}
-  {{ target }} <= {{ field_value(reg, f) }};
+{% set _ = items.append(field_value(reg, f0)) %}
 {% endif %}
-{% endfor %}
-{% endfor %}
+{{ assign_entry("to_hw." ~ reg.name, items, not (reg.fields or f0.to_hw_is_record), reg.to_hw_fields | selectattr('to_hw_is_record') | list | length > 0) }}
+{%- endfor %}
 {% endfilter %}
 
 {% endif %}
