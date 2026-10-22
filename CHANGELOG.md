@@ -10,6 +10,15 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Changed
+- The editor behind `-c` and `-e` is a full-screen terminal application. It
+  shows the registers, the fields of the register under the cursor and the
+  keys of the register or field in focus side by side, and changes them in
+  dialogs that show bust's message for an answer bust rejects. It replaces the
+  numbered questions of 1.0.0a4.
+- The editor needs Textual, which `pip install "bust[editor]"` installs. bust
+  says so when Textual is missing. Generating code does not need it.
+
 ## [1.0.0a4] - 2026-10-22
 
 Fifth pre-release of bust 1.0.0, for testing. Install it with

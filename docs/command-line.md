@@ -214,22 +214,62 @@ When every address is right already, bust says
 
 ## Interactive editor
 
-`-c` and `-e` open an editor that asks questions in the terminal. It needs an
-interactive terminal. Without one, bust stops with
-`The editor (-c, -e) needs an interactive terminal.` and exits with status 1.
+`-c` and `-e` open a full-screen editor in the terminal. It is built on
+[Textual](https://textual.textualize.io/), which bust installs only when you
+ask for the editor:
 
-Answer a menu or a list of choices with the number of an entry, or type the
-entry itself. Enter takes the answer in brackets. Ctrl+C cancels the current
-action and goes back to the menu.
+```bash
+pip install "bust[editor]"
+```
+
+Without Textual, bust stops with
+`The editor needs Textual. Install it with: pip install 'bust[editor]'`. The
+editor needs an interactive terminal. Without one, bust stops with
+`The editor (-c, -e) needs an interactive terminal.` Both exit with status 1.
+The editor runs in any terminal Textual supports, on Linux, macOS and Windows.
+
+### The main screen
+
+The main screen shows the register map in three panes:
+
+- **Registers** lists every register with its name, address, type, width,
+  `sw`, `hw`, reset and description.
+- **Fields of ...** lists the fields of the register under the cursor, if it
+  is a `fields` register.
+- The right pane lists each key of the register or field in focus with its
+  value, and under it what the key does. A key the file does not set shows
+  the value bust uses, dimmed, with `(not set)`.
+
+Move with the arrow keys and Tab, or with the mouse. Enter on a register or a
+field moves to its keys, and Enter on a key opens a dialog to change it. These
+keys work on the main screen, and the footer lists them:
+
+| Key | What it does |
+|---|---|
+| `a` | Add a register. |
+| `f` | Add a field to the register under the cursor, which must be a `fields` register. |
+| `Delete` or `d` | Remove the register or field in focus, after asking. |
+| `m` | Change the module's `name`, `description`, `version` and `byte_addressable`, and the bus `type`, `addr_width` and `data_width`. |
+| `g` | Write the address bust gives each register without an `address`. Unlike `-a`, it leaves the other addresses alone. |
+| `s` or `Ctrl+S` | Save `FILE` if the register map changed. |
+| `q` or `Ctrl+Q` | Quit. With unsaved changes, the editor asks whether to save first. |
+
+In a dialog, Enter or OK takes the answers and Escape cancels. A key with a
+fixed set of values, such as `sw` or `onread`, is a list to choose from. Choose
+`not set`, or press **Remove from the file** for a key typed as text, to remove
+the key from the file. Changing the `type` of a register asks for what the new
+type needs, such as the first field of a `fields` register, and removes what it
+no longer uses, such as the `width` of a former `vector`. The `enums` row of a
+field lists its enumerated values, where `a` adds one, Enter changes one and
+Delete removes one.
 
 ### Create a register map
 
-`bust FILE -c` asks for the bus type, the address width, the data width (not
-for IPBus, which has 32-bit data), the module name, the version, a
-description, and whether addresses count bytes (`byte_addressable`). The
-module name defaults to the file name, and `byte_addressable` to what the bus
-does. Then it offers to add
-the first register and opens the menu. `FILE` must not exist. If it does, bust
+`bust FILE -c` opens a dialog for the bus type, the address width, the data
+width (not for IPBus, which has 32-bit data), the module name, the version, a
+description, and whether addresses count bytes (`byte_addressable`). The module
+name defaults to the file name, and `byte_addressable` to what the bus does.
+Then it asks for the first register. `FILE` must not exist. If it does, bust
 stops with `FILE exists. Edit it with bust FILE -e.`
 
 The editor writes every key the [register map format](register-map-format.md)
@@ -245,43 +285,27 @@ recommends, even where bust has a default:
   rest.
 
 This applies to every register and field the editor adds, with `-c` or `-e`.
+Set the other keys, such as `onwrite`, in the right pane once the register or
+field is added.
 
 ### Edit a register map
 
-`bust FILE -e` reads `FILE`, in JSON or JSON5, and opens the menu:
-
-| Entry | What it does |
-|---|---|
-| List registers | Show the registers with their address, type, width, `sw`, `hw` and reset. |
-| Add a register | Ask for a new register, as described above. |
-| Edit a register | Change any key of a register, its fields, and their enumerated values. |
-| Remove a register | Delete a register, after asking. |
-| Edit the module and bus | Change the module's `name`, `description`, `version` and `byte_addressable`, and the bus `type`, `addr_width` and `data_width`. |
-| Give an address to each register without one | Write the address bust gives each register without an `address`. Unlike `-a`, it leaves the other addresses alone. |
-| Save | Write `FILE` if the register map changed. |
-| Quit | Leave the editor. With unsaved changes, it asks whether to save first. |
-
-Editing a register or a field lists each of its keys with its value. A key the
-file does not set shows the value bust uses and `(not set)`. Choose `not set`,
-or answer `-`, to remove a key from the file. Changing the `type` of a register
-asks for what the new type needs, such as the first field of a `fields`
-register, and removes what it no longer uses, such as the `width` of a former
-`vector`.
+`bust FILE -e` reads `FILE`, in JSON or JSON5, and opens the main screen.
 
 ### Checks
 
-The editor checks every change the way `bust FILE` checks the register map.
-While you add a register or a field, it shows bust's message and asks again
-for an answer bust rejects, such as an address that another register uses.
-When you edit a key, it shows `Not changed:` and bust's message, and keeps the
-old value:
+The editor checks every change the way `bust FILE` checks the register map. A
+dialog shows bust's message under the answers and stays open for an answer
+bust rejects, such as an address that another register uses:
 
 ```text
-Not changed: Could not parse register count: Invalid field format: onwrite requires a software-writable field (sw rw or wo) (field count in reg count)
+Could not parse register count: Invalid field format: onwrite requires a software-writable field (sw rw or wo) (field count in reg count)
 ```
 
-So the editor cannot save a register map that bust rejects. It shows each
-warning, such as an unknown key, once.
+Fix the answer or press Escape to keep the old value. A change made without a
+dialog, such as removing a field, shows `Not changed:` and bust's message
+instead. So the editor cannot save a register map that bust rejects. It shows
+each warning, such as an unknown key, once.
 
 ### Saving
 
