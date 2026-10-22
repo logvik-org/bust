@@ -25,13 +25,16 @@ from bust.editing.json_source import (
 )
 from bust.settings import Settings
 from bust.utils.json_utils import json_parser
-from bust.validation.config_validator import warn_unknown_keys
+from bust.validation.schema_check import check_register_map
 
 Operation = Dict[str, Any]
 
 
 class EditRejected(ValueError):
-    """Raised for a change that would give a register map bust rejects."""
+    """Raised for a change that would give a register map bust rejects.
+
+    The message has one line for each problem.
+    """
 
 
 class FileChanged(RuntimeError):
@@ -348,9 +351,14 @@ def _captured_warnings() -> Iterator[List[str]]:
 
 
 def _build_module(data: Any) -> Tuple[Module, List[str]]:
+    # The schema check first, as on the command line, so that the messages are
+    # the same and list every problem the schema finds.
+    report = check_register_map(data)
+    if report.errors:
+        raise EditRejected("\n".join(str(problem) for problem in report.errors))
     with _captured_warnings() as warnings:
+        warnings.extend(str(problem) for problem in report.warnings)
         try:
-            warn_unknown_keys(data, ("settings", "bus", "module"), "the file")
             settings = Settings(None, data.get("settings"))
             module = Module(data["module"], Bus(data["bus"]), settings)
         # Anything Bus or Module raises means bust rejects the register map.

@@ -2,6 +2,10 @@
 #ifndef EXAMPLE_IPBUS_H
 #define EXAMPLE_IPBUS_H
 
+/* Register map version and content hash */
+#define EXAMPLE_IPBUS_REGMAP_VERSION "1.0"
+#define EXAMPLE_IPBUS_REGMAP_HASH 0xFCD085B6
+
 
 /* Register: reg0 */
 #define EXAMPLE_IPBUS_REG0_SW "rw"

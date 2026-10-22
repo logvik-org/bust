@@ -11,6 +11,7 @@ import copy
 from typing import Any, Dict, List
 
 from bust.core.bus import Bus
+from bust.core.module import VERSION_PATTERN
 from bust.core.enums import (
     FieldType,
     HwAccess,
@@ -24,14 +25,18 @@ from bust.core.enums import (
 # to a string.
 _NUMBER_PATTERN = r"^(0[xX][0-9a-fA-F]+|0[bB][01]+|[0-9]+)$"
 
+# The anyOf of every number, which the schema check recognises to word its
+# message.
+NUMBER_FORMS: List[Dict[str, Any]] = [
+    {"type": "integer", "minimum": 0},
+    {"type": "string", "pattern": _NUMBER_PATTERN},
+]
+
 
 def _number(description: str, **extra: Any) -> Dict[str, Any]:
     return {
         "description": description,
-        "anyOf": [
-            {"type": "integer", "minimum": 0},
-            {"type": "string", "pattern": _NUMBER_PATTERN},
-        ],
+        "anyOf": copy.deepcopy(NUMBER_FORMS),
         **extra,
     }
 
@@ -130,7 +135,8 @@ _REGISTER: Dict[str, Any] = {
         ),
         "type": _choice(
             "default for data_width bits, vector for width bits, bit for one "
-            "bit, fields for a register made of fields.",
+            "bit, fields for a register made of fields, hash and version for "
+            "read-only registers that hold the register map hash and version.",
             RegisterType.valid_values(),
             default=RegisterType.DEFAULT.value,
         ),
@@ -156,7 +162,13 @@ _MODULE: Dict[str, Any] = {
     "properties": {
         "name": _string("Module name, a VHDL identifier."),
         "description": _string("Shown in the documentation.", default=""),
-        "version": _string("Shown in the documentation.", default=""),
+        "version": _string(
+            "The version of the register map, which every generated file "
+            'carries. Printable ASCII other than ", \\, ; and =. A version '
+            "register needs MAJOR.MINOR or MAJOR.MINOR.PATCH.",
+            default="",
+            pattern=f"^{VERSION_PATTERN.pattern}$",
+        ),
         "git_hash": _string("Accepted and ignored."),
         "byte_addressable": {
             "description": "true if an address counts bytes, false if it counts "

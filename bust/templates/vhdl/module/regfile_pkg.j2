@@ -40,6 +40,12 @@ package {{ module.name }}_regfile_pkg is
 {% endif %}
 
   constant {{ width }} : natural := {{ module.register_select_width }};
+
+  -- The version of the register map and the hash of its content.
+{% filter align(":", ":=") %}
+  constant C_{{ module.name | upper }}_REGMAP_VERSION : string := "{{ module.version }}";
+  constant C_{{ module.name | upper }}_REGMAP_HASH : std_logic_vector(31 downto 0) := x"{{ module.regmap_hash_hex }}";
+{% endfilter %}
 {% for f in module.enum_fields %}
 
   type {{ f.enum_type_name }} is ({{ f.enums | map(attribute='name') | join(', ') }});

@@ -10,7 +10,6 @@ from bust.generators.documentation_generator import DocumentationGenerator
 from bust.generators.header_generator import HeaderGenerator
 from bust.generators.factory import GeneratorFactory
 
-
 # BUST_UPDATE_GOLDENS=1 rewrites the committed example outputs from the current
 # generator instead of comparing against them. Review the diff before committing.
 _UPDATE_GOLDENS = os.environ.get("BUST_UPDATE_GOLDENS") == "1"

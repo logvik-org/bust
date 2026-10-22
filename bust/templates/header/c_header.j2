@@ -3,6 +3,10 @@
 #define {{ module.name.upper() }}_H
 {% set m = module.name.upper() %}
 
+/* Register map version and content hash */
+#define {{ m }}_REGMAP_VERSION "{{ module.version }}"
+#define {{ m }}_REGMAP_HASH 0x{{ module.regmap_hash_hex }}
+
 
 {% for reg in module.registers %}
 /* Register: {{ reg.name }} */
