@@ -9,7 +9,7 @@ namespace EXAMPLE_AXI
 {
 /* Register map version and content hash */
 const std::string REGMAP_VERSION = "1.0";
-const uint32_t REGMAP_HASH = 0x55C3AEDF;
+const uint32_t REGMAP_HASH = 0x0CF519FC;
 
 /* Register: reg0 */
 const std::string REG0_SW = "rw";
@@ -184,7 +184,14 @@ const std::string REGMAP_HASH_SW = "ro";
 const std::string REGMAP_HASH_HW = "na";
 const uint32_t REGMAP_HASH_WIDTH = 32;
 const uint32_t REGMAP_HASH_OFFSET = 0x30;
-const uint32_t REGMAP_HASH_RESET = 0x55c3aedf;
+const uint32_t REGMAP_HASH_RESET = 0xcf519fc;
+
+/* Register: regmap_version */
+const std::string REGMAP_VERSION_SW = "ro";
+const std::string REGMAP_VERSION_HW = "na";
+const uint32_t REGMAP_VERSION_WIDTH = 32;
+const uint32_t REGMAP_VERSION_OFFSET = 0x34;
+const uint32_t REGMAP_VERSION_RESET = 0x10000;
 
 };
 

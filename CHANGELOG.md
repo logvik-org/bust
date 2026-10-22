@@ -18,10 +18,12 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   documentation shows the hash on its title page. The hash changes exactly when
   something that hardware or software depends on changes, and descriptions do
   not count (#99).
-- The register type `hash`, a read-only constant that holds the register map
-  hash, so that software can check at run time which register map the
-  hardware holds. The generated testbench reads it back, and the AXI4-Lite
-  example has one (#99).
+- The register types `hash` and `version`, read-only constants that hold the
+  register map hash and the `version` of the module, so that software can
+  check at run time which register map the hardware holds. A version register
+  needs a `version` of the form `MAJOR.MINOR` or `MAJOR.MINOR.PATCH` and holds
+  it as `0x00MMmmpp`. The generated testbench reads both back, and the
+  AXI4-Lite example has both (#99).
 
 ### Changed
 - `version` must be a string of printable ASCII characters other than `"`,

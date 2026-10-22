@@ -3,7 +3,7 @@ class EXAMPLE_AXI_H:
 
     """Register map version and content hash"""
     REGMAP_VERSION = "1.0"
-    REGMAP_HASH = 0x55C3AEDF
+    REGMAP_HASH = 0x0CF519FC
 
     """Register: reg0"""
     REG0_SW = "rw"
@@ -178,4 +178,11 @@ class EXAMPLE_AXI_H:
     REGMAP_HASH_HW = "na"
     REGMAP_HASH_WIDTH = 32
     REGMAP_HASH_OFFSET = 0x30
-    REGMAP_HASH_RESET = 0x55c3aedf
+    REGMAP_HASH_RESET = 0xcf519fc
+
+    """Register: regmap_version"""
+    REGMAP_VERSION_SW = "ro"
+    REGMAP_VERSION_HW = "na"
+    REGMAP_VERSION_WIDTH = 32
+    REGMAP_VERSION_OFFSET = 0x34
+    REGMAP_VERSION_RESET = 0x10000

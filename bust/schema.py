@@ -131,8 +131,8 @@ _REGISTER: Dict[str, Any] = {
         ),
         "type": _choice(
             "default for data_width bits, vector for width bits, bit for one "
-            "bit, fields for a register made of fields, hash for the read-only "
-            "register map hash.",
+            "bit, fields for a register made of fields, hash and version for "
+            "read-only registers that hold the register map hash and version.",
             RegisterType.valid_values(),
             default=RegisterType.DEFAULT.value,
         ),
@@ -160,7 +160,8 @@ _MODULE: Dict[str, Any] = {
         "description": _string("Shown in the documentation.", default=""),
         "version": _string(
             "The version of the register map, which every generated file "
-            'carries. Printable ASCII other than ", \\, ; and =.',
+            'carries. Printable ASCII other than ", \\, ; and =. A version '
+            "register needs MAJOR.MINOR or MAJOR.MINOR.PATCH.",
             default="",
             pattern=f"^{VERSION_PATTERN.pattern}$",
         ),
