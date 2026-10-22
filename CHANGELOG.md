@@ -50,6 +50,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   light and a dark theme in the colours of the documentation.
 - bust depends on Textual, which the editor is built on. bust loads it only
   when the editor starts.
+- The generated Python header is formatted as black formats it: the blank
+  line follows the class docstring and hex values use upper-case digits.
+  black leaves it unchanged.
 
 ## [1.0.0a4] - 2026-10-22
 

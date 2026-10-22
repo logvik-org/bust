@@ -98,7 +98,7 @@ def test_reset_forms_reach_hdl_and_headers_alike():
     assert "#define M_B_RESET 0xa" in c_header
     assert "#define M_C_RESET 0xff" in c_header
     assert "const uint32_t B_RESET = 0xa;" in headers.generate_cpp_header()
-    assert "B_RESET = 0xa" in headers.generate_python_header()
+    assert "B_RESET = 0xA" in headers.generate_python_header()
     tex = DocumentationGenerator(module).generate_tex_documentation()
     assert r"\texttt{0x1B2}" in tex
     assert r"\texttt{0xA}" in tex
