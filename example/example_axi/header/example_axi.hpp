@@ -7,6 +7,10 @@
 
 namespace EXAMPLE_AXI
 {
+/* Register map version and content hash */
+const std::string REGMAP_VERSION = "1.0";
+const uint32_t REGMAP_HASH = 0x2E24D701;
+
 /* Register: reg0 */
 const std::string REG0_SW = "rw";
 const std::string REG0_HW = "r";

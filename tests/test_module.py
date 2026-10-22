@@ -208,3 +208,83 @@ class TestRegisterMapValidation:
             make_module([fields_register(fields=fields)]).registers[0].fields[0].swmod
             is False
         )
+
+
+def module_with(bus=None, **keys):
+    config = {"name": "testmod", "register": regs("R0", "R1"), **keys}
+    return Module(config, bus or stub_bus(), settings=None)
+
+
+class TestVersion:
+    def test_default_is_empty(self):
+        assert module_with().version == ""
+
+    @pytest.mark.parametrize("version", ["1.2", "2.0.0-rc1+abc", "v3 (beta)"])
+    def test_printable_ascii_accepted(self, version):
+        assert module_with(version=version).version == version
+
+    @pytest.mark.parametrize("version", ['1"2', "1\\2", "1;2", "1=2", "1.2é", "1\t2"])
+    def test_characters_that_need_escaping_rejected(self, version):
+        with pytest.raises(FormatError, match="printable ASCII"):
+            module_with(version=version)
+
+    def test_number_rejected(self):
+        with pytest.raises(FormatError, match="must be a string"):
+            module_with(version=1.2)
+
+
+class TestRegmapHash:
+    def test_is_32_bits_as_eight_hex_digits(self):
+        mod = module_with()
+        assert 0 <= mod.regmap_hash < 2**32
+        assert mod.regmap_hash_hex == f"{mod.regmap_hash:08X}"
+
+    def test_ignores_descriptions_and_version(self):
+        plain = module_with()
+        described = module_with(
+            description="A module",
+            version="9.9",
+            register=[
+                {"name": "R0", "mode": "rw", "description": "first"},
+                {"name": "R1", "mode": "rw", "description": "second"},
+            ],
+        )
+        assert described.regmap_hash == plain.regmap_hash
+
+    def test_same_for_legacy_mode_and_explicit_access(self):
+        legacy = module_with(register=[{"name": "R0", "mode": "ro"}])
+        current = module_with(register=[{"name": "R0", "sw": "ro", "hw": "w"}])
+        assert legacy.regmap_hash == current.regmap_hash
+
+    def test_independent_of_the_address_width(self):
+        assert (
+            module_with(bus=stub_bus(addr_width=8)).regmap_hash
+            == module_with(bus=stub_bus(addr_width=16)).regmap_hash
+        )
+
+    @pytest.mark.parametrize(
+        "register",
+        [
+            [{"name": "R0", "mode": "rw"}],
+            [{"name": "R0", "mode": "rw"}, {"name": "R2", "mode": "rw"}],
+            [{"name": "R0", "mode": "rw"}, {"name": "R1", "mode": "ro"}],
+            [{"name": "R0", "mode": "rw"}, {"name": "R1", "mode": "rw", "reset": 1}],
+            [{"name": "R0", "mode": "rw"}, {"name": "R1", "address": "0x8"}],
+            [
+                {"name": "R0", "mode": "rw"},
+                {"name": "R1", "type": "vector", "width": 8},
+            ],
+            [{"name": "R0", "mode": "rw"}, {"name": "R1", "swmod": True}],
+        ],
+    )
+    def test_changes_with_the_register_map(self, register):
+        assert module_with(register=register).regmap_hash != module_with().regmap_hash
+
+    def test_changes_with_the_module_name(self):
+        assert module_with(name="other").regmap_hash != module_with().regmap_hash
+
+    def test_follows_reassigned_addresses(self):
+        mod = module_with(register=regs("R0") + [{"name": "R1", "address": "0x8"}])
+        before = mod.regmap_hash
+        mod.update_addresses()
+        assert mod.regmap_hash == module_with().regmap_hash != before
