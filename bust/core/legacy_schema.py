@@ -14,9 +14,10 @@ reset value. A `pulse_cycles` other than 1 and a `stall_cycles` other than 0
 cannot be represented, so they are rejected rather than silently changed.
 """
 
+import re
 from typing import Dict, List
 
-from bust.core.enums import RegisterMode
+from bust.core.enums import RegisterMode, current_type_name
 from bust.core.field import INHERITABLE_ACCESS
 from bust.exceptions import InvalidRegisterFormat
 from bust.validation.config_validator import parse_number
@@ -83,3 +84,40 @@ def _translate_legacy_mode(reg: Dict) -> Dict:
     # PULSE: software writes a value that reaches hardware for one cycle, then
     # the field returns to its reset value.
     return {"sw": "wo", "hw": "r", "singlepulse": True}
+
+
+def migrate_register_map(cfg):
+    """Rewrite a bust 0.14 register map in place and return the changes made."""
+    changes = []
+    if cfg.pop("settings", None) is not None:
+        changes.append("removed the settings section")
+    for key in ("comp_library", "reset"):
+        if cfg["bus"].pop(key, None) is not None:
+            changes.append(f"removed bus.{key}")
+    module = cfg["module"]
+    if module.get("byte_addressable") in ("True", "False"):
+        module["byte_addressable"] = module["byte_addressable"] == "True"
+        changes.append("byte_addressable is now a boolean")
+    for reg in module["register"]:
+        reject_unsupported_timing(reg)
+        for key in ("pulse_cycles", "stall_cycles"):
+            if reg.pop(key, None) is not None:
+                changes.append(f"removed {key} from register {reg['name']}")
+        for item in [reg, *reg.get("fields", [])]:
+            if current_type_name(item.get("type")) != item.get("type"):
+                item["type"] = current_type_name(item["type"])
+                changes.append(f"{item['name']}: type is now {item['type']}")
+            for key in ("address", "reset"):
+                value = item.get(key)
+                # bust 0.14 read these as hexadecimal, bust 1.0 reads them as
+                # decimal. 0 to 9 mean the same in both.
+                if (
+                    isinstance(value, str)
+                    and re.fullmatch(r"[0-9a-fA-F]+", value)
+                    and not re.fullmatch(r"[0-9]", value)
+                ):
+                    item[key] = "0x" + value
+                    changes.append(
+                        f'{item["name"]}: {key} "{value}" is now "0x{value}"'
+                    )
+    return changes

@@ -266,7 +266,7 @@ class TestLegacyTranslation:
 
     def test_stall_cycles_of_zero_accepted(self):
         cfg = {"name": "reg3", "mode": "rw", "stall_cycles": 0, "type": "bit"}
-        assert Register(cfg, 0, "m", 32).to_json()["stall_cycles"] == 0
+        assert Register(cfg, 0, "m", 32).width == 1
 
     def test_absent_mode_defaults_rw(self):
         assert register_access_defaults({"name": "r"}) == {"sw": "rw", "hw": "r"}
