@@ -205,6 +205,17 @@ class JsonSource:
         """The document as Python data, as json_parser would return it."""
         return self._decode(self._root)
 
+    def line(self, path: str) -> int:
+        """The line, counted from 1, where the value at `path` starts, or its
+        key if it has one."""
+        tokens = split_pointer(path)
+        start = self._root.start
+        if tokens:
+            parent = self._find(tokens[:-1])
+            index = self._member_index(parent, tokens[-1], path)
+            start = self._members(parent, path)[index].start
+        return self.text.count("\n", 0, start) + 1
+
     def replace(self, path: str, value: Any) -> None:
         """Replace the value at `path`."""
         node = self._find(self._split_child(path))
