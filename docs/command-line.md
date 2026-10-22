@@ -326,15 +326,25 @@ still exits with status 0, since every other file was written.
 [Headers and documentation](headers-and-docs.md) describes the PDF step.
 
 An error in the register map is printed as a message that names the problem,
-and bust exits with status 1. For example:
+and bust exits with status 1. A value of the wrong form gives the file, the
+line and the path to the value, and bust lists every such problem in one run:
+
+```text
+timer.json:3: bus.type: "pci" is not one of "axi", "ipbus", "sbi", "avalon", "wishbone", "apb"
+timer.json:12: module.register[1].address: "1c" has hexadecimal digits but no 0x. Write "0x1c" for a hexadecimal number.
+2 problems in timer.json
+```
+
+A rule that ties keys together stops bust at the first problem:
 
 ```text
 When specifying address for register reg1, address 0x0 is already assigned to other register
 ```
 
-```text
-Bus type is not valid: pci
-```
+[How bust checks the file](register-map-format.md#how-bust-checks-the-file)
+describes the steps. A file that is missing or not JSON gives
+`Cannot read timer.json: No such file or directory` or the line and column of
+the error, as in `timer.json:3:5: Expecting ',' delimiter`.
 
 A run that stops with an error also adds to `debug.log` in the directory you
 run bust from. Each run starts with a line that gives the time and the command
