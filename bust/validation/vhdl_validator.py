@@ -13,30 +13,6 @@ from bust.utils.formatting import is_mixed
 logger = logging.getLogger(__name__)
 
 
-def get_identifier(msg, ls=None):
-    """Prompt user for a valid VHDL identifier with validation.
-
-    Repeatedly prompts until a valid identifier is provided. Validates
-    against VHDL naming rules and optionally checks uniqueness.
-
-    Args:
-        msg: Prompt message to display.
-        ls: Optional list of existing identifiers to check uniqueness against.
-
-    Returns:
-        Valid VHDL identifier string.
-    """
-    while True:
-        try:
-            identifier = input(msg)
-            is_valid_VHDL(identifier)
-            if ls is not None:
-                is_unique(identifier, ls)
-            return identifier
-        except Exception as e:
-            print(e)
-
-
 def is_VHDL_keyword(string):
     """Check if string is a VHDL reserved keyword.
 

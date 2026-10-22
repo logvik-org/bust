@@ -32,8 +32,6 @@ classifiers = [
 dependencies = [
     "docopt>=0.6.2",
     "pylatexenc>=2.1",
-    "curses-menu>=0.9.0",
-    "prettytable>=2.5.0",
     "Jinja2>=3.1.5,<4.0",
     "json5>=0.9",
 ]
@@ -43,6 +41,7 @@ dependencies = [
 test = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "jsonschema>=4.18",
     "mypy==1.18.2",
 ]
 dev = [
@@ -82,7 +81,6 @@ bust = ["templates/**/*.j2"]
 source = ["bust"]
 omit = [
     "bust/_version.py",
-    "bust/editor.py",         # interactive curses UI, not exercised in CI
     "bust/__main__.py",       # docopt CLI entrypoint
 ]
 
