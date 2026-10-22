@@ -15,7 +15,7 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from rich.text import Text
-from textual.widgets import DataTable, Footer, Header, Label, Select, Static
+from textual.widgets import DataTable, Footer, Header, Select, Static
 
 from bust.core.bus import Bus
 from bust.core.enums import FieldType, RegisterType
@@ -31,10 +31,12 @@ from bust.editor.screens import (
     Item,
     ListScreen,
     QuestionScreen,
+    TextScreen,
     Values,
     choices,
     default_choice,
 )
+from bust.editor.overview import OverviewScreen
 from bust.editor.session import (
     EditSession,
     Property,
@@ -48,7 +50,14 @@ _CSS = """
 #status { height: 1; padding: 0 1; background: $boost; }
 #left { width: 3fr; }
 #right { width: 2fr; }
-.pane-title { padding: 1 1 0 1; text-style: bold; color: $accent; }
+#hints { height: 1; padding: 0 1; color: $text-muted; }
+MainScreen DataTable {
+    border: round $panel-lighten-2; border-title-color: $text-muted;
+    border-subtitle-color: $text-muted;
+}
+MainScreen DataTable:focus {
+    border: round $accent; border-title-color: $accent; border-title-style: bold;
+}
 #registers { height: 2fr; }
 #fields { height: 1fr; }
 #properties { height: 1fr; }
@@ -72,6 +81,35 @@ FormScreen, QuestionScreen, ListScreen { align: center middle; }
 """
 
 _DESCRIPTION_LENGTH = 40
+_HELP = """\
+[b]Moving around[/b]
+  [b]Tab[/b], [b]Shift+Tab[/b]   next or previous pane
+  [b]1[/b] [b]2[/b] [b]3[/b]            the registers, the fields, the keys
+  [b]↑[/b] [b]↓[/b]              move in a pane, or click a row
+  [b]Enter[/b]            on a register or field: go to its keys
+                   on a key: change it in a dialog
+                   on enums: list the enumerated values
+
+[b]Changing the register map[/b]
+  [b]a[/b]                add a register
+  [b]f[/b]                add a field to the register under the cursor
+  [b]Delete[/b], [b]d[/b]        remove the register, or the field whose keys are shown
+  [b]m[/b]                the module and bus keys
+  [b]g[/b]                give an address to each register without one
+
+[b]Looking and saving[/b]
+  [b]o[/b]                overview of the register map, as in the documentation
+  [b]s[/b], [b]Ctrl+S[/b]        save
+  [b]q[/b], [b]Ctrl+Q[/b]        quit, asking first about unsaved changes
+
+[b]In a dialog[/b]
+  [b]Tab[/b] moves between the answers, [b]Enter[/b] or OK takes them, [b]Escape[/b] cancels.
+  An answer bust rejects shows bust's message and keeps the dialog open.\
+"""
+_HINTS = (
+    "[b]Tab[/b] or [b]1[/b] [b]2[/b] [b]3[/b] switch pane   [b]↑↓[/b] move   "
+    "[b]Enter[/b] open   [b]o[/b] overview   [b]?[/b] all keys"
+)
 
 
 def _shorten(text: str, length: int = _DESCRIPTION_LENGTH) -> str:
@@ -98,7 +136,12 @@ class MainScreen(Screen[None]):
         Binding("f", "add_field", "Add field"),
         Binding("delete,d", "remove", "Remove"),
         Binding("m", "edit_module", "Module and bus"),
-        Binding("g", "fill_addresses", "Give addresses"),
+        Binding("g", "fill_addresses", "Give addresses", show=False),
+        Binding("o", "overview", "Overview"),
+        Binding("question_mark", "help", "Help"),
+        Binding("1", "focus_pane('registers')", "Registers", show=False),
+        Binding("2", "focus_pane('fields')", "Fields", show=False),
+        Binding("3", "focus_pane('properties')", "Keys", show=False),
         Binding("s,ctrl+s", "save", "Save"),
         Binding("q", "quit_editor", "Quit"),
     ]
@@ -123,14 +166,12 @@ class MainScreen(Screen[None]):
     def compose(self) -> ComposeResult:
         yield Header()
         yield Static(id="status", markup=False)
+        yield Static(_HINTS, id="hints")
         with Horizontal():
             with Vertical(id="left"):
-                yield Label("Registers", classes="pane-title")
                 yield DataTable(cursor_type="row", id="registers")
-                yield Label("", classes="pane-title", id="fields-title")
                 yield DataTable(cursor_type="row", id="fields")
             with Vertical(id="right"):
-                yield Label("", classes="pane-title", id="properties-title")
                 yield DataTable(cursor_type="row", id="properties")
                 yield Static("", id="help", markup=False)
         yield Footer()
@@ -144,6 +185,10 @@ class MainScreen(Screen[None]):
             "Name", "Bits", "Type", "sw", "hw", "Reset", "Description"
         )
         self.query_one("#properties", DataTable).add_columns("Key", "Value")
+        registers.border_title = "1 Registers"
+        registers.border_subtitle = "Enter: its keys"
+        self.query_one("#fields", DataTable).border_subtitle = "Enter: its keys"
+        self.query_one("#properties", DataTable).border_subtitle = "Enter: change"
         self.refresh_all()
         registers.focus()
 
@@ -170,7 +215,6 @@ class MainScreen(Screen[None]):
 
     def _refresh_fields(self) -> None:
         table = self.query_one("#fields", DataTable)
-        title = self.query_one("#fields-title", Label)
         table.clear()
         index = self.register
         has_fields = (
@@ -178,14 +222,13 @@ class MainScreen(Screen[None]):
             and self.session.registers[index].type == RegisterType.FIELDS
         )
         table.display = has_fields
-        title.display = has_fields
         if not has_fields or index is None:
             self.field = None
             if self.subject == "field":
                 self.subject = "register"
             return
         name = self.session.registers[index].name
-        title.update(f"Fields of {name}")
+        table.border_title = f"2 Fields of {name}"
         rows = self.session.field_rows(index)
         for row in rows:
             table.add_row(*_cells([*row[:-1], _shorten(row[-1])]))
@@ -195,13 +238,12 @@ class MainScreen(Screen[None]):
 
     def _refresh_properties(self) -> None:
         table = self.query_one("#properties", DataTable)
-        title = self.query_one("#properties-title", Label)
         row = table.cursor_row
         table.clear()
         session = self.session
         if self.register is None:
             self.properties = []
-            title.update("No registers")
+            table.border_title = "3 Keys"
             self.query_one("#help", Static).update("Press a to add a register.")
             return
         if self.subject == "field" and self.field is not None:
@@ -214,7 +256,7 @@ class MainScreen(Screen[None]):
             register = session.registers[self.register]
             self.owner = f"Register {register.name}"
             self.properties = session.register_properties(self.register)
-        title.update(self.owner)
+        table.border_title = f"3 {self.owner}"
         for prop in self.properties:
             table.add_row(Text(prop.label), _value(prop))
         if self.subject == "field" and self.field is not None:
@@ -396,6 +438,19 @@ class MainScreen(Screen[None]):
 
     def action_save(self) -> None:
         self.editor.save()
+
+    def action_overview(self) -> None:
+        self.app.push_screen(OverviewScreen(self.session.document.module))
+
+    def action_help(self) -> None:
+        self.app.push_screen(TextScreen("Keys", _HELP))
+
+    def action_focus_pane(self, name: str) -> None:
+        table = self.query_one(f"#{name}", DataTable)
+        if table.display:
+            table.focus()
+        elif name == "fields":
+            self.app.notify("The register under the cursor has no fields.")
 
     def action_quit_editor(self) -> None:
         self.editor.quit_editor()

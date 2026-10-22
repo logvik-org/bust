@@ -44,6 +44,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   keys of the register or field in focus side by side, and changes them in
   dialogs that show bust's message for an answer bust rejects. It replaces the
   numbered questions of 1.0.0a4.
+- The editor shows its keys on screen and lists all of them with `?`. `o`
+  shows an overview of the register map like the PDF documentation, with the
+  register list and a bit diagram of each register.
 - The editor needs Textual, which `pip install "bust[editor]"` installs. bust
   says so when Textual is missing. Generating code does not need it.
 
