@@ -7,6 +7,10 @@
 
 namespace {{ module.name.upper() }}
 {
+/* Register map version and content hash */
+const std::string REGMAP_VERSION = "{{ module.version }}";
+const uint32_t REGMAP_HASH = 0x{{ module.regmap_hash_hex }};
+
 {% for reg in module.registers %}
 /* Register: {{ reg.name }} */
 const std::string {{ reg.name.upper() }}_SW = "{{ reg.sw.value }}";

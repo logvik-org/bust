@@ -75,6 +75,8 @@ class RegisterType(ConfigEnum):
     - VECTOR:  std_logic_vector with specified width
     - BIT:     std_logic (single-bit)
     - FIELDS:  Composed of named bitfields
+    - HASH:    Read-only constant that holds the register map hash
+    - VERSION: Read-only constant that holds the module version
 
     Use `RegisterType.from_string(value)` to safely create from user input.
     """
@@ -83,6 +85,13 @@ class RegisterType(ConfigEnum):
     VECTOR = "vector"
     BIT = "bit"
     FIELDS = "fields"
+    HASH = "hash"
+    VERSION = "version"
+
+    @property
+    def is_constant(self) -> bool:
+        """True for the types whose value bust sets: hash and version."""
+        return self in (RegisterType.HASH, RegisterType.VERSION)
 
 
 class RegisterMode(ConfigEnum):

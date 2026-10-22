@@ -2,6 +2,12 @@
    bus_write/bus_check(f_addr(offset), ...), defined per bus shell. #}
 {% filter wrap %}
 {% filter align("<=|:=") %}
+{% for reg in module.constant_registers %}
+{% set what = "the register map hash" if reg.type.value == "hash" else "the version" %}
+
+    log(ID_LOG_HDR, "{{ reg.name }}: reads {{ what }}", C_SCOPE);
+    bus_check(f_addr({{ reg.offset_constant }}), {{ module.value_vhdl(reg.reset) }}, "{{ reg.name }} holds {{ what }}");
+{% endfor %}
 {% for reg in module.registers if reg.is_simple_readback %}
 
     log(ID_LOG_HDR, "{{ reg.name }}: software read-write round-trip", C_SCOPE);

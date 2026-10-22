@@ -208,3 +208,216 @@ class TestRegisterMapValidation:
             make_module([fields_register(fields=fields)]).registers[0].fields[0].swmod
             is False
         )
+
+
+def module_with(bus=None, **keys):
+    config = {"name": "testmod", "register": regs("R0", "R1"), **keys}
+    return Module(config, bus or stub_bus(), settings=None)
+
+
+class TestVersion:
+    def test_default_is_empty(self):
+        assert module_with().version == ""
+
+    @pytest.mark.parametrize("version", ["1.2", "2.0.0-rc1+abc", "v3 (beta)"])
+    def test_printable_ascii_accepted(self, version):
+        assert module_with(version=version).version == version
+
+    @pytest.mark.parametrize("version", ['1"2', "1\\2", "1;2", "1=2", "1.2é", "1\t2"])
+    def test_characters_that_need_escaping_rejected(self, version):
+        with pytest.raises(FormatError, match="printable ASCII"):
+            module_with(version=version)
+
+    def test_number_rejected(self):
+        with pytest.raises(FormatError, match="must be a string"):
+            module_with(version=1.2)
+
+
+class TestRegmapHash:
+    def test_is_32_bits_as_eight_hex_digits(self):
+        mod = module_with()
+        assert 0 <= mod.regmap_hash < 2**32
+        assert mod.regmap_hash_hex == f"{mod.regmap_hash:08X}"
+
+    def test_ignores_descriptions_and_version(self):
+        plain = module_with()
+        described = module_with(
+            description="A module",
+            version="9.9",
+            register=[
+                {"name": "R0", "mode": "rw", "description": "first"},
+                {"name": "R1", "mode": "rw", "description": "second"},
+            ],
+        )
+        assert described.regmap_hash == plain.regmap_hash
+
+    def test_same_for_legacy_mode_and_explicit_access(self):
+        legacy = module_with(register=[{"name": "R0", "mode": "ro"}])
+        current = module_with(register=[{"name": "R0", "sw": "ro", "hw": "w"}])
+        assert legacy.regmap_hash == current.regmap_hash
+
+    def test_independent_of_the_address_width(self):
+        assert (
+            module_with(bus=stub_bus(addr_width=8)).regmap_hash
+            == module_with(bus=stub_bus(addr_width=16)).regmap_hash
+        )
+
+    @pytest.mark.parametrize(
+        "register",
+        [
+            [{"name": "R0", "mode": "rw"}],
+            [{"name": "R0", "mode": "rw"}, {"name": "R2", "mode": "rw"}],
+            [{"name": "R0", "mode": "rw"}, {"name": "R1", "mode": "ro"}],
+            [{"name": "R0", "mode": "rw"}, {"name": "R1", "mode": "rw", "reset": 1}],
+            [{"name": "R0", "mode": "rw"}, {"name": "R1", "address": "0x8"}],
+            [
+                {"name": "R0", "mode": "rw"},
+                {"name": "R1", "type": "vector", "width": 8},
+            ],
+            [{"name": "R0", "mode": "rw"}, {"name": "R1", "swmod": True}],
+        ],
+    )
+    def test_changes_with_the_register_map(self, register):
+        assert module_with(register=register).regmap_hash != module_with().regmap_hash
+
+    def test_changes_with_the_module_name(self):
+        assert module_with(name="other").regmap_hash != module_with().regmap_hash
+
+    def test_follows_reassigned_addresses(self):
+        mod = module_with(register=regs("R0") + [{"name": "R1", "address": "0x8"}])
+        before = mod.regmap_hash
+        mod.update_addresses()
+        assert mod.regmap_hash == module_with().regmap_hash != before
+
+
+def hash_reg(**keys):
+    return {"name": "id_hash", "type": "hash", **keys}
+
+
+class TestHashRegister:
+    def test_none_by_default(self):
+        assert module_with().hash_register is None
+
+    def test_constant_register_with_the_hash(self):
+        mod = module_with(register=regs("R0") + [hash_reg()])
+        reg = mod.hash_register
+        assert reg is mod.registers[1]
+        assert (reg.name, reg.type.value, reg.sw.value, reg.hw.value, reg.width) == (
+            "id_hash",
+            "hash",
+            "ro",
+            "na",
+            32,
+        )
+        assert reg.address == 4
+        assert int(reg.reset, 16) == mod.regmap_hash
+        assert not reg.effective_fields[0].holds_state
+
+    def test_first_in_the_list_gets_address_zero(self):
+        mod = module_with(register=[hash_reg()] + regs("R0", "R1"))
+        assert [reg.address for reg in mod.registers] == [0, 4, 8]
+
+    def test_name_is_free(self):
+        assert module_with(register=[hash_reg(name="whatever")]).hash_register
+
+    @pytest.mark.parametrize(
+        "key, value",
+        [("sw", "rw"), ("hw", "w"), ("reset", "0x1"), ("width", 32), ("mode", "ro")],
+    )
+    def test_other_keys_rejected(self, key, value):
+        with pytest.raises(InvalidRegister, match="takes only name"):
+            module_with(register=[hash_reg(**{key: value})])
+
+    def test_fields_rejected(self):
+        fields = [{"name": "f", "type": "bit"}]
+        with pytest.raises(InvalidRegister, match="fields"):
+            module_with(register=[hash_reg(fields=fields)])
+
+    def test_second_hash_register_rejected(self):
+        with pytest.raises(InvalidRegister, match="at most one hash"):
+            module_with(register=[hash_reg(), hash_reg(name="other")])
+
+    def test_narrow_data_width_rejected(self):
+        with pytest.raises(InvalidRegister, match="at least 32 bits"):
+            module_with(register=[hash_reg()], bus=stub_bus(data_width=16))
+
+    def test_wide_data_width_holds_the_hash(self):
+        mod = module_with(register=[hash_reg()], bus=stub_bus(data_width=64))
+        assert int(mod.hash_register.reset, 16) == mod.regmap_hash
+        assert mod.value_vhdl(mod.hash_register.reset) == (
+            f'64x"{mod.regmap_hash:016X}"'
+        )
+
+    def test_counts_in_the_hash(self):
+        with_hash = module_with(register=regs("R0", "R1") + [hash_reg()])
+        assert with_hash.regmap_hash != module_with().regmap_hash
+
+    def test_value_does_not_depend_on_itself(self):
+        mod = module_with(register=[hash_reg()])
+        before = mod.regmap_hash
+        mod._update_hash_register()
+        assert mod.regmap_hash == before
+
+    def test_update_addresses_keeps_the_value_right(self):
+        mod = module_with(register=[hash_reg(address="0x10")] + regs("R0"))
+        mod.update_addresses()
+        assert [reg.address for reg in mod.registers] == [0, 4]
+        assert int(mod.hash_register.reset, 16) == mod.regmap_hash
+        assert (
+            mod.regmap_hash
+            == module_with(register=[hash_reg()] + regs("R0")).regmap_hash
+        )
+
+
+def version_reg(**keys):
+    return {"name": "id_version", "type": "version", **keys}
+
+
+class TestVersionRegister:
+    @pytest.mark.parametrize(
+        "version, value",
+        [("1.2", 0x010200), ("1.2.3", 0x010203), ("0.0", 0), ("255.255.255", 0xFFFFFF)],
+    )
+    def test_holds_the_packed_version(self, version, value):
+        mod = module_with(version=version, register=[version_reg()])
+        reg = mod.version_register
+        assert (reg.type.value, reg.sw.value, reg.hw.value, reg.width) == (
+            "version",
+            "ro",
+            "na",
+            32,
+        )
+        assert int(reg.reset, 16) == value
+        assert mod.constant_registers == [reg]
+
+    @pytest.mark.parametrize(
+        "version", ["", "1", "v1.2", "1.2-rc1", "1.256", "1.2.3.4"]
+    )
+    def test_version_that_does_not_pack_rejected(self, version):
+        with pytest.raises(InvalidRegister, match="MAJOR.MINOR"):
+            module_with(version=version, register=[version_reg()])
+
+    def test_any_version_without_a_version_register(self):
+        assert module_with(version="v1.2-rc1").version_register is None
+
+    def test_other_keys_rejected(self):
+        with pytest.raises(InvalidRegister, match="takes only name"):
+            module_with(version="1.0", register=[version_reg(reset="0x1")])
+
+    def test_second_version_register_rejected(self):
+        registers = [version_reg(), version_reg(name="other")]
+        with pytest.raises(InvalidRegister, match="at most one version"):
+            module_with(version="1.0", register=registers)
+
+    def test_with_a_hash_register(self):
+        mod = module_with(version="1.0", register=[hash_reg(), version_reg()])
+        assert mod.constant_registers == mod.registers
+        assert int(mod.hash_register.reset, 16) == mod.regmap_hash
+
+    def test_version_does_not_change_the_hash(self):
+        assert (
+            module_with(version="1.0", register=[hash_reg(), version_reg()]).regmap_hash
+            == module_with(
+                version="2.1", register=[hash_reg(), version_reg()]
+            ).regmap_hash
+        )
