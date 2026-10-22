@@ -1,3 +1,4 @@
+{% from "vhdl/aggregate.j2" import reset_entry %}
 {# An enum has no all-zeros literal, so its idle input is the reset literal. #}
 {% macro fhw_default(m, f) -%}
 {%- if m == 'value' -%}{{ f.reset_value_vhdl if f.is_enum else f.zeros_literal }}{%- elif m == 'wel' -%}'1'{%- else -%}'0'{%- endif -%}
@@ -9,14 +10,36 @@
 
   -- What a read gets where no register sits (G_UNMAPPED_READ_DATA).
   constant C_UNMAPPED_READ_DATA : std_logic_vector({{ module.data_width - 1 }} downto 0) := {{ module.data_width }}x"{{ unmapped }}";
-{% if module.to_hw_registers %}
+{% if module.from_hw_registers %}
 
-  signal to_hw    : t_{{ module.name }}_to_hw;
+  -- from_hw at rest: every strobe inactive and every value 0, or the reset
+  -- literal for an enumerated field.
+{% filter align("=>", nested=true) %}
+  constant C_FROM_HW_IDLE : t_{{ module.name }}_from_hw :=
+  (
+{% for reg in module.from_hw_registers %}
+{% set items = [] %}
+{% set f0 = reg.from_hw_fields[0] %}
+{% if reg.fields %}
+{% for f in reg.from_hw_fields %}{% set _ = items.append(f.name ~ " => " ~ fhw_idle(f)) %}{% endfor %}
+{% elif f0.from_hw_is_record %}
+{% for m in f0.from_hw_members %}{% set _ = items.append(m ~ " => " ~ fhw_default(m, f0)) %}{% endfor %}
+{% else %}
+{% set _ = items.append(fhw_idle(f0)) %}
+{% endif %}
+{{ reset_entry(reg.name, items, not (reg.fields or f0.from_hw_is_record), loop.last, reg.from_hw_fields | selectattr('from_hw_is_record') | list | length > 0) }}
+{%- endfor %}
+  );
+{% endfilter %}
+{% endif %}
+{% if module.to_hw_registers or module.from_hw_registers %}
+
+{% endif %}
+{% filter align(":") %}
+{% if module.to_hw_registers %}
+  signal to_hw : t_{{ module.name }}_to_hw;
 {% endif %}
 {% if module.from_hw_registers %}
-  signal from_hw  : t_{{ module.name }}_from_hw := (
-{% for reg in module.from_hw_registers %}
-    {{ reg.name }} => {% if reg.fields %}({% for f in reg.from_hw_fields %}{{ f.name }} => {{ fhw_idle(f) }}{% if not loop.last %}, {% endif %}{% endfor %}){% else %}{{ fhw_idle(reg.from_hw_fields[0]) }}{% endif %}{% if not loop.last %},{% else %});{% endif %}
-
-{% endfor %}
+  signal from_hw : t_{{ module.name }}_from_hw := C_FROM_HW_IDLE;
 {% endif %}
+{% endfilter %}

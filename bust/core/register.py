@@ -352,7 +352,7 @@ class Register:
             if self.reset == "0x0":
                 return "(others => '0')"
             else:
-                val = str(self.width) + 'X"'
+                val = str(self.width) + 'x"'
                 val += format(int(self.reset, 16), "X") + '"'
                 return val
         elif self.type == RegisterType.BIT:

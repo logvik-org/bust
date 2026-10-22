@@ -2,6 +2,7 @@
 -- Protocol-agnostic register file for the prototype module.
 -- p_write: register storage and write response.
 -- p_read: read mux and read response.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -11,20 +12,20 @@ use work.prototype_regfile_pkg.all;
 
 entity prototype_regfile is
   generic (
-    G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
-    G_CHECK_BASE_ADDRESS : boolean := true;
-    G_MODULE_ADDR_WIDTH  : natural := C_PROTOTYPE_MODULE_ADDR_WIDTH;
+    G_BASE_ADDRESS       : unsigned(31 downto 0)         := 32x"0";
+    G_CHECK_BASE_ADDRESS : boolean                       := true;
+    G_MODULE_ADDR_WIDTH  : natural                       := C_PROTOTYPE_MODULE_ADDR_WIDTH;
     G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0');
-    G_ERR_ON_BAD_ACCESS  : boolean := false;
-    G_RESET_ACTIVE_LOW   : boolean := false
+    G_ERR_ON_BAD_ACCESS  : boolean                       := false;
+    G_RESET_ACTIVE_LOW   : boolean                       := false
   );
   port (
-    clk     : in  std_logic;
-    reset   : in  std_logic;
-    lb_m2s  : in  t_lb_m2s;
-    lb_s2m  : out t_lb_s2m;
-    to_hw   : out t_prototype_to_hw;
-    from_hw : in  t_prototype_from_hw
+    clk     : in    std_logic;
+    reset   : in    std_logic;
+    lb_m2s  : in    t_lb_m2s;
+    lb_s2m  : out   t_lb_s2m;
+    to_hw   : out   t_prototype_to_hw;
+    from_hw : in    t_prototype_from_hw
   );
 end entity prototype_regfile;
 
@@ -32,50 +33,60 @@ architecture rtl of prototype_regfile is
 
   signal regs : t_prototype_regs := C_PROTOTYPE_REGS_RESET;
 
-  signal rdata  : std_logic_vector(31 downto 0) := (others => '0');
-  signal wr_ack : std_logic := '0';
-  signal wr_err : std_logic := '0';
-  signal rd_ack : std_logic := '0';
-  signal rd_err : std_logic := '0';
-  signal swmod_reg9_field0 : std_logic := '0';
-  signal swacc_reg9_field1 : std_logic := '0';
+  signal rdata             : std_logic_vector(31 downto 0) := (others => '0');
+  signal wr_ack            : std_logic                     := '0';
+  signal wr_err            : std_logic                     := '0';
+  signal rd_ack            : std_logic                     := '0';
+  signal rd_err            : std_logic                     := '0';
+  signal swmod_reg9_field0 : std_logic                     := '0';
+  signal swacc_reg9_field1 : std_logic                     := '0';
 
   -- reset is compared with this level directly, so it adds no delta cycle.
-  function reset_level(active_low : boolean) return std_logic is
+  function reset_level (
+    active_low : boolean
+  ) return std_logic is
   begin
+
     if active_low then
       return '0';
     end if;
+
     return '1';
-  end function;
+
+  end function reset_level;
+
   constant C_RESET_LEVEL : std_logic := reset_level(G_RESET_ACTIVE_LOW);
 
 begin
 
   -- G_MODULE_ADDR_WIDTH must hold the registers and fit in the address.
-  assert G_MODULE_ADDR_WIDTH >= C_PROTOTYPE_MODULE_ADDR_WIDTH and G_MODULE_ADDR_WIDTH <= 32
+  assert G_MODULE_ADDR_WIDTH >= C_PROTOTYPE_MODULE_ADDR_WIDTH
+      and G_MODULE_ADDR_WIDTH <= 32
     report "G_MODULE_ADDR_WIDTH must be from C_PROTOTYPE_MODULE_ADDR_WIDTH ("
            & natural'image(C_PROTOTYPE_MODULE_ADDR_WIDTH) & ") to 32"
     severity failure;
 
   -- The base address must be a multiple of the size of the address range.
   assert (not G_CHECK_BASE_ADDRESS)
-      or (G_BASE_ADDRESS(G_MODULE_ADDR_WIDTH-1 downto 0) = 0)
+      or (G_BASE_ADDRESS(G_MODULE_ADDR_WIDTH - 1 downto 0) = 0)
     report "G_BASE_ADDRESS must be a multiple of 2**G_MODULE_ADDR_WIDTH"
     severity failure;
 
   -- Same-cycle precedence: hwclr > hwset > we/wel write > software write or onread.
   p_write : process (clk) is
-    variable reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0);
-    variable mapped     : boolean;     -- a register sits at this address
-    variable sw_write   : boolean;     -- a new software write to a register
-    variable rd_service : boolean;     -- a new software read from a register
+
+    variable reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH - 1 downto 0);
+    variable mapped     : boolean; -- a register sits at this address
+    variable sw_write   : boolean; -- a new software write to a register
+    variable rd_service : boolean; -- a new software read from a register
+
   begin
+
     if rising_edge(clk) then
       if reset = C_RESET_LEVEL then
-        regs       <= C_PROTOTYPE_REGS_RESET;
-        wr_ack     <= '0';
-        wr_err     <= '0';
+        regs              <= C_PROTOTYPE_REGS_RESET;
+        wr_ack            <= '0';
+        wr_err            <= '0';
         swmod_reg9_field0 <= '0';
         swacc_reg9_field1 <= '0';
       else
@@ -83,7 +94,7 @@ begin
         wr_err <= '0';
 
         -- A held request takes effect once, while its response is still low.
-        reg_offset := lb_m2s.address(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0);
+        reg_offset := lb_m2s.address(C_PROTOTYPE_MODULE_ADDR_WIDTH - 1 downto 0);
         mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
                                  G_MODULE_ADDR_WIDTH)
                       and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
@@ -188,13 +199,17 @@ begin
         end if;
       end if;
     end if;
+
   end process p_write;
 
   -- Unreadable fields read 0. A read that gets err returns G_UNMAPPED_READ_DATA.
   p_read : process (clk) is
-    variable reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0);
-    variable mapped     : boolean;     -- a register sits at this address
+
+    variable reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH - 1 downto 0);
+    variable mapped     : boolean; -- a register sits at this address
+
   begin
+
     if rising_edge(clk) then
       if reset = C_RESET_LEVEL then
         rdata  <= (others => '0');
@@ -205,8 +220,8 @@ begin
         rd_err <= '0';
 
         if lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' then
-          rdata <= (others => '0');
-          reg_offset := lb_m2s.address(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0);
+          rdata      <= (others => '0');
+          reg_offset := lb_m2s.address(C_PROTOTYPE_MODULE_ADDR_WIDTH - 1 downto 0);
           mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
                                    G_MODULE_ADDR_WIDTH)
                         and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
@@ -215,66 +230,97 @@ begin
             rd_err <= '1';
             rdata  <= G_UNMAPPED_READ_DATA;
           elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG0_OFFSET) then
-            rdata(0) <= regs.reg0.field0;
+            rdata(0)          <= regs.reg0.field0;
             rdata(2 downto 1) <= regs.reg0.field1;
-            rd_ack <= '1';
+            rd_ack            <= '1';
           elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG1_OFFSET) then
             rdata(3 downto 0) <= regs.reg1.field0;
-            rdata(4) <= from_hw.reg1.field1;
-            rdata(5) <= regs.reg1.field2;
-            rd_ack <= '1';
+            rdata(4)          <= from_hw.reg1.field1;
+            rdata(5)          <= regs.reg1.field2;
+            rd_ack            <= '1';
           elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG2_OFFSET) then
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG3_OFFSET) then
             rdata(7 downto 0) <= regs.reg3.field0;
-            rd_ack <= '1';
+            rd_ack            <= '1';
           elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG4_OFFSET) then
             rdata(3 downto 0) <= regs.reg4.field0;
-            rdata(8) <= regs.reg4.field1;
-            rd_ack <= '1';
+            rdata(8)          <= regs.reg4.field1;
+            rd_ack            <= '1';
           elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG5_OFFSET) then
             rdata(3 downto 0) <= regs.reg5.field0;
             rdata(7 downto 4) <= regs.reg5.field1;
-            rd_ack <= '1';
+            rd_ack            <= '1';
           elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG6_OFFSET) then
-            rdata(3 downto 0) <= regs.reg6.field0;
-            rdata(7 downto 4) <= regs.reg6.field1;
+            rdata(3 downto 0)  <= regs.reg6.field0;
+            rdata(7 downto 4)  <= regs.reg6.field1;
             rdata(11 downto 8) <= regs.reg6.field2;
-            rd_ack <= '1';
+            rd_ack             <= '1';
           elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG7_OFFSET) then
-            rdata(3 downto 0) <= regs.reg7.field0;
-            rdata(7 downto 4) <= regs.reg7.field1;
+            rdata(3 downto 0)  <= regs.reg7.field0;
+            rdata(7 downto 4)  <= regs.reg7.field1;
             rdata(11 downto 8) <= regs.reg7.field2;
-            rd_ack <= '1';
+            rd_ack             <= '1';
           elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG8_OFFSET) then
             rdata(3 downto 0) <= regs.reg8.field0;
             rdata(7 downto 4) <= regs.reg8.field1;
-            rd_ack <= '1';
+            rd_ack            <= '1';
           elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG9_OFFSET) then
             rdata(3 downto 0) <= regs.reg9.field0;
             rdata(7 downto 4) <= regs.reg9.field1;
-            rd_ack <= '1';
+            rd_ack            <= '1';
           elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG10_OFFSET) then
             rdata(3 downto 0) <= regs.reg10.field0;
-            rd_ack <= '1';
+            rd_ack            <= '1';
           elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG11_OFFSET) then
             rdata(1 downto 0) <= to_slv(regs.reg11.field0);
-            rd_ack <= '1';
+            rd_ack            <= '1';
           end if;
         end if;
       end if;
     end if;
+
   end process p_read;
 
   -- Hardware-side outputs, one aggregate per register.
-  to_hw.reg0 <= (field0 => regs.reg0.field0, field1 => regs.reg0.field1);
-  to_hw.reg2 <= (field0 => regs.reg2.field0);
-  to_hw.reg4 <= (field0 => regs.reg4.field0, field1 => regs.reg4.field1);
-  to_hw.reg5 <= (field0 => regs.reg5.field0, field1 => regs.reg5.field1);
-  to_hw.reg6 <= (field0 => regs.reg6.field0, field1 => regs.reg6.field1, field2 => regs.reg6.field2);
-  to_hw.reg7 <= (field0 => regs.reg7.field0, field1 => regs.reg7.field1, field2 => regs.reg7.field2);
-  to_hw.reg8 <= (field0 => regs.reg8.field0, field1 => regs.reg8.field1);
-  to_hw.reg9 <= (field0 => (value => regs.reg9.field0, swmod => swmod_reg9_field0), field1 => (value => regs.reg9.field1, swacc => swacc_reg9_field1));
+  to_hw.reg0  <=
+  (
+    field0 => regs.reg0.field0,
+    field1 => regs.reg0.field1
+  );
+  to_hw.reg2  <= (field0 => regs.reg2.field0);
+  to_hw.reg4  <=
+  (
+    field0 => regs.reg4.field0,
+    field1 => regs.reg4.field1
+  );
+  to_hw.reg5  <=
+  (
+    field0 => regs.reg5.field0,
+    field1 => regs.reg5.field1
+  );
+  to_hw.reg6  <=
+  (
+    field0 => regs.reg6.field0,
+    field1 => regs.reg6.field1,
+    field2 => regs.reg6.field2
+  );
+  to_hw.reg7  <=
+  (
+    field0 => regs.reg7.field0,
+    field1 => regs.reg7.field1,
+    field2 => regs.reg7.field2
+  );
+  to_hw.reg8  <=
+  (
+    field0 => regs.reg8.field0,
+    field1 => regs.reg8.field1
+  );
+  to_hw.reg9  <=
+  (
+    field0 => (value => regs.reg9.field0, swmod => swmod_reg9_field0),
+    field1 => (value => regs.reg9.field1, swacc => swacc_reg9_field1)
+  );
   to_hw.reg10 <= (field0 => regs.reg10.field0);
   to_hw.reg11 <= (field0 => regs.reg11.field0);
 

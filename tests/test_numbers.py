@@ -89,9 +89,9 @@ def test_reset_forms_reach_hdl_and_headers_alike():
         ]
     )
     pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
-    assert 'a => 16X"1B2"' in pkg
-    assert 'b => 8X"A"' in pkg
-    assert 'c => 8X"FF"' in pkg
+    assert 'a => 16x"1B2"' in pkg
+    assert 'b => 8x"A"' in pkg
+    assert 'c => 8x"FF"' in pkg
     headers = HeaderGenerator(module)
     c_header = headers.generate_c_header()
     assert "#define M_A_RESET 0x1b2" in c_header
@@ -128,7 +128,7 @@ def test_field_reset_reaches_headers_as_parsed():
     )
     field = module.registers[0].fields[0]
     assert [e.value for e in field.enums] == [10, 16]
-    assert 'r => (f => Y, g => 4X"A")' in (
+    assert 'f => Y,\n      g => 4x"A"' in (
         GeneratorFactory.generate_regfile_package_vhdl(module)
     )
     c_header = HeaderGenerator(module).generate_c_header()

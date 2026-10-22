@@ -45,10 +45,12 @@ def get_environment(additional_filters=None):
     )
 
     # Register common filters used across modules
-    from bust.jinja_utils.filters import to_binary, utf8tolatex
+    from bust.jinja_utils.filters import align, to_binary, utf8tolatex, wrap
 
+    env.filters["align"] = align
     env.filters["to_binary"] = to_binary
     env.filters["utf8tolatex"] = utf8tolatex
+    env.filters["wrap"] = wrap
 
     env.globals["generated_by"] = generated_by
 

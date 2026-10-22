@@ -3,6 +3,7 @@
 -- that the wrapper bridges correctly to the local-bus regfile (writes, reads,
 -- hardware-driven readback, and an enumerated field). Full access-mode coverage
 -- lives in prototype_regfile_tb; this only proves the protocol translation.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -30,38 +31,40 @@ architecture tb of prototype_axi_endpoint_tb is
   signal clk      : std_logic := '0';
   signal areset_n : std_logic := '1';
 
-  signal to_hw    : t_prototype_to_hw;
-  signal from_hw  : t_prototype_from_hw := (
-    reg1 => (field0 => (value => (others => '0'), we => '0'),
-             field1 => '0',
-             field2 => (value => '0', wel => '1')),
-    reg4 => (field0 => (value => (others => '0'), we => '0'),
-             field1 => (set => '0', clr => '0')));
+  signal to_hw   : t_prototype_to_hw;
+  signal from_hw : t_prototype_from_hw := C_PROTOTYPE_FROM_HW_RESET;
 
   constant C_DATA_W : natural := 32;
   constant C_ADDR_W : natural := 32;
-  signal axilite_if : t_axilite_if(write_address_channel(awaddr(C_ADDR_W-1 downto 0)),
-                                   write_data_channel(wdata(C_DATA_W-1 downto 0),
-                                                      wstrb((C_DATA_W/8)-1 downto 0)),
-                                   read_address_channel(araddr(C_ADDR_W-1 downto 0)),
-                                   read_data_channel(rdata(C_DATA_W-1 downto 0)))
-                      := init_axilite_if_signals(C_DATA_W, C_ADDR_W);
+
+  subtype t_bus_if is t_axilite_if(write_address_channel(awaddr(C_ADDR_W - 1 downto 0)),
+                                    write_data_channel(wdata(C_DATA_W - 1 downto 0),
+                                                       wstrb((C_DATA_W / 8) - 1 downto 0)),
+                                    read_address_channel(araddr(C_ADDR_W - 1 downto 0)),
+                                    read_data_channel(rdata(C_DATA_W - 1 downto 0)));
+
+  signal axilite_if         : t_bus_if             := init_axilite_if_signals(C_DATA_W, C_ADDR_W);
   signal axilite_bfm_config : t_axilite_bfm_config := C_AXILITE_BFM_CONFIG_DEFAULT;
 
-  function f_addr(base : std_logic_vector(31 downto 0);
-                  reg  : std_logic_vector(31 downto 0)) return unsigned is
+  function f_addr (
+    base : std_logic_vector(31 downto 0);
+    reg  : std_logic_vector(31 downto 0)
+  ) return unsigned is
   begin
+
     return unsigned(base) + unsigned(reg);
-  end function;
+
+  end function f_addr;
 
 begin
 
   clock_generator(clk, C_CLK_PERIOD);
 
-  DUT : entity work.prototype_axi_endpoint
+  dut : entity work.prototype_axi_endpoint(rtl)
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true
+    )
     port map (
       clk      => clk,
       areset_n => areset_n,
@@ -82,27 +85,37 @@ begin
       rvalid   => axilite_if.read_data_channel.rvalid,
       rready   => axilite_if.read_data_channel.rready,
       to_hw    => to_hw,
-      from_hw  => from_hw);
+      from_hw  => from_hw
+    );
 
   p_main : process is
 
-    procedure axi_write(constant addr : in unsigned;
-                        constant data : in std_logic_vector;
-                        constant msg  : in string) is
+    procedure axi_write (
+      constant addr : in unsigned;
+      constant data : in std_logic_vector;
+      constant msg  : in string
+    ) is
     begin
+
       axilite_write(addr, data, msg, clk, axilite_if, C_SCOPE,
                     shared_msg_id_panel, axilite_bfm_config);
-    end procedure;
 
-    procedure axi_check(constant addr : in unsigned;
-                        constant data : in std_logic_vector;
-                        constant msg  : in string) is
+    end procedure axi_write;
+
+    procedure axi_check (
+      constant addr : in unsigned;
+      constant data : in std_logic_vector;
+      constant msg  : in string
+    ) is
     begin
+
       axilite_check(addr, data, msg, clk, axilite_if, error, C_SCOPE,
                     shared_msg_id_panel, axilite_bfm_config);
-    end procedure;
+
+    end procedure axi_check;
 
   begin
+
     axilite_bfm_config.clock_period <= C_CLK_PERIOD;
 
     disable_log_msg(ALL_MESSAGES, QUIET);
@@ -138,11 +151,12 @@ begin
     axi_check(f_addr(C_BASE, C_PROTOTYPE_REG11_OFFSET), 32x"2", "reg11 reads back encoded value");
     check_value(to_hw.reg11.field0 = STATE2, error, "reg11.field0 is STATE2 to hw", C_SCOPE);
 
-    wait for 10*C_CLK_PERIOD;
+    wait for 10 * C_CLK_PERIOD;
     report_alert_counters(FINAL);
     log(ID_LOG_HDR, "SIMULATION COMPLETED", C_SCOPE);
     std.env.stop;
     wait;
+
   end process p_main;
 
 end architecture tb;

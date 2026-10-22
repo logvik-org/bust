@@ -18,6 +18,7 @@
 -- reads of invalid addresses stay deterministic, matching the AXI endpoint. SBI
 -- carries no reset of its own, so a sync active-high reset passes straight to the
 -- regfile. The master drives a byte address, mapped directly onto the local bus.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -32,21 +33,21 @@ entity prototype_sbi_endpoint is
     G_MODULE_ADDR_WIDTH  : natural               := C_PROTOTYPE_MODULE_ADDR_WIDTH
   );
   port (
-    clk     : in  std_logic;
-    reset   : in  std_logic;
+    clk   : in    std_logic;
+    reset : in    std_logic;
 
     -- SBI subordinate interface
-    cs      : in  std_logic;
-    addr    : in  std_logic_vector(31 downto 0);
-    rena    : in  std_logic;
-    wena    : in  std_logic;
-    wdata   : in  std_logic_vector(31 downto 0);
-    ready   : out std_logic;
-    rdata   : out std_logic_vector(31 downto 0);
+    cs    : in    std_logic;
+    addr  : in    std_logic_vector(31 downto 0);
+    rena  : in    std_logic;
+    wena  : in    std_logic;
+    wdata : in    std_logic_vector(31 downto 0);
+    ready : out   std_logic;
+    rdata : out   std_logic_vector(31 downto 0);
 
     -- hardware side of the register file
-    to_hw   : out t_prototype_to_hw;
-    from_hw : in  t_prototype_from_hw
+    to_hw   : out   t_prototype_to_hw;
+    from_hw : in    t_prototype_from_hw
   );
 end entity prototype_sbi_endpoint;
 
@@ -57,19 +58,22 @@ architecture rtl of prototype_sbi_endpoint is
 
 begin
 
-  i_regfile : entity work.prototype_regfile
+  -- SBI has no reset of its own. This one is synchronous and active high.
+  i_regfile : entity work.prototype_regfile(rtl)
     generic map (
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
       G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
-      G_RESET_ACTIVE_LOW   => false)      -- SBI carries no reset; use sync active-high
+      G_RESET_ACTIVE_LOW   => false
+    )
     port map (
       clk     => clk,
       reset   => reset,
       lb_m2s  => m2s,
       lb_s2m  => s2m,
       to_hw   => to_hw,
-      from_hw => from_hw);
+      from_hw => from_hw
+    );
 
   m2s.address <= addr;
   m2s.wdata   <= wdata;
@@ -79,6 +83,7 @@ begin
   -- SBI has no error line, so ack and err both complete as a single ready beat;
   -- on a decode error rdata is forced to 0 (the regfile leaves it unchanged).
   ready <= s2m.ack or s2m.err;
-  rdata <= (others => '0') when s2m.err = '1' else s2m.rdata;
+  rdata <= (others => '0') when s2m.err = '1' else
+           s2m.rdata;
 
 end architecture rtl;

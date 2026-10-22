@@ -1,3 +1,6 @@
+{% if module.strobe_registers %}
+
+{% filter align(":") %}
 {% for reg in module.strobe_registers %}
 {% for f in reg.swmod_fields %}
     variable v_{{ reg.name }}_{{ f.name }}_swmod : natural;
@@ -9,3 +12,5 @@
     variable v_{{ reg.name }}_{{ f.name }}_sp : natural;
 {% endfor %}
 {% endfor %}
+{% endfilter %}
+{% endif %}

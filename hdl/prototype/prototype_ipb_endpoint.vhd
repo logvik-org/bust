@@ -14,6 +14,7 @@
 -- once) provides transaction separation, so no FSM is needed here. The address is
 -- forwarded unchanged and the regfile decodes it. IPBus's sync
 -- active-high reset passes straight to the regfile.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -31,12 +32,12 @@ entity prototype_ipb_endpoint is
     G_MODULE_ADDR_WIDTH  : natural               := C_PROTOTYPE_MODULE_ADDR_WIDTH
   );
   port (
-    clk     : in  std_logic;
-    reset   : in  std_logic;
-    ipb_in  : in  ipb_wbus;
-    ipb_out : out ipb_rbus;
-    to_hw   : out t_prototype_to_hw;
-    from_hw : in  t_prototype_from_hw
+    clk     : in    std_logic;
+    reset   : in    std_logic;
+    ipb_in  : in    ipb_wbus;
+    ipb_out : out   ipb_rbus;
+    to_hw   : out   t_prototype_to_hw;
+    from_hw : in    t_prototype_from_hw
   );
 end entity prototype_ipb_endpoint;
 
@@ -47,19 +48,22 @@ architecture rtl of prototype_ipb_endpoint is
 
 begin
 
-  i_regfile : entity work.prototype_regfile
+  -- The IPBus reset is synchronous and active high.
+  i_regfile : entity work.prototype_regfile(rtl)
     generic map (
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
       G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
-      G_RESET_ACTIVE_LOW   => false)      -- IPBus reset is sync active-high
+      G_RESET_ACTIVE_LOW   => false
+    )
     port map (
       clk     => clk,
       reset   => reset,
       lb_m2s  => m2s,
       lb_s2m  => s2m,
       to_hw   => to_hw,
-      from_hw => from_hw);
+      from_hw => from_hw
+    );
 
   m2s.address <= ipb_in.ipb_addr;
   m2s.wdata   <= ipb_in.ipb_wdata;

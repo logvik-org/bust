@@ -18,6 +18,7 @@
 -- deterministic. Wishbone's sync active-high reset passes straight to the
 -- regfile, and the master drives a byte address mapped directly onto the local
 -- bus.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -32,22 +33,22 @@ entity prototype_wishbone_endpoint is
     G_MODULE_ADDR_WIDTH  : natural               := C_PROTOTYPE_MODULE_ADDR_WIDTH
   );
   port (
-    clk_i   : in  std_logic;
-    rst_i   : in  std_logic;
+    clk_i : in    std_logic;
+    rst_i : in    std_logic;
 
     -- Wishbone B4 classic subordinate interface
-    cyc_i   : in  std_logic;
-    stb_i   : in  std_logic;
-    we_i    : in  std_logic;
-    adr_i   : in  std_logic_vector(31 downto 0);
-    dat_i   : in  std_logic_vector(31 downto 0);
-    dat_o   : out std_logic_vector(31 downto 0);
-    ack_o   : out std_logic;
-    err_o   : out std_logic;
+    cyc_i : in    std_logic;
+    stb_i : in    std_logic;
+    we_i  : in    std_logic;
+    adr_i : in    std_logic_vector(31 downto 0);
+    dat_i : in    std_logic_vector(31 downto 0);
+    dat_o : out   std_logic_vector(31 downto 0);
+    ack_o : out   std_logic;
+    err_o : out   std_logic;
 
     -- hardware side of the register file
-    to_hw   : out t_prototype_to_hw;
-    from_hw : in  t_prototype_from_hw
+    to_hw   : out   t_prototype_to_hw;
+    from_hw : in    t_prototype_from_hw
   );
 end entity prototype_wishbone_endpoint;
 
@@ -60,19 +61,22 @@ architecture rtl of prototype_wishbone_endpoint is
 
 begin
 
-  i_regfile : entity work.prototype_regfile
+  -- The Wishbone reset is synchronous and active high.
+  i_regfile : entity work.prototype_regfile(rtl)
     generic map (
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
       G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
-      G_RESET_ACTIVE_LOW   => false)      -- Wishbone reset is sync active-high
+      G_RESET_ACTIVE_LOW   => false
+    )
     port map (
       clk     => clk_i,
       reset   => rst_i,
       lb_m2s  => m2s,
       lb_s2m  => s2m,
       to_hw   => to_hw,
-      from_hw => from_hw);
+      from_hw => from_hw
+    );
 
   qualified <= cyc_i and stb_i;
 
@@ -83,6 +87,7 @@ begin
 
   ack_o <= s2m.ack;
   err_o <= s2m.err;
-  dat_o <= (others => '0') when s2m.err = '1' else s2m.rdata;
+  dat_o <= (others => '0') when s2m.err = '1' else
+           s2m.rdata;
 
 end architecture rtl;
