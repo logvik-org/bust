@@ -25,14 +25,18 @@ from bust.core.enums import (
 # to a string.
 _NUMBER_PATTERN = r"^(0[xX][0-9a-fA-F]+|0[bB][01]+|[0-9]+)$"
 
+# The anyOf of every number, which the schema check recognises to word its
+# message.
+NUMBER_FORMS: List[Dict[str, Any]] = [
+    {"type": "integer", "minimum": 0},
+    {"type": "string", "pattern": _NUMBER_PATTERN},
+]
+
 
 def _number(description: str, **extra: Any) -> Dict[str, Any]:
     return {
         "description": description,
-        "anyOf": [
-            {"type": "integer", "minimum": 0},
-            {"type": "string", "pattern": _NUMBER_PATTERN},
-        ],
+        "anyOf": copy.deepcopy(NUMBER_FORMS),
         **extra,
     }
 

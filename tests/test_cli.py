@@ -141,7 +141,10 @@ def test_unknown_key_is_reported(tmp_path):
     code, output = _run_bust(tmp_path, str(path), "-o", "out", "-p")
 
     assert code == 0, output
-    assert "Unknown key 'onwrit' in field enable of register ctrl is ignored" in output
+    assert (
+        "module.register[0].fields[0].onwrit: bust does not know this key and "
+        "ignores it. Did you mean 'onwrite'?"
+    ) in output
 
 
 def test_editor_without_terminal_fails(tmp_path):
@@ -188,14 +191,14 @@ def test_successful_run_writes_no_debug_log(tmp_path):
 
 def test_failed_run_writes_debug_log(tmp_path):
     register_map = json.loads(json.dumps(_REGISTER_MAP))
-    register_map["bus"]["type"] = "pci"
+    register_map["bus"]["data_width"] = 12
     path = _write_register_map(tmp_path, register_map)
 
     code, output = _run_bust(tmp_path, str(path), "-o", "out")
 
     assert code == 1
     log = (tmp_path / "debug.log").read_text()
-    assert "Bus type is not valid: pci" in log
+    assert "data_width must be a whole number of bytes" in log
     assert "Traceback" in log
     assert f"bust {path} -o out" in log.splitlines()[0]
 
@@ -216,3 +219,46 @@ def test_failed_runs_append_to_debug_log(tmp_path):
     ]
     assert len(runs) == 2
     assert runs[0].endswith("-o first") and runs[1].endswith("-o second")
+
+
+def test_every_schema_problem_is_reported_with_its_line(tmp_path):
+    register_map = json.loads(json.dumps(_REGISTER_MAP))
+    register = register_map["module"]["register"][0]
+    register["sw"] = "rx"
+    register["fields"][0]["type"] = "bits"
+    path = tmp_path / "timer.json"
+    path.write_text(json.dumps(register_map, indent=2))
+
+    code, output = _run_bust(tmp_path, "timer.json", "-o", "out")
+
+    assert code == 1
+    assert (
+        'timer.json:13: module.register[0].sw: "rx" is not one of "rw", "ro", '
+        '"wo", "na". Did you mean "rw"?'
+    ) in output
+    assert (
+        'timer.json:20: module.register[0].fields[0].type: "bits" is not one of '
+        '"vector", "bit". Did you mean "bit"?'
+    ) in output
+    assert "2 problems in timer.json" in output
+    assert not (tmp_path / "out").exists()
+
+
+def test_missing_file(tmp_path):
+    code, output = _run_bust(tmp_path, "nothing.json")
+
+    assert code == 1
+    assert "Cannot read nothing.json: No such file or directory" in output
+    assert "unknown error" not in output
+
+
+def test_json_syntax_error_gives_the_place(tmp_path):
+    (tmp_path / "timer.json").write_text(
+        '{\n  "bus": {"type": "axi"\n  "module": {}\n}'
+    )
+
+    code, output = _run_bust(tmp_path, "timer.json")
+
+    assert code == 1
+    assert "timer.json:3:3: Expecting ',' delimiter" in output
+    assert "unknown error" not in output
