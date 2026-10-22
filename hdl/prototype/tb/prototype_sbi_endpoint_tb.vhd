@@ -5,6 +5,7 @@
 -- addresses, so a non-zero base exercises G_CHECK_BASE_ADDRESS. Full access-mode
 -- coverage lives in prototype_regfile_tb; this only proves the protocol
 -- translation.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -30,38 +31,40 @@ architecture tb of prototype_sbi_endpoint_tb is
   constant C_BASE : std_logic_vector(31 downto 0) := 32x"FFAA0000";
 
   signal clk   : std_logic := '0';
-  signal reset : std_logic := '0';   -- active-high; gen_pulse asserts it
+  signal reset : std_logic := '0'; -- active-high; gen_pulse asserts it
 
   signal to_hw   : t_prototype_to_hw;
-  signal from_hw : t_prototype_from_hw := (
-    reg1 => (field0 => (value => (others => '0'), we => '0'),
-             field1 => '0',
-             field2 => (value => '0', wel => '1')),
-    reg4 => (field0 => (value => (others => '0'), we => '0'),
-             field1 => (set => '0', clr => '0')));
+  signal from_hw : t_prototype_from_hw := C_PROTOTYPE_FROM_HW_RESET;
 
   constant C_DATA_W : natural := 32;
   constant C_ADDR_W : natural := 32;
-  signal sbi_if : t_sbi_if(addr(C_ADDR_W-1 downto 0),
-                           wdata(C_DATA_W-1 downto 0),
-                           rdata(C_DATA_W-1 downto 0))
-                  := init_sbi_if_signals(C_ADDR_W, C_DATA_W);
+
+  subtype t_bus_if is t_sbi_if(addr(C_ADDR_W - 1 downto 0),
+                                wdata(C_DATA_W - 1 downto 0),
+                                rdata(C_DATA_W - 1 downto 0));
+
+  signal sbi_if         : t_bus_if         := init_sbi_if_signals(C_ADDR_W, C_DATA_W);
   signal sbi_bfm_config : t_sbi_bfm_config := C_SBI_BFM_CONFIG_DEFAULT;
 
-  function f_addr(base : std_logic_vector(31 downto 0);
-                  reg  : std_logic_vector(31 downto 0)) return unsigned is
+  function f_addr (
+    base : std_logic_vector(31 downto 0);
+    reg  : std_logic_vector(31 downto 0)
+  ) return unsigned is
   begin
+
     return unsigned(base) + unsigned(reg);
-  end function;
+
+  end function f_addr;
 
 begin
 
   clock_generator(clk, C_CLK_PERIOD);
 
-  DUT : entity work.prototype_sbi_endpoint
+  dut : entity work.prototype_sbi_endpoint(rtl)
     generic map (
       G_BASE_ADDRESS       => unsigned(C_BASE),
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true
+    )
     port map (
       clk     => clk,
       reset   => reset,
@@ -73,27 +76,37 @@ begin
       ready   => sbi_if.ready,
       rdata   => sbi_if.rdata,
       to_hw   => to_hw,
-      from_hw => from_hw);
+      from_hw => from_hw
+    );
 
   p_main : process is
 
-    procedure sbi_wr(constant addr : in unsigned;
-                     constant data : in std_logic_vector;
-                     constant msg  : in string) is
+    procedure sbi_wr (
+      constant addr : in unsigned;
+      constant data : in std_logic_vector;
+      constant msg  : in string
+    ) is
     begin
+
       sbi_write(addr, data, msg, clk, sbi_if, C_SCOPE,
                 shared_msg_id_panel, sbi_bfm_config);
-    end procedure;
 
-    procedure sbi_ck(constant addr : in unsigned;
-                     constant data : in std_logic_vector;
-                     constant msg  : in string) is
+    end procedure sbi_wr;
+
+    procedure sbi_ck (
+      constant addr : in unsigned;
+      constant data : in std_logic_vector;
+      constant msg  : in string
+    ) is
     begin
+
       sbi_check(addr, data, msg, clk, sbi_if, error, C_SCOPE,
                 shared_msg_id_panel, sbi_bfm_config);
-    end procedure;
+
+    end procedure sbi_ck;
 
   begin
+
     sbi_bfm_config.clock_period <= C_CLK_PERIOD;
 
     disable_log_msg(ALL_MESSAGES, QUIET);
@@ -134,11 +147,12 @@ begin
     log(ID_LOG_HDR, "decode error: out-of-base read completes with rdata 0", C_SCOPE);
     sbi_ck(x"00000000", 32x"0", "invalid-address read completes and reads 0");
 
-    wait for 10*C_CLK_PERIOD;
+    wait for 10 * C_CLK_PERIOD;
     report_alert_counters(FINAL);
     log(ID_LOG_HDR, "SIMULATION COMPLETED", C_SCOPE);
     std.env.stop;
     wait;
+
   end process p_main;
 
 end architecture tb;

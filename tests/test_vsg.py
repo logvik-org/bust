@@ -1,7 +1,8 @@
 """The generated VHDL follows the style in vsg.yaml.
 
 The examples under example/ are the generator's output (test_suite.py keeps
-them in step), so checking them checks the templates.
+them in step), so checking them checks the templates. The hand-written
+reference HDL in hdl/prototype/ follows the same style.
 """
 
 import glob
@@ -18,7 +19,8 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _PATTERNS = [
     "example/*/hdl/*.vhd",
     "example/*/tb/*.vhd",
-    "hdl/prototype/prototype_regfile_pkg.vhd",
+    "hdl/prototype/*.vhd",
+    "hdl/prototype/tb/*.vhd",
 ]
 
 

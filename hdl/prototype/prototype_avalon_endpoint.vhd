@@ -21,6 +21,7 @@
 -- endpoint. Avalon-MM's reset is sync active-high, passed straight to the
 -- regfile, and the master drives a byte address mapped directly onto the local
 -- bus.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -35,21 +36,21 @@ entity prototype_avalon_endpoint is
     G_MODULE_ADDR_WIDTH  : natural               := C_PROTOTYPE_MODULE_ADDR_WIDTH
   );
   port (
-    clk         : in  std_logic;
-    reset       : in  std_logic;
+    clk   : in    std_logic;
+    reset : in    std_logic;
 
     -- Avalon-MM subordinate interface
-    chipselect  : in  std_logic;
-    address     : in  std_logic_vector(31 downto 0);
-    read        : in  std_logic;
-    write       : in  std_logic;
-    writedata   : in  std_logic_vector(31 downto 0);
-    waitrequest : out std_logic;
-    readdata    : out std_logic_vector(31 downto 0);
+    chipselect  : in    std_logic;
+    address     : in    std_logic_vector(31 downto 0);
+    read        : in    std_logic;
+    write       : in    std_logic;
+    writedata   : in    std_logic_vector(31 downto 0);
+    waitrequest : out   std_logic;
+    readdata    : out   std_logic_vector(31 downto 0);
 
     -- hardware side of the register file
-    to_hw       : out t_prototype_to_hw;
-    from_hw     : in  t_prototype_from_hw
+    to_hw   : out   t_prototype_to_hw;
+    from_hw : in    t_prototype_from_hw
   );
 end entity prototype_avalon_endpoint;
 
@@ -60,19 +61,22 @@ architecture rtl of prototype_avalon_endpoint is
 
 begin
 
-  i_regfile : entity work.prototype_regfile
+  -- The Avalon-MM reset is synchronous and active high.
+  i_regfile : entity work.prototype_regfile(rtl)
     generic map (
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
       G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
-      G_RESET_ACTIVE_LOW   => false)      -- Avalon-MM reset is sync active-high
+      G_RESET_ACTIVE_LOW   => false
+    )
     port map (
       clk     => clk,
       reset   => reset,
       lb_m2s  => m2s,
       lb_s2m  => s2m,
       to_hw   => to_hw,
-      from_hw => from_hw);
+      from_hw => from_hw
+    );
 
   m2s.address <= address;
   m2s.wdata   <= writedata;
@@ -82,6 +86,7 @@ begin
   -- waitrequest=1 stalls; the accept beat is one cycle of waitrequest=0 when the
   -- regfile answers. With no command, ack/err are low so waitrequest stays high.
   waitrequest <= not (s2m.ack or s2m.err);
-  readdata    <= (others => '0') when s2m.err = '1' else s2m.rdata;
+  readdata    <= (others => '0') when s2m.err = '1' else
+                 s2m.rdata;
 
 end architecture rtl;

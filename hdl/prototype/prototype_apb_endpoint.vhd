@@ -21,6 +21,7 @@
 -- forced to 0). APB's reset (presetn) is active-low and async, handed to the
 -- regfile via G_RESET_ACTIVE_LOW; the master drives a byte address mapped
 -- directly onto the local bus.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -35,22 +36,22 @@ entity prototype_apb_endpoint is
     G_MODULE_ADDR_WIDTH  : natural               := C_PROTOTYPE_MODULE_ADDR_WIDTH
   );
   port (
-    pclk    : in  std_logic;
-    presetn : in  std_logic;
+    pclk    : in    std_logic;
+    presetn : in    std_logic;
 
     -- APB subordinate interface
-    psel    : in  std_logic;
-    penable : in  std_logic;
-    pwrite  : in  std_logic;
-    paddr   : in  std_logic_vector(31 downto 0);
-    pwdata  : in  std_logic_vector(31 downto 0);
-    prdata  : out std_logic_vector(31 downto 0);
-    pready  : out std_logic;
-    pslverr : out std_logic;
+    psel    : in    std_logic;
+    penable : in    std_logic;
+    pwrite  : in    std_logic;
+    paddr   : in    std_logic_vector(31 downto 0);
+    pwdata  : in    std_logic_vector(31 downto 0);
+    prdata  : out   std_logic_vector(31 downto 0);
+    pready  : out   std_logic;
+    pslverr : out   std_logic;
 
     -- hardware side of the register file
-    to_hw   : out t_prototype_to_hw;
-    from_hw : in  t_prototype_from_hw
+    to_hw   : out   t_prototype_to_hw;
+    from_hw : in    t_prototype_from_hw
   );
 end entity prototype_apb_endpoint;
 
@@ -66,22 +67,26 @@ architecture rtl of prototype_apb_endpoint is
 
 begin
 
-  i_regfile : entity work.prototype_regfile
+  -- The APB reset presetn is active low.
+  i_regfile : entity work.prototype_regfile(rtl)
     generic map (
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
       G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
-      G_RESET_ACTIVE_LOW   => true)       -- APB presetn is active-low
+      G_RESET_ACTIVE_LOW   => true
+    )
     port map (
       clk     => pclk,
       reset   => presetn,
       lb_m2s  => m2s,
       lb_s2m  => s2m,
       to_hw   => to_hw,
-      from_hw => from_hw);
+      from_hw => from_hw
+    );
 
   -- Active from the SETUP cycle (psel high, penable low) and held while busy.
-  req_active <= '1' when (psel = '1' and penable = '0') or busy = '1' else '0';
+  req_active <= '1' when (psel = '1' and penable = '0') or busy = '1' else
+                '0';
 
   m2s.address <= paddr;
   m2s.wdata   <= pwdata;
@@ -90,19 +95,24 @@ begin
 
   p_busy : process (pclk, presetn) is
   begin
+
     if presetn = '0' then
       busy <= '0';
     elsif rising_edge(pclk) then
       if psel = '1' and penable = '0' then
-        busy <= '1';                      -- latch the in-flight transaction at SETUP
+        -- Latch the in-flight transaction at SETUP.
+        busy <= '1';
       elsif s2m.ack = '1' or s2m.err = '1' then
-        busy <= '0';                      -- release once the regfile answers
+        -- Release once the regfile answers.
+        busy <= '0';
       end if;
     end if;
+
   end process p_busy;
 
   pready  <= s2m.ack or s2m.err;
   pslverr <= s2m.err;
-  prdata  <= (others => '0') when s2m.err = '1' else s2m.rdata;
+  prdata  <= (others => '0') when s2m.err = '1' else
+             s2m.rdata;
 
 end architecture rtl;
