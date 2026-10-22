@@ -4,6 +4,7 @@
 -- address unchanged and the regfile decodes it, so the VIP
 -- drives the register byte offsets directly (zero base). Full access-mode
 -- coverage lives in prototype_regfile_tb; this only proves the protocol translation.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -29,27 +30,26 @@ architecture tb of prototype_ipb_endpoint_tb is
   constant C_CLK_PERIOD : time   := 10 ns;
 
   signal clk   : std_logic := '0';
-  signal reset : std_logic := '0';   -- active-high; gen_pulse asserts it
+  signal reset : std_logic := '0'; -- active-high; gen_pulse asserts it
 
   signal ipb_in  : ipb_wbus;
   signal ipb_out : ipb_rbus;
 
   signal to_hw   : t_prototype_to_hw;
-  signal from_hw : t_prototype_from_hw := (
-    reg1 => (field0 => (value => (others => '0'), we => '0'),
-             field1 => '0',
-             field2 => (value => '0', wel => '1')),
-    reg4 => (field0 => (value => (others => '0'), we => '0'),
-             field1 => (set => '0', clr => '0')));
+  signal from_hw : t_prototype_from_hw := C_PROTOTYPE_FROM_HW_RESET;
 
-  signal ipbus_if         : t_ipbus_if := init_ipbus_if_signals;
+  signal ipbus_if         : t_ipbus_if         := init_ipbus_if_signals;
   signal ipbus_bfm_config : t_ipbus_bfm_config := C_IPBUS_BFM_CONFIG_DEFAULT;
 
   -- Register byte offset as the IPBus address (zero base); forwarded as-is.
-  function f_addr(reg : std_logic_vector(31 downto 0)) return unsigned is
+  function f_addr (
+    reg : std_logic_vector(31 downto 0)
+  ) return unsigned is
   begin
+
     return unsigned(reg);
-  end function;
+
+  end function f_addr;
 
 begin
 
@@ -63,39 +63,51 @@ begin
   ipbus_if.ack      <= ipb_out.ipb_ack;
   ipbus_if.err      <= ipb_out.ipb_err;
 
-  DUT : entity work.prototype_ipb_endpoint
+  dut : entity work.prototype_ipb_endpoint(rtl)
     generic map (
       G_BASE_ADDRESS       => x"00000000",
-      G_CHECK_BASE_ADDRESS => true)
+      G_CHECK_BASE_ADDRESS => true
+    )
     port map (
       clk     => clk,
       reset   => reset,
       ipb_in  => ipb_in,
       ipb_out => ipb_out,
       to_hw   => to_hw,
-      from_hw => from_hw);
+      from_hw => from_hw
+    );
 
   p_main : process is
+
     variable v_data : std_logic_vector(31 downto 0);
 
-    procedure ipb_wr(constant addr : in unsigned;
-                     constant data : in std_logic_vector;
-                     constant msg  : in string) is
+    procedure ipb_wr (
+      constant addr : in unsigned;
+      constant data : in std_logic_vector;
+      constant msg  : in string
+    ) is
     begin
+
       ipbus_write(addr, data, msg, clk, ipbus_if, C_SCOPE,
                   shared_msg_id_panel, ipbus_bfm_config);
-    end procedure;
 
-    procedure ipb_rd_check(constant addr : in unsigned;
-                           constant data : in std_logic_vector;
-                           constant msg  : in string) is
+    end procedure ipb_wr;
+
+    procedure ipb_rd_check (
+      constant addr : in unsigned;
+      constant data : in std_logic_vector;
+      constant msg  : in string
+    ) is
     begin
+
       ipbus_read(addr, v_data, msg, clk, ipbus_if, C_SCOPE,
                  shared_msg_id_panel, ipbus_bfm_config);
       check_value(v_data, data, error, msg, C_SCOPE);
-    end procedure;
+
+    end procedure ipb_rd_check;
 
   begin
+
     ipbus_bfm_config.clock_period    <= C_CLK_PERIOD;
     ipbus_bfm_config.max_wait_cycles <= 256;
 
@@ -132,11 +144,12 @@ begin
     ipb_rd_check(f_addr(C_PROTOTYPE_REG11_OFFSET), 32x"2", "reg11 reads back encoded value");
     check_value(to_hw.reg11.field0 = STATE2, error, "reg11.field0 is STATE2 to hw", C_SCOPE);
 
-    wait for 10*C_CLK_PERIOD;
+    wait for 10 * C_CLK_PERIOD;
     report_alert_counters(FINAL);
     log(ID_LOG_HDR, "SIMULATION COMPLETED", C_SCOPE);
     std.env.stop;
     wait;
+
   end process p_main;
 
 end architecture tb;

@@ -22,6 +22,7 @@
 -- definitions read by intent. They are fixed at 32 bits in this prototype;
 -- turning them into generics is a generator-time concern, deferred with the
 -- rest of the generator work.
+
 library ieee;
 use ieee.std_logic_1164.all;
 
@@ -35,23 +36,27 @@ package prototype_localbus_pkg is
     wdata   : std_logic_vector(C_LB_DATA_WIDTH - 1 downto 0);
     wen     : std_logic;
     ren     : std_logic;
-  end record;
+  end record t_lb_m2s;
 
   type t_lb_s2m is record
     rdata : std_logic_vector(C_LB_DATA_WIDTH - 1 downto 0);
     ack   : std_logic;
     err   : std_logic;
-  end record;
+  end record t_lb_s2m;
 
-  constant C_LB_M2S_IDLE : t_lb_m2s := (
+  constant C_LB_M2S_IDLE : t_lb_m2s :=
+  (
     address => (others => '0'),
     wdata   => (others => '0'),
     wen     => '0',
-    ren     => '0');
+    ren     => '0'
+  );
 
-  constant C_LB_S2M_IDLE : t_lb_s2m := (
+  constant C_LB_S2M_IDLE : t_lb_s2m :=
+  (
     rdata => (others => '0'),
     ack   => '0',
-    err   => '0');
+    err   => '0'
+  );
 
 end package prototype_localbus_pkg;
