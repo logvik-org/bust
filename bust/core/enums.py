@@ -75,6 +75,7 @@ class RegisterType(ConfigEnum):
     - VECTOR:  std_logic_vector with specified width
     - BIT:     std_logic (single-bit)
     - FIELDS:  Composed of named bitfields
+    - HASH:    Read-only constant that holds the register map hash
 
     Use `RegisterType.from_string(value)` to safely create from user input.
     """
@@ -83,6 +84,7 @@ class RegisterType(ConfigEnum):
     VECTOR = "vector"
     BIT = "bit"
     FIELDS = "fields"
+    HASH = "hash"
 
 
 class RegisterMode(ConfigEnum):

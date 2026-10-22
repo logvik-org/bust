@@ -26,7 +26,7 @@ package example_axi_regfile_pkg is
 
   -- The version of the register map and the hash of its content.
   constant C_EXAMPLE_AXI_REGMAP_VERSION : string                        := "1.0";
-  constant C_EXAMPLE_AXI_REGMAP_HASH    : std_logic_vector(31 downto 0) := x"8A3B071B";
+  constant C_EXAMPLE_AXI_REGMAP_HASH    : std_logic_vector(31 downto 0) := x"55C3AEDF";
 
   type t_reg0_regs is record
     reg0 : std_logic;

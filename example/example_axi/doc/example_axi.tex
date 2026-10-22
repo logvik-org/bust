@@ -23,7 +23,7 @@
 }
 
 \title{example{\_}axi}
-\author{Version: 1.0 \\ Register map hash: \texttt{0x8A3B071B}}
+\author{Version: 1.0 \\ Register map hash: \texttt{0x55C3AEDF}}
 \date{\today\ \currenttime}
 
 \pagestyle{fancy}
@@ -75,7 +75,7 @@ An example module that contain all the register types that are currently support
       \hline
       11 & reg11 & WO/R & \texttt{0x0000002C} & FIELDS & 16 & \texttt{0x3} \\
       \hline
-      12 & regmap{\_}hash & RO/NA & \texttt{0x00000030} & DEFAULT & 32 & \texttt{0x8A3B071B} \\
+      12 & regmap{\_}hash & RO/NA & \texttt{0x00000030} & HASH & 32 & \texttt{0x55C3AEDF} \\
       \hline
     \end{tabularx}
   \end{center}
@@ -188,9 +188,9 @@ An example module that contain all the register types that are currently support
   \end{reglist}\end{regdesc}
 \end{register}
 
-\begin{register}{H}{regmap{\_}hash - RO/NA}{0x00000030}  \par Hash of the register map, the same value as REGMAP{\_}HASH in the headers. \regnewline
+\begin{register}{H}{regmap{\_}hash - RO/NA}{0x00000030}  \par Hash of the register map, to compare with EXAMPLE{\_}AXI{\_}REGMAP{\_}HASH in the header \regnewline
   \label{regmap_hash}
-  \regfield{}{32}{0}{{0x8A3B071B}}
+  \regfield{}{32}{0}{{0x55C3AEDF}}
 \reglabel{Reset}\regnewline
 \end{register}
 

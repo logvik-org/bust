@@ -190,7 +190,7 @@ class Editor:
         return (
             f"{self.path}: module {module.name}, {bus.bus_type}, "
             f"{bus.addr_width}-bit addresses, {bus.data_width}-bit data, "
-            f"registers: {len(module.user_registers)}, {saved}"
+            f"registers: {len(module.registers)}, {saved}"
         )
 
     def _confirm_quit(self) -> bool:
@@ -225,7 +225,7 @@ class Editor:
         return self.document.data
 
     def _registers(self) -> List[Register]:
-        return self.document.module.user_registers
+        return self.document.module.registers
 
     def list_registers(self) -> None:
         """Show every register in a table."""
@@ -290,6 +290,11 @@ class Editor:
         types = RegisterType.valid_values()
         register["type"] = types[prompts.choose("Type", types)]
         is_fields = register["type"] == RegisterType.FIELDS.value
+        if register["type"] == RegisterType.HASH.value:
+            # bust sets the access and the value of a hash register.
+            register["description"] = prompts.text("Description", "")
+            self._apply(adding())
+            return
         if register["type"] == RegisterType.VECTOR.value:
             data_width = str(self.document.module.data_width)
             register["width"] = self._ask_until_accepted(
@@ -437,9 +442,10 @@ class Editor:
             keys = ["name", "description", "address", "type"]
             if register.type == RegisterType.VECTOR:
                 keys.append("width")
-            if register.type != RegisterType.FIELDS:
+            if register.type not in (RegisterType.FIELDS, RegisterType.HASH):
                 keys.append("reset")
-            keys += INHERITABLE_ACCESS
+            if register.type != RegisterType.HASH:
+                keys += INHERITABLE_ACCESS
             labels = [
                 _row(key, self._register_value(index, key), key in data) for key in keys
             ]
@@ -524,10 +530,17 @@ class Editor:
         unused = ["reset"] if is_fields else ["fields"]
         if new != RegisterType.VECTOR.value:
             unused.append("width")
+        if new == RegisterType.HASH.value:
+            unused += ["reset", "mode", *INHERITABLE_ACCESS]
         operations += [
             {"op": "remove", "path": f"{path}/{key}"} for key in unused if key in data
         ]
-        if is_fields:
+        if new == RegisterType.HASH.value:
+            if old == RegisterType.FIELDS.value and not self.prompts.yes(
+                f"Remove the fields of {data['name']}?", False
+            ):
+                return
+        elif is_fields:
             fields = self._ask_fields(
                 self._registers()[index].access_defaults,
                 lambda fields: operations

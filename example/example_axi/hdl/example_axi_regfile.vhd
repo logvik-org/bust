@@ -215,7 +215,7 @@ begin
           elsif reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG11_OFFSET) then
             rd_ack <= '1';
           elsif reg_addr_match(reg_offset, C_EXAMPLE_AXI_REGMAP_HASH_OFFSET) then
-            rdata(31 downto 0) <= 32x"8A3B071B";
+            rdata(31 downto 0) <= 32x"55C3AEDF";
             rd_ack             <= '1';
           end if;
         end if;

@@ -57,6 +57,9 @@ _HW_BY_READ_WRITE = {
 
 # pulse_cycles and stall_cycles are bust 0.14 keys, kept so that 0.14 files are
 # rejected with an explanation when they use values 1.0 cannot generate.
+# The keys a hash register takes. bust sets everything else.
+HASH_REGISTER_KEYS = {"name", "description", "address", "type"}
+
 REGISTER_KEYS = {
     "name",
     "description",
@@ -94,7 +97,12 @@ class Register:
     """
 
     def __init__(
-        self, reg: Dict, address: int, module_name: str, module_data_width: int
+        self,
+        reg: Dict,
+        address: int,
+        module_name: str,
+        module_data_width: int,
+        hash_value: int = 0,
     ) -> None:
         """Initialize a Register instance.
 
@@ -112,6 +120,7 @@ class Register:
             address: Memory address for this register.
             module_name: Name of the parent module.
             module_data_width: Data width of the parent module.
+            hash_value: The value of a hash register, the register map hash.
 
         Raises:
             InvalidRegisterFormat: If reset value doesn't match width or is invalid,
@@ -182,9 +191,11 @@ class Register:
         # registers are translated onto sw/hw here (see legacy_schema). Fields
         # are constructed below, so this must precede _init_fields.
         self.access_defaults = register_access_defaults(reg)
+        if self.type == RegisterType.HASH:
+            self._init_hash_register(reg, hash_value)
 
         # Assign width
-        if self.type == RegisterType.DEFAULT:
+        if self.type in (RegisterType.DEFAULT, RegisterType.HASH):
             # Check if the width was explicitly set in the config,
             # and if it matches the module data width
             if self._config.is_set("width") and self.width != module_data_width:
@@ -216,6 +227,23 @@ class Register:
         self.check_register_data_width(module_data_width)
 
         self._implicit_field = self._make_implicit_field()
+
+    def _init_hash_register(self, reg: Dict, hash_value: int) -> None:
+        """Make the register the read-only constant that holds `hash_value`."""
+        extra = sorted(set(reg) - HASH_REGISTER_KEYS)
+        if extra:
+            raise InvalidRegisterFormat(
+                f"Register {self.name} has type hash, which takes only name, "
+                f"description and address, not {', '.join(extra)}"
+            )
+        if self.module_data_width < 32:
+            raise InvalidRegisterFormat(
+                f"Register {self.name} has type hash, which needs a data_width of "
+                f"at least 32 bits for the 32-bit hash (data_width is "
+                f"{self.module_data_width})"
+            )
+        self.access_defaults = {"sw": "ro", "hw": "na"}
+        self.reset = hex(hash_value)
 
     def _make_implicit_field(self) -> "Field":
         """Synthesize the single full-width field a non-fields register stands for.
@@ -327,7 +355,7 @@ class Register:
             - std_logic for BIT registers
             - Custom record type for FIELDS registers
         """
-        if self.type == RegisterType.DEFAULT or (
+        if self.type in (RegisterType.DEFAULT, RegisterType.HASH) or (
             self.type == RegisterType.VECTOR and self.width == self.module_data_width
         ):
             return f"t_{self.module_name}_data"
@@ -348,7 +376,7 @@ class Register:
         Raises:
             ValueError: If called on FIELDS type (fields have individual reset values).
         """
-        if self.type in [RegisterType.DEFAULT, RegisterType.VECTOR]:
+        if self.type in [RegisterType.DEFAULT, RegisterType.HASH, RegisterType.VECTOR]:
             if self.reset == "0x0":
                 return "(others => '0')"
             else:

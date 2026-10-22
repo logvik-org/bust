@@ -7,7 +7,6 @@
     "module": {
         "name": "example_axi",
         "version": "1.0",
-        "hash_register": true,
         "description": "An example module that contain all the register types that are currently supported by bust.",
         "register": [
             {
@@ -171,6 +170,12 @@
                     }
                 ],
                 "description": "PULSE register with two fields"
+            },
+            {
+                "name": "regmap_hash",
+                "type": "hash",
+                "address": "0x30",
+                "description": "Hash of the register map, to compare with EXAMPLE_AXI_REGMAP_HASH in the header"
             }
         ]
     }
