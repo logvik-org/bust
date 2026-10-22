@@ -72,7 +72,8 @@ begin
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
       G_MODULE_ADDR_WIDTH  => 8,
-      G_UNMAPPED_READ_DATA => C_UNMAPPED_READ_DATA)
+      G_UNMAPPED_READ_DATA => C_UNMAPPED_READ_DATA,
+      G_ERR_ON_BAD_ACCESS  => true)
     port map (
       clk      => clk,
       areset_n => areset_n,
@@ -195,15 +196,15 @@ begin
 
     log(ID_LOG_HDR, "reg9: write-only / pulse reads back zero", C_SCOPE);
     bus_write(f_addr(C_ADDR_REG9), 32x"00000001", "write reg9");
-    bus_check(f_addr(C_ADDR_REG9), 32x"0", "reg9 reads back zero");
+    bus_check_unmapped(f_addr(C_ADDR_REG9), "read reg9, which software cannot read");
 
     log(ID_LOG_HDR, "reg10: write-only / pulse reads back zero", C_SCOPE);
     bus_write(f_addr(C_ADDR_REG10), 32x"0000000F", "write reg10");
-    bus_check(f_addr(C_ADDR_REG10), 32x"0", "reg10 reads back zero");
+    bus_check_unmapped(f_addr(C_ADDR_REG10), "read reg10, which software cannot read");
 
     log(ID_LOG_HDR, "reg11: write-only / pulse reads back zero", C_SCOPE);
     bus_write(f_addr(C_ADDR_REG11), 32x"0000FFFF", "write reg11");
-    bus_check(f_addr(C_ADDR_REG11), 32x"0", "reg11 reads back zero");
+    bus_check_unmapped(f_addr(C_ADDR_REG11), "read reg11, which software cannot read");
 
     log(ID_LOG_HDR, "reg2: hardware-driven status read back over the bus", C_SCOPE);
     wait until falling_edge(clk);
@@ -258,6 +259,17 @@ begin
     check_value(reg11_field0_sp_value, 15x"7FFC", error, "reg11.field0 hw saw the pulse value", C_SCOPE);
     check_value(reg11_field1_sp_count - v_reg11_field1_sp, 1, error, "reg11.field1 singlepulse lasts exactly one cycle", C_SCOPE);
     check_value(reg11_field1_sp_value, '1', error, "reg11.field1 hw saw the pulse value", C_SCOPE);
+
+    -- With G_ERR_ON_BAD_ACCESS, a write to a register software cannot write and
+    -- a read of one it cannot read get an error response where the bus has one.
+    log(ID_LOG_HDR, "accesses in the wrong direction get an error", C_SCOPE);
+    bus_write_unmapped(f_addr(C_ADDR_REG2), 32x"0", "write reg2, which software cannot write");
+    bus_write_unmapped(f_addr(C_ADDR_REG4), 32x"0", "write reg4, which software cannot write");
+    bus_write_unmapped(f_addr(C_ADDR_REG6), 32x"0", "write reg6, which software cannot write");
+    bus_write_unmapped(f_addr(C_ADDR_REG8), 32x"0", "write reg8, which software cannot write");
+    bus_check_unmapped(f_addr(C_ADDR_REG9), "read reg9, which software cannot read");
+    bus_check_unmapped(f_addr(C_ADDR_REG10), "read reg10, which software cannot read");
+    bus_check_unmapped(f_addr(C_ADDR_REG11), "read reg11, which software cannot read");
 
     -- An address where no register sits gets an error response where the bus
     -- has one, reads as G_UNMAPPED_READ_DATA, and a write to it changes no register.

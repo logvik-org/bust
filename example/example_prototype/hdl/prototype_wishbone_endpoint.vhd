@@ -13,7 +13,8 @@ entity prototype_wishbone_endpoint is
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
     G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
-    G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0')
+    G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0');
+    G_ERR_ON_BAD_ACCESS  : boolean := false
   );
   port (
     clk_i   : in  std_logic;
@@ -48,6 +49,7 @@ begin
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
       G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
       G_UNMAPPED_READ_DATA => G_UNMAPPED_READ_DATA,
+      G_ERR_ON_BAD_ACCESS  => G_ERR_ON_BAD_ACCESS,
       G_RESET_ACTIVE_LOW   => false)      -- Wishbone reset is sync active-high
     port map (
       clk     => clk_i,

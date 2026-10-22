@@ -415,6 +415,16 @@ class Register:
         ]
 
     @property
+    def sw_writable(self) -> bool:
+        """True when software can write at least one field."""
+        return any(f.sw_writable for f in self.effective_fields)
+
+    @property
+    def sw_readable(self) -> bool:
+        """True when software can read at least one field."""
+        return any(f.sw_readable for f in self.effective_fields)
+
+    @property
     def stored_fields(self) -> List[Field]:
         """Fields that hold state (members of t_<reg>_regs)."""
         return [f for f in self.effective_fields if f.holds_state]

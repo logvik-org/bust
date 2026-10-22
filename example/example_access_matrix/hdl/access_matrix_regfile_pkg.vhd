@@ -366,6 +366,30 @@ package access_matrix_regfile_pkg is
     flat_flag : std_logic;
   end record;
 
+  constant C_ACCESS_MATRIX_TO_HW_RESET : t_access_matrix_to_hw := (
+    plain => (flag => '0', level => (others => '0')),
+    command => (opcode => (others => '0')),
+    identity => (id => 8X"A5", pwr_default => PWR_ON, pwr_spare => PWR_OFF),
+    hw_modify => (override => (others => '0'), sticky => '0'),
+    hw_set_clear => (clr_only => (value => '0', swacc => '0')),
+    read_effects => (clear_on_read => (others => '0'), set_on_read => (others => '0')),
+    write_effects => (set_bits => (others => '0'), clear_bits => 4X"F", toggle_on_zero => (others => '0'), set_all => '0'),
+    pulses => (go => '0', kick => (value => (others => '0'), swmod => '0')),
+    strobes => (modified => (value => (others => '0'), swmod => '0'), accessed => (value => (others => '0'), swacc => '0')),
+    enum_vector => (mode => MODE_SLOW),
+    enum_bit => (power => PWR_OFF),
+    enum_hw => (supply => PWR_OFF),
+    enum_swacc => (phase => (value => PH_IDLE, swacc => '0')),
+    mixed_swacc => (clear_bits => (value => (others => '0'), swacc => '0'), toggle_bits => (others => '0'), fixed => 4X"9", arg => (others => '0'), go => '0', power => PWR_OFF, power_fixed => PWR_ON),
+    mixed_history => (toggle => (value => (others => '0'), swacc => '0'), set_on_zero => (others => '0'), clear_on_zero => 4X"F", toggle_on_zero => (others => '0')),
+    hw_status_swacc => (level => (value => (others => '0'), swacc => '0'), latched => (others => '0')),
+    hw_only => (shadow => (others => '0'), enable => '0'),
+    irq_status => (pending => (value => '0', swacc => '0')),
+    flat_level => (others => '0'),
+    flat_strobe => (value => (others => '0'), swmod => '0'),
+    flat_override => (others => '0'),
+    flat_flag => '0');
+
   type t_status_count_in is record
     value : std_logic_vector(3 downto 0);
     we : std_logic;
@@ -490,6 +514,12 @@ package access_matrix_regfile_pkg is
   -- True when a register sits at reg_offset.
   function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
 
+  -- True when a register with a field software can write sits at reg_offset.
+  function is_sw_writable(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+
+  -- True when a register with a field software can read sits at reg_offset.
+  function is_sw_readable(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+
 end package access_matrix_regfile_pkg;
 
 package body access_matrix_regfile_pkg is
@@ -527,6 +557,16 @@ package body access_matrix_regfile_pkg is
   function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
   begin
     return reg_addr_match(reg_offset, C_ADDR_PLAIN) or reg_addr_match(reg_offset, C_ADDR_STATUS) or reg_addr_match(reg_offset, C_ADDR_COMMAND) or reg_addr_match(reg_offset, C_ADDR_IDENTITY) or reg_addr_match(reg_offset, C_ADDR_HW_MODIFY) or reg_addr_match(reg_offset, C_ADDR_HW_SET_CLEAR) or reg_addr_match(reg_offset, C_ADDR_READ_EFFECTS) or reg_addr_match(reg_offset, C_ADDR_WRITE_EFFECTS) or reg_addr_match(reg_offset, C_ADDR_PULSES) or reg_addr_match(reg_offset, C_ADDR_STROBES) or reg_addr_match(reg_offset, C_ADDR_ENUM_VECTOR) or reg_addr_match(reg_offset, C_ADDR_ENUM_BIT) or reg_addr_match(reg_offset, C_ADDR_ENUM_HW) or reg_addr_match(reg_offset, C_ADDR_ENUM_SWACC) or reg_addr_match(reg_offset, C_ADDR_MIXED_SWACC) or reg_addr_match(reg_offset, C_ADDR_MIXED_HISTORY) or reg_addr_match(reg_offset, C_ADDR_HW_STATUS_SWACC) or reg_addr_match(reg_offset, C_ADDR_HW_ONLY) or reg_addr_match(reg_offset, C_ADDR_IRQ_STATUS) or reg_addr_match(reg_offset, C_ADDR_FLAT_LEVEL) or reg_addr_match(reg_offset, C_ADDR_FLAT_STROBE) or reg_addr_match(reg_offset, C_ADDR_FLAT_OVERRIDE) or reg_addr_match(reg_offset, C_ADDR_FLAT_STATUS) or reg_addr_match(reg_offset, C_ADDR_FLAT_FLAG);
+  end function;
+
+  function is_sw_writable(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  begin
+    return reg_addr_match(reg_offset, C_ADDR_PLAIN) or reg_addr_match(reg_offset, C_ADDR_COMMAND) or reg_addr_match(reg_offset, C_ADDR_HW_MODIFY) or reg_addr_match(reg_offset, C_ADDR_HW_SET_CLEAR) or reg_addr_match(reg_offset, C_ADDR_READ_EFFECTS) or reg_addr_match(reg_offset, C_ADDR_WRITE_EFFECTS) or reg_addr_match(reg_offset, C_ADDR_PULSES) or reg_addr_match(reg_offset, C_ADDR_STROBES) or reg_addr_match(reg_offset, C_ADDR_ENUM_VECTOR) or reg_addr_match(reg_offset, C_ADDR_ENUM_BIT) or reg_addr_match(reg_offset, C_ADDR_ENUM_SWACC) or reg_addr_match(reg_offset, C_ADDR_MIXED_SWACC) or reg_addr_match(reg_offset, C_ADDR_MIXED_HISTORY) or reg_addr_match(reg_offset, C_ADDR_HW_ONLY) or reg_addr_match(reg_offset, C_ADDR_FLAT_LEVEL) or reg_addr_match(reg_offset, C_ADDR_FLAT_STROBE) or reg_addr_match(reg_offset, C_ADDR_FLAT_OVERRIDE) or reg_addr_match(reg_offset, C_ADDR_FLAT_FLAG);
+  end function;
+
+  function is_sw_readable(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  begin
+    return reg_addr_match(reg_offset, C_ADDR_PLAIN) or reg_addr_match(reg_offset, C_ADDR_STATUS) or reg_addr_match(reg_offset, C_ADDR_IDENTITY) or reg_addr_match(reg_offset, C_ADDR_HW_MODIFY) or reg_addr_match(reg_offset, C_ADDR_HW_SET_CLEAR) or reg_addr_match(reg_offset, C_ADDR_READ_EFFECTS) or reg_addr_match(reg_offset, C_ADDR_WRITE_EFFECTS) or reg_addr_match(reg_offset, C_ADDR_PULSES) or reg_addr_match(reg_offset, C_ADDR_STROBES) or reg_addr_match(reg_offset, C_ADDR_ENUM_VECTOR) or reg_addr_match(reg_offset, C_ADDR_ENUM_BIT) or reg_addr_match(reg_offset, C_ADDR_ENUM_HW) or reg_addr_match(reg_offset, C_ADDR_ENUM_SWACC) or reg_addr_match(reg_offset, C_ADDR_MIXED_SWACC) or reg_addr_match(reg_offset, C_ADDR_MIXED_HISTORY) or reg_addr_match(reg_offset, C_ADDR_HW_STATUS_SWACC) or reg_addr_match(reg_offset, C_ADDR_HW_ONLY) or reg_addr_match(reg_offset, C_ADDR_IRQ_STATUS) or reg_addr_match(reg_offset, C_ADDR_FLAT_LEVEL) or reg_addr_match(reg_offset, C_ADDR_FLAT_STROBE) or reg_addr_match(reg_offset, C_ADDR_FLAT_OVERRIDE) or reg_addr_match(reg_offset, C_ADDR_FLAT_STATUS) or reg_addr_match(reg_offset, C_ADDR_FLAT_FLAG);
   end function;
 
   function to_slv(v : t_identity_pwr_default) return std_logic_vector is
