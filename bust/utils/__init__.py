@@ -12,21 +12,12 @@ from bust.utils.file_utils import write_string_to_file
 from bust.utils.json_utils import json_parser, compare_JSON
 from bust.utils.formatting import (
     indent_string,
-    add_line_breaks,
     fix_last_indent_only_line,
     is_mixed,
     NL,
     spaces_in_tab,
 )
 
-# User interaction utilities
-from bust.utils.file_utils import (
-    cont,
-    is_int,
-    get_int,
-    get_list_choice,
-    clear_screen,
-)
 from bust.interaction import (
     InteractionHandler,
     ConsoleInteractionHandler,
@@ -41,17 +32,10 @@ __all__ = [
     "compare_JSON",
     # Formatting utilities
     "indent_string",
-    "add_line_breaks",
     "fix_last_indent_only_line",
     "is_mixed",
     "NL",
     "spaces_in_tab",
-    # User interaction
-    "cont",
-    "is_int",
-    "get_int",
-    "get_list_choice",
-    "clear_screen",
     # Interaction handlers
     "InteractionHandler",
     "ConsoleInteractionHandler",

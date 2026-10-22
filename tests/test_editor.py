@@ -10,7 +10,6 @@ import shutil
 import json5
 import pytest
 
-from bust.editing.document import EditRejected
 from bust.editor import Editor
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
@@ -84,6 +83,7 @@ def test_create_a_register_map(tmp_path):
         ("Module name [uart]", ""),
         ("Version [1.0]", ""),
         ("Description", "UART registers"),
+        ("Do addresses count bytes", ""),
         ("Add the first register now?", ""),
         ("Name", "ctrl"),
         ("Address [0x0]", "0x2"),
@@ -142,6 +142,7 @@ def test_create_a_register_map(tmp_path):
             "name": "uart",
             "version": "1.0",
             "description": "UART registers",
+            "byte_addressable": True,
             "register": [
                 {
                     "name": "ctrl",
@@ -197,6 +198,7 @@ def test_create_does_not_ask_the_data_width_of_ipbus_and_can_quit_unsaved(tmp_pa
         ("Module name", ""),
         ("Version", ""),
         ("Description", ""),
+        ("Do addresses count bytes, not data words (byte_addressable)? (y/N)", ""),
         ("Add the first register now?", "n"),
         ("Menu", _QUIT),
         ("There are unsaved changes", "2"),
@@ -495,23 +497,15 @@ def test_convert_a_bust_0_14_file(tmp_path):
     assert [r["sw"] for r in saved["module"]["register"]] == ["rw", "ro", "wo"]
 
 
-def test_decline_converting_a_bust_0_14_file(tmp_path):
-    path = tmp_path / "example_axi.json"
-    shutil.copyfile(os.path.join(_REPO_ROOT, "example", "example_axi.json"), path)
-    text = path.read_text()
-
-    shown = _session(Editor.open, path, ("Convert it?", "n"), ("Menu", _QUIT))
-
-    assert any("mixes the two formats" in line for line in shown)
-    assert path.read_text() == text
-
-
-def test_a_0_14_file_bust_1_0_rejects_needs_converting(tmp_path):
+def test_declining_the_conversion_does_not_open_the_file(tmp_path):
     path = tmp_path / "blinky.json"
     shutil.copyfile(_BLINKY, path)
+    text = path.read_text()
+    answers = _Answers(("Convert it?", "n"))
 
-    with pytest.raises(EditRejected, match="Address 0xa of register clear"):
-        Editor.open(str(path), _Answers(("Convert it?", "n")))
+    assert Editor.open(str(path), answers, [].append) is None
+    assert answers.pending == []
+    assert path.read_text() == text
 
 
 def test_end_of_input_quits(tmp_path):

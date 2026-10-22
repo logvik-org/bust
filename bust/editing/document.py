@@ -168,11 +168,18 @@ class RegisterMapDocument:
                 value = operation.get("value")
                 if op != "remove" and _holds(data, path, value):
                     continue
-                apply_to_data(data, op, path, copy.deepcopy(value))
-                if source is not None and op == "remove":
+                # `before` is not in RFC 6902, which tells readers to ignore
+                # members they do not know. It places a new key in an object.
+                before = operation.get("before")
+                apply_to_data(data, op, path, copy.deepcopy(value), before)
+                if source is None:
+                    continue
+                if op == "add":
+                    source.add(path, value, before)
+                elif op == "remove":
                     source.remove(path)
-                elif source is not None:
-                    getattr(source, op)(path, value)
+                else:
+                    source.replace(path, value)
         except (KeyError, JsonSourceError) as error:
             raise EditRejected(_message(error)) from error
         return data
@@ -185,8 +192,8 @@ class RegisterMapDocument:
     def legacy_conversion(self) -> Tuple[List[str], List[Operation]]:
         """The changes that turn a bust 0.14 register map into the 1.0 form.
 
-        `bust --migrate` makes the same changes, and in addition replaces each
-        register's `mode` with the access keys it stands for.
+        These are the changes `bust --migrate` makes, and in addition each
+        register's `mode` becomes the access keys it stands for, in its place.
 
         Returns:
             A description of each change, and the operations that make them.
@@ -196,20 +203,30 @@ class RegisterMapDocument:
             EditRejected: If the register map uses 0.14 timing bust 1.0 cannot
                 generate.
         """
-        converted = self.data
+        migrated = self.data
         try:
-            changes = migrate_register_map(converted)
+            changes = migrate_register_map(migrated)
         except Exception as error:
             raise EditRejected(_message(error)) from error
-        for register in converted["module"]["register"]:
-            mode = register.pop("mode", None)
-            if mode is None:
+        operations = diff_operations(self._data, migrated)
+        for index, register in enumerate(migrated["module"]["register"]):
+            if "mode" not in register:
                 continue
-            access = register_access_defaults({"mode": mode})
-            register.update(access)
+            path = join_pointer("module", "register", index)
+            access = register_access_defaults({"mode": register["mode"]})
+            operations += [
+                {
+                    "op": "add",
+                    "path": path + join_pointer(key),
+                    "value": value,
+                    "before": "mode",
+                }
+                for key, value in access.items()
+            ]
+            operations.append({"op": "remove", "path": path + "/mode"})
             keys = ", ".join(f"{key} {json.dumps(v)}" for key, v in access.items())
-            changes.append(f"{register['name']}: mode {mode} is now {keys}")
-        return changes, diff_operations(self._data, converted)
+            changes.append(f"{register['name']}: mode {register['mode']} is now {keys}")
+        return changes, operations
 
     def save(self, path: str) -> bool:
         """Write the register map to `path` if it changed.

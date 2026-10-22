@@ -214,10 +214,14 @@ class JsonSource:
         rendered = self._render(value, self._line_indent(node.start), inline)
         self._apply([(node.start, node.end, rendered)], expected)
 
-    def add(self, path: str, value: Any) -> None:
-        """Add a value as in JSON Patch: a new key at the end of an object, an
-        element at a list index (``-`` for the end), or a replacement for a key
-        that exists."""
+    def add(self, path: str, value: Any, before: Optional[str] = None) -> None:
+        """Add a value as in JSON Patch: a new key in an object, an element at
+        a list index (``-`` for the end), or a replacement for a key that
+        exists.
+
+        A new key goes at the end of its object, or in front of the key
+        `before` if the object has it.
+        """
         *parent_tokens, token = self._split_child(path)
         parent = self._find(parent_tokens)
         members = self._members(parent, path)
@@ -225,7 +229,8 @@ class JsonSource:
             if any(m.key == token for m in members):
                 self.replace(path, value)
                 return
-            index = len(members)
+            keys = [m.key for m in members]
+            index = keys.index(before) if before in keys else len(members)
         else:
             index = len(members) if token == "-" else _list_index(token, path)
             if index > len(members):
@@ -458,8 +463,12 @@ class JsonSource:
         self._root = edited._root
 
 
-def apply_to_data(document: Any, op: str, path: str, value: Any = None) -> None:
+def apply_to_data(
+    document: Any, op: str, path: str, value: Any = None, before: Optional[str] = None
+) -> None:
     """Make a JSON Patch ``add``, ``replace`` or ``remove`` on Python data.
+
+    A new key goes in front of the key `before`, as in JsonSource.add.
 
     Raises:
         JsonSourceError: If `path` does not lead to a place for the operation.
@@ -473,6 +482,12 @@ def apply_to_data(document: Any, op: str, path: str, value: Any = None) -> None:
         prefix = "/" + "/".join(tokens[: depth + 1])
         parent = parent[_existing_slot(parent, parent_token, prefix)]
     if isinstance(parent, dict):
+        if op == "add" and before in parent and token not in parent:
+            items = list(parent.items())
+            at = list(parent).index(before)
+            parent.clear()
+            parent.update(items[:at] + [(token, value)] + items[at:])
+            return
         if op == "add":
             parent[token] = value
             return
