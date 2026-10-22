@@ -15,6 +15,7 @@ entity example_ipbus_regfile is
     G_CHECK_BASE_ADDRESS : boolean := true;
     G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
     G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0');
+    G_ERR_ON_BAD_ACCESS  : boolean := false;
     G_RESET_ACTIVE_LOW   : boolean := false
   );
   port (
@@ -31,16 +32,23 @@ architecture rtl of example_ipbus_regfile is
 
   signal regs : t_example_ipbus_regs := C_EXAMPLE_IPBUS_REGS_RESET;
 
-  signal rst    : std_logic;            -- reset normalized to active high
   signal rdata  : std_logic_vector(31 downto 0) := (others => '0');
   signal wr_ack : std_logic := '0';
   signal wr_err : std_logic := '0';
   signal rd_ack : std_logic := '0';
   signal rd_err : std_logic := '0';
 
-begin
+  -- reset is compared with this level directly, so it adds no delta cycle.
+  function reset_level(active_low : boolean) return std_logic is
+  begin
+    if active_low then
+      return '0';
+    end if;
+    return '1';
+  end function;
+  constant C_RESET_LEVEL : std_logic := reset_level(G_RESET_ACTIVE_LOW);
 
-  rst <= (reset xor '1') when G_RESET_ACTIVE_LOW else reset;
+begin
 
   -- G_MODULE_ADDR_WIDTH must hold the registers and fit in the address.
   assert G_MODULE_ADDR_WIDTH >= C_MODULE_ADDR_WIDTH and G_MODULE_ADDR_WIDTH <= 16
@@ -54,15 +62,13 @@ begin
     report "G_BASE_ADDRESS must be a multiple of 2**G_MODULE_ADDR_WIDTH"
     severity failure;
 
-  -- Same-cycle precedence: hwclr > hwset > we/wel write > software write or onread.
   p_write : process (clk) is
     variable reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
     variable mapped     : boolean;     -- a register sits at this address
     variable sw_write   : boolean;     -- a new software write to a register
-    variable rd_service : boolean;     -- a new software read from a register
   begin
     if rising_edge(clk) then
-      if rst = '1' then
+      if reset = C_RESET_LEVEL then
         regs       <= C_EXAMPLE_IPBUS_REGS_RESET;
         wr_ack     <= '0';
         wr_err     <= '0';
@@ -77,7 +83,6 @@ begin
                       and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
                       and is_mapped(reg_offset);
         sw_write   := lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' and mapped;
-        rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' and mapped;
 
         if sw_write and reg_addr_match(reg_offset, C_ADDR_REG0) then
           regs.reg0.reg0 <= lb_m2s.wdata(0);
@@ -119,9 +124,9 @@ begin
           regs.reg11.field1 <= lb_m2s.wdata(15);
         end if;
 
-        -- Write response: ack for a register, err for any other address.
+        -- Write response: err for an address without a register or a bad access.
         if lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' then
-          if mapped then
+          if mapped and (is_sw_writable(reg_offset) or not G_ERR_ON_BAD_ACCESS) then
             wr_ack <= '1';
           else
             wr_err <= '1';
@@ -131,13 +136,13 @@ begin
     end if;
   end process p_write;
 
-  -- Unreadable fields read 0. An address without a register reads G_UNMAPPED_READ_DATA.
+  -- Unreadable fields read 0. A read that gets err returns G_UNMAPPED_READ_DATA.
   p_read : process (clk) is
     variable reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
     variable mapped     : boolean;     -- a register sits at this address
   begin
     if rising_edge(clk) then
-      if rst = '1' then
+      if reset = C_RESET_LEVEL then
         rdata  <= (others => '0');
         rd_ack <= '0';
         rd_err <= '0';
@@ -152,7 +157,7 @@ begin
                                    G_MODULE_ADDR_WIDTH)
                         and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
                         and is_mapped(reg_offset);
-          if not mapped then
+          if not mapped or (G_ERR_ON_BAD_ACCESS and not is_sw_readable(reg_offset)) then
             rd_err <= '1';
             rdata  <= G_UNMAPPED_READ_DATA;
           elsif reg_addr_match(reg_offset, C_ADDR_REG0) then

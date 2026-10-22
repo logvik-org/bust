@@ -94,6 +94,16 @@ package example_ipbus_regfile_pkg is
     reg11 : t_reg11_to_hw;
   end record;
 
+  constant C_EXAMPLE_IPBUS_TO_HW_RESET : t_example_ipbus_to_hw := (
+    reg0 => '0',
+    reg1 => '1',
+    reg3 => 8X"3",
+    reg5 => 32X"FFFFFFFF",
+    reg7 => (field0 => '1', field1 => 4X"B", field2 => '0', field3 => 15X"2B"),
+    reg9 => '1',
+    reg10 => 4X"A",
+    reg11 => (field0 => 15X"3", field1 => '0'));
+
   type t_reg8_from_hw is record
     field0 : std_logic;
     field1 : std_logic_vector(18 downto 0);
@@ -130,6 +140,12 @@ package example_ipbus_regfile_pkg is
 
   -- True when a register sits at reg_offset.
   function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+
+  -- True when a register with a field software can write sits at reg_offset.
+  function is_sw_writable(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+
+  -- True when a register with a field software can read sits at reg_offset.
+  function is_sw_readable(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
 
 end package example_ipbus_regfile_pkg;
 
@@ -168,6 +184,16 @@ package body example_ipbus_regfile_pkg is
   function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
   begin
     return reg_addr_match(reg_offset, C_ADDR_REG0) or reg_addr_match(reg_offset, C_ADDR_REG1) or reg_addr_match(reg_offset, C_ADDR_REG2) or reg_addr_match(reg_offset, C_ADDR_REG3) or reg_addr_match(reg_offset, C_ADDR_REG4) or reg_addr_match(reg_offset, C_ADDR_REG5) or reg_addr_match(reg_offset, C_ADDR_REG6) or reg_addr_match(reg_offset, C_ADDR_REG7) or reg_addr_match(reg_offset, C_ADDR_REG8) or reg_addr_match(reg_offset, C_ADDR_REG9) or reg_addr_match(reg_offset, C_ADDR_REG10) or reg_addr_match(reg_offset, C_ADDR_REG11);
+  end function;
+
+  function is_sw_writable(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  begin
+    return reg_addr_match(reg_offset, C_ADDR_REG0) or reg_addr_match(reg_offset, C_ADDR_REG1) or reg_addr_match(reg_offset, C_ADDR_REG3) or reg_addr_match(reg_offset, C_ADDR_REG5) or reg_addr_match(reg_offset, C_ADDR_REG7) or reg_addr_match(reg_offset, C_ADDR_REG9) or reg_addr_match(reg_offset, C_ADDR_REG10) or reg_addr_match(reg_offset, C_ADDR_REG11);
+  end function;
+
+  function is_sw_readable(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  begin
+    return reg_addr_match(reg_offset, C_ADDR_REG0) or reg_addr_match(reg_offset, C_ADDR_REG1) or reg_addr_match(reg_offset, C_ADDR_REG2) or reg_addr_match(reg_offset, C_ADDR_REG3) or reg_addr_match(reg_offset, C_ADDR_REG4) or reg_addr_match(reg_offset, C_ADDR_REG5) or reg_addr_match(reg_offset, C_ADDR_REG6) or reg_addr_match(reg_offset, C_ADDR_REG7) or reg_addr_match(reg_offset, C_ADDR_REG8);
   end function;
 
 end package body example_ipbus_regfile_pkg;

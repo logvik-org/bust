@@ -194,6 +194,7 @@ entity timer_regfile is
     G_CHECK_BASE_ADDRESS : boolean := true;
     G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
     G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0');
+    G_ERR_ON_BAD_ACCESS  : boolean := false;
     G_RESET_ACTIVE_LOW   : boolean := false
   );
   port (
@@ -229,6 +230,7 @@ use work.timer_regfile_pkg.all;
 | `t_<reg>_to_hw` | The fields of one register that the hardware reads. A register without fields has none. |
 | `t_<reg>_<field>_out` | One field's value together with its `swmod` or `swacc` strobe. |
 | `t_<module>_from_hw` | Everything the hardware drives, one member per register. |
+| `C_<MODULE>_TO_HW_RESET` | A `t_<module>_to_hw` with every value at its `reset` and every strobe inactive, for a model or testbench that drives `to_hw`. |
 | `C_<MODULE>_FROM_HW_RESET` | A `t_<module>_from_hw` with every value at its `reset` and every strobe inactive. Use it to tie off `from_hw` or as its initial value. |
 | `t_<reg>_from_hw` | The fields of one register that the hardware drives. A register without fields has none. |
 | `t_<reg>_<field>_in` | One field's value together with its `we`, `wel`, `set` or `clr` input. |
@@ -422,7 +424,8 @@ entity timer is
     G_BASE_ADDRESS       : unsigned(31 downto 0) := 32x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
     G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
-    G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0')
+    G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0');
+    G_ERR_ON_BAD_ACCESS  : boolean := false
   );
 ```
 
@@ -434,6 +437,9 @@ address. [Base address and address range](addressing.md)
 shows how the register file decodes an address with each setting.
 `G_UNMAPPED_READ_DATA` is the data a read gets from an address where no
 register sits, such as `x"DEADBEEF"` to make it stand out in a register dump.
+`G_ERR_ON_BAD_ACCESS` adds an error response for a write to a register software
+cannot write and a read of one it cannot read, see
+[Access modes](access-modes.md#fields-software-cannot-reach).
 
 ## Several modules in one design
 
