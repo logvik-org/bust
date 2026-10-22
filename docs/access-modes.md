@@ -49,15 +49,15 @@ its own type. Here are `reg0` (`sw rw`, `hw r`) and `reg1` (`sw ro`, `hw w`)
 of the prototype:
 
 ```vhdl
-type t_reg0_to_hw is record
+type t_prototype_reg0_to_hw is record
   field0 : std_logic;
   field1 : std_logic_vector(1 downto 0);
 end record;
 
-type t_reg1_from_hw is record
-  field0 : t_reg1_field0_in;
+type t_prototype_reg1_from_hw is record
+  field0 : t_prototype_reg1_field0_in;
   field1 : std_logic;
-  field2 : t_reg1_field2_in;
+  field2 : t_prototype_reg1_field2_in;
 end record;
 ```
 
@@ -112,7 +112,7 @@ The field needs software read access, `sw` `rw` or `ro`. The prototype's
 
 ```vhdl
 -- reg5 onread effects, applied when the software read is serviced.
-if rd_service and reg_addr_match(reg_offset, C_ADDR_REG5) then
+if rd_service and reg_addr_match(reg_offset, C_PROTOTYPE_REG5_OFFSET) then
   regs.reg5.field0 <= (others => '0');
   regs.reg5.field1 <= (others => '1');
 end if;
@@ -138,7 +138,7 @@ The field needs software write access, `sw` `rw` or `wo`. The prototype's
 `reg6`:
 
 ```vhdl
-if sw_write and reg_addr_match(reg_offset, C_ADDR_REG6) then
+if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG6_OFFSET) then
   regs.reg6.field0 <= regs.reg6.field0 or lb_m2s.wdata(3 downto 0);
   regs.reg6.field1 <= regs.reg6.field1 and not lb_m2s.wdata(7 downto 4);
   regs.reg6.field2 <= regs.reg6.field2 xor lb_m2s.wdata(11 downto 8);
@@ -158,7 +158,7 @@ cycle. Use it for commands such as start or flush. The prototype's `reg10`:
 
 ```vhdl
 regs.reg10.field0 <= (others => '0');
-if sw_write and reg_addr_match(reg_offset, C_ADDR_REG10) then
+if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG10_OFFSET) then
   regs.reg10.field0 <= lb_m2s.wdata(3 downto 0);
 end if;
 ```
@@ -190,12 +190,12 @@ prototype, `reg1.field0` (`hw w`, `we`) and `reg4.field1` (`hw r`, `hwset`,
 `hwclr`):
 
 ```vhdl
-type t_reg1_field0_in is record
+type t_prototype_reg1_field0_in is record
   value : std_logic_vector(3 downto 0);
   we : std_logic;
 end record;
 
-type t_reg4_field1_in is record
+type t_prototype_reg4_field1_in is record
   set : std_logic;
   clr : std_logic;
 end record;
@@ -207,7 +207,7 @@ A field with `swmod` or `swacc` gets its own `to_hw` record, with the field's
 value in `value`. The prototype's `reg9.field0` has `swmod`:
 
 ```vhdl
-type t_reg9_field0_out is record
+type t_prototype_reg9_field0_out is record
   value : std_logic_vector(3 downto 0);
   swmod : std_logic;
 end record;
@@ -297,7 +297,7 @@ if from_hw.reg4.field1.clr = '1' then
   regs.reg4.field1 <= '0';
 elsif from_hw.reg4.field1.set = '1' then
   regs.reg4.field1 <= '1';
-elsif sw_write and reg_addr_match(reg_offset, C_ADDR_REG4) then
+elsif sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG4_OFFSET) then
   regs.reg4.field1 <= lb_m2s.wdata(8);
 end if;
 ```
@@ -325,9 +325,14 @@ sits, see [Unmapped addresses](#unmapped-addresses). The prototype's `reg2` has
 a single `wo` field, so a read of it returns 0:
 
 ```vhdl
-elsif reg_addr_match(reg_offset, C_ADDR_REG2) then
+elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG2_OFFSET) then
   rd_ack <= '1';
 ```
+
+An instance with `G_ERR_ON_BAD_ACCESS => true` also answers with an error a
+write to a register that has no field software can write, and a read of a
+register that has no field software can read. Such a read returns
+`G_UNMAPPED_READ_DATA`. Nothing else about the access changes.
 
 ### Unmapped addresses
 
@@ -337,8 +342,8 @@ at `0x0` on a bus whose addresses count bytes. So does an address above the
 registers in the module's address range, and an address with another base
 address, unless the module was instantiated with
 `G_CHECK_BASE_ADDRESS => false`. A write to such an address has no effect, and
-a read returns `G_UNMAPPED_READ_DATA`, which is 0 unless the instance sets it. [Base address and address range](addressing.md) explains these
-checks. How the error reaches the bus master depends on the bus:
+a read returns `G_UNMAPPED_READ_DATA`, which is 0 unless the instance sets it.
+[Base address and address range](addressing.md) explains these checks. How the error reaches the bus master depends on the bus:
 
 | Bus | Error response |
 |---|---|
@@ -355,15 +360,15 @@ checks. How the error reaches the bus master depends on the bus:
 ## Enumerated fields
 
 A field with `enums` gets a VHDL enumeration type named
-`t_<register>_<field>`, with the literals in the order of the `enums` list, and
+`t_<module>_<register>_<field>`, with the literals in the order of the `enums` list, and
 two conversion functions. Here is the `enum_vector.mode` field of
 [example_access_matrix.json](https://github.com/logvik-org/bust/blob/master/example/example_access_matrix.json),
 which names the values 0 (`MODE_SLOW`) and 3 (`MODE_FAST`):
 
 ```vhdl
-type t_enum_vector_mode is (MODE_SLOW, MODE_FAST);
+type t_access_matrix_enum_vector_mode is (MODE_SLOW, MODE_FAST);
 
-function to_slv(v : t_enum_vector_mode) return std_logic_vector is
+function to_slv(v : t_access_matrix_enum_vector_mode) return std_logic_vector is
   variable slv : std_logic_vector(1 downto 0);
 begin
   case v is
@@ -373,7 +378,7 @@ begin
   return slv;
 end function;
 
-function to_enum_vector_mode(s : std_logic_vector(1 downto 0)) return t_enum_vector_mode is
+function to_access_matrix_enum_vector_mode(s : std_logic_vector(1 downto 0)) return t_access_matrix_enum_vector_mode is
 begin
   case s is
     when "00" => return MODE_SLOW;

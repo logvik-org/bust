@@ -49,30 +49,30 @@ use work.prototype_localbus_pkg.all;
 
 package prototype_regfile_pkg is
 
-  constant C_ADDR_REG0 : std_logic_vector(31 downto 0) := 32x"00";
-  constant C_ADDR_REG1 : std_logic_vector(31 downto 0) := 32x"04";
-  constant C_ADDR_REG2 : std_logic_vector(31 downto 0) := 32x"08";
-  constant C_ADDR_REG3 : std_logic_vector(31 downto 0) := 32x"0C";
-  constant C_ADDR_REG4 : std_logic_vector(31 downto 0) := 32x"10";
-  constant C_ADDR_REG5 : std_logic_vector(31 downto 0) := 32x"14";
-  constant C_ADDR_REG6 : std_logic_vector(31 downto 0) := 32x"18";
-  constant C_ADDR_REG7 : std_logic_vector(31 downto 0) := 32x"1C";
-  constant C_ADDR_REG8 : std_logic_vector(31 downto 0) := 32x"20";
-  constant C_ADDR_REG9 : std_logic_vector(31 downto 0) := 32x"24";
-  constant C_ADDR_REG10 : std_logic_vector(31 downto 0) := 32x"28";
-  constant C_ADDR_REG11 : std_logic_vector(31 downto 0) := 32x"2C";
+  constant C_PROTOTYPE_REG0_OFFSET : std_logic_vector(31 downto 0) := 32x"00";
+  constant C_PROTOTYPE_REG1_OFFSET : std_logic_vector(31 downto 0) := 32x"04";
+  constant C_PROTOTYPE_REG2_OFFSET : std_logic_vector(31 downto 0) := 32x"08";
+  constant C_PROTOTYPE_REG3_OFFSET : std_logic_vector(31 downto 0) := 32x"0C";
+  constant C_PROTOTYPE_REG4_OFFSET : std_logic_vector(31 downto 0) := 32x"10";
+  constant C_PROTOTYPE_REG5_OFFSET : std_logic_vector(31 downto 0) := 32x"14";
+  constant C_PROTOTYPE_REG6_OFFSET : std_logic_vector(31 downto 0) := 32x"18";
+  constant C_PROTOTYPE_REG7_OFFSET : std_logic_vector(31 downto 0) := 32x"1C";
+  constant C_PROTOTYPE_REG8_OFFSET : std_logic_vector(31 downto 0) := 32x"20";
+  constant C_PROTOTYPE_REG9_OFFSET : std_logic_vector(31 downto 0) := 32x"24";
+  constant C_PROTOTYPE_REG10_OFFSET : std_logic_vector(31 downto 0) := 32x"28";
+  constant C_PROTOTYPE_REG11_OFFSET : std_logic_vector(31 downto 0) := 32x"2C";
 
   -- Register-select width. 6 bits select within 64 bytes (0x00..0x3F); the
   -- registers occupy 0x00..0x2C. It is the smallest module address width that
   -- holds the registers, and the default of the G_MODULE_ADDR_WIDTH generic.
-  constant C_MODULE_ADDR_WIDTH : natural := 6;
+  constant C_PROTOTYPE_MODULE_ADDR_WIDTH : natural := 6;
 
   -- Enumerated field type for reg11.field0: hardware and software see named
   -- states instead of raw bits, so assignments are compile-time type-checked.
   -- The literal positions are the field's encoded values (0..3).
-  type t_reg11_field0 is (STATE0, STATE1, STATE2, STATE3);
-  function to_slv(v : t_reg11_field0) return std_logic_vector;
-  function to_reg11_field0(s : std_logic_vector(1 downto 0)) return t_reg11_field0;
+  type t_prototype_reg11_field0 is (STATE0, STATE1, STATE2, STATE3);
+  function to_slv(v : t_prototype_reg11_field0) return std_logic_vector;
+  function to_prototype_reg11_field0(s : std_logic_vector(1 downto 0)) return t_prototype_reg11_field0;
 
   -- Internal storage, grouped per register. One member per field that holds
   -- state (every software- or hardware-writable field). One record per
@@ -145,7 +145,7 @@ package prototype_regfile_pkg is
 
   -- Stored fields of reg11 (enumerated field0, stored as the named type).
   type t_reg11_regs is record
-    field0 : t_reg11_field0;                 -- reg11.field0
+    field0 : t_prototype_reg11_field0;                 -- reg11.field0
   end record;
 
   -- Whole-module storage: the regfile keeps this as a single signal.
@@ -185,44 +185,44 @@ package prototype_regfile_pkg is
   -- record per register that has at least one hardware-readable field.
 
   -- reg0 fields visible to hardware.
-  type t_reg0_to_hw is record
+  type t_prototype_reg0_to_hw is record
     field0 : std_logic;
     field1 : std_logic_vector(1 downto 0);
   end record;
 
   -- reg2 fields visible to hardware.
-  type t_reg2_to_hw is record
+  type t_prototype_reg2_to_hw is record
     field0 : std_logic;
   end record;
 
   -- reg4 fields visible to hardware.
-  type t_reg4_to_hw is record
+  type t_prototype_reg4_to_hw is record
     field0 : std_logic_vector(3 downto 0);
     field1 : std_logic;
   end record;
 
   -- reg5 fields visible to hardware.
-  type t_reg5_to_hw is record
+  type t_prototype_reg5_to_hw is record
     field0 : std_logic_vector(3 downto 0);
     field1 : std_logic_vector(3 downto 0);
   end record;
 
   -- reg6 fields visible to hardware.
-  type t_reg6_to_hw is record
+  type t_prototype_reg6_to_hw is record
     field0 : std_logic_vector(3 downto 0);
     field1 : std_logic_vector(3 downto 0);
     field2 : std_logic_vector(3 downto 0);
   end record;
 
   -- reg7 fields visible to hardware.
-  type t_reg7_to_hw is record
+  type t_prototype_reg7_to_hw is record
     field0 : std_logic_vector(3 downto 0);
     field1 : std_logic_vector(3 downto 0);
     field2 : std_logic_vector(3 downto 0);
   end record;
 
   -- reg8 fields visible to hardware.
-  type t_reg8_to_hw is record
+  type t_prototype_reg8_to_hw is record
     field0 : std_logic_vector(3 downto 0);
     field1 : std_logic_vector(3 downto 0);
   end record;
@@ -230,45 +230,57 @@ package prototype_regfile_pkg is
   -- reg9 fields visible to hardware, each paired with its software-access pulse:
   -- swmod pulses one cycle when software modifies the field; swacc pulses one
   -- cycle when software reads or writes it.
-  type t_reg9_field0_out is record
+  type t_prototype_reg9_field0_out is record
     value : std_logic_vector(3 downto 0);
     swmod : std_logic;
   end record;
 
-  type t_reg9_field1_out is record
+  type t_prototype_reg9_field1_out is record
     value : std_logic_vector(3 downto 0);
     swacc : std_logic;
   end record;
 
-  type t_reg9_to_hw is record
-    field0 : t_reg9_field0_out;
-    field1 : t_reg9_field1_out;
+  type t_prototype_reg9_to_hw is record
+    field0 : t_prototype_reg9_field0_out;
+    field1 : t_prototype_reg9_field1_out;
   end record;
 
   -- reg10.field0: singlepulse. The value is itself the pulse (high one cycle
   -- after a software write, then self-cleared), so there is no separate strobe.
-  type t_reg10_to_hw is record
+  type t_prototype_reg10_to_hw is record
     field0 : std_logic_vector(3 downto 0);
   end record;
 
   -- reg11.field0: enumerated value exposed to hardware as the named type.
-  type t_reg11_to_hw is record
-    field0 : t_reg11_field0;
+  type t_prototype_reg11_to_hw is record
+    field0 : t_prototype_reg11_field0;
   end record;
 
   -- Whole-module regfile -> hardware bundle: one member per register above.
   type t_prototype_to_hw is record
-    reg0 : t_reg0_to_hw;
-    reg2 : t_reg2_to_hw;
-    reg4 : t_reg4_to_hw;
-    reg5 : t_reg5_to_hw;
-    reg6 : t_reg6_to_hw;
-    reg7 : t_reg7_to_hw;
-    reg8 : t_reg8_to_hw;
-    reg9 : t_reg9_to_hw;
-    reg10 : t_reg10_to_hw;
-    reg11 : t_reg11_to_hw;
+    reg0 : t_prototype_reg0_to_hw;
+    reg2 : t_prototype_reg2_to_hw;
+    reg4 : t_prototype_reg4_to_hw;
+    reg5 : t_prototype_reg5_to_hw;
+    reg6 : t_prototype_reg6_to_hw;
+    reg7 : t_prototype_reg7_to_hw;
+    reg8 : t_prototype_reg8_to_hw;
+    reg9 : t_prototype_reg9_to_hw;
+    reg10 : t_prototype_reg10_to_hw;
+    reg11 : t_prototype_reg11_to_hw;
   end record;
+
+  constant C_PROTOTYPE_TO_HW_RESET : t_prototype_to_hw := (
+    reg0 => (field0 => '0', field1 => (others => '0')),
+    reg2 => (field0 => '0'),
+    reg4 => (field0 => (others => '0'), field1 => '0'),
+    reg5 => (field0 => (others => '0'), field1 => (others => '0')),
+    reg6 => (field0 => (others => '0'), field1 => 4X"F", field2 => (others => '0')),
+    reg7 => (field0 => (others => '0'), field1 => 4X"F", field2 => (others => '0')),
+    reg8 => (field0 => 4X"F", field1 => (others => '0')),
+    reg9 => (field0 => (value => (others => '0'), swmod => '0'), field1 => (value => (others => '0'), swacc => '0')),
+    reg10 => (field0 => (others => '0')),
+    reg11 => (field0 => STATE0));
 
   -- hardware -> regfile: per-field input records pairing each value with the
   -- modifier strobes that gate it. A field gets its own record only when it
@@ -276,47 +288,47 @@ package prototype_regfile_pkg is
   -- member.
 
   -- reg1.field0 input: hw value plus its write-enable.
-  type t_reg1_field0_in is record
+  type t_prototype_reg1_field0_in is record
     value : std_logic_vector(3 downto 0);
     we    : std_logic;
   end record;
 
   -- reg1.field2 input: hw value plus its active-low write-enable.
-  type t_reg1_field2_in is record
+  type t_prototype_reg1_field2_in is record
     value : std_logic;
     wel   : std_logic;
   end record;
 
   -- reg1 fields driven by hardware.
-  type t_reg1_from_hw is record
-    field0 : t_reg1_field0_in;
+  type t_prototype_reg1_from_hw is record
+    field0 : t_prototype_reg1_field0_in;
     field1 : std_logic;                       -- continuous hw write, no enable
-    field2 : t_reg1_field2_in;
+    field2 : t_prototype_reg1_field2_in;
   end record;
 
   -- reg4.field0 input: hw value plus its write-enable.
-  type t_reg4_field0_in is record
+  type t_prototype_reg4_field0_in is record
     value : std_logic_vector(3 downto 0);
     we    : std_logic;
   end record;
 
   -- reg4.field1 input: set/clear strobes only (no value; the field is hw r).
-  type t_reg4_field1_in is record
+  type t_prototype_reg4_field1_in is record
     set : std_logic;                          -- force to 1
     clr : std_logic;                          -- force to 0
   end record;
 
   -- reg4 fields driven by hardware.
-  type t_reg4_from_hw is record
-    field0 : t_reg4_field0_in;
-    field1 : t_reg4_field1_in;
+  type t_prototype_reg4_from_hw is record
+    field0 : t_prototype_reg4_field0_in;
+    field1 : t_prototype_reg4_field1_in;
   end record;
 
   -- Whole-module hardware -> regfile bundle: one member per register that has
   -- at least one hardware-writable field.
   type t_prototype_from_hw is record
-    reg1 : t_reg1_from_hw;
-    reg4 : t_reg4_from_hw;
+    reg1 : t_prototype_reg1_from_hw;
+    reg4 : t_prototype_reg4_from_hw;
   end record;
 
   -- from_hw at rest: every value at its reset, every strobe inactive.
@@ -325,8 +337,8 @@ package prototype_regfile_pkg is
     reg4 => (field0 => (value => (others => '0'), we => '0'), field1 => (set => '0', clr => '0')));
 
   -- base_match and above_registers get the register file's G_MODULE_ADDR_WIDTH
-  -- as module_addr_width. In an address, bits 0 to C_MODULE_ADDR_WIDTH - 1
-  -- select a register, bits C_MODULE_ADDR_WIDTH to module_addr_width - 1 must
+  -- as module_addr_width. In an address, bits 0 to C_PROTOTYPE_MODULE_ADDR_WIDTH - 1
+  -- select a register, bits C_PROTOTYPE_MODULE_ADDR_WIDTH to module_addr_width - 1 must
   -- be 0, and bit module_addr_width and up are the base address.
 
   -- True when check is false, or when the base address bits of addr equal the
@@ -336,7 +348,7 @@ package prototype_regfile_pkg is
                       check             : boolean;
                       module_addr_width : natural) return boolean;
 
-  -- True when any of bits C_MODULE_ADDR_WIDTH to module_addr_width - 1 of addr
+  -- True when any of bits C_PROTOTYPE_MODULE_ADDR_WIDTH to module_addr_width - 1 of addr
   -- is set. The address is then in the module's address range but above the
   -- registers, and the register file answers it with an error, so that it
   -- cannot reach a register through its low bits.
@@ -346,12 +358,18 @@ package prototype_regfile_pkg is
   -- True when reg_offset, the low address bits of an access, equals the
   -- register offset in reg_addr. Every bit counts, so an address between two
   -- registers, or inside one, matches no register.
-  function reg_addr_match(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+  function reg_addr_match(reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0);
                           reg_addr   : std_logic_vector(31 downto 0)) return boolean;
 
   -- True when a register sits at reg_offset. Enumerates the register offsets
   -- in one place so the decode logic need not repeat them.
-  function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+  function is_mapped(reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+
+  -- True when a register with a field software can write sits at reg_offset.
+  function is_sw_writable(reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
+
+  -- True when a register with a field software can read sits at reg_offset.
+  function is_sw_readable(reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0)) return boolean;
 
 end package prototype_regfile_pkg;
 
@@ -373,7 +391,7 @@ package body prototype_regfile_pkg is
   function above_registers(addr              : std_logic_vector(31 downto 0);
                            module_addr_width : natural) return boolean is
   begin
-    for i in C_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
+    for i in C_PROTOTYPE_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
       if addr(i) /= '0' then
         return true;
       end if;
@@ -381,31 +399,41 @@ package body prototype_regfile_pkg is
     return false;
   end function;
 
-  function reg_addr_match(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+  function reg_addr_match(reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0);
                           reg_addr   : std_logic_vector(31 downto 0)) return boolean is
   begin
-    return reg_offset = reg_addr(C_MODULE_ADDR_WIDTH-1 downto 0);
+    return reg_offset = reg_addr(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0);
   end function;
 
-  function is_mapped(reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  function is_mapped(reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
   begin
-    return reg_addr_match(reg_offset, C_ADDR_REG0)
-        or reg_addr_match(reg_offset, C_ADDR_REG1)
-        or reg_addr_match(reg_offset, C_ADDR_REG2)
-        or reg_addr_match(reg_offset, C_ADDR_REG3)
-        or reg_addr_match(reg_offset, C_ADDR_REG4)
-        or reg_addr_match(reg_offset, C_ADDR_REG5)
-        or reg_addr_match(reg_offset, C_ADDR_REG6)
-        or reg_addr_match(reg_offset, C_ADDR_REG7)
-        or reg_addr_match(reg_offset, C_ADDR_REG8)
-        or reg_addr_match(reg_offset, C_ADDR_REG9)
-        or reg_addr_match(reg_offset, C_ADDR_REG10)
-        or reg_addr_match(reg_offset, C_ADDR_REG11);
+    return reg_addr_match(reg_offset, C_PROTOTYPE_REG0_OFFSET)
+        or reg_addr_match(reg_offset, C_PROTOTYPE_REG1_OFFSET)
+        or reg_addr_match(reg_offset, C_PROTOTYPE_REG2_OFFSET)
+        or reg_addr_match(reg_offset, C_PROTOTYPE_REG3_OFFSET)
+        or reg_addr_match(reg_offset, C_PROTOTYPE_REG4_OFFSET)
+        or reg_addr_match(reg_offset, C_PROTOTYPE_REG5_OFFSET)
+        or reg_addr_match(reg_offset, C_PROTOTYPE_REG6_OFFSET)
+        or reg_addr_match(reg_offset, C_PROTOTYPE_REG7_OFFSET)
+        or reg_addr_match(reg_offset, C_PROTOTYPE_REG8_OFFSET)
+        or reg_addr_match(reg_offset, C_PROTOTYPE_REG9_OFFSET)
+        or reg_addr_match(reg_offset, C_PROTOTYPE_REG10_OFFSET)
+        or reg_addr_match(reg_offset, C_PROTOTYPE_REG11_OFFSET);
+  end function;
+
+  function is_sw_writable(reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  begin
+    return reg_addr_match(reg_offset, C_PROTOTYPE_REG0_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG2_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG3_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG4_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG5_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG6_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG7_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG8_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG9_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG10_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG11_OFFSET);
+  end function;
+
+  function is_sw_readable(reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0)) return boolean is
+  begin
+    return reg_addr_match(reg_offset, C_PROTOTYPE_REG0_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG1_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG3_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG4_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG5_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG6_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG7_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG8_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG9_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG10_OFFSET) or reg_addr_match(reg_offset, C_PROTOTYPE_REG11_OFFSET);
   end function;
 
   -- case over the literals so the encoding follows each enum's declared value,
   -- not its position; the two only coincide for in-order 0,1,2,.. enums.
-  function to_slv(v : t_reg11_field0) return std_logic_vector is
+  function to_slv(v : t_prototype_reg11_field0) return std_logic_vector is
     variable slv : std_logic_vector(1 downto 0);
   begin
     case v is
@@ -419,7 +447,7 @@ package body prototype_regfile_pkg is
 
   -- case decode rather than to_integer(unsigned(s)) so meta-values (X/U/Z/-)
   -- give a defined result instead of a numeric_std assertion.
-  function to_reg11_field0(s : std_logic_vector(1 downto 0)) return t_reg11_field0 is
+  function to_prototype_reg11_field0(s : std_logic_vector(1 downto 0)) return t_prototype_reg11_field0 is
   begin
     case s is
       when "00"   => return STATE0;

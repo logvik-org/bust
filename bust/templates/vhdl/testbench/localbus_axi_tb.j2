@@ -52,7 +52,8 @@ begin
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
       G_MODULE_ADDR_WIDTH  => {{ tb.module_addr_width }},
-      G_UNMAPPED_READ_DATA => C_UNMAPPED_READ_DATA)
+      G_UNMAPPED_READ_DATA => C_UNMAPPED_READ_DATA,
+      G_ERR_ON_BAD_ACCESS  => true)
     port map (
       clk      => clk,
       areset_n => areset_n,
