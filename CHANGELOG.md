@@ -39,6 +39,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 - `version` must be a string of printable ASCII characters other than `"`,
   `\`, `;` and `=`, so that it can go into every output as it is. bust stops
   with an error for any other value.
+- The generated Python header is formatted as black formats it: the blank
+  line follows the class docstring and hex values use upper-case digits.
+  black leaves it unchanged.
 
 ## [1.0.0a4] - 2026-10-22
 
