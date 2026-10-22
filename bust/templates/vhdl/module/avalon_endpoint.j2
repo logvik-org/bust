@@ -1,41 +1,43 @@
 -- {{ generated_by() }}
 -- Avalon-MM wrapper for the {{ module.name }} local-bus register file.
 --   Avalon-MM -> local bus (t_lb_m2s / t_lb_s2m) -> regfile
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
 
-use work.{{ module.name }}_localbus_pkg.all;
-use work.{{ module.name }}_regfile_pkg.all;
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+  use work.{{ module.name }}_localbus_pkg.all;
+  use work.{{ module.name }}_regfile_pkg.all;
 
 entity {{ module.name }}_avalon_endpoint is
   generic (
+{% filter align(":", ":=") %}
     G_BASE_ADDRESS       : unsigned({{ module.addr_width - 1 }} downto 0) := {{ module.addr_width }}x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
     G_MODULE_ADDR_WIDTH  : natural := C_{{ module.name | upper }}_MODULE_ADDR_WIDTH;
     G_UNMAPPED_READ_DATA : std_logic_vector({{ module.data_width - 1 }} downto 0) := (others => '0');
     G_ERR_ON_BAD_ACCESS  : boolean := false
+{% endfilter %}
   );
   port (
-    clk         : in  std_logic;
-    reset       : in  std_logic;
+{% filter align(":") %}
+    clk : in    std_logic;
+    reset : in    std_logic;
 
     -- Avalon-MM subordinate interface
-    chipselect  : in  std_logic;
-    address     : in  std_logic_vector({{ module.addr_width - 1 }} downto 0);
-    read        : in  std_logic;
-    write       : in  std_logic;
-    writedata   : in  std_logic_vector({{ module.data_width - 1 }} downto 0);
-    waitrequest : out std_logic;
-    readdata    : out std_logic_vector({{ module.data_width - 1 }} downto 0){% if module.to_hw_registers or module.from_hw_registers %};{% endif %}
-
+    chipselect : in    std_logic;
+    address : in    std_logic_vector({{ module.addr_width - 1 }} downto 0);
+    read : in    std_logic;
+    write : in    std_logic;
+    writedata : in    std_logic_vector({{ module.data_width - 1 }} downto 0);
+    waitrequest : out   std_logic;
+    readdata : out   std_logic_vector({{ module.data_width - 1 }} downto 0){{ ";" if module.to_hw_registers or module.from_hw_registers else "" }}
 {% if module.to_hw_registers %}
-    to_hw       : out t_{{ module.name }}_to_hw{% if module.from_hw_registers %};{% endif %}
-
+    to_hw : out   t_{{ module.name }}_to_hw{{ ";" if module.from_hw_registers else "" }}
 {% endif %}
 {% if module.from_hw_registers %}
-    from_hw     : in  t_{{ module.name }}_from_hw
+    from_hw : in    t_{{ module.name }}_from_hw
 {% endif %}
+{% endfilter %}
   );
 end entity {{ module.name }}_avalon_endpoint;
 
@@ -46,21 +48,27 @@ architecture rtl of {{ module.name }}_avalon_endpoint is
 
 begin
 
-  i_regfile : entity work.{{ module.name }}_regfile
+  -- The Avalon-MM reset is synchronous and active high.
+  i_regfile : entity work.{{ module.name }}_regfile(rtl)
     generic map (
       G_BASE_ADDRESS       => G_BASE_ADDRESS,
       G_CHECK_BASE_ADDRESS => G_CHECK_BASE_ADDRESS,
       G_MODULE_ADDR_WIDTH  => G_MODULE_ADDR_WIDTH,
       G_UNMAPPED_READ_DATA => G_UNMAPPED_READ_DATA,
       G_ERR_ON_BAD_ACCESS  => G_ERR_ON_BAD_ACCESS,
-      G_RESET_ACTIVE_LOW   => false)      -- Avalon-MM reset is sync active-high
+      G_RESET_ACTIVE_LOW   => false
+    )
     port map (
-      clk     => clk,
-      reset   => reset,
-      lb_m2s  => m2s,
-      lb_s2m  => s2m{% if module.to_hw_registers %},
-      to_hw   => to_hw{% endif %}{% if module.from_hw_registers %},
-      from_hw => from_hw{% endif %});
+{% filter align("=>") %}
+      clk => clk,
+      reset => reset,
+      lb_m2s => m2s,
+      lb_s2m => s2m{% if module.to_hw_registers %},
+      to_hw => to_hw{% endif %}{% if module.from_hw_registers %},
+      from_hw => from_hw{% endif %}
+
+{% endfilter %}
+    );
 
   m2s.address <= address;
   m2s.wdata   <= writedata;

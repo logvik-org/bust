@@ -16,9 +16,7 @@ pytest.importorskip("vsg")
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _PATTERNS = [
-    "example/*/hdl/*_localbus_pkg.vhd",
-    "example/*/hdl/*_regfile_pkg.vhd",
-    "example/*/hdl/*_regfile.vhd",
+    "example/*/hdl/*.vhd",
     "hdl/prototype/prototype_regfile_pkg.vhd",
 ]
 
@@ -28,6 +26,7 @@ def test_vhdl_follows_the_style(tmp_path):
         path
         for pattern in _PATTERNS
         for path in glob.glob(os.path.join(_ROOT, pattern))
+        if not path.endswith("_tb.vhd")
     )
     assert files
     report = tmp_path / "vsg.json"
