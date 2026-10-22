@@ -167,11 +167,13 @@ Refer to them as `PROTOTYPE::REG11_OFFSET`.
 ### Python
 
 The Python module has the constants as attributes of a class named
-`<MODULE>_H`:
+`<MODULE>_H`. It is formatted as black formats it, with upper-case hex digits,
+so black leaves it unchanged in a project that uses black:
 
 ```python
 class PROTOTYPE_H:
     """Register map version and content hash"""
+
     REGMAP_VERSION = "1.0"
     REGMAP_HASH = 0x593FA68E
 
@@ -179,7 +181,7 @@ class PROTOTYPE_H:
     REG11_SW = "rw"
     REG11_HW = "r"
     REG11_WIDTH = 2
-    REG11_OFFSET = 0x2c
+    REG11_OFFSET = 0x2C
     REG11_RESET = 0x0
 
     """ Field: field0 """
