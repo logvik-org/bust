@@ -93,8 +93,8 @@ bust uses the default when the key is left out. The access keys (`sw`, `hw`, `on
 others) decide what software and hardware can do with each field.
 [Access modes](access-modes.md) describes what each of them does in hardware.
 
-bust reads and checks the whole file before it writes anything. At the first
-error it prints what is wrong and exits with status 1.
+bust reads and checks the whole file before it writes anything. See
+[How bust checks the file](#how-bust-checks-the-file).
 
 ## Numbers
 
@@ -114,7 +114,7 @@ be negative, and a fraction, a space or any other character stops bust. So does
 a string with hexadecimal digits but no `0x`, because it cannot be decimal:
 
 ```text
-Could not parse register baud_div: Reset of register baud_div "1B2" has hexadecimal digits but no 0x. Write "0x1B2" for a hexadecimal number.
+uart.json:31: module.register[2].reset: "1B2" has hexadecimal digits but no 0x. Write "0x1B2" for a hexadecimal number.
 ```
 
 bust also reads the file as [JSON5](https://json5.org/), whatever its name. A
@@ -151,7 +151,7 @@ save a JSON5 file.
 Write the type in lowercase. Any other value stops bust:
 
 ```text
-Bus type is not valid: AXI
+uart.json:2: bus.type: "AXI" is not one of "axi", "ipbus", "sbi", "avalon", "wishbone", "apb". Did you mean "axi"?
 ```
 
 IPBus carries 32-bit data and 32-bit addresses, so an `ipbus` module needs a
@@ -173,10 +173,91 @@ the timing of each protocol.
 |---|---|---|---|
 | `name` | string | required | Module name. It names the generated files and VHDL units, such as `uart_regfile` and `uart_regfile_pkg`. See [Names](#names). |
 | `register` | list | required | The registers, see [Registers](#registers). |
-| `version` | string | `""` | Shown in the LaTeX documentation. |
+| `version` | string | `""` | The version of the register map. Every generated file carries it, see [Version and hash](#version-and-hash). Printable ASCII characters other than `"`, `\`, `;` and `=`. A module with a `version` register needs the form `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`. |
 | `description` | string | `""` | Shown in the LaTeX documentation. |
 | `byte_addressable` | boolean | from the bus | `true` if an address counts bytes, `false` if it counts data words. See [Byte and word addresses](#byte-and-word-addresses). |
 | `git_hash` | string | none | Accepted and ignored. |
+
+### Version and hash
+
+bust gives software and hardware two ways to tell which register map they
+are built from. `version` is the text you give in the JSON file, such as
+`"1.2"`. bust does not check or change it, so raise it yourself when the
+register map changes. The hash is a 32-bit number that bust computes from the
+register map on every run, so it changes whenever the register map changes,
+with nothing for you to keep up to date.
+
+The hash covers the module name, the data width, `byte_addressable` and, for
+each register and field, the name, register offset, bit position, width, type,
+reset, access modes and enumeration values. Descriptions, `version`, the bus
+type and `addr_width` do not count. Neither does the bust version, so a newer
+bust gives the same hash for the same register map. The value is the first 32
+bits of the SHA-256 of these values written as JSON.
+
+Both appear in every output:
+
+| Output | Version | Hash |
+|---|---|---|
+| `<module>_regfile_pkg` | `C_<MODULE>_REGMAP_VERSION`, a `string` | `C_<MODULE>_REGMAP_HASH`, a 32-bit `std_logic_vector` |
+| C header | `<MODULE>_REGMAP_VERSION` | `<MODULE>_REGMAP_HASH` |
+| C++ and Python headers | `REGMAP_VERSION` | `REGMAP_HASH` |
+| IPBus address table | `regmap_version=` in the `parameters` of the top node | `regmap_hash=` in the same `parameters` |
+| LaTeX documentation | Title page and page footer | Title page, under the version |
+
+### Hash and version registers
+
+To let software check at run time which register map the hardware holds, add
+a register with `"type": "hash"`, `"type": "version"` or both. bust sets their
+values: the hash, and the `version` of the module as a number. Both have `sw`
+`ro` and `hw` `na`, and they are constants, so they cost no flip-flops.
+Software reads them and compares them with `REGMAP_HASH` and `REGMAP_VERSION`
+in its header. A different hash means the software and the hardware come from
+different register maps. The version tells you which version the hardware
+says it is.
+
+```json
+"module": {
+    "name": "uart",
+    "version": "1.2.0",
+    "register": [
+        {
+            "name": "id_hash",
+            "type": "hash",
+            "description": "Register map hash"
+        },
+        {
+            "name": "id_version",
+            "type": "version",
+            "description": "Register map version"
+        },
+        {
+            "name": "ctrl",
+            "sw": "rw",
+            "hw": "r"
+        }
+    ]
+}
+```
+
+A version register needs a `version` of the form `MAJOR.MINOR` or
+`MAJOR.MINOR.PATCH`, with each number from 0 to 255. It holds the version as
+`0x00MMmmpp`: the major number in bits 23 to 16, the minor number in bits 15
+to 8 and the patch number in bits 7 to 0, so `"1.2"` reads as `0x00010200`. A
+larger version reads as a larger number, so software can also check for a
+minimum version.
+
+A hash or version register takes only `name`, `type`, `address` and
+`description`, since bust sets the rest. It spans `data_width` bits, which
+must be at least 32, and a module has at most one of each. Otherwise it is a
+register like any other, with a name and an address of your choice, and it
+appears in the headers, the IPBus address table, the documentation and the
+generated testbench. The hash covers both registers, apart from their values.
+So, like the version itself, the value of the version register does not
+change the hash.
+
+Put them first, as above, or give them an `address`, so that they keep their
+register offsets while the register map grows. Software built from an older
+header then still finds them.
 
 ## Registers
 
@@ -185,7 +266,7 @@ Each entry in `register` is one register.
 | Key | Type | Default | Meaning |
 |---|---|---|---|
 | `name` | string | required | Register name. See [Names](#names). |
-| `type` | string | `"default"` | `default`, `vector`, `bit` or `fields`. See [Register types](#register-types). |
+| `type` | string | `"default"` | `default`, `vector`, `bit`, `fields`, `hash` or `version`. See [Register types](#register-types). |
 | `address` | [number](#numbers) | next free address | Register offset. See [Addresses](#addresses). |
 | `width` | [number](#numbers) | `data_width` | Width of a `vector` register. |
 | `reset` | [number](#numbers) | `0` | Reset value of a register without fields. See [Reset values](#reset-values). |
@@ -201,6 +282,8 @@ Each entry in `register` is one register.
 | `vector` | one `std_logic_vector` of `width` bits, from bit 0 |
 | `bit` | one `std_logic`, at bit 0 |
 | `fields` | the fields listed under `fields` |
+| `hash` | the register map hash, as a read-only constant of `data_width` bits. See [Hash and version registers](#hash-and-version-registers). |
+| `version` | the `version` of the module as a number, as a read-only constant of `data_width` bits. See [Hash and version registers](#hash-and-version-registers). |
 
 A register without fields works like one field that spans the register. It
 takes the register's `reset` and access keys, and `to_hw` and `from_hw` hold
@@ -468,7 +551,7 @@ stops bust. `null` counts as `false`. A value that is not in the table stops
 bust and lists the valid ones:
 
 ```text
-Could not parse register ctrl: Invalid SwAccess: 'rx'. Did you mean one of these? ['rw', 'ro', 'wo', 'na']
+uart.json:14: module.register[0].sw: "rx" is not one of "rw", "ro", "wo", "na". Did you mean "rw"?
 ```
 
 ## Settings
@@ -488,11 +571,57 @@ bust warns about each key it does not read, and otherwise ignores it. A
 misspelt key such as `onwrit` gives:
 
 ```text
-Unknown key 'onwrit' in field tx_en of register ctrl is ignored
+uart.json:21: module.register[0].fields[0].onwrit: bust does not know this key and ignores it. Did you mean 'onwrite'?
 ```
 
 `bust -a` and the [editor](command-line.md#interactive-editor) keep unknown
 keys when they save the file.
+
+## How bust checks the file
+
+bust checks a register map in two steps, and stops after the first step that
+finds a problem.
+
+1. The file must be JSON or JSON5. An error in the syntax gives the line and
+   the column, as in `uart.json:12:7: Expecting ',' delimiter`.
+2. Each value must have the type and the form this page gives for its key, and
+   each required key must be present. This is the
+   [JSON Schema](#json-schema) of the register map. bust lists every problem
+   it finds in one run, then the number of problems, and exits with status 1:
+
+   ```text
+   uart.json:14: module.register[0].sw: "rx" is not one of "rw", "ro", "wo", "na". Did you mean "rw"?
+   uart.json:31: module.register[2].reset: "1B2" has hexadecimal digits but no 0x. Write "0x1B2" for a hexadecimal number.
+   uart.json:40: module.register[3]: missing key 'name'
+   3 problems in uart.json
+   ```
+
+   Each line starts with the file and the line in it, so an editor or a
+   terminal that knows the form can jump there. Next comes the path to the
+   value: `module.register[2]` is the third register in the list, counted from
+   0, and `fields[1]` its second field. An unknown key is a warning in the same
+   form, see [Keys bust does not know](#keys-bust-does-not-know).
+3. The rules that tie keys together come last: two registers at one address,
+   a field that does not fit its register, a reset value that does not fit, a
+   name VHDL does not accept, or an access mode bust cannot generate. bust
+   stops at the first of these and names the register, as in:
+
+   ```text
+   Could not parse register ctrl: Register width exceeded module data width by 1 in register ctrl
+   ```
+
+The [editor](command-line.md#interactive-editor) gives the same messages,
+without the file name and the line.
+
+### JSON Schema
+
+`bust.schema.register_map_schema()` returns the JSON Schema (draft 2020-12) of
+the register map, which step 2 checks. It lists each key with its allowed
+values, its default and a short description, for editors and other tools.
+bust also reads a few forms that the schema leaves out: the values of `sw`,
+`hw`, `onread`, `onwrite`, `type` and `mode` in upper case, and the bust 0.14
+forms, which it warns about. Those are the type names `sl` and `slv`, and
+`byte_addressable` as the string `"True"` or `"False"`.
 
 ## Files from bust 0.14
 

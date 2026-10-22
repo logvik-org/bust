@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<node id="{{ module.name }}">
+<node id="{{ module.name }}" parameters="regmap_version={{ module.version | e }};regmap_hash=0x{{ module.regmap_hash_hex }}">
 {# Software cannot reach a register or field without sw access, so uHAL gets no node for it. #}
 {% set uhal_permission = {'rw': 'rw', 'ro': 'r', 'wo': 'w'} %}
 {% for reg in module.registers if reg.sw.value != "na" %}

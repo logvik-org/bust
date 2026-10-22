@@ -334,7 +334,7 @@ def test_fields_and_enumerated_values(tmp_path):
 
     # Removing ONCE would leave the reset of 0 without a name.
     assert any("matches no declared enum value" in line for line in shown)
-    (ctrl, _) = _registers(path)
+    ctrl, _ = _registers(path)
     assert ctrl["fields"] == [
         {
             "name": "mode",
@@ -381,7 +381,7 @@ def test_change_the_register_type(tmp_path):
         ("Menu", _QUIT),
     )
 
-    (_, count) = _registers(path)
+    _, count = _registers(path)
     assert count == {
         "name": "count",
         "address": 4,
@@ -415,7 +415,7 @@ def test_fields_inherit_the_register_access(tmp_path):
         ("There are unsaved changes", "1"),
     )
 
-    (_, count) = _registers(path)
+    _, count = _registers(path)
     assert count["fields"] == [
         {
             "name": "value",
@@ -547,3 +547,69 @@ def test_edit_text_number_and_true_false_keys(tmp_path):
         'width: 16, sw: "ro", hw: "w"}',
         'width: 8, sw: "ro", hw: "w", description: "Counter", hwset: true}',
     )
+
+
+def test_add_a_hash_register(tmp_path):
+    path = _timer(tmp_path)
+
+    _session(
+        Editor.open,
+        path,
+        ("Menu", _ADD),
+        ("Name", "id_hash"),
+        ("Address [0x8]", ""),
+        ("Type", "hash"),
+        ("Description", "Register map hash"),
+        ("Menu", _SAVE),
+        ("Menu", _QUIT),
+    )
+
+    assert _registers(path)[-1] == {
+        "name": "id_hash",
+        "address": "0x8",
+        "type": "hash",
+        "description": "Register map hash",
+    }
+
+
+def test_change_a_register_to_hash(tmp_path):
+    path = _timer(tmp_path)
+
+    _session(
+        Editor.open,
+        path,
+        ("Menu", _EDIT),
+        ("Register", "count"),
+        ("Change", "4"),
+        ("New type", "hash"),
+        ("Change", "5"),
+        ("Menu", _SAVE),
+        ("Menu", _QUIT),
+    )
+
+    _, count = _registers(path)
+    assert count == {"name": "count", "address": 4, "type": "hash"}
+
+
+def test_add_a_version_register(tmp_path):
+    path = _timer(tmp_path)
+    path.write_text(_TIMER.replace('name: "timer",', 'name: "timer", version: "1.2",'))
+
+    _session(
+        Editor.open,
+        path,
+        ("Menu", _ADD),
+        ("Name", "id_version"),
+        ("Address [0x8]", ""),
+        ("Type", "version"),
+        ("Description", ""),
+        ("Menu", _SAVE),
+        ("Menu", _QUIT),
+    )
+
+    assert _registers(path)[-1] == {
+        "name": "id_version",
+        "address": "0x8",
+        "type": "version",
+        "description": "",
+    }

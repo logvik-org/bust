@@ -23,6 +23,10 @@ package prototype_regfile_pkg is
 
   constant C_PROTOTYPE_MODULE_ADDR_WIDTH : natural := 4;
 
+  -- The version of the register map and the hash of its content.
+  constant C_PROTOTYPE_REGMAP_VERSION : string                        := "1.0";
+  constant C_PROTOTYPE_REGMAP_HASH    : std_logic_vector(31 downto 0) := x"B61A7D92";
+
   type t_prototype_reg11_field0 is (STATE0, STATE1, STATE2, STATE3);
 
   -- Convert t_prototype_reg11_field0 to and from its encoded bits.

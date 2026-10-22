@@ -8,20 +8,26 @@ use work.example_axi_localbus_pkg.all;
 
 package example_axi_regfile_pkg is
 
-  constant C_EXAMPLE_AXI_REG0_OFFSET  : std_logic_vector(31 downto 0) := 32x"00";
-  constant C_EXAMPLE_AXI_REG1_OFFSET  : std_logic_vector(31 downto 0) := 32x"04";
-  constant C_EXAMPLE_AXI_REG2_OFFSET  : std_logic_vector(31 downto 0) := 32x"08";
-  constant C_EXAMPLE_AXI_REG3_OFFSET  : std_logic_vector(31 downto 0) := 32x"0C";
-  constant C_EXAMPLE_AXI_REG4_OFFSET  : std_logic_vector(31 downto 0) := 32x"10";
-  constant C_EXAMPLE_AXI_REG5_OFFSET  : std_logic_vector(31 downto 0) := 32x"14";
-  constant C_EXAMPLE_AXI_REG6_OFFSET  : std_logic_vector(31 downto 0) := 32x"18";
-  constant C_EXAMPLE_AXI_REG7_OFFSET  : std_logic_vector(31 downto 0) := 32x"1C";
-  constant C_EXAMPLE_AXI_REG8_OFFSET  : std_logic_vector(31 downto 0) := 32x"20";
-  constant C_EXAMPLE_AXI_REG9_OFFSET  : std_logic_vector(31 downto 0) := 32x"24";
-  constant C_EXAMPLE_AXI_REG10_OFFSET : std_logic_vector(31 downto 0) := 32x"28";
-  constant C_EXAMPLE_AXI_REG11_OFFSET : std_logic_vector(31 downto 0) := 32x"2C";
+  constant C_EXAMPLE_AXI_REG0_OFFSET           : std_logic_vector(31 downto 0) := 32x"00";
+  constant C_EXAMPLE_AXI_REG1_OFFSET           : std_logic_vector(31 downto 0) := 32x"04";
+  constant C_EXAMPLE_AXI_REG2_OFFSET           : std_logic_vector(31 downto 0) := 32x"08";
+  constant C_EXAMPLE_AXI_REG3_OFFSET           : std_logic_vector(31 downto 0) := 32x"0C";
+  constant C_EXAMPLE_AXI_REG4_OFFSET           : std_logic_vector(31 downto 0) := 32x"10";
+  constant C_EXAMPLE_AXI_REG5_OFFSET           : std_logic_vector(31 downto 0) := 32x"14";
+  constant C_EXAMPLE_AXI_REG6_OFFSET           : std_logic_vector(31 downto 0) := 32x"18";
+  constant C_EXAMPLE_AXI_REG7_OFFSET           : std_logic_vector(31 downto 0) := 32x"1C";
+  constant C_EXAMPLE_AXI_REG8_OFFSET           : std_logic_vector(31 downto 0) := 32x"20";
+  constant C_EXAMPLE_AXI_REG9_OFFSET           : std_logic_vector(31 downto 0) := 32x"24";
+  constant C_EXAMPLE_AXI_REG10_OFFSET          : std_logic_vector(31 downto 0) := 32x"28";
+  constant C_EXAMPLE_AXI_REG11_OFFSET          : std_logic_vector(31 downto 0) := 32x"2C";
+  constant C_EXAMPLE_AXI_REGMAP_HASH_OFFSET    : std_logic_vector(31 downto 0) := 32x"30";
+  constant C_EXAMPLE_AXI_REGMAP_VERSION_OFFSET : std_logic_vector(31 downto 0) := 32x"34";
 
   constant C_EXAMPLE_AXI_MODULE_ADDR_WIDTH : natural := 6;
+
+  -- The version of the register map and the hash of its content.
+  constant C_EXAMPLE_AXI_REGMAP_VERSION : string                        := "1.0";
+  constant C_EXAMPLE_AXI_REGMAP_HASH    : std_logic_vector(31 downto 0) := x"0CF519FC";
 
   type t_reg0_regs is record
     reg0 : std_logic;
@@ -268,7 +274,9 @@ package body example_axi_regfile_pkg is
           or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG8_OFFSET)
           or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG9_OFFSET)
           or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG10_OFFSET)
-          or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG11_OFFSET);
+          or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG11_OFFSET)
+          or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REGMAP_HASH_OFFSET)
+          or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REGMAP_VERSION_OFFSET);
 
   end function is_mapped;
 
@@ -301,7 +309,9 @@ package body example_axi_regfile_pkg is
           or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG5_OFFSET)
           or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG6_OFFSET)
           or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG7_OFFSET)
-          or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG8_OFFSET);
+          or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG8_OFFSET)
+          or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REGMAP_HASH_OFFSET)
+          or reg_addr_match(reg_offset, C_EXAMPLE_AXI_REGMAP_VERSION_OFFSET);
 
   end function is_sw_readable;
 

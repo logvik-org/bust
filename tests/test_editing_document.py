@@ -161,7 +161,9 @@ def test_warnings_are_returned_and_not_logged(tmp_path, caplog):
 
     warnings = document.check()
 
-    assert warnings == ["Unknown key 'note' in register ctrl is ignored"]
+    assert warnings == [
+        "module.register[0].note: bust does not know this key and ignores it"
+    ]
     assert caplog.records == []
 
 
@@ -210,7 +212,7 @@ def test_a_new_register_map(tmp_path):
 
 
 def test_a_new_register_map_is_checked():
-    with pytest.raises(EditRejected, match="Bus type is not valid: AXI"):
+    with pytest.raises(EditRejected, match='"AXI" is not one of .*Did you mean "axi"'):
         RegisterMapDocument.new(
             {"type": "AXI", "addr_width": 8, "data_width": 32}, {"name": "m"}
         )
@@ -219,7 +221,7 @@ def test_a_new_register_map_is_checked():
 def test_next_free_address(tmp_path):
     document = _opened(_example(tmp_path, "example_axi.json"))
 
-    assert document.next_free_address() == 0x30
+    assert document.next_free_address() == 0x38
 
 
 def test_legacy_conversion_keeps_the_generated_hdl(tmp_path):
@@ -288,4 +290,23 @@ def test_diff_operations():
         {"op": "remove", "path": "/c/x"},
         {"op": "add", "path": "/c/y", "value": 1},
         {"op": "add", "path": "/f", "value": True},
+    ]
+
+
+def test_every_schema_problem_is_in_the_message(tmp_path):
+    document = _opened(_write(tmp_path, _JSON5))
+
+    with pytest.raises(EditRejected) as error:
+        document.apply(
+            [
+                {"op": "replace", "path": "/module/register/0/sw", "value": "rx"},
+                {"op": "replace", "path": "/bus/addr_width", "value": "16 bits"},
+            ]
+        )
+
+    assert str(error.value).splitlines() == [
+        'bus.addr_width: must be a whole number such as 16, "0x10" or "0b10000" '
+        "(got '16 bits')",
+        'module.register[0].sw: "rx" is not one of "rw", "ro", "wo", "na". Did '
+        'you mean "rw"?',
     ]

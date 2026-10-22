@@ -6,10 +6,13 @@ to generate VHDL code. It handles register address assignment, validation,
 and coordination with bus interface code generation.
 """
 
+import hashlib
+import json
 import logging
-from typing import TYPE_CHECKING, Dict, List, cast
+import re
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
-from bust.core.enums import RegisterMode
+from bust.core.enums import RegisterMode, RegisterType
 from bust.exceptions import (
     FormatError,
     InvalidAddress,
@@ -22,7 +25,6 @@ from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
 from bust.validation.config_validator import (
     ConfigWrapper,
     parse_number,
-    warn_unknown_keys,
 )
 
 if TYPE_CHECKING:
@@ -30,6 +32,14 @@ if TYPE_CHECKING:
     from bust.core.field import Field
     from bust.settings import Settings
 
+
+# The version goes unescaped into VHDL, C, C++ and Python strings and into the
+# uHAL parameters of the IPBus address table, which separate entries with ; and
+# key from value with =.
+VERSION_PATTERN = re.compile(r"[ !#-:<>-\[\]-~]*")
+
+# The version a version register packs into 0x00MMmmpp.
+VERSION_NUMBER_PATTERN = re.compile(r"(\d+)\.(\d+)(?:\.(\d+))?")
 
 MODULE_KEYS = (
     "name",
@@ -90,6 +100,9 @@ class Module:
         self.settings = settings
         self.registers: List[Register] = []
         self.addresses: List[int] = []
+        # The JSON of the register with type hash, which is rebuilt with the
+        # hash as its value once the register map is complete.
+        self._hash_register_config: Optional[Dict] = None
 
         self._config = ConfigWrapper(
             mod,
@@ -106,11 +119,10 @@ class Module:
 
         self.name = self._config.require("name")
         is_valid_VHDL(self.name)
-        warn_unknown_keys(mod, MODULE_KEYS, "module")
 
         # Store some config values for easy access
         self.description: str = self._config.get("description")
-        self.version = self._config.get("version")
+        self.version = self._read_version()
         self.git_hash = self._config.get("git_hash")  # Currently not used
         self.byte_addressable = self._read_byte_addressable()
 
@@ -120,6 +132,7 @@ class Module:
         for reg in mod["register"]:
             self.add_register(reg)
         self._warn_legacy_type_names()
+        self._update_hash_register()
 
     def add_register(self, reg: Dict) -> None:
         """Add a register to the module.
@@ -147,6 +160,14 @@ class Module:
         try:
             register = Register(reg, addr, self.name, self.data_width)
             self._check_register_name(register.name)
+            if register.type.is_constant:
+                self._check_one_constant_register(register)
+            if register.type == RegisterType.HASH:
+                self._hash_register_config = reg
+            elif register.type == RegisterType.VERSION:
+                register = Register(
+                    reg, addr, self.name, self.data_width, value=self.version_number
+                )
         except Exception as e:
             self.logger.debug(f"Register configuration: {reg}")
             raise InvalidRegister(reg, e) from e
@@ -164,6 +185,20 @@ class Module:
             )
             return value == "True"
         raise FormatError(f"byte_addressable must be true or false (got {value!r})")
+
+    def _read_version(self) -> str:
+        """Read the version, which every generated file carries as a string."""
+        value = self._config.get("version")
+        if not isinstance(value, str):
+            raise FormatError(
+                f'version must be a string, such as "1.2" (got {value!r})'
+            )
+        if not VERSION_PATTERN.fullmatch(value):
+            raise FormatError(
+                f"version {value!r} may only hold printable ASCII characters "
+                'other than ", \\, ; and ='
+            )
+        return value
 
     def _warn_legacy_type_names(self) -> None:
         """Warn once about the bust 0.14 type names sl and slv."""
@@ -203,6 +238,75 @@ class Module:
                 "types would clash"
             )
         is_unique(name, [reg.name for reg in self.registers])
+
+    def _check_one_constant_register(self, register: Register) -> None:
+        """Reject a second register with type hash, or with type version."""
+        kind = register.type.value
+        other = self._register_of_type(register.type)
+        if other is not None:
+            raise InvalidRegisterFormat(
+                f"Register {register.name} has type {kind}, and so does "
+                f"{other.name}. A module has at most one {kind} register."
+            )
+
+    def _register_of_type(self, kind: RegisterType) -> Optional[Register]:
+        return next((reg for reg in self.registers if reg.type == kind), None)
+
+    @property
+    def hash_register(self) -> Optional[Register]:
+        """The register with type hash, or None."""
+        return self._register_of_type(RegisterType.HASH)
+
+    @property
+    def version_register(self) -> Optional[Register]:
+        """The register with type version, or None."""
+        return self._register_of_type(RegisterType.VERSION)
+
+    @property
+    def version_number(self) -> int:
+        """The version as the value of a version register, 0x00MMmmpp.
+
+        Raises:
+            FormatError: If the version is not MAJOR.MINOR or
+                MAJOR.MINOR.PATCH with each number from 0 to 255.
+        """
+        match = VERSION_NUMBER_PATTERN.fullmatch(self.version)
+        numbers = [int(n or 0) for n in match.groups()] if match else []
+        if not numbers or max(numbers) > 255:
+            raise FormatError(
+                "A version register needs a version of the form MAJOR.MINOR or "
+                "MAJOR.MINOR.PATCH, with each number from 0 to 255 "
+                f"(version is {self.version!r})"
+            )
+        major, minor, patch = numbers
+        return (major << 16) | (minor << 8) | patch
+
+    def _update_hash_register(self) -> None:
+        """Give the hash register the register map hash as its value.
+
+        The hash covers the hash register, apart from its value.
+        """
+        hash_register = self.hash_register
+        if hash_register is None:
+            return
+        index = self.registers.index(hash_register)
+        self.registers[index] = Register(
+            cast(Dict, self._hash_register_config),
+            hash_register.address,
+            self.name,
+            self.data_width,
+            value=self.regmap_hash,
+        )
+
+    @property
+    def constant_registers(self) -> List[Register]:
+        """The hash and version registers, in register order."""
+        return [reg for reg in self.registers if reg.type.is_constant]
+
+    def value_vhdl(self, value: str) -> str:
+        """A register value such as "0x1f" as a data-width VHDL literal."""
+        digits = (self.data_width + 3) // 4
+        return f'{self.data_width}x"{int(value, 16):0{digits}X}"'
 
     def get_next_address(self) -> int:
         """Find next available register address.
@@ -291,6 +395,7 @@ class Module:
         for reg in self.registers:
             addr = self.get_next_address()
             reg.address = addr
+        self._update_hash_register()
 
     @property
     def stored_registers(self) -> List[Register]:
@@ -329,6 +434,46 @@ class Module:
         return max(1, (top - 1).bit_length())
 
     @property
+    def regmap_hash(self) -> int:
+        """A 32-bit hash of the register map, which changes when it changes.
+
+        It covers the module name, the data width, the addressing and, for each
+        register and field, the name, register offset, position, width, type,
+        reset, access modes and enumerations. Descriptions and the version do not
+        count, and the hash does not depend on the bus or the bust version. The
+        hash is the first 32 bits of the SHA-256 of the canonical JSON of those
+        values. The values of the hash and version registers do not count
+        either, since they are the hash and the version.
+        """
+        content: Dict[str, Any] = {
+            "hash_format": 1,
+            "name": self.name,
+            "data_width": self.data_width,
+            "byte_addressable": self.byte_addressable,
+            "registers": [
+                {
+                    "name": reg.name,
+                    "address": reg.address,
+                    "type": reg.type.value,
+                    "width": reg.width,
+                    "reset": None if reg.type.is_constant else reg.reset,
+                    "fields": [
+                        _field_content(f, not reg.type.is_constant)
+                        for f in reg.effective_fields
+                    ],
+                }
+                for reg in self.registers
+            ],
+        }
+        text = json.dumps(content, sort_keys=True, separators=(",", ":"))
+        return int.from_bytes(hashlib.sha256(text.encode()).digest()[:4], "big")
+
+    @property
+    def regmap_hash_hex(self) -> str:
+        """The register map hash as eight upper-case hexadecimal digits."""
+        return f"{self.regmap_hash:08X}"
+
+    @property
     def num_ro_regs(self) -> int:
         """Count of read-only registers.
 
@@ -364,3 +509,24 @@ class Module:
         for reg in self.registers:
             string += indent_string(str(reg), 1)
         return cast(str, string)
+
+
+def _field_content(field: "Field", with_reset: bool = True) -> Dict[str, Any]:
+    """The values of a field that the register map hash covers."""
+    return {
+        "name": field.name,
+        "type": field.type.value,
+        "position": field.pos_low,
+        "width": field.width,
+        "reset": field.reset if with_reset else None,
+        "sw": field.sw.value,
+        "hw": field.hw.value,
+        "onread": field.onread.value if field.onread else None,
+        "onwrite": field.onwrite.value if field.onwrite else None,
+        "flags": [
+            key
+            for key in ("singlepulse", "we", "wel", "hwset", "hwclr", "swmod", "swacc")
+            if getattr(field, key)
+        ],
+        "enums": [[e.name, e.value] for e in field.enums],
+    }
