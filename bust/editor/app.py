@@ -293,6 +293,9 @@ class MainScreen(Screen[None]):
             note += f" Another type removes the fields of {register.name}."
         else:
             note += " A fields register asks for its first field next."
+        note += (
+            " hash and version remove the access keys and the reset, which bust sets."
+        )
         types = RegisterType.valid_values()
 
         def check(values: Values) -> Optional[str]:
@@ -664,8 +667,9 @@ class EditorApp(App[Optional[str]]):
             }
             if "width" in values:
                 register["width"] = number_value("width", values["width"])
-            register["sw"] = values["sw"]
-            register["hw"] = values["hw"]
+            if "sw" in values:
+                register["sw"] = values["sw"]
+                register["hw"] = values["hw"]
             if "reset" in values:
                 register["reset"] = number_value("reset", values["reset"])
             register["description"] = values["description"]
@@ -715,8 +719,12 @@ class EditorApp(App[Optional[str]]):
         def is_vector(values: Values) -> bool:
             return values["type"] == RegisterType.VECTOR.value
 
+        def has_access(values: Values) -> bool:
+            # bust sets the access and the value of a hash or version register.
+            return not RegisterType(values["type"]).is_constant
+
         def has_reset(values: Values) -> bool:
-            return values["type"] != RegisterType.FIELDS.value
+            return values["type"] != RegisterType.FIELDS.value and has_access(values)
 
         self.push_screen(
             FormScreen(
@@ -731,9 +739,14 @@ class EditorApp(App[Optional[str]]):
                         "Software access (sw)",
                         "rw",
                         choices(access_choices("sw")),
+                        shown_if=has_access,
                     ),
                     Item(
-                        "hw", "Hardware access (hw)", "r", choices(access_choices("hw"))
+                        "hw",
+                        "Hardware access (hw)",
+                        "r",
+                        choices(access_choices("hw")),
+                        shown_if=has_access,
                     ),
                     Item("reset", "Reset value", "0x0", shown_if=has_reset),
                     Item("description", "Description"),

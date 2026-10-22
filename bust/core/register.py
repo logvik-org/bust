@@ -28,7 +28,6 @@ from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
 from bust.validation.config_validator import (
     ConfigWrapper,
     parse_number,
-    warn_unknown_keys,
 )
 from bust.core.enums import (
     HwAccess,
@@ -57,6 +56,9 @@ _HW_BY_READ_WRITE = {
 
 # pulse_cycles and stall_cycles are bust 0.14 keys, kept so that 0.14 files are
 # rejected with an explanation when they use values 1.0 cannot generate.
+# The keys a hash or version register takes. bust sets everything else.
+CONSTANT_REGISTER_KEYS = {"name", "description", "address", "type"}
+
 REGISTER_KEYS = {
     "name",
     "description",
@@ -94,7 +96,12 @@ class Register:
     """
 
     def __init__(
-        self, reg: Dict, address: int, module_name: str, module_data_width: int
+        self,
+        reg: Dict,
+        address: int,
+        module_name: str,
+        module_data_width: int,
+        value: int = 0,
     ) -> None:
         """Initialize a Register instance.
 
@@ -112,6 +119,8 @@ class Register:
             address: Memory address for this register.
             module_name: Name of the parent module.
             module_data_width: Data width of the parent module.
+            value: The value of a hash or version register, which the module
+                computes.
 
         Raises:
             InvalidRegisterFormat: If reset value doesn't match width or is invalid,
@@ -145,7 +154,6 @@ class Register:
 
         self.name = self._config.require("name")
         is_valid_VHDL(self.name)
-        warn_unknown_keys(reg, REGISTER_KEYS, f"register {self.name}")
         reject_unsupported_timing(reg)
 
         self.description: str = self._config.get("description")
@@ -182,9 +190,11 @@ class Register:
         # registers are translated onto sw/hw here (see legacy_schema). Fields
         # are constructed below, so this must precede _init_fields.
         self.access_defaults = register_access_defaults(reg)
+        if self.type.is_constant:
+            self._init_constant_register(reg, value)
 
         # Assign width
-        if self.type == RegisterType.DEFAULT:
+        if self.type == RegisterType.DEFAULT or self.type.is_constant:
             # Check if the width was explicitly set in the config,
             # and if it matches the module data width
             if self._config.is_set("width") and self.width != module_data_width:
@@ -216,6 +226,23 @@ class Register:
         self.check_register_data_width(module_data_width)
 
         self._implicit_field = self._make_implicit_field()
+
+    def _init_constant_register(self, reg: Dict, value: int) -> None:
+        """Make a hash or version register the read-only constant `value`."""
+        kind = self.type.value
+        extra = sorted(set(reg) - CONSTANT_REGISTER_KEYS)
+        if extra:
+            raise InvalidRegisterFormat(
+                f"Register {self.name} has type {kind}, which takes only name, "
+                f"description and address, not {', '.join(extra)}"
+            )
+        if self.module_data_width < 32:
+            raise InvalidRegisterFormat(
+                f"Register {self.name} has type {kind}, which needs a data_width "
+                f"of at least 32 bits (data_width is {self.module_data_width})"
+            )
+        self.access_defaults = {"sw": "ro", "hw": "na"}
+        self.reset = hex(value)
 
     def _make_implicit_field(self) -> "Field":
         """Synthesize the single full-width field a non-fields register stands for.
@@ -327,8 +354,13 @@ class Register:
             - std_logic for BIT registers
             - Custom record type for FIELDS registers
         """
-        if self.type == RegisterType.DEFAULT or (
-            self.type == RegisterType.VECTOR and self.width == self.module_data_width
+        if (
+            self.type == RegisterType.DEFAULT
+            or self.type.is_constant
+            or (
+                self.type == RegisterType.VECTOR
+                and self.width == self.module_data_width
+            )
         ):
             return f"t_{self.module_name}_data"
         elif self.type == RegisterType.VECTOR:
@@ -348,7 +380,10 @@ class Register:
         Raises:
             ValueError: If called on FIELDS type (fields have individual reset values).
         """
-        if self.type in [RegisterType.DEFAULT, RegisterType.VECTOR]:
+        if (
+            self.type in (RegisterType.DEFAULT, RegisterType.VECTOR)
+            or self.type.is_constant
+        ):
             if self.reset == "0x0":
                 return "(others => '0')"
             else:

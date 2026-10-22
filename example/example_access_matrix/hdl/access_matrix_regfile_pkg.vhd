@@ -35,6 +35,10 @@ package access_matrix_regfile_pkg is
 
   constant C_ACCESS_MATRIX_MODULE_ADDR_WIDTH : natural := 7;
 
+  -- The version of the register map and the hash of its content.
+  constant C_ACCESS_MATRIX_REGMAP_VERSION : string                        := "1.0";
+  constant C_ACCESS_MATRIX_REGMAP_HASH    : std_logic_vector(31 downto 0) := x"5E218695";
+
   type t_access_matrix_identity_pwr_default is (PWR_OFF, PWR_ON);
 
   -- Convert t_access_matrix_identity_pwr_default to and from its encoded bits.

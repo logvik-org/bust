@@ -2,6 +2,10 @@
 #ifndef EXAMPLE_AXI_H
 #define EXAMPLE_AXI_H
 
+/* Register map version and content hash */
+#define EXAMPLE_AXI_REGMAP_VERSION "1.0"
+#define EXAMPLE_AXI_REGMAP_HASH 0x0CF519FC
+
 
 /* Register: reg0 */
 #define EXAMPLE_AXI_REG0_SW "rw"
@@ -170,5 +174,19 @@
 #define EXAMPLE_AXI_REG11_FIELD1_SW "wo"
 #define EXAMPLE_AXI_REG11_FIELD1_HW "r"
 #define EXAMPLE_AXI_REG11_FIELD1_SINGLEPULSE 1
+
+/* Register: regmap_hash */
+#define EXAMPLE_AXI_REGMAP_HASH_SW "ro"
+#define EXAMPLE_AXI_REGMAP_HASH_HW "na"
+#define EXAMPLE_AXI_REGMAP_HASH_WIDTH 32
+#define EXAMPLE_AXI_REGMAP_HASH_OFFSET 0x30
+#define EXAMPLE_AXI_REGMAP_HASH_RESET 0xcf519fc
+
+/* Register: regmap_version */
+#define EXAMPLE_AXI_REGMAP_VERSION_SW "ro"
+#define EXAMPLE_AXI_REGMAP_VERSION_HW "na"
+#define EXAMPLE_AXI_REGMAP_VERSION_WIDTH 32
+#define EXAMPLE_AXI_REGMAP_VERSION_OFFSET 0x34
+#define EXAMPLE_AXI_REGMAP_VERSION_RESET 0x10000
 
 #endif

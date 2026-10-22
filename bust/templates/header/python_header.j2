@@ -1,5 +1,9 @@
 # {{ generated_by() }}
 class {{ module.name.upper() }}_H:
+
+    """Register map version and content hash"""
+    REGMAP_VERSION = "{{ module.version }}"
+    REGMAP_HASH = 0x{{ module.regmap_hash_hex }}
 {% for reg in module.registers %}
 
     """Register: {{ reg.name }}"""

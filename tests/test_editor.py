@@ -567,3 +567,64 @@ def test_a_file_changed_on_disk_is_not_saved(tmp_path):
     _session(path, script)
 
     assert path.read_text() == _TIMER + "\n"
+
+
+def test_add_a_hash_register(tmp_path):
+    path = _timer(tmp_path)
+
+    async def script(editor):
+        await editor.press("a")
+        await editor.answer(type="hash")
+        for name in ("width", "sw", "hw", "reset"):
+            assert not editor.screen.query_one(f"#row-{name}").display
+        await editor.fill(name="id_hash", description="Register map hash")
+        assert [p.key for p in editor.main.properties] == [
+            "name",
+            "description",
+            "address",
+            "type",
+        ]
+        await editor.press("s")
+
+    _session(path, script)
+
+    assert _registers(path)[-1] == {
+        "name": "id_hash",
+        "address": "0x8",
+        "type": "hash",
+        "description": "Register map hash",
+    }
+
+
+def test_change_a_register_to_hash(tmp_path):
+    path = _timer(tmp_path)
+
+    async def script(editor):
+        await editor.select_register("count")
+        await editor.edit("type")
+        await editor.fill(type="hash")
+        await editor.press("s")
+
+    _session(path, script)
+
+    _, count = _registers(path)
+    assert count == {"name": "count", "address": 4, "type": "hash"}
+
+
+def test_add_a_version_register(tmp_path):
+    path = _timer(tmp_path)
+    path.write_text(_TIMER.replace('name: "timer",', 'name: "timer", version: "1.2",'))
+
+    async def script(editor):
+        await editor.press("a")
+        await editor.fill(name="id_version", type="version")
+        await editor.press("s")
+
+    _session(path, script)
+
+    assert _registers(path)[-1] == {
+        "name": "id_version",
+        "address": "0x8",
+        "type": "version",
+        "description": "",
+    }
