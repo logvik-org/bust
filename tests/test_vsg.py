@@ -18,6 +18,7 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _PATTERNS = [
     "example/*/hdl/*_localbus_pkg.vhd",
     "example/*/hdl/*_regfile_pkg.vhd",
+    "example/*/hdl/*_regfile.vhd",
     "hdl/prototype/prototype_regfile_pkg.vhd",
 ]
 
