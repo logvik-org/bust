@@ -46,9 +46,10 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   numbered questions of 1.0.0a4.
 - The editor shows its keys on screen and lists all of them with `?`. `o`
   shows an overview of the register map like the PDF documentation, with the
-  register list and a bit diagram of each register.
-- The editor needs Textual, which `pip install "bust[editor]"` installs. bust
-  says so when Textual is missing. Generating code does not need it.
+  register list and a bit diagram of each register. `t` switches between a
+  light and a dark theme in the colours of the documentation.
+- bust depends on Textual, which the editor is built on. bust loads it only
+  when the editor starts.
 
 ## [1.0.0a4] - 2026-10-22
 

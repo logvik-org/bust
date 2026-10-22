@@ -34,17 +34,13 @@ dependencies = [
     "pylatexenc>=2.1",
     "Jinja2>=3.1.5,<4.0",
     "json5>=0.9",
+    "textual>=3.1",
 ]
 
 [project.optional-dependencies]
-# The full-screen editor behind -c and -e.
-editor = [
-    "textual>=3.1",
-]
 # mypy and vsg are pinned because a new release can report new errors on
 # unchanged code.
 test = [
-    "bust[editor]",
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "jsonschema>=4.18",

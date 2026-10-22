@@ -7,11 +7,11 @@ import asyncio
 import json
 import os
 import shutil
+import subprocess
+import sys
 
 import json5
 import pytest
-
-pytest.importorskip("textual")
 
 from textual.widgets import Button, DataTable, Input, Select, Static  # noqa: E402
 
@@ -674,3 +674,25 @@ def test_bit_diagram():
     assert lines[1].startswith("┌") and lines[1].endswith("┐")
     assert lines[0].split() == ["31", "8", "7", "0"]
     assert lines[4].split() == ["-", "0x3"]
+
+
+def test_the_command_line_loads_textual_only_for_the_editor():
+    code = "import sys, bust.__main__; print('textual' in sys.modules)"
+    result = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, check=True
+    )
+
+    assert result.stdout.strip() == "False"
+
+
+def test_switch_between_light_and_dark(tmp_path):
+    path = _timer(tmp_path)
+
+    async def script(editor):
+        assert editor.app.theme == "bust-dark"
+        await editor.press("t")
+        assert editor.app.theme == "bust-light"
+        await editor.press("o", "t")
+        assert editor.app.theme == "bust-dark"
+
+    _session(path, script)

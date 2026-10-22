@@ -49,9 +49,10 @@ cd sim && make build && make sim-axi            # nvc + UVVM in Docker
   value at a time, and `RegisterMapDocument` applies JSON Patch operations
   that it checks through `Bus` and `Module`. `bust/schema.py` is the JSON
   Schema of the register map. `bust/editor/`, the Textual editor behind `-c`
-  and `-e` (the optional `editor` extra), works only through these, and
+  and `-e`, works only through these, and
   `bust -a` saves through `RegisterMapDocument` too. `session.py` holds the
-  editor logic without Textual, `app.py` and `screens.py` the screens.
+  editor logic without Textual, `app.py`, `screens.py` and `overview.py` the screens. Only `run_editor`
+  imports them, so a run that generates code does not load Textual.
 - `bust/validation/`, `bust/utils/` and `bust/jinja_utils/`.
 - Each JSON section has a set of the keys bust reads (`REGISTER_KEYS`,
   `FIELD_KEYS`, `MODULE_KEYS` in `bust/core/`, and the key tuple in `Bus`).
