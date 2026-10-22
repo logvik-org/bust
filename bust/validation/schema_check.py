@@ -32,6 +32,28 @@ _SCHEMA = register_map_schema()
 # bust reads these values in any case, as Enum.from_string lowers them.
 _CASE_FREE_KEYS = ("type", "mode", "sw", "hw", "onread", "onwrite")
 
+# The JSON Schema keywords the check applies, and the ones it reads past
+# because they only describe. tests/test_schema_check.py fails if the schema
+# uses any other keyword, so that a new one gets support here first.
+CHECKED_KEYWORDS = frozenset(
+    [
+        "type",
+        "enum",
+        "pattern",
+        "minimum",
+        "minItems",
+        "required",
+        "properties",
+        "additionalProperties",
+        "items",
+        "anyOf",
+        "$ref",
+    ]
+)
+ANNOTATION_KEYWORDS = frozenset(
+    ["$schema", "$defs", "title", "description", "default", "deprecated"]
+)
+
 _TYPE_NAMES = {
     "string": "a string",
     "integer": "a whole number",

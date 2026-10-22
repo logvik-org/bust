@@ -57,7 +57,9 @@ cd sim && make build && make sim-axi            # nvc + UVVM in Docker
   `bust/validation/schema_check.py` checks the file against `bust/schema.py`
   before `Bus` and `Module` are built, reports every problem with its path and
   line, and warns about any other key. A new key goes into its set and into
-  the schema, and `tests/test_schema.py` checks that the two agree. bust no
+  the schema, and `tests/test_schema.py` checks that the two agree. The
+  checker supports only the JSON Schema keywords in its `CHECKED_KEYWORDS`,
+  and `tests/test_schema_check.py` fails if the schema uses another one. bust no
   longer reads the 0.14 `settings` section, and `--migrate` removes the 0.14
   keys.
 

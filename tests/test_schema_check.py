@@ -13,7 +13,12 @@ from bust.editing.json_source import JsonSource
 from bust.exceptions import FormatError
 from bust.schema import register_map_schema
 from bust.utils.json_utils import json_parser, parse_json_text
-from bust.validation.schema_check import Problem, check_register_map
+from bust.validation.schema_check import (
+    ANNOTATION_KEYWORDS,
+    CHECKED_KEYWORDS,
+    Problem,
+    check_register_map,
+)
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
 _FILES = sorted(
@@ -53,6 +58,44 @@ def _changed(path, value):
 
 def _errors(register_map):
     return [str(problem) for problem in check_register_map(register_map).errors]
+
+
+def _subschemas(schema, path="#"):
+    """Yield (path, subschema) for the schema and every schema inside it."""
+    yield path, schema
+    for keyword in ("properties", "$defs"):
+        for name, child in schema.get(keyword, {}).items():
+            yield from _subschemas(child, f"{path}/{keyword}/{name}")
+    for index, child in enumerate(schema.get("anyOf", [])):
+        yield from _subschemas(child, f"{path}/anyOf/{index}")
+    if isinstance(schema.get("items"), dict):
+        yield from _subschemas(schema["items"], f"{path}/items")
+    if isinstance(schema.get("additionalProperties"), dict):
+        yield from _subschemas(
+            schema["additionalProperties"], f"{path}/additionalProperties"
+        )
+
+
+def test_the_check_knows_every_keyword_of_the_schema():
+    # A keyword the check does not know would be skipped without a word, so
+    # extend _check in bust/validation/schema_check.py before the schema uses
+    # it, and add it to CHECKED_KEYWORDS.
+    known = CHECKED_KEYWORDS | ANNOTATION_KEYWORDS
+    unknown = [
+        f"{path}: {keyword}"
+        for path, schema in _subschemas(register_map_schema())
+        for keyword in schema
+        if keyword not in known
+    ]
+
+    assert unknown == []
+
+
+def test_the_walk_reaches_every_definition():
+    paths = {path for path, _ in _subschemas(register_map_schema())}
+
+    assert "#/$defs/field/properties/enums/items" in paths
+    assert "#/$defs/register/properties/address/anyOf/1" in paths
 
 
 @pytest.mark.parametrize("path", _FILES, ids=lambda p: os.path.relpath(p, _REPO_ROOT))
