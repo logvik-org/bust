@@ -137,8 +137,30 @@ class RegisterMapDocument:
         Raises:
             EditRejected: With bust's message. The document stays as it was.
         """
-        data = copy.deepcopy(self._data)
         source = JsonSource(self._source.text) if self._source is not None else None
+        data = self._patched(operations, source)
+        self.module, warnings = _build_module(data)
+        self._data = data
+        self._source = source
+        return warnings
+
+    def check_operations(self, operations: List[Operation]) -> List[str]:
+        """Check the operations as `apply` does, without making them.
+
+        Returns:
+            The warnings bust would give about the result.
+
+        Raises:
+            EditRejected: With bust's message.
+        """
+        _, warnings = _build_module(self._patched(operations, None))
+        return warnings
+
+    def _patched(
+        self, operations: List[Operation], source: Optional[JsonSource]
+    ) -> Any:
+        """A copy of the data with the operations made, also on `source`."""
+        data = copy.deepcopy(self._data)
         try:
             for operation in operations:
                 op = operation["op"]
@@ -153,10 +175,7 @@ class RegisterMapDocument:
                     getattr(source, op)(path, value)
         except (KeyError, JsonSourceError) as error:
             raise EditRejected(_message(error)) from error
-        self.module, warnings = _build_module(data)
-        self._data = data
-        self._source = source
-        return warnings
+        return data
 
     def next_free_address(self) -> int:
         """The address bust would give a register added without one."""

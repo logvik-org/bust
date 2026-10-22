@@ -1,546 +1,845 @@
-"""Interactive editor module for bust.
+"""The interactive register map editor behind ``bust FILE -c`` and ``bust FILE -e``.
 
-This module provides the Editor class, which implements a console-based
-menu system for creating and editing bus slave module configurations
-interactively. It allows users to add/remove registers, edit properties,
-and save configurations to JSON files.
+The editor asks plain numbered questions, so it needs no curses and runs on any
+terminal. Every change goes through RegisterMapDocument, so the editor cannot
+save a register map bust rejects, and it writes the file only when the register
+map changed. The allowed values and defaults of each key come from the JSON
+Schema in bust.schema.
 """
 
-import logging
-from collections import OrderedDict
-from cursesmenu import CursesMenu
-from cursesmenu.items import FunctionItem
-from prettytable import PrettyTable
-from typing import Union, List
+import os
+from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Tuple, Union
 
-from bust.utils.json_utils import json_parser
-from bust.utils.file_utils import (
-    cont,
-    is_int,
-    clear_screen,
-    write_string_to_file,
-    get_list_choice,
-    get_int,
-)
-from bust.utils.formatting import add_line_breaks
-from bust.core.module import Module
 from bust.core.bus import Bus
-from bust.validation.vhdl_validator import get_identifier
-from bust.settings import Settings
-from bust.core.enums import FieldType, RegisterMode, RegisterType
+from bust.core.enums import FieldType, RegisterType
+from bust.core.register import Register
+from bust.editing.document import (
+    EditRejected,
+    FileChanged,
+    Operation,
+    RegisterMapDocument,
+)
+from bust.editing.json_source import join_pointer
+from bust.exceptions import FormatError
+from bust.interaction import ConsoleInteractionHandler, InteractionHandler
+from bust.schema import register_map_schema
+from bust.validation.config_validator import parse_number
+from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
+
+_SCHEMA = register_map_schema()["$defs"]
+_ACCESS_KEYS = (
+    "sw",
+    "hw",
+    "onread",
+    "onwrite",
+    "singlepulse",
+    "we",
+    "wel",
+    "hwset",
+    "hwclr",
+    "swmod",
+    "swacc",
+)
+# Written as "0x..." strings, the form bust's own files use.
+_HEX_KEYS = ("address", "reset")
+_UNSET = "-"
+# Model attributes named differently from their key.
+_ATTRIBUTES = {"position": "pos_low"}
+
+
+class _Prompts:
+    """Questions answered through an InteractionHandler, asked again until the
+    answer is valid."""
+
+    def __init__(self, ask: InteractionHandler, show: Callable[[str], None]):
+        self.ask = ask
+        self.show = show
+
+    def text(self, prompt: str, default: Optional[str] = None) -> str:
+        suffix = f" [{default}]" if default else ""
+        answer = self.ask(f"{prompt}{suffix}: ").strip()
+        return default if answer == "" and default is not None else answer
+
+    def yes(self, prompt: str, default: bool) -> bool:
+        hint = "Y/n" if default else "y/N"
+        while True:
+            answer = self.ask(f"{prompt} ({hint}): ").strip().lower()
+            if answer == "":
+                return default
+            if answer in ("y", "yes", "n", "no"):
+                return answer.startswith("y")
+            self.show("Answer y or n.")
+
+    def choose(self, prompt: str, options: Sequence[str], default: int = 0) -> int:
+        """The index of the option chosen by its number or its text."""
+        for number, option in enumerate(options, start=1):
+            self.show(f"  {number}. {option}")
+        while True:
+            answer = self.ask(f"{prompt} [{default + 1}]: ").strip()
+            if answer == "":
+                return default
+            if answer.isdigit() and 1 <= int(answer) <= len(options):
+                return int(answer) - 1
+            if answer in options:
+                return list(options).index(answer)
+            self.show(f"Enter a number from 1 to {len(options)}.")
+
+    def number(self, prompt: str, default: Optional[str] = None) -> int:
+        while True:
+            answer = self.text(prompt, default)
+            try:
+                return parse_number(answer, "The number")
+            except FormatError as error:
+                self.show(str(error))
+
+    def identifier(
+        self, prompt: str, taken: Sequence[str], default: Optional[str] = None
+    ) -> str:
+        while True:
+            answer = self.text(prompt, default)
+            try:
+                is_valid_VHDL(answer)
+                is_unique(answer, taken)
+                return answer
+            except Exception as error:
+                self.show(str(error))
+
+
+def _table(headers: Sequence[str], rows: Sequence[Sequence[Any]]) -> str:
+    cells = [list(map(str, headers))] + [list(map(str, row)) for row in rows]
+    widths = [max(len(row[i]) for row in cells) for i in range(len(headers))]
+    lines = ["  ".join(c.ljust(w) for c, w in zip(row, widths)) for row in cells]
+    return "\n".join(line.rstrip() for line in lines)
+
+
+def _shorten(text: str, length: int = 40) -> str:
+    return text if len(text) <= length else text[: length - 3] + "..."
+
+
+def _shown(value: Any) -> str:
+    if hasattr(value, "value"):
+        value = value.value
+    if isinstance(value, bool):
+        return str(value).lower()
+    return "none" if value is None else str(value)
+
+
+def _register_path(index: Union[int, str], *keys: Any) -> str:
+    return join_pointer("module", "register", index, *keys)
+
+
+def _field_path(register: int, field: Union[int, str], *keys: Any) -> str:
+    return _register_path(register, "fields", field, *keys)
+
+
+def _number_value(key: str, number: int) -> Any:
+    return hex(number) if key in _HEX_KEYS else number
 
 
 class Editor:
-    """Interactive console-based editor for module configurations.
+    """Creates or edits one register map file through numbered menus."""
 
-    The Editor provides a curses-based menu interface for creating and
-    modifying bus slave module definitions. It supports register management,
-    field editing, and JSON export.
-
-    Attributes:
-        jsonfile: Path to JSON configuration file.
-        output_dir: Directory for saving files.
-        recently_saved: Flag indicating if changes have been saved.
-        bus: Bus configuration instance.
-        mod: Module instance being edited.
-        settings: Settings instance.
-        menu: CursesMenu instance for the UI.
-    """
-
-    def __init__(self, edit, jsonfile, output_dir="output/"):
-        """Initialize Editor instance.
+    def __init__(
+        self,
+        document: RegisterMapDocument,
+        path: str,
+        ask: Optional[InteractionHandler] = None,
+        show: Callable[[str], None] = print,
+    ) -> None:
+        """Edit `document`, which saves to `path`.
 
         Args:
-            edit: If True, loads existing JSON file; if False, creates new module
-                interactively by prompting user for configuration.
-            jsonfile: Path to JSON configuration file to load or save to.
-            output_dir: Directory path for output files (default: "output/").
+            document: The register map, already checked.
+            path: The file the register map is saved to.
+            ask: Answers the questions. Defaults to reading the terminal.
+            show: Prints a line.
+        """
+        self.document = document
+        self.path = path
+        self.prompts = _Prompts(ask or ConsoleInteractionHandler(), show)
+        self.show = show
+        # bust warns about the whole register map on every change, so each
+        # warning is shown once.
+        self._warnings_shown: Set[str] = set()
+
+    @classmethod
+    def create(
+        cls,
+        path: str,
+        ask: Optional[InteractionHandler] = None,
+        show: Callable[[str], None] = print,
+    ) -> "Editor":
+        """Ask for the bus and module, and start a register map for `path`.
 
         Raises:
-            Exception: If loading JSON file fails when edit=True.
+            FileExistsError: If `path` exists.
         """
-        self.logger = logging.getLogger(__name__)
+        if os.path.exists(path):
+            raise FileExistsError(f"{path} exists. Edit it with bust {path} -e.")
+        prompts = _Prompts(ask or ConsoleInteractionHandler(), show)
+        show(f"A new register map in {path}.")
+        bus = cls._ask_bus(prompts)
+        stem = os.path.splitext(os.path.basename(path))[0]
+        module = {
+            "name": prompts.identifier("Module name", [], stem),
+            "version": prompts.text("Version", "1.0"),
+            "description": prompts.text("Description", ""),
+        }
+        editor = cls(RegisterMapDocument.new(bus, module), path, ask, show)
+        if prompts.yes("Add the first register now?", True):
+            editor.add_register()
+        return editor
 
-        self.jsonfile = jsonfile
-        self.output_dir = output_dir
-        self.recently_saved = False
-
-        if edit:
-            # Load the specified JSON file
+    @staticmethod
+    def _ask_bus(prompts: _Prompts) -> Dict[str, Any]:
+        while True:
+            types = Bus.supported_bus
+            bus_type = types[prompts.choose("Bus", types, types.index("axi"))]
+            config = Bus.BUS_CONFIG[bus_type]
+            addr_width = prompts.number("Address width in bits", "32")
+            data_width = config["fixed_data_width"] or prompts.number(
+                "Data width in bits", "32"
+            )
+            bus = {"type": bus_type, "addr_width": addr_width, "data_width": data_width}
             try:
-                json = json_parser(jsonfile)
-                self.settings = Settings(jsonfile, json.get("settings"))
-                self.bus = Bus(json["bus"])
-                self.mod = Module(json["module"], self.bus, self.settings)
-                self.recently_saved = True
-            except Exception as e:
-                self.logger.error("An unresolvable error has occurred:")
-                self.logger.error(str(e))
-                self.logger.error("Exiting...")
-                raise e
-        else:
-            bus_dic: OrderedDict[str, Union[str, int]] = OrderedDict()
-            bus_dic["type"] = get_list_choice("Choose a bus type: ", Bus.supported_bus)
-            bus_dic["addr_width"] = 32
-            bus_dic["data_width"] = 32
-            self.bus = Bus(bus_dic)
+                Bus(bus)
+                return bus
+            except FormatError as error:
+                prompts.show(str(error))
 
-            # Get name, addr_width, data_width and description
-            mod = OrderedDict()
-            mod["name"] = get_identifier("Enter a module name: ")
+    @classmethod
+    def open(
+        cls,
+        path: str,
+        ask: Optional[InteractionHandler] = None,
+        show: Callable[[str], None] = print,
+    ) -> "Editor":
+        """Read `path`, offering to convert a bust 0.14 register map first.
 
-            mod["description"] = input("Enter a description for the module: ")
-            mod["register"] = []
-
-            self.settings = Settings(None, None)
-            self.mod = Module(mod, self.bus, self.settings)
-
-        self.menu = self.create_menu()
-
-    def create_menu(self):
-        menu = CursesMenu("bust - Module Editor", self.set_subtitle())
-
-        menu.items.append(FunctionItem("Edit name", self.edit_name))
-        menu.items.append(FunctionItem("List registers", self.list_registers))
-        menu.items.append(FunctionItem("Add new register", self.add_register))
-        menu.items.append(FunctionItem("Remove register", self.remove_register))
-        menu.items.append(FunctionItem("Update addresses", self.update_addresses))
-        menu.items.append(FunctionItem("Save JSON", self.save_JSON))
-
-        return menu
-
-    def show_menu(self):
-        self.menu.show()
-
-    def update_menu(self):
-        self.menu.subtitle = self.set_subtitle()
-
-    def edit_name(self):
-        print("Change the module name from current: " + self.mod.name)
-        self.mod.name = get_identifier("Enter a new name: ")
-        self.recently_saved = False
-        self.update_menu()
-
-    def return_registers(self):
-        while True:
-            clear_screen()
-            if len(self.mod.registers) < 1:
-                print("No registers created at this point...")
-                cont()
-                return
-            else:
-                table = PrettyTable()
-                table.field_names = [
-                    "#",
-                    "Name",
-                    "Mode",
-                    "Address",
-                    "Type",
-                    "Width",
-                    "Reset",
-                    "Description",
-                ]
-                for i, reg in enumerate(self.mod.registers):
-                    table.add_row(
-                        [
-                            i,
-                            reg.name,
-                            reg.mode,
-                            hex(reg.address),
-                            reg.type,
-                            reg.width,
-                            reg.reset,
-                            add_line_breaks(reg.description, 25),
-                        ]
-                    )
-                return table
-
-    def list_registers(self):
-        table = self.return_registers()
-        if table is None:
-            return
-        print(table)
-        print("\nEnter the register number for register details, or q to quit...")
-        while True:
-            choice = input("Choice: ")
-            if self.valid_register_input(choice):
-                break
-            else:
-                print(choice + " is not a valid choice")
-        if choice == "q":
-            return
-        else:
-            clear_screen()
-            self.print_register(int(choice), table)
-            cont()
-
-    def print_register(self, reg_num, table):
-        reg = self.mod.registers[reg_num]
-        print(table.get_string(start=reg_num, end=(reg_num + 1)))
-
-        if len(reg.fields) > 0:
-            print("\nFields:")
-            table_fields = PrettyTable()
-            table_fields.field_names = [
-                "#",
-                "Name",
-                "Type",
-                "Position",
-                "Width",
-                "Reset",
-                "Description",
-            ]
-            for i, field in enumerate(reg.fields):
-
-                table_fields.add_row(
-                    [
-                        i,
-                        field.name,
-                        field.type,
-                        field.get_pos_str(),
-                        field.width,
-                        field.reset,
-                        add_line_breaks(field.description, 25),
-                    ]
-                )
-
-            print(table_fields)
-
-    def add_register(self):
-        """Adds a register to the module object
-
-        Get user input to create a register that may or may not consists of individual fields
+        Raises:
+            EditRejected: If bust rejects the register map.
         """
-        reg = OrderedDict()
-        reg_names = [regs.name for regs in self.mod.registers]
-        print("Input register information: ")
-        try:
-            reg["name"] = get_identifier("Name: ", reg_names)
-            reg["description"] = input("Description: ")
-            reg["mode"] = get_list_choice(
-                "Choose register mode: ", RegisterMode.valid_values(), "lower", 0
+        prompts = _Prompts(ask or ConsoleInteractionHandler(), show)
+        document = RegisterMapDocument.open(path)
+        changes, operations = document.legacy_conversion()
+        converted = False
+        if operations:
+            show(f"{path} is in the bust 0.14 format. The 1.0 format changes:")
+            for change in changes:
+                show(f"  - {change}")
+            converted = prompts.yes(
+                "Convert it? The file changes only when you save.", True
             )
-
-            fields: List[OrderedDict] = []
-
-            width_consumed = 0
-            while True:
-                field_dic = OrderedDict()
-                add_fields = input("Do you want to add a field? (Y/n): ")
-                field_names = [field["name"] for field in fields]
-                if add_fields.upper() == "N":
-                    break
-                elif add_fields.upper() == "Y" or add_fields == "":
-                    field_dic["name"] = get_identifier("Field name: ", field_names)
-                    field_dic["type"] = get_list_choice(
-                        "Field type: ", FieldType.valid_values()
-                    )
-
-                    if field_dic["type"] == "vector":
-                        max_width = self.mod.data_width - width_consumed
-
-                        field_dic["width"] = get_int(
-                            "Field width: ",
-                            10,
-                            1,
-                            max_width,
-                            "The minimum width of a field is 1!",
-                            "The maximum width of this field cannot extend"
-                            + " the module data width minus the width already"
-                            + " consumed by other fields: "
-                            + str(max_width),
-                        )
-                        width_consumed += field_dic["width"]
-
-                    else:
-                        width_consumed += 1
-                        field_dic["width"] = 1
-
-                    max_reset = 2 ** field_dic["width"] - 1
-                    field_dic["reset"] = hex(
-                        get_int(
-                            "Field reset in hex (default=0x0): ",
-                            16,
-                            0x0,
-                            max_reset,
-                            "The minimum reset value is 0x0",
-                            "The maximum reset value is based on the field width, "
-                            + "and is "
-                            + str(hex(max_reset)),
-                            0x0,
-                        )
-                    )
-
-                    field_dic["description"] = input("Field description: ")
-
-                    fields.append(field_dic)
-                    # Check if all available data bits are use
-                    if width_consumed == self.mod.data_width:
-                        print(
-                            "All available bits ("
-                            + str(self.mod.data_width)
-                            + ") is consumed.\n"
-                            + "No more fields can be added to this register.\n"
-                        )
-                        break
-                    elif width_consumed > self.mod.data_width:
-                        raise RuntimeError("More bits used by fields than available...")
-
-                else:
-                    print(add_fields + " is not a valid choice...")
-
-            if len(fields) > 0:
-                reg["type"] = "fields"
-                reg["fields"] = fields
-
-            else:
-                reg["type"] = get_list_choice(
-                    "Register type: ", RegisterType.valid_values(), None, 0
-                )
-
-            # Make sure reg width is set to help calculate max reset later
-            # Registers of field type will get an auto reset based on the field resets
-            if reg["type"] == "default":
-                reg["width"] = self.mod.data_width
-            elif reg["type"] == "bit":
-                reg["width"] = 1
-            elif reg["type"] == "vector":
-                while True:
-                    try:
-                        reg["width"] = int(input("Width: "))
-                        break
-                    except Exception:
-                        print("That is not a valid width...")
-
-            if input("Auto-assign address? (Y/n): ").upper() == "N":
-                # Make sure the address is not out of range and that it is free
-                max_address = 2**self.mod.addr_width - 1
-
-                while True:
-                    address = get_int(
-                        "Address in hex: ",
-                        16,
-                        0x0,
-                        max_address,
-                        "The minimum address is 0x0",
-                        "The maximum address is based on the module address width, "
-                        + "and is "
-                        + str(hex(max_address)),
-                        0x0,
-                    )
-                    # Perform an extra check of address range, although redundant
-                    if self.mod.is_address_out_of_range(address):
-                        print("Address is out of range...")
-                        continue
-
-                    # Check if the address has not been taken
-                    if not self.mod.is_address_free(address):
-                        print(
-                            "The chosen address is already assigned to another register..."
-                        )
-                        continue
-
-                    # Check whether the address is not byte-addressed, and give the user a choice to continue
-                    if not self.mod.is_address_byte_based(address):
-                        choice = input(
-                            "The selected address is not byte-based. Continue? (y/N): "
-                        )
-                        if not choice.upper() == "Y":
-                            continue
-                    break
-                # The JSON schema, and so Module.add_register, takes a hex string.
-                reg["address"] = hex(address)
-
-            if reg["type"] != "fields":
-
-                max_reset = 2 ** reg["width"] - 1
-                reg["reset"] = hex(
-                    get_int(
-                        "Register reset in hex (default=0x0): ",
-                        16,
-                        0x0,
-                        max_reset,
-                        "The minimum reset value is 0x0",
-                        "The maximum reset value is based on the register width, "
-                        + "and is "
-                        + str(hex(max_reset)),
-                        0x0,
-                    )
-                )
-
-            table = PrettyTable()
-            table.field_names = [
-                "#",
-                "Name",
-                "Mode",
-                "Address",
-                "Type",
-                "Width",
-                "Reset",
-                "Description",
-            ]
-
-            # Table values based on what values exists
-            table_name = reg["name"]
-            table_mode = reg["mode"]
-
-            if "address" in reg:
-                table_address = reg["address"]
-            else:
-                table_address = "auto"
-
-            table_type = reg["type"]
-
-            if reg["type"] == "fields":
-                table_width = "auto"
-            elif "width" in reg:
-                table_width = reg["width"]
-            else:
-                table_width = str(self.mod.bus.data_width)
-
-            if reg["type"] == "fields":
-                table_reset = "auto"
-            elif "reset" in reg:
-                table_reset = reg["reset"]
-            else:
-                table_reset = "auto"
-
-            table_description = add_line_breaks(reg["description"], 25)
-
-            table.add_row(
-                [
-                    len(self.mod.registers),
-                    table_name,
-                    table_mode,
-                    table_address,
-                    table_type,
-                    table_width,
-                    table_reset,
-                    table_description,
-                ]
+        warnings = document.apply(operations) if converted else document.check()
+        editor = cls(document, path, ask, show)
+        editor._show_warnings(warnings)
+        if operations and not converted:
+            show("New registers get sw and hw, so the file mixes the two formats.")
+        if not document.keeps_formatting:
+            show(
+                "bust cannot edit this file in place, so saving rewrites it as "
+                "plain JSON without comments."
             )
+        return editor
 
-            print(table)
-
-            if "fields" in reg:
-                print("\nFields:")
-                table_fields = PrettyTable()
-                table_fields.field_names = [
-                    "#",
-                    "Name",
-                    "Type",
-                    "Width",
-                    "Reset",
-                    "Description",
-                ]
-                for i, field in enumerate(reg["fields"]):
-
-                    table_fields.add_row(
-                        [
-                            i,
-                            field["name"],
-                            field["type"],
-                            field["width"],
-                            field["reset"],
-                            field["description"],
-                        ]
-                    )
-
-                print(table_fields)
-
-            if input("Confirm creation of register? (Y/n): ").upper() != "N":
-                self.mod.add_register(reg)
-
-                self.recently_saved = False
-                self.update_menu()
-            else:
+    def run(self) -> None:
+        """Show the main menu until the user quits."""
+        actions: List[Tuple[str, Callable[[], Any]]] = [
+            ("List registers", self.list_registers),
+            ("Add a register", self.add_register),
+            ("Edit a register", self.edit_register),
+            ("Remove a register", self.remove_register),
+            ("Edit the module and bus", self.edit_module),
+            ("Give an address to each register without one", self.fill_addresses),
+            ("Save", self.save),
+        ]
+        while True:
+            self.show("")
+            self.show(self._status())
+            labels = [label for label, _ in actions] + ["Quit"]
+            try:
+                choice = self.prompts.choose("Menu", labels)
+                if choice == len(actions):
+                    if self._confirm_quit():
+                        return
+                    continue
+                actions[choice][1]()
+            except KeyboardInterrupt:
+                self.show("\nCancelled.")
+            except EOFError:
+                self.show("\nNo more input. Unsaved changes are lost.")
                 return
 
-        except KeyboardInterrupt:
-            print("\nAdding register aborted!")
-            cont()
+    def _status(self) -> str:
+        module = self.document.module
+        assert module is not None
+        bus = module.bus
+        saved = "unsaved changes" if self.document.is_modified else "saved"
+        return (
+            f"{self.path}: module {module.name}, {bus.bus_type}, "
+            f"{bus.addr_width}-bit addresses, {bus.data_width}-bit data, "
+            f"registers: {len(module.registers)}, {saved}"
+        )
 
-        except Exception as e:
-            print("\nAdding register failed!")
-            print(str(e))
-            cont()
-
-    def remove_register(self):
-        table = self.return_registers()
-        if table is None:
-            return
-        print(table)
-        print("\nEnter the register number for removal, or q to quit...")
-        while True:
-            choice = input("Choice: ")
-            if self.valid_register_input(choice):
-                break
-            else:
-                print(choice + " is not a valid choice")
-        if choice == "q":
-            return
-        else:
-            clear_screen()
-            self.print_register(int(choice), table)
-
-            if (
-                input("Are you sure you want to delete this register? (y/N): ").upper()
-                == "Y"
-            ):
-                del self.mod.registers[int(choice)]
-                self.recently_saved = False
-
-        self.update_menu()
-
-    def update_addresses(self):
-        self.mod.update_addresses()
-        print("Addresses are updated..")
-        self.recently_saved = False
-        self.update_menu()
-        cont()
-
-    def save_JSON(self):
-        self.logger.info(f"Saving {self.jsonfile} ...")
-
-        # Get JSON with addresses
-        json = self.mod.to_json(True)
-        self.logger.debug("JSON contents created, saving to file...")
-        try:
-            result = write_string_to_file(json, self.jsonfile, ".")
-        except Exception as e:
-            self.logger.error("Saving failed...")
-            self.logger.error(e)
-            raise e
-        if result:
-            self.logger.info(f"JSON contents saved successfully in {self.jsonfile} !")
-
-        self.recently_saved = True
-        cont()
-        self.update_menu()
-
-    def set_subtitle(self):
-        if self.recently_saved:
-            s = " - SAVED"
-        else:
-            s = " - NOT SAVED"
-        string = self.mod.name
-        string += " / " + str(self.mod.addr_width)
-        string += " / " + str(self.mod.data_width)
-        # string += " / " + str(hex(self.mod.baseaddr))
-        string += s
-        return string
-
-    def valid_register_input(self, s):
-        """Returns boolean determining if a choice of register is valid
-
-        The input is first checked against the quit-character, and then checked if it matches any
-        valid indexes of the mod.registers list.
-        """
-        if s.upper() == "Q":
+    def _confirm_quit(self) -> bool:
+        if not self.document.is_modified:
             return True
-        elif is_int(s):
-            index = int(s)
-            for i, reg in enumerate(self.mod.registers):
-                if index == i:
-                    return True
-        return False
+        choice = self.prompts.choose(
+            "There are unsaved changes",
+            ["Save and quit", "Quit without saving", "Back to the menu"],
+        )
+        if choice == 0:
+            return self.save()
+        return choice == 1
+
+    def _apply(self, operations: List[Operation]) -> bool:
+        """Make the change, or show why bust rejects it."""
+        try:
+            warnings = self.document.apply(operations)
+        except EditRejected as error:
+            self.show(f"Not changed: {error}")
+            return False
+        self._show_warnings(warnings)
+        return True
+
+    def _show_warnings(self, warnings: List[str]) -> None:
+        for warning in warnings:
+            if warning not in self._warnings_shown:
+                self.show(f"Warning: {warning}")
+                self._warnings_shown.add(warning)
+
+    @property
+    def _data(self) -> Any:
+        return self.document.data
+
+    def _registers(self) -> List[Register]:
+        assert self.document.module is not None
+        return self.document.module.registers
+
+    def list_registers(self) -> None:
+        """Show every register in a table."""
+        registers = self._registers()
+        if not registers:
+            self.show("There are no registers.")
+            return
+        rows = [
+            (
+                index,
+                reg.name,
+                hex(reg.address),
+                reg.type.value,
+                reg.width,
+                reg.sw.value,
+                reg.hw.value,
+                reg.reset,
+                _shorten(reg.description),
+            )
+            for index, reg in enumerate(registers, start=1)
+        ]
+        headers = ("#", "Name", "Address", "Type", "Width", "sw", "hw", "Reset")
+        self.show(_table(headers + ("Description",), rows))
+
+    def _pick(self, what: str, names: List[str]) -> Optional[int]:
+        """The index of the entry named or numbered, or None to cancel."""
+        while True:
+            answer = self.prompts.text(f"{what} (number or name, Enter to cancel)")
+            if answer == "":
+                return None
+            if answer.isdigit() and 1 <= int(answer) <= len(names):
+                return int(answer) - 1
+            if answer in names:
+                return names.index(answer)
+            self.show(f"There is no {what.lower()} {answer}.")
+
+    def _pick_register(self) -> Optional[int]:
+        self.list_registers()
+        if not self._registers():
+            return None
+        return self._pick("Register", [reg.name for reg in self._registers()])
+
+    def add_register(self) -> None:
+        """Ask for a register, giving it every key the format recommends.
+
+        Each answer is checked as soon as it is given, so a rejected answer is
+        asked again instead of losing the others.
+        """
+        assert self.document.module is not None
+        prompts = self.prompts
+        taken = [reg.name for reg in self._registers()]
+        register: Dict[str, Any] = {"name": prompts.identifier("Name", taken)}
+
+        def adding(**keys: Any) -> List[Operation]:
+            value = {**register, **keys}
+            return [{"op": "add", "path": _register_path("-"), "value": value}]
+
+        next_address = hex(self.document.next_free_address())
+        register["address"] = self._ask_until_accepted(
+            lambda: hex(prompts.number("Address", next_address)),
+            lambda address: adding(address=address),
+        )
+        types = RegisterType.valid_values()
+        register["type"] = types[prompts.choose("Type", types)]
+        is_fields = register["type"] == RegisterType.FIELDS.value
+        if register["type"] == RegisterType.VECTOR.value:
+            data_width = str(self.document.module.data_width)
+            register["width"] = self._ask_until_accepted(
+                lambda: prompts.number("Width in bits", data_width),
+                lambda width: adding(width=width),
+            )
+        # A fields register without its fields is rejected, so the access is
+        # checked on a register without fields.
+        access_type = RegisterType.DEFAULT.value if is_fields else register["type"]
+        register["sw"], register["hw"] = self._ask_until_accepted(
+            self._ask_access,
+            lambda access: adding(sw=access[0], hw=access[1], type=access_type),
+        )
+        if is_fields:
+            register["fields"] = self._ask_fields(
+                register, lambda fields: adding(fields=fields)
+            )
+        else:
+            register["reset"] = self._ask_until_accepted(
+                lambda: hex(prompts.number("Reset value", "0x0")),
+                lambda reset: adding(reset=reset),
+            )
+        register["description"] = prompts.text("Description", "")
+        if self._apply(adding()) and prompts.yes(
+            f"Set more properties of {register['name']}, such as onwrite?", False
+        ):
+            self._edit_register_at(len(self._registers()) - 1)
+
+    def _ask_access(self) -> Tuple[str, str]:
+        return (
+            self._choose_value("sw", "Software access (sw)", "rw"),
+            self._choose_value("hw", "Hardware access (hw)", "r"),
+        )
+
+    def _ask_until_accepted(
+        self,
+        ask: Callable[[], Any],
+        operations_for: Callable[[Any], List[Operation]],
+    ) -> Any:
+        """Ask until bust accepts the operations made from the answer."""
+        while True:
+            answer = ask()
+            try:
+                self.document.check_operations(operations_for(answer))
+                return answer
+            except EditRejected as error:
+                self.show(str(error))
+
+    def _choose_value(self, key: str, prompt: str, default: str) -> str:
+        values = _SCHEMA["register"]["properties"][key]["enum"]
+        return str(values[self.prompts.choose(prompt, values, values.index(default))])
+
+    def _ask_fields(
+        self,
+        access: Dict[str, Any],
+        operations_for: Callable[[List[Dict[str, Any]]], List[Operation]],
+    ) -> List[Dict[str, Any]]:
+        """Ask for one field or more of a register with these access keys.
+
+        Args:
+            access: The register's access keys, which the fields inherit.
+            operations_for: The operations that give the register these fields.
+        """
+        fields: List[Dict[str, Any]] = []
+        while True:
+            next_bit = (
+                fields[-1]["position"] + fields[-1].get("width", 1) if fields else 0
+            )
+            field = self._ask_field(
+                access,
+                [f["name"] for f in fields],
+                next_bit,
+                lambda field: operations_for(fields + [field]),
+            )
+            fields.append(field)
+            if not self.prompts.yes("Add another field?", False):
+                return fields
+
+    def _ask_field(
+        self,
+        access: Dict[str, Any],
+        taken: List[str],
+        next_bit: int,
+        operations_for: Callable[[Dict[str, Any]], List[Operation]],
+    ) -> Dict[str, Any]:
+        """Ask for a field, checking each answer with the operations that add
+        it. The field gets sw and hw only where they differ from the
+        register's `access`."""
+        prompts = self.prompts
+        field: Dict[str, Any] = {"name": prompts.identifier("Field name", taken)}
+
+        def ask_checked(ask: Callable[[], Any], key: str) -> Any:
+            return self._ask_until_accepted(
+                ask, lambda answer: operations_for({**field, key: answer})
+            )
+
+        types = FieldType.valid_values()
+        field["type"] = types[
+            prompts.choose("Field type", types, types.index(FieldType.BIT.value))
+        ]
+        field["position"] = ask_checked(
+            lambda: prompts.number("Lowest bit", str(next_bit)), "position"
+        )
+        if field["type"] == FieldType.VECTOR.value:
+            field["width"] = ask_checked(
+                lambda: prompts.number("Width in bits", "2"), "width"
+            )
+        field.update(
+            self._ask_until_accepted(
+                lambda: self._ask_field_access(access),
+                lambda keys: operations_for({**field, **keys}),
+            )
+        )
+        field["reset"] = ask_checked(
+            lambda: hex(prompts.number("Reset value", "0x0")), "reset"
+        )
+        field["description"] = prompts.text("Description", "")
+        return field
+
+    def _ask_field_access(self, access: Dict[str, Any]) -> Dict[str, str]:
+        """The field's sw and hw, where they differ from the register's."""
+        keys = {}
+        for key, prompt in (
+            ("sw", "Software access (sw)"),
+            ("hw", "Hardware access (hw)"),
+        ):
+            inherited = access.get(
+                key, _SCHEMA["register"]["properties"][key]["default"]
+            )
+            value = self._choose_value(key, f"{prompt} of the field", inherited)
+            if value != inherited:
+                keys[key] = value
+        return keys
+
+    def edit_register(self) -> None:
+        """Change any key of a register, or its fields."""
+        index = self._pick_register()
+        if index is not None:
+            self._edit_register_at(index)
+
+    def _edit_register_at(self, index: int) -> None:
+        while True:
+            register = self._registers()[index]
+            data = self._data["module"]["register"][index]
+            keys = ["name", "description", "address", "type"]
+            if register.type == RegisterType.VECTOR:
+                keys.append("width")
+            if register.type != RegisterType.FIELDS:
+                keys.append("reset")
+            keys += _ACCESS_KEYS
+            labels = [
+                _row(key, self._register_value(index, key), key in data) for key in keys
+            ]
+            extra = ["Fields"] if register.type == RegisterType.FIELDS else []
+            self.show("")
+            self.show(f"Register {register.name} at {hex(register.address)}")
+            choice = self.prompts.choose("Change", labels + extra + ["Done"])
+            if choice == len(labels) + len(extra):
+                return
+            if choice == len(labels):
+                self._edit_fields(index)
+            elif keys[choice] == "type":
+                self._change_register_type(index)
+            else:
+                self._edit_key(_register_path(index), "register", keys[choice], data)
+
+    def _register_value(self, index: int, key: str) -> str:
+        register = self._registers()[index]
+        if key in _ACCESS_KEYS:
+            default = _SCHEMA["register"]["properties"][key].get("default")
+            return _shown(register.access_defaults.get(key, default))
+        if key == "address":
+            return hex(register.address)
+        return _shown(getattr(register, key))
+
+    def _edit_key(
+        self, base: str, definition: str, key: str, data: Dict[str, Any]
+    ) -> None:
+        """Ask for a new value of `key` in the object at `base`, and apply it."""
+        schema = _SCHEMA[definition]["properties"][key]
+        self.show(schema["description"])
+        path = base + join_pointer(key)
+        remove = [{"op": "remove", "path": path}] if key in data else []
+        if "enum" in schema:
+            options = list(schema["enum"]) + ["not set"]
+            current = options.index(data.get(key, "not set"))
+            choice = self.prompts.choose(f"New {key}", options, current)
+            value: Any = options[choice]
+            if value == "not set":
+                self._apply(remove)
+                return
+        elif "boolean" in schema.get("type", ()):
+            options = ["true", "false", "not set"]
+            current = [True, False, None].index(data.get(key))
+            choice = self.prompts.choose(f"New {key}", options, current)
+            if choice == 2:
+                self._apply(remove)
+                return
+            value = choice == 0
+        else:
+            answer = self.prompts.text(
+                f"New {key} (Enter keeps it, {_UNSET} removes it)",
+                None if key not in data else str(data[key]),
+            )
+            if answer == _UNSET:
+                self._apply(remove)
+                return
+            if answer == "":
+                return
+            if "anyOf" in schema:
+                try:
+                    value = _number_value(key, parse_number(answer, key))
+                except FormatError as error:
+                    self.show(str(error))
+                    return
+            else:
+                value = answer
+        self._apply([{"op": "add", "path": path, "value": value}])
+
+    def _change_register_type(self, index: int) -> None:
+        assert self.document.module is not None
+        data = self._data["module"]["register"][index]
+        old = self._registers()[index].type.value
+        types = RegisterType.valid_values()
+        new = types[self.prompts.choose("New type", types, types.index(old))]
+        if new == old:
+            return
+        path = _register_path(index)
+        operations: List[Operation] = [
+            {"op": "add", "path": path + "/type", "value": new}
+        ]
+        is_fields = new == RegisterType.FIELDS.value
+        unused = ["reset"] if is_fields else ["fields"]
+        if new != RegisterType.VECTOR.value:
+            unused.append("width")
+        operations += [
+            {"op": "remove", "path": f"{path}/{key}"} for key in unused if key in data
+        ]
+        if is_fields:
+            fields = self._ask_fields(
+                self._registers()[index].access_defaults,
+                lambda fields: operations
+                + [{"op": "add", "path": path + "/fields", "value": fields}],
+            )
+            operations.append({"op": "add", "path": path + "/fields", "value": fields})
+        else:
+            if old == RegisterType.FIELDS.value and not self.prompts.yes(
+                f"Remove the fields of {data['name']}?", False
+            ):
+                return
+            if new == RegisterType.VECTOR.value:
+                width = self.prompts.number(
+                    "Width in bits", str(self.document.module.data_width)
+                )
+                operations.append(
+                    {"op": "add", "path": path + "/width", "value": width}
+                )
+            reset = data.get("reset", "0x0")
+            operations.append({"op": "add", "path": path + "/reset", "value": reset})
+        self._apply(operations)
+
+    def _edit_fields(self, index: int) -> None:
+        actions = ["Add a field", "Edit a field", "Remove a field", "Done"]
+        while True:
+            self._list_fields(index)
+            choice = self.prompts.choose("Fields", actions)
+            if choice == 0:
+                self._add_field(index)
+            elif choice == 1:
+                field = self._pick_field(index)
+                if field is not None:
+                    self._edit_field_at(index, field)
+            elif choice == 2:
+                self._remove_field(index)
+            else:
+                return
+
+    def _list_fields(self, index: int) -> None:
+        rows = [
+            (
+                number,
+                field.name,
+                field.get_pos_str(),
+                field.sw.value,
+                field.hw.value,
+                field.reset,
+                _shorten(field.description),
+            )
+            for number, field in enumerate(self._registers()[index].fields, start=1)
+        ]
+        headers = ("#", "Name", "Bits", "sw", "hw", "Reset", "Description")
+        self.show(_table(headers, rows))
+
+    def _pick_field(self, index: int) -> Optional[int]:
+        names = [field.name for field in self._registers()[index].fields]
+        return self._pick("Field", names)
+
+    def _add_field(self, index: int) -> None:
+        register = self._registers()[index]
+        field = self._ask_field(
+            register.access_defaults,
+            [f.name for f in register.fields],
+            register.get_next_pos_low(),
+            lambda field: [
+                {"op": "add", "path": _field_path(index, "-"), "value": field}
+            ],
+        )
+        self._apply([{"op": "add", "path": _field_path(index, "-"), "value": field}])
+
+    def _remove_field(self, index: int) -> None:
+        field = self._pick_field(index)
+        if field is None:
+            return
+        name = self._registers()[index].fields[field].name
+        if self.prompts.yes(f"Remove field {name}?", False):
+            self._apply([{"op": "remove", "path": _field_path(index, field)}])
+
+    def _edit_field_at(self, index: int, number: int) -> None:
+        while True:
+            field = self._registers()[index].fields[number]
+            data = self._data["module"]["register"][index]["fields"][number]
+            keys = ["name", "description", "type"]
+            if field.type == FieldType.VECTOR:
+                keys.append("width")
+            keys += ["position", "reset", *_ACCESS_KEYS]
+            labels = [
+                _row(
+                    key, _shown(getattr(field, _ATTRIBUTES.get(key, key))), key in data
+                )
+                for key in keys
+            ]
+            self.show("")
+            self.show(f"Field {field.name} of register {self._registers()[index].name}")
+            choice = self.prompts.choose(
+                "Change", labels + ["Enumerated values", "Done"]
+            )
+            if choice == len(labels) + 1:
+                return
+            if choice == len(labels):
+                self._edit_enums(index, number)
+            else:
+                self._edit_key(_field_path(index, number), "field", keys[choice], data)
+
+    def _edit_enums(self, index: int, number: int) -> None:
+        path = _field_path(index, number, "enums")
+        actions = ["Add a value", "Edit a value", "Remove a value", "Done"]
+        while True:
+            enums = self._data["module"]["register"][index]["fields"][number].get(
+                "enums", []
+            )
+            rows = [(i, e["name"], e["value"]) for i, e in enumerate(enums, start=1)]
+            self.show(_table(("#", "Name", "Value"), rows))
+            choice = self.prompts.choose("Enumerated values", actions)
+            if choice == 0:
+                name = self.prompts.identifier("Name", [e["name"] for e in enums])
+                value = self.prompts.number("Value", str(len(enums)))
+                entry = {"name": name, "value": value}
+                if enums:
+                    self._apply([{"op": "add", "path": path + "/-", "value": entry}])
+                else:
+                    self._apply([{"op": "add", "path": path, "value": [entry]}])
+            elif choice == 1:
+                self._edit_enum(path, enums)
+            elif choice == 2:
+                remove = self._pick("Value", [e["name"] for e in enums])
+                if remove is not None and len(enums) == 1:
+                    self._apply([{"op": "remove", "path": path}])
+                elif remove is not None:
+                    self._apply([{"op": "remove", "path": f"{path}/{remove}"}])
+            else:
+                return
+
+    def _edit_enum(self, path: str, enums: List[Dict[str, Any]]) -> None:
+        number = self._pick("Value", [e["name"] for e in enums])
+        if number is None:
+            return
+        entry = enums[number]
+        keys = ["name", "value"]
+        labels = [_row(key, str(entry[key]), True) for key in keys]
+        key = keys[self.prompts.choose("Change", labels)]
+        self._edit_key(f"{path}/{number}", "enum_value", key, entry)
+
+    def remove_register(self) -> None:
+        """Remove a register after asking."""
+        index = self._pick_register()
+        if index is None:
+            return
+        name = self._registers()[index].name
+        if self.prompts.yes(f"Remove register {name}?", False):
+            self._apply([{"op": "remove", "path": _register_path(index)}])
+
+    def edit_module(self) -> None:
+        """Change the module's name, description, version and addressing, and
+        the bus."""
+        while True:
+            assert self.document.module is not None
+            module = self.document.module
+            data = self._data
+            items = [
+                ("module", key, _shown(getattr(module, key)), key in data["module"])
+                for key in ("name", "description", "version", "byte_addressable")
+            ] + [
+                ("bus", key, _shown(getattr(module.bus, attribute)), True)
+                for key, attribute in (
+                    ("type", "bus_type"),
+                    ("addr_width", "addr_width"),
+                    ("data_width", "data_width"),
+                )
+            ]
+            labels = [
+                _row(f"{section} {key}", value, is_set)
+                for section, key, value, is_set in items
+            ]
+            self.show("")
+            choice = self.prompts.choose("Change", labels + ["Done"])
+            if choice == len(labels):
+                return
+            section, key, _, _ = items[choice]
+            self._edit_key(f"/{section}", section, key, data[section])
+
+    def fill_addresses(self) -> None:
+        """Write the address bust gives each register without an `address`, so
+        that adding registers later cannot move it."""
+        registers = self._data["module"]["register"]
+        operations = [
+            {
+                "op": "add",
+                "path": _register_path(index, "address"),
+                "value": hex(self._registers()[index].address),
+            }
+            for index, register in enumerate(registers)
+            if "address" not in register
+        ]
+        if not operations:
+            self.show("Every register has an address.")
+        elif self._apply(operations):
+            self.show(f"Gave {len(operations)} registers their address.")
+
+    def save(self) -> bool:
+        """Save if the register map changed.
+
+        Returns:
+            False if saving failed.
+        """
+        if not self.document.is_modified:
+            self.show("There are no changes to save.")
+            return True
+        if not self.document.keeps_formatting and not self.prompts.yes(
+            f"Saving rewrites {self.path} as plain JSON without comments. Save?",
+            False,
+        ):
+            return False
+        try:
+            self.document.save(self.path)
+        except (FileChanged, FileExistsError) as error:
+            self.show(f"Not saved: {error}")
+            return False
+        self.show(f"Saved {self.path}.")
+        return True
+
+
+def _row(key: str, value: str, is_set: bool) -> str:
+    return f"{key:<16} {value}" if is_set else f"{key:<16} {value} (not set)"
