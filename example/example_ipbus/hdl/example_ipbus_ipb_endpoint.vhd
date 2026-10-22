@@ -15,7 +15,7 @@ entity example_ipbus_ipb_endpoint is
   generic (
     G_BASE_ADDRESS       : unsigned(15 downto 0) := 16x"0";
     G_CHECK_BASE_ADDRESS : boolean := true;
-    G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH;
+    G_MODULE_ADDR_WIDTH  : natural := C_EXAMPLE_IPBUS_MODULE_ADDR_WIDTH;
     G_UNMAPPED_READ_DATA : std_logic_vector(31 downto 0) := (others => '0');
     G_ERR_ON_BAD_ACCESS  : boolean := false
   );

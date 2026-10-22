@@ -218,12 +218,12 @@ def test_register_without_fields_is_a_bare_member_of_to_hw_and_from_hw():
     )
     pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
     assert "    level : std_logic_vector(7 downto 0);" in pkg
-    assert "    kick : t_kick_kick_out;" in pkg
+    assert "    kick : t_m_kick_kick_out;" in pkg
     assert "    count : std_logic_vector(3 downto 0);" in pkg
-    assert "    load : t_load_load_in;" in pkg
-    assert "    ctrl : t_ctrl_to_hw;" in pkg
-    assert "type t_level_to_hw" not in pkg
-    assert "type t_count_from_hw" not in pkg
+    assert "    load : t_m_load_load_in;" in pkg
+    assert "    ctrl : t_m_ctrl_to_hw;" in pkg
+    assert "type t_m_level_to_hw" not in pkg
+    assert "type t_m_count_from_hw" not in pkg
 
     regfile = GeneratorFactory.generate_regfile_vhdl(module)
     assert "  to_hw.level <= regs.level.level;" in regfile
@@ -239,9 +239,10 @@ def test_register_without_fields_is_a_bare_member_of_to_hw_and_from_hw():
 
 def test_module_addr_width_generic_reaches_the_regfile():
     """G_MODULE_ADDR_WIDTH, the module address width, is declared on the top
-    wrapper, the endpoint and the regfile, and defaults to C_MODULE_ADDR_WIDTH."""
+    wrapper, the endpoint and the regfile, and defaults to C_<MODULE>_MODULE_ADDR_WIDTH.
+    """
     module = _build_module()
-    default = "G_MODULE_ADDR_WIDTH  : natural := C_MODULE_ADDR_WIDTH"
+    default = "G_MODULE_ADDR_WIDTH  : natural := C_PROTOTYPE_MODULE_ADDR_WIDTH"
     for generate in (
         GeneratorFactory.generate_module_top_vhdl,
         GeneratorFactory.generate_axi_endpoint_vhdl,
@@ -313,8 +314,8 @@ def test_axi_and_ipbus_testbenches_share_the_test_body():
         _build_ipbus_module()
     )
     for marker in (
-        'bus_check(f_addr(C_ADDR_REG7), 32x"00000A5A", "reg7 applies onwrite effects");',
-        'bus_check(f_addr(C_ADDR_REG4), 32x"0000000A", "reg4 reflects hwclr");',
+        'bus_check(f_addr(C_PROTOTYPE_REG7_OFFSET), 32x"00000A5A", "reg7 applies onwrite effects");',
+        'bus_check(f_addr(C_PROTOTYPE_REG4_OFFSET), 32x"0000000A", "reg4 reflects hwclr");',
         "reg10.field0 singlepulse lasts exactly one cycle",
     ):
         assert marker in axi
@@ -471,7 +472,7 @@ def test_constant_only_module_omits_empty_record_families():
     assert "C_RONLY_REGS_RESET" not in out
     assert "type t_ronly_from_hw is record" not in out
     assert "type t_ronly_to_hw is record" in out
-    assert "return reg_addr_match(reg_offset, C_ADDR_STAT);" in out
+    assert "return reg_addr_match(reg_offset, C_RONLY_STAT_OFFSET);" in out
 
 
 def test_constant_only_entity_uses_literals_not_regs():
@@ -600,10 +601,10 @@ def test_bit_enum_encodes_as_one_element_vector():
     )
     pkg = GeneratorFactory.generate_regfile_package_vhdl(module)
     regfile = GeneratorFactory.generate_regfile_vhdl(module)
-    assert "function to_r_f(s : std_logic_vector(0 downto 0)) return t_r_f;" in pkg
+    assert "function to_m_r_f(s : std_logic_vector(0 downto 0)) return t_m_r_f;" in pkg
     assert "variable slv : std_logic_vector(0 downto 0);" in pkg
     assert 'when "1" => return ENABLED;' in pkg
-    assert "regs.r.f <= to_r_f(lb_m2s.wdata(1 downto 1));" in regfile
+    assert "regs.r.f <= to_m_r_f(lb_m2s.wdata(1 downto 1));" in regfile
     assert "rdata(1 downto 1) <= to_slv(regs.r.f);" in regfile
 
 
@@ -629,16 +630,16 @@ def test_constant_enum_read_is_type_qualified():
         hw="r",
     )
     out = GeneratorFactory.generate_regfile_vhdl(module)
-    assert "rdata(0 downto 0) <= to_slv(t_r_a'(ENABLED));" in out
-    assert "rdata(1 downto 1) <= to_slv(t_r_b'(DISABLED));" in out
-    assert "to_hw.r <= (a => t_r_a'(ENABLED), b => t_r_b'(DISABLED));" in out
+    assert "rdata(0 downto 0) <= to_slv(t_m_r_a'(ENABLED));" in out
+    assert "rdata(1 downto 1) <= to_slv(t_m_r_b'(DISABLED));" in out
+    assert "to_hw.r <= (a => t_m_r_a'(ENABLED), b => t_m_r_b'(DISABLED));" in out
 
 
 def _strobe_read(module):
     reg = module.registers[0]
     tb = GeneratorFactory.generate_localbus_axi_testbench_vhdl(module)
     expected = reg.strobe_readback_value_vhdl
-    assert f'bus_check(f_addr(C_ADDR_R), {expected}, "read r");' in tb
+    assert f'bus_check(f_addr(C_M_R_OFFSET), {expected}, "read r");' in tb
     return expected
 
 
@@ -725,7 +726,7 @@ def test_singlepulse_testbench_detects_the_pulse_against_the_reset_value():
     assert 'if to_hw.r.go /= 4x"A" then' in tb
     assert "if to_hw.r.arm /= '1' then" in tb
     # go=0x5 (inverse of 0xA) in bits 3:0, arm=0 (inverse of 1) in bit 4.
-    assert 'bus_write(f_addr(C_ADDR_R), 32x"00000005", "write r");' in tb
+    assert 'bus_write(f_addr(C_M_R_OFFSET), 32x"00000005", "write r");' in tb
     assert 'check_value(r_go_sp_value, 4x"5", error,' in tb
     assert "check_value(r_arm_sp_value, '0', error," in tb
 
@@ -785,11 +786,11 @@ def test_hardware_updates_override_onread_effects_in_the_same_cycle():
     )
     p_write = _p_write(module)
     onread = p_write.index(
-        "if rd_service and reg_addr_match(reg_offset, C_ADDR_R) then"
+        "if rd_service and reg_addr_match(reg_offset, C_M_R_OFFSET) then"
     )
     assert onread < p_write.index("if from_hw.r.f.clr = '1' then")
     assert onread < p_write.index("if from_hw.r.g.we = '1' then")
-    assert p_write.count("rd_service and reg_addr_match(reg_offset, C_ADDR_R)") == 1
+    assert p_write.count("rd_service and reg_addr_match(reg_offset, C_M_R_OFFSET)") == 1
 
 
 def test_sticky_flag_testbench_checks_hwset_against_the_read_clear():
@@ -811,10 +812,10 @@ def test_sticky_flag_testbench_checks_hwset_against_the_read_clear():
     assert "r_pending_at_swacc <= to_hw.r.pending.value;" in tb
     sequence = tb[tb.index("hwset beats a read clear") :]
     assert sequence.index("from_hw.r.pending.set <= '1';") < sequence.index(
-        'bus_check(f_addr(C_ADDR_R), 32x"00000001", "r read while hwset is held");'
+        'bus_check(f_addr(C_M_R_OFFSET), 32x"00000001", "r read while hwset is held");'
     )
     assert "check_value(r_pending_at_swacc, '1', error," in sequence
-    assert 'bus_check(f_addr(C_ADDR_R), 32x"0", "r cleared by a read' in sequence
+    assert 'bus_check(f_addr(C_M_R_OFFSET), 32x"0", "r cleared by a read' in sequence
 
 
 @pytest.mark.parametrize(

@@ -218,59 +218,59 @@ begin
     gen_pulse(areset_n, '0', 500 ns, BLOCKING, "Reset for 500 ns");
 
     log(ID_LOG_HDR, "plain: software read-write round-trip", C_SCOPE);
-    bus_write(f_addr(C_ADDR_PLAIN), 32x"000000FF", "write plain");
-    bus_check(f_addr(C_ADDR_PLAIN), 32x"000000FF", "plain reads back");
+    bus_write(f_addr(C_ACCESS_MATRIX_PLAIN_OFFSET), 32x"000000FF", "write plain");
+    bus_check(f_addr(C_ACCESS_MATRIX_PLAIN_OFFSET), 32x"000000FF", "plain reads back");
     check_value(to_hw.plain.flag, '1', error, "plain.flag exposed to hw", C_SCOPE);
     check_value(to_hw.plain.level, 3x"7", error, "plain.level exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "strobes: software read-write round-trip", C_SCOPE);
-    bus_write(f_addr(C_ADDR_STROBES), 32x"000000FF", "write strobes");
-    bus_check(f_addr(C_ADDR_STROBES), 32x"000000FF", "strobes reads back");
+    bus_write(f_addr(C_ACCESS_MATRIX_STROBES_OFFSET), 32x"000000FF", "write strobes");
+    bus_check(f_addr(C_ACCESS_MATRIX_STROBES_OFFSET), 32x"000000FF", "strobes reads back");
     check_value(to_hw.strobes.modified.value, 4x"F", error, "strobes.modified exposed to hw", C_SCOPE);
     check_value(to_hw.strobes.accessed.value, 4x"F", error, "strobes.accessed exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "flat_level: software read-write round-trip", C_SCOPE);
-    bus_write(f_addr(C_ADDR_FLAT_LEVEL), 32x"000000FF", "write flat_level");
-    bus_check(f_addr(C_ADDR_FLAT_LEVEL), 32x"000000FF", "flat_level reads back");
+    bus_write(f_addr(C_ACCESS_MATRIX_FLAT_LEVEL_OFFSET), 32x"000000FF", "write flat_level");
+    bus_check(f_addr(C_ACCESS_MATRIX_FLAT_LEVEL_OFFSET), 32x"000000FF", "flat_level reads back");
     check_value(to_hw.flat_level, 8x"FF", error, "flat_level.flat_level exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "flat_strobe: software read-write round-trip", C_SCOPE);
-    bus_write(f_addr(C_ADDR_FLAT_STROBE), 32x"0000000F", "write flat_strobe");
-    bus_check(f_addr(C_ADDR_FLAT_STROBE), 32x"0000000F", "flat_strobe reads back");
+    bus_write(f_addr(C_ACCESS_MATRIX_FLAT_STROBE_OFFSET), 32x"0000000F", "write flat_strobe");
+    bus_check(f_addr(C_ACCESS_MATRIX_FLAT_STROBE_OFFSET), 32x"0000000F", "flat_strobe reads back");
     check_value(to_hw.flat_strobe.value, 4x"F", error, "flat_strobe.flat_strobe exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "enum_vector: enumerated round-trip", C_SCOPE);
-    bus_write(f_addr(C_ADDR_ENUM_VECTOR), 32x"00000003", "write enum_vector");
-    bus_check(f_addr(C_ADDR_ENUM_VECTOR), 32x"00000003", "enum_vector reads back encoded value");
+    bus_write(f_addr(C_ACCESS_MATRIX_ENUM_VECTOR_OFFSET), 32x"00000003", "write enum_vector");
+    bus_check(f_addr(C_ACCESS_MATRIX_ENUM_VECTOR_OFFSET), 32x"00000003", "enum_vector reads back encoded value");
 
     log(ID_LOG_HDR, "enum_bit: enumerated round-trip", C_SCOPE);
-    bus_write(f_addr(C_ADDR_ENUM_BIT), 32x"00000001", "write enum_bit");
-    bus_check(f_addr(C_ADDR_ENUM_BIT), 32x"00000001", "enum_bit reads back encoded value");
+    bus_write(f_addr(C_ACCESS_MATRIX_ENUM_BIT_OFFSET), 32x"00000001", "write enum_bit");
+    bus_check(f_addr(C_ACCESS_MATRIX_ENUM_BIT_OFFSET), 32x"00000001", "enum_bit reads back encoded value");
 
     log(ID_LOG_HDR, "enum_swacc: enumerated round-trip", C_SCOPE);
-    bus_write(f_addr(C_ADDR_ENUM_SWACC), 32x"00000002", "write enum_swacc");
-    bus_check(f_addr(C_ADDR_ENUM_SWACC), 32x"00000002", "enum_swacc reads back encoded value");
+    bus_write(f_addr(C_ACCESS_MATRIX_ENUM_SWACC_OFFSET), 32x"00000002", "write enum_swacc");
+    bus_check(f_addr(C_ACCESS_MATRIX_ENUM_SWACC_OFFSET), 32x"00000002", "enum_swacc reads back encoded value");
 
     log(ID_LOG_HDR, "command: write-only / pulse reads back zero", C_SCOPE);
-    bus_write(f_addr(C_ADDR_COMMAND), 32x"0000000F", "write command");
-    bus_check_unmapped(f_addr(C_ADDR_COMMAND), "read command, which software cannot read");
+    bus_write(f_addr(C_ACCESS_MATRIX_COMMAND_OFFSET), 32x"0000000F", "write command");
+    bus_check_unmapped(f_addr(C_ACCESS_MATRIX_COMMAND_OFFSET), "read command, which software cannot read");
 
     log(ID_LOG_HDR, "pulses: write-only / pulse reads back zero", C_SCOPE);
-    bus_write(f_addr(C_ADDR_PULSES), 32x"0000001F", "write pulses");
-    bus_check(f_addr(C_ADDR_PULSES), 32x"0", "pulses reads back zero");
+    bus_write(f_addr(C_ACCESS_MATRIX_PULSES_OFFSET), 32x"0000001F", "write pulses");
+    bus_check(f_addr(C_ACCESS_MATRIX_PULSES_OFFSET), 32x"0", "pulses reads back zero");
 
     log(ID_LOG_HDR, "write_effects: onwrite software side effects", C_SCOPE);
-    bus_write(f_addr(C_ADDR_WRITE_EFFECTS), 32x"00001555", "write write_effects");
-    bus_check(f_addr(C_ADDR_WRITE_EFFECTS), 32x"00001AA5", "write_effects applies onwrite effects");
+    bus_write(f_addr(C_ACCESS_MATRIX_WRITE_EFFECTS_OFFSET), 32x"00001555", "write write_effects");
+    bus_check(f_addr(C_ACCESS_MATRIX_WRITE_EFFECTS_OFFSET), 32x"00001AA5", "write_effects applies onwrite effects");
 
     log(ID_LOG_HDR, "mixed_history: onwrite software side effects", C_SCOPE);
-    bus_write(f_addr(C_ADDR_MIXED_HISTORY), 32x"00005555", "write mixed_history");
-    bus_check(f_addr(C_ADDR_MIXED_HISTORY), 32x"0000A5A5", "mixed_history applies onwrite effects");
+    bus_write(f_addr(C_ACCESS_MATRIX_MIXED_HISTORY_OFFSET), 32x"00005555", "write mixed_history");
+    bus_check(f_addr(C_ACCESS_MATRIX_MIXED_HISTORY_OFFSET), 32x"0000A5A5", "mixed_history applies onwrite effects");
 
     log(ID_LOG_HDR, "read_effects: onread software side effects", C_SCOPE);
-    bus_write(f_addr(C_ADDR_READ_EFFECTS), 32x"00000055", "write read_effects");
-    bus_check(f_addr(C_ADDR_READ_EFFECTS), 32x"00000055", "read_effects first read returns stored value");
-    bus_check(f_addr(C_ADDR_READ_EFFECTS), 32x"000000F0", "read_effects second read reflects onread");
+    bus_write(f_addr(C_ACCESS_MATRIX_READ_EFFECTS_OFFSET), 32x"00000055", "write read_effects");
+    bus_check(f_addr(C_ACCESS_MATRIX_READ_EFFECTS_OFFSET), 32x"00000055", "read_effects first read returns stored value");
+    bus_check(f_addr(C_ACCESS_MATRIX_READ_EFFECTS_OFFSET), 32x"000000F0", "read_effects second read reflects onread");
 
     log(ID_LOG_HDR, "status: hardware-driven status read back over the bus", C_SCOPE);
     wait until falling_edge(clk);
@@ -282,7 +282,7 @@ begin
     wait until falling_edge(clk);
     from_hw.status.count.we <= '0';
     from_hw.status.fault.wel <= '1';
-    bus_check(f_addr(C_ADDR_STATUS), 32x"0000002B", "status reflects hardware inputs");
+    bus_check(f_addr(C_ACCESS_MATRIX_STATUS_OFFSET), 32x"0000002B", "status reflects hardware inputs");
 
     log(ID_LOG_HDR, "hw_status_swacc: hardware-driven status read back over the bus", C_SCOPE);
     wait until falling_edge(clk);
@@ -291,17 +291,17 @@ begin
     from_hw.hw_status_swacc.latched.we <= '1';
     wait until falling_edge(clk);
     from_hw.hw_status_swacc.latched.we <= '0';
-    bus_check(f_addr(C_ADDR_HW_STATUS_SWACC), 32x"00000055", "hw_status_swacc reflects hardware inputs");
+    bus_check(f_addr(C_ACCESS_MATRIX_HW_STATUS_SWACC_OFFSET), 32x"00000055", "hw_status_swacc reflects hardware inputs");
 
     log(ID_LOG_HDR, "flat_status: hardware-driven status read back over the bus", C_SCOPE);
     wait until falling_edge(clk);
     from_hw.flat_status <= 6x"15";
     wait until falling_edge(clk);
-    bus_check(f_addr(C_ADDR_FLAT_STATUS), 32x"00000015", "flat_status reflects hardware inputs");
+    bus_check(f_addr(C_ACCESS_MATRIX_FLAT_STATUS_OFFSET), 32x"00000015", "flat_status reflects hardware inputs");
 
     log(ID_LOG_HDR, "hw_modify: software baseline write", C_SCOPE);
-    bus_write(f_addr(C_ADDR_HW_MODIFY), 32x"00000015", "write hw_modify");
-    bus_check(f_addr(C_ADDR_HW_MODIFY), 32x"00000015", "hw_modify reads back the software value");
+    bus_write(f_addr(C_ACCESS_MATRIX_HW_MODIFY_OFFSET), 32x"00000015", "write hw_modify");
+    bus_check(f_addr(C_ACCESS_MATRIX_HW_MODIFY_OFFSET), 32x"00000015", "hw_modify reads back the software value");
     check_value(to_hw.hw_modify.override, 4x"5", error, "hw_modify.override exposed to hw", C_SCOPE);
     check_value(to_hw.hw_modify.sticky, '1', error, "hw_modify.sticky exposed to hw", C_SCOPE);
 
@@ -311,14 +311,14 @@ begin
     from_hw.hw_modify.override.we <= '1';
     wait until falling_edge(clk);
     from_hw.hw_modify.override.we <= '0';
-    bus_check(f_addr(C_ADDR_HW_MODIFY), 32x"0000001A", "hw_modify reflects the hardware we override");
+    bus_check(f_addr(C_ACCESS_MATRIX_HW_MODIFY_OFFSET), 32x"0000001A", "hw_modify reflects the hardware we override");
 
     log(ID_LOG_HDR, "hw_modify: hwset drives fields high", C_SCOPE);
     wait until falling_edge(clk);
     from_hw.hw_modify.sticky.set <= '1';
     wait until falling_edge(clk);
     from_hw.hw_modify.sticky.set <= '0';
-    bus_check(f_addr(C_ADDR_HW_MODIFY), 32x"0000001A", "hw_modify reflects hwset");
+    bus_check(f_addr(C_ACCESS_MATRIX_HW_MODIFY_OFFSET), 32x"0000001A", "hw_modify reflects hwset");
 
     log(ID_LOG_HDR, "hw_modify: hwclr clears fields (and beats hwset)", C_SCOPE);
     wait until falling_edge(clk);
@@ -327,11 +327,11 @@ begin
     wait until falling_edge(clk);
     from_hw.hw_modify.sticky.set <= '0';
     from_hw.hw_modify.sticky.clr <= '0';
-    bus_check(f_addr(C_ADDR_HW_MODIFY), 32x"0000000A", "hw_modify reflects hwclr");
+    bus_check(f_addr(C_ACCESS_MATRIX_HW_MODIFY_OFFSET), 32x"0000000A", "hw_modify reflects hwclr");
 
     log(ID_LOG_HDR, "flat_override: software baseline write", C_SCOPE);
-    bus_write(f_addr(C_ADDR_FLAT_OVERRIDE), 32x"00000055", "write flat_override");
-    bus_check(f_addr(C_ADDR_FLAT_OVERRIDE), 32x"00000055", "flat_override reads back the software value");
+    bus_write(f_addr(C_ACCESS_MATRIX_FLAT_OVERRIDE_OFFSET), 32x"00000055", "write flat_override");
+    bus_check(f_addr(C_ACCESS_MATRIX_FLAT_OVERRIDE_OFFSET), 32x"00000055", "flat_override reads back the software value");
     check_value(to_hw.flat_override, 8x"55", error, "flat_override.flat_override exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "flat_override: hardware we overrides the stored value", C_SCOPE);
@@ -340,11 +340,11 @@ begin
     from_hw.flat_override.we <= '1';
     wait until falling_edge(clk);
     from_hw.flat_override.we <= '0';
-    bus_check(f_addr(C_ADDR_FLAT_OVERRIDE), 32x"000000AA", "flat_override reflects the hardware we override");
+    bus_check(f_addr(C_ACCESS_MATRIX_FLAT_OVERRIDE_OFFSET), 32x"000000AA", "flat_override reflects the hardware we override");
 
     log(ID_LOG_HDR, "flat_flag: software baseline write", C_SCOPE);
-    bus_write(f_addr(C_ADDR_FLAT_FLAG), 32x"00000001", "write flat_flag");
-    bus_check(f_addr(C_ADDR_FLAT_FLAG), 32x"00000001", "flat_flag reads back the software value");
+    bus_write(f_addr(C_ACCESS_MATRIX_FLAT_FLAG_OFFSET), 32x"00000001", "write flat_flag");
+    bus_check(f_addr(C_ACCESS_MATRIX_FLAT_FLAG_OFFSET), 32x"00000001", "flat_flag reads back the software value");
     check_value(to_hw.flat_flag, '1', error, "flat_flag.flat_flag exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "flat_flag: hwset drives fields high", C_SCOPE);
@@ -352,7 +352,7 @@ begin
     from_hw.flat_flag.set <= '1';
     wait until falling_edge(clk);
     from_hw.flat_flag.set <= '0';
-    bus_check(f_addr(C_ADDR_FLAT_FLAG), 32x"00000001", "flat_flag reflects hwset");
+    bus_check(f_addr(C_ACCESS_MATRIX_FLAT_FLAG_OFFSET), 32x"00000001", "flat_flag reflects hwset");
 
     log(ID_LOG_HDR, "flat_flag: hwclr clears fields (and beats hwset)", C_SCOPE);
     wait until falling_edge(clk);
@@ -361,12 +361,12 @@ begin
     wait until falling_edge(clk);
     from_hw.flat_flag.set <= '0';
     from_hw.flat_flag.clr <= '0';
-    bus_check(f_addr(C_ADDR_FLAT_FLAG), 32x"00000000", "flat_flag reflects hwclr");
+    bus_check(f_addr(C_ACCESS_MATRIX_FLAT_FLAG_OFFSET), 32x"00000000", "flat_flag reflects hwclr");
 
     log(ID_LOG_HDR, "hw_set_clear: software-access strobe pulses", C_SCOPE);
     v_hw_set_clear_clr_only_swacc := hw_set_clear_clr_only_swacc_count;
-    bus_write(f_addr(C_ADDR_HW_SET_CLEAR), 32x"0000001F", "write hw_set_clear");
-    bus_check(f_addr(C_ADDR_HW_SET_CLEAR), 32x"00000000", "read hw_set_clear");
+    bus_write(f_addr(C_ACCESS_MATRIX_HW_SET_CLEAR_OFFSET), 32x"0000001F", "write hw_set_clear");
+    bus_check(f_addr(C_ACCESS_MATRIX_HW_SET_CLEAR_OFFSET), 32x"00000000", "read hw_set_clear");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(hw_set_clear_clr_only_swacc_count - v_hw_set_clear_clr_only_swacc, 2, error, "hw_set_clear.clr_only swacc pulses per access (write + read)", C_SCOPE);
@@ -375,7 +375,7 @@ begin
     v_pulses_kick_swmod := pulses_kick_swmod_count;
     v_pulses_go_sp := pulses_go_sp_count;
     v_pulses_kick_sp := pulses_kick_sp_count;
-    bus_write(f_addr(C_ADDR_PULSES), 32x"0000001F", "write pulses");
+    bus_write(f_addr(C_ACCESS_MATRIX_PULSES_OFFSET), 32x"0000001F", "write pulses");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(pulses_kick_swmod_count - v_pulses_kick_swmod, 1, error, "pulses.kick swmod pulses once per write", C_SCOPE);
@@ -387,8 +387,8 @@ begin
     log(ID_LOG_HDR, "strobes: software-access strobe pulses", C_SCOPE);
     v_strobes_modified_swmod := strobes_modified_swmod_count;
     v_strobes_accessed_swacc := strobes_accessed_swacc_count;
-    bus_write(f_addr(C_ADDR_STROBES), 32x"000000FF", "write strobes");
-    bus_check(f_addr(C_ADDR_STROBES), 32x"000000FF", "read strobes");
+    bus_write(f_addr(C_ACCESS_MATRIX_STROBES_OFFSET), 32x"000000FF", "write strobes");
+    bus_check(f_addr(C_ACCESS_MATRIX_STROBES_OFFSET), 32x"000000FF", "read strobes");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(strobes_modified_swmod_count - v_strobes_modified_swmod, 1, error, "strobes.modified swmod pulses once per write", C_SCOPE);
@@ -396,8 +396,8 @@ begin
 
     log(ID_LOG_HDR, "enum_swacc: software-access strobe pulses", C_SCOPE);
     v_enum_swacc_phase_swacc := enum_swacc_phase_swacc_count;
-    bus_write(f_addr(C_ADDR_ENUM_SWACC), 32x"00000003", "write enum_swacc");
-    bus_check(f_addr(C_ADDR_ENUM_SWACC), 32x"00000000", "read enum_swacc");
+    bus_write(f_addr(C_ACCESS_MATRIX_ENUM_SWACC_OFFSET), 32x"00000003", "write enum_swacc");
+    bus_check(f_addr(C_ACCESS_MATRIX_ENUM_SWACC_OFFSET), 32x"00000000", "read enum_swacc");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(enum_swacc_phase_swacc_count - v_enum_swacc_phase_swacc, 2, error, "enum_swacc.phase swacc pulses per access (write + read)", C_SCOPE);
@@ -405,8 +405,8 @@ begin
     log(ID_LOG_HDR, "mixed_swacc: software-access strobe pulses", C_SCOPE);
     v_mixed_swacc_clear_bits_swacc := mixed_swacc_clear_bits_swacc_count;
     v_mixed_swacc_go_sp := mixed_swacc_go_sp_count;
-    bus_write(f_addr(C_ADDR_MIXED_SWACC), 32x"0007FFFF", "write mixed_swacc");
-    bus_check(f_addr(C_ADDR_MIXED_SWACC), 32x"000609F0", "read mixed_swacc");
+    bus_write(f_addr(C_ACCESS_MATRIX_MIXED_SWACC_OFFSET), 32x"0007FFFF", "write mixed_swacc");
+    bus_check(f_addr(C_ACCESS_MATRIX_MIXED_SWACC_OFFSET), 32x"000609F0", "read mixed_swacc");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(mixed_swacc_clear_bits_swacc_count - v_mixed_swacc_clear_bits_swacc, 2, error, "mixed_swacc.clear_bits swacc pulses per access (write + read)", C_SCOPE);
@@ -415,31 +415,31 @@ begin
 
     log(ID_LOG_HDR, "mixed_history: software-access strobe pulses", C_SCOPE);
     v_mixed_history_toggle_swacc := mixed_history_toggle_swacc_count;
-    bus_write(f_addr(C_ADDR_MIXED_HISTORY), 32x"0000FFFF", "write mixed_history");
-    bus_check(f_addr(C_ADDR_MIXED_HISTORY), 32x"0000A5AA", "read mixed_history");
+    bus_write(f_addr(C_ACCESS_MATRIX_MIXED_HISTORY_OFFSET), 32x"0000FFFF", "write mixed_history");
+    bus_check(f_addr(C_ACCESS_MATRIX_MIXED_HISTORY_OFFSET), 32x"0000A5AA", "read mixed_history");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(mixed_history_toggle_swacc_count - v_mixed_history_toggle_swacc, 2, error, "mixed_history.toggle swacc pulses per access (write + read)", C_SCOPE);
 
     log(ID_LOG_HDR, "hw_status_swacc: software-access strobe pulses", C_SCOPE);
     v_hw_status_swacc_level_swacc := hw_status_swacc_level_swacc_count;
-    bus_write_unmapped(f_addr(C_ADDR_HW_STATUS_SWACC), 32x"000000FF", "write hw_status_swacc, which software cannot write");
-    bus_check(f_addr(C_ADDR_HW_STATUS_SWACC), 32x"00000055", "read hw_status_swacc");
+    bus_write_unmapped(f_addr(C_ACCESS_MATRIX_HW_STATUS_SWACC_OFFSET), 32x"000000FF", "write hw_status_swacc, which software cannot write");
+    bus_check(f_addr(C_ACCESS_MATRIX_HW_STATUS_SWACC_OFFSET), 32x"00000055", "read hw_status_swacc");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(hw_status_swacc_level_swacc_count - v_hw_status_swacc_level_swacc, 2, error, "hw_status_swacc.level swacc pulses per access (write + read)", C_SCOPE);
 
     log(ID_LOG_HDR, "irq_status: software-access strobe pulses", C_SCOPE);
     v_irq_status_pending_swacc := irq_status_pending_swacc_count;
-    bus_write_unmapped(f_addr(C_ADDR_IRQ_STATUS), 32x"00000001", "write irq_status, which software cannot write");
-    bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"00000000", "read irq_status");
+    bus_write_unmapped(f_addr(C_ACCESS_MATRIX_IRQ_STATUS_OFFSET), 32x"00000001", "write irq_status, which software cannot write");
+    bus_check(f_addr(C_ACCESS_MATRIX_IRQ_STATUS_OFFSET), 32x"00000000", "read irq_status");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(irq_status_pending_swacc_count - v_irq_status_pending_swacc, 2, error, "irq_status.pending swacc pulses per access (write + read)", C_SCOPE);
 
     log(ID_LOG_HDR, "flat_strobe: software-access strobe pulses", C_SCOPE);
     v_flat_strobe_flat_strobe_swmod := flat_strobe_flat_strobe_swmod_count;
-    bus_write(f_addr(C_ADDR_FLAT_STROBE), 32x"0000000F", "write flat_strobe");
+    bus_write(f_addr(C_ACCESS_MATRIX_FLAT_STROBE_OFFSET), 32x"0000000F", "write flat_strobe");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(flat_strobe_flat_strobe_swmod_count - v_flat_strobe_flat_strobe_swmod, 1, error, "flat_strobe.flat_strobe swmod pulses once per write", C_SCOPE);
@@ -450,23 +450,23 @@ begin
     wait until falling_edge(clk);
     from_hw.irq_status.pending.set <= '1';
     wait until falling_edge(clk);
-    bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"00000001", "irq_status read while hwset is held");
+    bus_check(f_addr(C_ACCESS_MATRIX_IRQ_STATUS_OFFSET), 32x"00000001", "irq_status read while hwset is held");
     wait until falling_edge(clk);
     from_hw.irq_status.pending.set <= '0';
     check_value(irq_status_pending_at_swacc, '1', error, "irq_status.pending still set in the cycle after the read clear", C_SCOPE);
-    bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"00000001", "irq_status still set after that read");
-    bus_check(f_addr(C_ADDR_IRQ_STATUS), 32x"0", "irq_status cleared by a read without hwset");
+    bus_check(f_addr(C_ACCESS_MATRIX_IRQ_STATUS_OFFSET), 32x"00000001", "irq_status still set after that read");
+    bus_check(f_addr(C_ACCESS_MATRIX_IRQ_STATUS_OFFSET), 32x"0", "irq_status cleared by a read without hwset");
 
     -- With G_ERR_ON_BAD_ACCESS, a write to a register software cannot write and
     -- a read of one it cannot read get an error response where the bus has one.
     log(ID_LOG_HDR, "accesses in the wrong direction get an error", C_SCOPE);
-    bus_write_unmapped(f_addr(C_ADDR_STATUS), 32x"0", "write status, which software cannot write");
-    bus_write_unmapped(f_addr(C_ADDR_IDENTITY), 32x"0", "write identity, which software cannot write");
-    bus_write_unmapped(f_addr(C_ADDR_ENUM_HW), 32x"0", "write enum_hw, which software cannot write");
-    bus_write_unmapped(f_addr(C_ADDR_HW_STATUS_SWACC), 32x"0", "write hw_status_swacc, which software cannot write");
-    bus_write_unmapped(f_addr(C_ADDR_IRQ_STATUS), 32x"0", "write irq_status, which software cannot write");
-    bus_write_unmapped(f_addr(C_ADDR_FLAT_STATUS), 32x"0", "write flat_status, which software cannot write");
-    bus_check_unmapped(f_addr(C_ADDR_COMMAND), "read command, which software cannot read");
+    bus_write_unmapped(f_addr(C_ACCESS_MATRIX_STATUS_OFFSET), 32x"0", "write status, which software cannot write");
+    bus_write_unmapped(f_addr(C_ACCESS_MATRIX_IDENTITY_OFFSET), 32x"0", "write identity, which software cannot write");
+    bus_write_unmapped(f_addr(C_ACCESS_MATRIX_ENUM_HW_OFFSET), 32x"0", "write enum_hw, which software cannot write");
+    bus_write_unmapped(f_addr(C_ACCESS_MATRIX_HW_STATUS_SWACC_OFFSET), 32x"0", "write hw_status_swacc, which software cannot write");
+    bus_write_unmapped(f_addr(C_ACCESS_MATRIX_IRQ_STATUS_OFFSET), 32x"0", "write irq_status, which software cannot write");
+    bus_write_unmapped(f_addr(C_ACCESS_MATRIX_FLAT_STATUS_OFFSET), 32x"0", "write flat_status, which software cannot write");
+    bus_check_unmapped(f_addr(C_ACCESS_MATRIX_COMMAND_OFFSET), "read command, which software cannot read");
 
     -- An address where no register sits gets an error response where the bus
     -- has one, reads as G_UNMAPPED_READ_DATA, and a write to it changes no register.
@@ -479,7 +479,7 @@ begin
     bus_check_unmapped(f_addr(32x"80"), "read 0x80, an address above the registers");
     bus_write_unmapped(f_addr(32x"200"), 32x"0", "write 0x200, another base address");
     bus_check_unmapped(f_addr(32x"200"), "read 0x200, another base address");
-    bus_check(f_addr(C_ADDR_PLAIN), 32x"000000FF", "plain unchanged by the unmapped writes");
+    bus_check(f_addr(C_ACCESS_MATRIX_PLAIN_OFFSET), 32x"000000FF", "plain unchanged by the unmapped writes");
 
     wait for 10*C_CLK_PERIOD;
     report_alert_counters(FINAL);

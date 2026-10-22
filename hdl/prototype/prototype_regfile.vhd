@@ -21,7 +21,7 @@ entity prototype_regfile is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := x"00000000";
     G_CHECK_BASE_ADDRESS : boolean               := true;
-    G_MODULE_ADDR_WIDTH  : natural               := C_MODULE_ADDR_WIDTH;
+    G_MODULE_ADDR_WIDTH  : natural               := C_PROTOTYPE_MODULE_ADDR_WIDTH;
     G_RESET_ACTIVE_LOW   : boolean               := false
   );
   port (
@@ -53,9 +53,9 @@ begin
   rst <= (reset xor '1') when G_RESET_ACTIVE_LOW else reset;
 
   -- G_MODULE_ADDR_WIDTH must hold the registers and fit in the address.
-  assert G_MODULE_ADDR_WIDTH >= C_MODULE_ADDR_WIDTH and G_MODULE_ADDR_WIDTH <= 32
-    report "G_MODULE_ADDR_WIDTH must be from C_MODULE_ADDR_WIDTH ("
-           & natural'image(C_MODULE_ADDR_WIDTH) & ") to 32"
+  assert G_MODULE_ADDR_WIDTH >= C_PROTOTYPE_MODULE_ADDR_WIDTH and G_MODULE_ADDR_WIDTH <= 32
+    report "G_MODULE_ADDR_WIDTH must be from C_PROTOTYPE_MODULE_ADDR_WIDTH ("
+           & natural'image(C_PROTOTYPE_MODULE_ADDR_WIDTH) & ") to 32"
     severity failure;
 
   -- The base address must be a multiple of the size of the address range.
@@ -70,7 +70,7 @@ begin
   -- (provisional, since `precedence` is deferred) reads top-to-bottom:
   --   hwclr > hwset > hardware we/wel write > software write.
   p_write : process (clk) is
-    variable reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+    variable reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0);
     variable mapped     : boolean;     -- a register sits at this address
     variable sw_write   : boolean;     -- a new software write to a register
     -- p_write is the single driver of `regs`, so the onread side effects (which
@@ -85,7 +85,7 @@ begin
       -- A software access only takes effect on the cycle it is first seen
       -- (wr_ack/rd_err/... still low). The master holds the request until it
       -- observes the response, so these guards keep the effect single-shot.
-      reg_offset := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
+      reg_offset := lb_m2s.address(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0);
       mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
                                G_MODULE_ADDR_WIDTH)
                     and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
@@ -94,18 +94,18 @@ begin
       rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' and mapped;
 
       -- reg0: sw rw, hw r
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG0) then
+      if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG0_OFFSET) then
         regs.reg0.field0 <= lb_m2s.wdata(0);
         regs.reg0.field1 <= lb_m2s.wdata(2 downto 1);
       end if;
 
       -- reg2.field0: sw wo, hw r (drives hardware, reads back 0)
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG2) then
+      if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG2_OFFSET) then
         regs.reg2.field0 <= lb_m2s.wdata(0);
       end if;
 
       -- reg3.field0: sw rw, hw na
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG3) then
+      if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG3_OFFSET) then
         regs.reg3.field0 <= lb_m2s.wdata(7 downto 0);
       end if;
 
@@ -120,7 +120,7 @@ begin
       -- reg4.field0: hardware we write wins over software write.
       if from_hw.reg4.field0.we = '1' then
         regs.reg4.field0 <= from_hw.reg4.field0.value;
-      elsif sw_write and reg_addr_match(reg_offset, C_ADDR_REG4) then
+      elsif sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG4_OFFSET) then
         regs.reg4.field0 <= lb_m2s.wdata(3 downto 0);
       end if;
 
@@ -129,39 +129,39 @@ begin
         regs.reg4.field1 <= '0';
       elsif from_hw.reg4.field1.set = '1' then
         regs.reg4.field1 <= '1';
-      elsif sw_write and reg_addr_match(reg_offset, C_ADDR_REG4) then
+      elsif sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG4_OFFSET) then
         regs.reg4.field1 <= lb_m2s.wdata(8);
       end if;
 
       -- reg5: sw rw, hw r. Plain on write; the onread effect (below) acts on a
       -- software read, not a write.
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG5) then
+      if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG5_OFFSET) then
         regs.reg5.field0 <= lb_m2s.wdata(3 downto 0);
         regs.reg5.field1 <= lb_m2s.wdata(7 downto 4);
       end if;
 
       -- reg6: onwrite write-1 effects, with stored value f and write data w.
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG6) then
+      if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG6_OFFSET) then
         regs.reg6.field0 <= regs.reg6.field0 or lb_m2s.wdata(3 downto 0);        -- woset
         regs.reg6.field1 <= regs.reg6.field1 and not lb_m2s.wdata(7 downto 4);   -- woclr
         regs.reg6.field2 <= regs.reg6.field2 xor lb_m2s.wdata(11 downto 8);      -- wot
       end if;
 
       -- reg7: onwrite write-0 effects (the write-1 family with w inverted).
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG7) then
+      if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG7_OFFSET) then
         regs.reg7.field0 <= regs.reg7.field0 or not lb_m2s.wdata(3 downto 0);    -- wzs
         regs.reg7.field1 <= regs.reg7.field1 and lb_m2s.wdata(7 downto 4);       -- wzc
         regs.reg7.field2 <= regs.reg7.field2 xor not lb_m2s.wdata(11 downto 8);  -- wzt
       end if;
 
       -- reg8: onwrite whole-field effects (data-independent).
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG8) then
+      if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG8_OFFSET) then
         regs.reg8.field0 <= (others => '0');   -- wclr
         regs.reg8.field1 <= (others => '1');   -- wset
       end if;
 
       -- reg9: sw rw, hw r. Plain storage; swmod/swacc strobes generated below.
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG9) then
+      if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG9_OFFSET) then
         regs.reg9.field0 <= lb_m2s.wdata(3 downto 0);
         regs.reg9.field1 <= lb_m2s.wdata(7 downto 4);
       end if;
@@ -169,20 +169,20 @@ begin
       -- reg10.field0: singlepulse. Default-clear every cycle, so a software
       -- write surfaces to hardware as a single-cycle pulse and then self-clears.
       regs.reg10.field0 <= (others => '0');
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG10) then
+      if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG10_OFFSET) then
         regs.reg10.field0 <= lb_m2s.wdata(3 downto 0);
       end if;
 
       -- reg11.field0: sw rw, hw r. Stored as the enum type; the bus value is
       -- converted to the enum on write and back to bits on read.
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG11) then
-        regs.reg11.field0 <= to_reg11_field0(lb_m2s.wdata(1 downto 0));
+      if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG11_OFFSET) then
+        regs.reg11.field0 <= to_prototype_reg11_field0(lb_m2s.wdata(1 downto 0));
       end if;
 
       -- reg5 onread effects: applied on the cycle the software read is serviced.
       -- The read returns the pre-effect value; storage updates here on the same
       -- edge.
-      if rd_service and reg_addr_match(reg_offset, C_ADDR_REG5) then
+      if rd_service and reg_addr_match(reg_offset, C_PROTOTYPE_REG5_OFFSET) then
         regs.reg5.field0 <= (others => '0');   -- onread rclr
         regs.reg5.field1 <= (others => '1');   -- onread rset
       end if;
@@ -191,10 +191,10 @@ begin
       -- field0 (a write), swacc pulses on any software access (read or write).
       swmod_r9f0 <= '0';
       swacc_r9f1 <= '0';
-      if sw_write and reg_addr_match(reg_offset, C_ADDR_REG9) then
+      if sw_write and reg_addr_match(reg_offset, C_PROTOTYPE_REG9_OFFSET) then
         swmod_r9f0 <= '1';
         swacc_r9f1 <= '1';
-      elsif rd_service and reg_addr_match(reg_offset, C_ADDR_REG9) then
+      elsif rd_service and reg_addr_match(reg_offset, C_PROTOTYPE_REG9_OFFSET) then
         swacc_r9f1 <= '1';
       end if;
 
@@ -223,7 +223,7 @@ begin
   -- Reads of non-readable fields (sw wo / na) return 0 and ack; err is reserved
   -- for address-decode failures, matching SystemRDL and the legacy bus PIFs.
   p_read : process (clk) is
-    variable reg_offset : std_logic_vector(C_MODULE_ADDR_WIDTH-1 downto 0);
+    variable reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0);
     variable mapped     : boolean;     -- a register sits at this address
   begin
     if rising_edge(clk) then
@@ -232,57 +232,57 @@ begin
 
       if lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' then
         rdata <= (others => '0');
-        reg_offset := lb_m2s.address(C_MODULE_ADDR_WIDTH-1 downto 0);
+        reg_offset := lb_m2s.address(C_PROTOTYPE_MODULE_ADDR_WIDTH-1 downto 0);
         mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
                                  G_MODULE_ADDR_WIDTH)
                       and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
                       and is_mapped(reg_offset);
         if not mapped then
           rd_err <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG0) then
+        elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG0_OFFSET) then
           rdata(0)          <= regs.reg0.field0;
           rdata(2 downto 1) <= regs.reg0.field1;
           rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG1) then
+        elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG1_OFFSET) then
           rdata(3 downto 0) <= regs.reg1.field0;
           rdata(4)          <= from_hw.reg1.field1;  -- status field, not stored
           rdata(5)          <= regs.reg1.field2;
           rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG2) then
+        elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG2_OFFSET) then
           rd_ack <= '1';                            -- reg2.field0 sw wo: reads 0
-        elsif reg_addr_match(reg_offset, C_ADDR_REG3) then
+        elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG3_OFFSET) then
           rdata(7 downto 0) <= regs.reg3.field0;
           rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG4) then
+        elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG4_OFFSET) then
           rdata(3 downto 0) <= regs.reg4.field0;
           rdata(8)          <= regs.reg4.field1;
           rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG5) then
+        elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG5_OFFSET) then
           rdata(3 downto 0) <= regs.reg5.field0;
           rdata(7 downto 4) <= regs.reg5.field1;
           rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG6) then
+        elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG6_OFFSET) then
           rdata(3 downto 0)  <= regs.reg6.field0;
           rdata(7 downto 4)  <= regs.reg6.field1;
           rdata(11 downto 8) <= regs.reg6.field2;
           rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG7) then
+        elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG7_OFFSET) then
           rdata(3 downto 0)  <= regs.reg7.field0;
           rdata(7 downto 4)  <= regs.reg7.field1;
           rdata(11 downto 8) <= regs.reg7.field2;
           rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG8) then
+        elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG8_OFFSET) then
           rdata(3 downto 0) <= regs.reg8.field0;
           rdata(7 downto 4) <= regs.reg8.field1;
           rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG9) then
+        elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG9_OFFSET) then
           rdata(3 downto 0) <= regs.reg9.field0;
           rdata(7 downto 4) <= regs.reg9.field1;
           rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG10) then
+        elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG10_OFFSET) then
           rdata(3 downto 0) <= regs.reg10.field0;  -- usually 0 (pulse self-cleared)
           rd_ack <= '1';
-        elsif reg_addr_match(reg_offset, C_ADDR_REG11) then
+        elsif reg_addr_match(reg_offset, C_PROTOTYPE_REG11_OFFSET) then
           rdata(1 downto 0) <= to_slv(regs.reg11.field0);
           rd_ack <= '1';
         end if;
