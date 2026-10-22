@@ -10,6 +10,44 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Added
+- `C_<MODULE>_TO_HW_RESET`, a `to_hw` with every value at its reset and every
+  strobe inactive, for models and testbenches that drive `to_hw`.
+- The generic `G_ERR_ON_BAD_ACCESS`, on the register file, every endpoint and
+  the starter top level. When true, a write to a register software cannot
+  write and a read of one it cannot read get an error response, and such a
+  read returns `G_UNMAPPED_READ_DATA`. It defaults to false. The generated
+  testbench sets it and checks both cases (#229).
+- `bust FILE --migrate` sets `G_UNMAPPED_READ_DATA => x"DEADBEEF"` and
+  `G_ERR_ON_BAD_ACCESS => true` in a migrated IPBus top level, so it keeps the
+  bust 0.14 responses.
+
+### Changed
+- The names in `<module>_regfile_pkg` that a design uses carry the module name,
+  so one file can use the packages of several modules with `.all`. Rename them
+  in your own files as in the table below. The internal names, such as
+  `t_<reg>_regs` and `reg_addr_match`, and the enumeration literals do not
+  change.
+
+| bust 1.0.0a3 | Now |
+|---|---|
+| `C_ADDR_<REG>` | `C_<MODULE>_<REG>_OFFSET` |
+| `C_MODULE_ADDR_WIDTH` | `C_<MODULE>_MODULE_ADDR_WIDTH` |
+| `t_<reg>_to_hw`, `t_<reg>_from_hw` | `t_<module>_<reg>_to_hw`, `t_<module>_<reg>_from_hw` |
+| `t_<reg>_<field>_out`, `t_<reg>_<field>_in` | `t_<module>_<reg>_<field>_out`, `t_<module>_<reg>_<field>_in` |
+| `t_<reg>_<field>`, the type of an enumerated field | `t_<module>_<reg>_<field>` |
+| `to_<reg>_<field>`, its conversion from bits | `to_<module>_<reg>_<field>` |
+
+### Fixed
+- The register file compares `reset` with the active level directly. The
+  signal `rst` added a delta cycle, so a reset pulse that ended on the first
+  clock edge in simulation could be missed.
+- The LaTeX documentation sets a `` `code` `` span in a description in
+  typewriter type and leaves out characters LaTeX cannot print, such as emoji,
+  which made `pdflatex` fail.
+- The register file declares `rd_service` and prints the precedence comment
+  only when a field uses them.
+
 ## [1.0.0a3] - 2026-10-21
 
 Fourth pre-release of bust 1.0.0, for testing. Install it with

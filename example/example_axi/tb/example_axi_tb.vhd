@@ -72,7 +72,8 @@ begin
       G_BASE_ADDRESS       => unsigned(C_BASE),
       G_CHECK_BASE_ADDRESS => true,
       G_MODULE_ADDR_WIDTH  => 8,
-      G_UNMAPPED_READ_DATA => C_UNMAPPED_READ_DATA)
+      G_UNMAPPED_READ_DATA => C_UNMAPPED_READ_DATA,
+      G_ERR_ON_BAD_ACCESS  => true)
     port map (
       clk      => clk,
       areset_n => areset_n,
@@ -166,62 +167,62 @@ begin
     gen_pulse(areset_n, '0', 500 ns, BLOCKING, "Reset for 500 ns");
 
     log(ID_LOG_HDR, "reg0: software read-write round-trip", C_SCOPE);
-    bus_write(f_addr(C_ADDR_REG0), 32x"00000001", "write reg0");
-    bus_check(f_addr(C_ADDR_REG0), 32x"00000001", "reg0 reads back");
+    bus_write(f_addr(C_EXAMPLE_AXI_REG0_OFFSET), 32x"00000001", "write reg0");
+    bus_check(f_addr(C_EXAMPLE_AXI_REG0_OFFSET), 32x"00000001", "reg0 reads back");
     check_value(to_hw.reg0, '1', error, "reg0.reg0 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg1: software read-write round-trip", C_SCOPE);
-    bus_write(f_addr(C_ADDR_REG1), 32x"00000001", "write reg1");
-    bus_check(f_addr(C_ADDR_REG1), 32x"00000001", "reg1 reads back");
+    bus_write(f_addr(C_EXAMPLE_AXI_REG1_OFFSET), 32x"00000001", "write reg1");
+    bus_check(f_addr(C_EXAMPLE_AXI_REG1_OFFSET), 32x"00000001", "reg1 reads back");
     check_value(to_hw.reg1, '1', error, "reg1.reg1 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg3: software read-write round-trip", C_SCOPE);
-    bus_write(f_addr(C_ADDR_REG3), 32x"000000FF", "write reg3");
-    bus_check(f_addr(C_ADDR_REG3), 32x"000000FF", "reg3 reads back");
+    bus_write(f_addr(C_EXAMPLE_AXI_REG3_OFFSET), 32x"000000FF", "write reg3");
+    bus_check(f_addr(C_EXAMPLE_AXI_REG3_OFFSET), 32x"000000FF", "reg3 reads back");
     check_value(to_hw.reg3, 8x"FF", error, "reg3.reg3 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg5: software read-write round-trip", C_SCOPE);
-    bus_write(f_addr(C_ADDR_REG5), 32x"FFFFFFFF", "write reg5");
-    bus_check(f_addr(C_ADDR_REG5), 32x"FFFFFFFF", "reg5 reads back");
+    bus_write(f_addr(C_EXAMPLE_AXI_REG5_OFFSET), 32x"FFFFFFFF", "write reg5");
+    bus_check(f_addr(C_EXAMPLE_AXI_REG5_OFFSET), 32x"FFFFFFFF", "reg5 reads back");
     check_value(to_hw.reg5, 32x"FFFFFFFF", error, "reg5.reg5 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg7: software read-write round-trip", C_SCOPE);
-    bus_write(f_addr(C_ADDR_REG7), 32x"001FFFFF", "write reg7");
-    bus_check(f_addr(C_ADDR_REG7), 32x"001FFFFF", "reg7 reads back");
+    bus_write(f_addr(C_EXAMPLE_AXI_REG7_OFFSET), 32x"001FFFFF", "write reg7");
+    bus_check(f_addr(C_EXAMPLE_AXI_REG7_OFFSET), 32x"001FFFFF", "reg7 reads back");
     check_value(to_hw.reg7.field0, '1', error, "reg7.field0 exposed to hw", C_SCOPE);
     check_value(to_hw.reg7.field1, 4x"F", error, "reg7.field1 exposed to hw", C_SCOPE);
     check_value(to_hw.reg7.field2, '1', error, "reg7.field2 exposed to hw", C_SCOPE);
     check_value(to_hw.reg7.field3, 15x"7FFF", error, "reg7.field3 exposed to hw", C_SCOPE);
 
     log(ID_LOG_HDR, "reg9: write-only / pulse reads back zero", C_SCOPE);
-    bus_write(f_addr(C_ADDR_REG9), 32x"00000001", "write reg9");
-    bus_check(f_addr(C_ADDR_REG9), 32x"0", "reg9 reads back zero");
+    bus_write(f_addr(C_EXAMPLE_AXI_REG9_OFFSET), 32x"00000001", "write reg9");
+    bus_check_unmapped(f_addr(C_EXAMPLE_AXI_REG9_OFFSET), "read reg9, which software cannot read");
 
     log(ID_LOG_HDR, "reg10: write-only / pulse reads back zero", C_SCOPE);
-    bus_write(f_addr(C_ADDR_REG10), 32x"0000000F", "write reg10");
-    bus_check(f_addr(C_ADDR_REG10), 32x"0", "reg10 reads back zero");
+    bus_write(f_addr(C_EXAMPLE_AXI_REG10_OFFSET), 32x"0000000F", "write reg10");
+    bus_check_unmapped(f_addr(C_EXAMPLE_AXI_REG10_OFFSET), "read reg10, which software cannot read");
 
     log(ID_LOG_HDR, "reg11: write-only / pulse reads back zero", C_SCOPE);
-    bus_write(f_addr(C_ADDR_REG11), 32x"0000FFFF", "write reg11");
-    bus_check(f_addr(C_ADDR_REG11), 32x"0", "reg11 reads back zero");
+    bus_write(f_addr(C_EXAMPLE_AXI_REG11_OFFSET), 32x"0000FFFF", "write reg11");
+    bus_check_unmapped(f_addr(C_EXAMPLE_AXI_REG11_OFFSET), "read reg11, which software cannot read");
 
     log(ID_LOG_HDR, "reg2: hardware-driven status read back over the bus", C_SCOPE);
     wait until falling_edge(clk);
     from_hw.reg2 <= '1';
     wait until falling_edge(clk);
-    bus_check(f_addr(C_ADDR_REG2), 32x"00000001", "reg2 reflects hardware inputs");
+    bus_check(f_addr(C_EXAMPLE_AXI_REG2_OFFSET), 32x"00000001", "reg2 reflects hardware inputs");
 
     log(ID_LOG_HDR, "reg4: hardware-driven status read back over the bus", C_SCOPE);
     wait until falling_edge(clk);
     from_hw.reg4 <= 14x"1555";
     wait until falling_edge(clk);
-    bus_check(f_addr(C_ADDR_REG4), 32x"00001555", "reg4 reflects hardware inputs");
+    bus_check(f_addr(C_EXAMPLE_AXI_REG4_OFFSET), 32x"00001555", "reg4 reflects hardware inputs");
 
     log(ID_LOG_HDR, "reg6: hardware-driven status read back over the bus", C_SCOPE);
     wait until falling_edge(clk);
     from_hw.reg6 <= 32x"55555555";
     wait until falling_edge(clk);
-    bus_check(f_addr(C_ADDR_REG6), 32x"55555555", "reg6 reflects hardware inputs");
+    bus_check(f_addr(C_EXAMPLE_AXI_REG6_OFFSET), 32x"55555555", "reg6 reflects hardware inputs");
 
     log(ID_LOG_HDR, "reg8: hardware-driven status read back over the bus", C_SCOPE);
     wait until falling_edge(clk);
@@ -230,11 +231,11 @@ begin
     from_hw.reg8.field2 <= '1';
     from_hw.reg8.field3 <= 3x"5";
     wait until falling_edge(clk);
-    bus_check(f_addr(C_ADDR_REG8), 32x"00BAAAAB", "reg8 reflects hardware inputs");
+    bus_check(f_addr(C_EXAMPLE_AXI_REG8_OFFSET), 32x"00BAAAAB", "reg8 reflects hardware inputs");
 
     log(ID_LOG_HDR, "reg9: software-access strobe pulses", C_SCOPE);
     v_reg9_reg9_sp := reg9_reg9_sp_count;
-    bus_write(f_addr(C_ADDR_REG9), 32x"00000000", "write reg9");
+    bus_write(f_addr(C_EXAMPLE_AXI_REG9_OFFSET), 32x"00000000", "write reg9");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(reg9_reg9_sp_count - v_reg9_reg9_sp, 1, error, "reg9.reg9 singlepulse lasts exactly one cycle", C_SCOPE);
@@ -242,7 +243,7 @@ begin
 
     log(ID_LOG_HDR, "reg10: software-access strobe pulses", C_SCOPE);
     v_reg10_reg10_sp := reg10_reg10_sp_count;
-    bus_write(f_addr(C_ADDR_REG10), 32x"00000005", "write reg10");
+    bus_write(f_addr(C_EXAMPLE_AXI_REG10_OFFSET), 32x"00000005", "write reg10");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(reg10_reg10_sp_count - v_reg10_reg10_sp, 1, error, "reg10.reg10 singlepulse lasts exactly one cycle", C_SCOPE);
@@ -251,13 +252,24 @@ begin
     log(ID_LOG_HDR, "reg11: software-access strobe pulses", C_SCOPE);
     v_reg11_field0_sp := reg11_field0_sp_count;
     v_reg11_field1_sp := reg11_field1_sp_count;
-    bus_write(f_addr(C_ADDR_REG11), 32x"0000FFFC", "write reg11");
+    bus_write(f_addr(C_EXAMPLE_AXI_REG11_OFFSET), 32x"0000FFFC", "write reg11");
     wait until rising_edge(clk);
     wait until rising_edge(clk);
     check_value(reg11_field0_sp_count - v_reg11_field0_sp, 1, error, "reg11.field0 singlepulse lasts exactly one cycle", C_SCOPE);
     check_value(reg11_field0_sp_value, 15x"7FFC", error, "reg11.field0 hw saw the pulse value", C_SCOPE);
     check_value(reg11_field1_sp_count - v_reg11_field1_sp, 1, error, "reg11.field1 singlepulse lasts exactly one cycle", C_SCOPE);
     check_value(reg11_field1_sp_value, '1', error, "reg11.field1 hw saw the pulse value", C_SCOPE);
+
+    -- With G_ERR_ON_BAD_ACCESS, a write to a register software cannot write and
+    -- a read of one it cannot read get an error response where the bus has one.
+    log(ID_LOG_HDR, "accesses in the wrong direction get an error", C_SCOPE);
+    bus_write_unmapped(f_addr(C_EXAMPLE_AXI_REG2_OFFSET), 32x"0", "write reg2, which software cannot write");
+    bus_write_unmapped(f_addr(C_EXAMPLE_AXI_REG4_OFFSET), 32x"0", "write reg4, which software cannot write");
+    bus_write_unmapped(f_addr(C_EXAMPLE_AXI_REG6_OFFSET), 32x"0", "write reg6, which software cannot write");
+    bus_write_unmapped(f_addr(C_EXAMPLE_AXI_REG8_OFFSET), 32x"0", "write reg8, which software cannot write");
+    bus_check_unmapped(f_addr(C_EXAMPLE_AXI_REG9_OFFSET), "read reg9, which software cannot read");
+    bus_check_unmapped(f_addr(C_EXAMPLE_AXI_REG10_OFFSET), "read reg10, which software cannot read");
+    bus_check_unmapped(f_addr(C_EXAMPLE_AXI_REG11_OFFSET), "read reg11, which software cannot read");
 
     -- An address where no register sits gets an error response where the bus
     -- has one, reads as G_UNMAPPED_READ_DATA, and a write to it changes no register.
@@ -270,7 +282,7 @@ begin
     bus_check_unmapped(f_addr(32x"40"), "read 0x40, an address above the registers");
     bus_write_unmapped(f_addr(32x"100"), 32x"0", "write 0x100, another base address");
     bus_check_unmapped(f_addr(32x"100"), "read 0x100, another base address");
-    bus_check(f_addr(C_ADDR_REG0), 32x"00000001", "reg0 unchanged by the unmapped writes");
+    bus_check(f_addr(C_EXAMPLE_AXI_REG0_OFFSET), 32x"00000001", "reg0 unchanged by the unmapped writes");
 
     wait for 10*C_CLK_PERIOD;
     report_alert_counters(FINAL);

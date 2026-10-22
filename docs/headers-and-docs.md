@@ -259,6 +259,9 @@ module:
   and its `onread`, `onwrite`, `singlepulse` and enumeration values where it
   has them.
 
+In descriptions, a `` `code` `` span is set in typewriter type, and a character
+that LaTeX cannot print, such as an emoji, is left out.
+
 This is the section for `reg11` from `prototype.tex`:
 
 ```latex

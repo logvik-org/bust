@@ -64,14 +64,15 @@ Only an address that does not decode produces an error:
 
 - a register offset where no register sits, or an address above the
   registers in the module's address range when `G_MODULE_ADDR_WIDTH` is larger
-  than `C_MODULE_ADDR_WIDTH`, or
+  than `C_<MODULE>_MODULE_ADDR_WIDTH`, or
 - with `G_CHECK_BASE_ADDRESS` set to `true`, an address whose base address
   bits differ from `G_BASE_ADDRESS`.
 
 [Base address and address range](addressing.md) shows which bits are which. A write
 that fails changes nothing, and a read that fails returns
 `G_UNMAPPED_READ_DATA`, 0 by default. Every access to a register address
-completes normally, whatever the access mode.
+completes normally, whatever the access mode, unless `G_ERR_ON_BAD_ACCESS` is
+true, see [Access modes](access-modes.md#fields-software-cannot-reach).
 Writing a read-only field has no effect, and reading a write-only field returns
 0. See [Access modes](access-modes.md).
 

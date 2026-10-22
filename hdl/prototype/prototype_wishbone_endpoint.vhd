@@ -29,7 +29,7 @@ entity prototype_wishbone_endpoint is
   generic (
     G_BASE_ADDRESS       : unsigned(31 downto 0) := x"00000000";
     G_CHECK_BASE_ADDRESS : boolean               := true;
-    G_MODULE_ADDR_WIDTH  : natural               := C_MODULE_ADDR_WIDTH
+    G_MODULE_ADDR_WIDTH  : natural               := C_PROTOTYPE_MODULE_ADDR_WIDTH
   );
   port (
     clk_i   : in  std_logic;

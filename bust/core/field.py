@@ -90,6 +90,7 @@ class Field:
         pos_low: int,
         parent_register_name: str,
         inherited: Optional[Dict] = None,
+        module_name: str = "",
     ) -> None:
         """Initialize a Field instance.
 
@@ -108,6 +109,7 @@ class Field:
             parent_register_name: Name of parent register for error reporting.
             inherited: Register-level access-mode defaults the field falls back
                 to for any property it does not set itself.
+            module_name: Name of the module, which starts the VHDL type names.
 
         Raises:
             InvalidFieldFormat: If reset value doesn't fit in specified width.
@@ -116,6 +118,13 @@ class Field:
         self.logger = logging.getLogger(__name__)
 
         self.parent_register_name = parent_register_name
+        # VHDL names start with <module>_<register>_ so that two modules' packages
+        # can be used in one file.
+        self.vhdl_prefix = (
+            f"{module_name}_{parent_register_name}"
+            if module_name
+            else parent_register_name
+        )
         # bust handles a register without fields as if it had one field with
         # the register's name that spans the whole register. implicit is True
         # for that generated field. Its value goes straight into to_hw.<reg>
@@ -576,7 +585,12 @@ class Field:
     @property
     def enum_type_name(self) -> str:
         """VHDL enum type name generated for an enumerated field."""
-        return f"t_{self.parent_register_name}_{self.name}"
+        return f"t_{self.vhdl_prefix}_{self.name}"
+
+    @property
+    def from_slv_name(self) -> str:
+        """Name of the function that converts bits to the enumeration type."""
+        return f"to_{self.vhdl_prefix}_{self.name}"
 
     @property
     def value_type_vhdl(self) -> str:
@@ -717,7 +731,7 @@ class Field:
     @property
     def to_hw_record_name(self) -> str:
         """Per-field to_hw record type name (value + swmod/swacc strobes)."""
-        return f"t_{self.parent_register_name}_{self.name}_out"
+        return f"t_{self.vhdl_prefix}_{self.name}_out"
 
     @property
     def to_hw_members(self) -> List[str]:
@@ -737,7 +751,7 @@ class Field:
     @property
     def from_hw_record_name(self) -> str:
         """Per-field from_hw record type name (value + enable/strobe members)."""
-        return f"t_{self.parent_register_name}_{self.name}_in"
+        return f"t_{self.vhdl_prefix}_{self.name}_in"
 
     @property
     def from_hw_members(self) -> List[str]:

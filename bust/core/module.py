@@ -321,7 +321,7 @@ class Module:
 
     @property
     def register_select_width(self) -> int:
-        """C_MODULE_ADDR_WIDTH: the number of low address bits that select a register.
+        """C_<MODULE>_MODULE_ADDR_WIDTH: the low address bits that select a register.
 
         Enough bits for every address from 0 to the end of the last register. It
         is the smallest module address width that holds the registers.
