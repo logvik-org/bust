@@ -216,7 +216,6 @@ def is_valid_VHDL(string):
     - Must not end with underscore
     - Must not contain consecutive underscores
     - Must contain only letters, digits, and underscores
-    - Warns if longer than 16 characters
     - Warns if mixing uppercase and lowercase
 
     Args:
@@ -251,10 +250,6 @@ def is_valid_VHDL(string):
     if not is_only_alpfanum_(string):
         raise InvalidVHDLIdentifier(
             string + " - identifiers may only contain letters, digits and underscores."
-        )
-    if len(string) > 16:
-        logger.warning(
-            string + " - identifier should probably not be longer than 16 characters."
         )
     if is_mixed(string):
         logger.warning(
