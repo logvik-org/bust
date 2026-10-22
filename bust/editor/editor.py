@@ -190,7 +190,7 @@ class Editor:
         return (
             f"{self.path}: module {module.name}, {bus.bus_type}, "
             f"{bus.addr_width}-bit addresses, {bus.data_width}-bit data, "
-            f"registers: {len(module.registers)}, {saved}"
+            f"registers: {len(module.user_registers)}, {saved}"
         )
 
     def _confirm_quit(self) -> bool:
@@ -225,7 +225,7 @@ class Editor:
         return self.document.data
 
     def _registers(self) -> List[Register]:
-        return self.document.module.registers
+        return self.document.module.user_registers
 
     def list_registers(self) -> None:
         """Show every register in a table."""

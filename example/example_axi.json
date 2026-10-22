@@ -7,6 +7,7 @@
     "module": {
         "name": "example_axi",
         "version": "1.0",
+        "hash_register": true,
         "description": "An example module that contain all the register types that are currently supported by bust.",
         "register": [
             {

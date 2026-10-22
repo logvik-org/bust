@@ -9,7 +9,7 @@ namespace EXAMPLE_AXI
 {
 /* Register map version and content hash */
 const std::string REGMAP_VERSION = "1.0";
-const uint32_t REGMAP_HASH = 0x2E24D701;
+const uint32_t REGMAP_HASH = 0x8A3B071B;
 
 /* Register: reg0 */
 const std::string REG0_SW = "rw";
@@ -178,6 +178,13 @@ const uint32_t REG11_FIELD1_MASK = 0x8000;
 const std::string REG11_FIELD1_SW = "wo";
 const std::string REG11_FIELD1_HW = "r";
 const bool REG11_FIELD1_SINGLEPULSE = true;
+
+/* Register: regmap_hash */
+const std::string REGMAP_HASH_SW = "ro";
+const std::string REGMAP_HASH_HW = "na";
+const uint32_t REGMAP_HASH_WIDTH = 32;
+const uint32_t REGMAP_HASH_OFFSET = 0x30;
+const uint32_t REGMAP_HASH_RESET = 0x8a3b071b;
 
 };
 

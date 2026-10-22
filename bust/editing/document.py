@@ -195,6 +195,9 @@ class RegisterMapDocument:
     def next_free_address(self) -> int:
         """The address bust would give a register added without one."""
         module, _ = _build_module(self._data)
+        # A hash register without an address of its own moves up to make room.
+        if module.hash_register and module.hash_register_address is None:
+            module.addresses.remove(module.hash_register.address)
         return module.get_next_address()
 
     def legacy_conversion(self) -> Tuple[List[str], List[Operation]]:
