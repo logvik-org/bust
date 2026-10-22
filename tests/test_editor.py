@@ -1,8 +1,9 @@
-"""The interactive editor, driven by scripted answers so no terminal is needed.
+"""The full-screen editor, driven headless through Textual's pilot.
 
-Each answer comes with the start of the question it answers, so a test fails
-at the first question the editor asks out of turn."""
+Each test runs the editor on a file, works the main screen with keys and fills
+in the dialogs, and checks the text of the file afterwards."""
 
+import asyncio
 import json
 import os
 import shutil
@@ -10,7 +11,13 @@ import shutil
 import json5
 import pytest
 
-from bust.editor import Editor
+pytest.importorskip("textual")
+
+from textual.widgets import Button, DataTable, Input, Select, Static  # noqa: E402
+
+from bust.editor import open_session  # noqa: E402
+from bust.editor.app import EditorApp, MainScreen  # noqa: E402
+from bust.editor.screens import NOT_SET, FormScreen, QuestionScreen  # noqa: E402
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
 _BLINKY = os.path.join(_REPO_ROOT, "tests", "data", "migrate", "axi", "blinky.json")
@@ -37,28 +44,90 @@ _TIMER = """{
 }
 """
 
-# The main menu entries.
-_LIST, _ADD, _EDIT, _REMOVE, _MODULE, _ADDRESSES, _SAVE, _QUIT = map(str, range(1, 9))
+
+class _Editor:
+    """Works the editor the way a user does, one step at a time."""
+
+    def __init__(self, app, pilot):
+        self.app = app
+        self.pilot = pilot
+        self.messages = []
+        notify = app.notify
+
+        def recorded(message, *args, **kwargs):
+            self.messages.append(str(message))
+            notify(message, *args, **kwargs)
+
+        app.notify = recorded
+
+    @property
+    def screen(self):
+        return self.app.screen
+
+    @property
+    def main(self):
+        return self.app.main
+
+    async def press(self, *keys):
+        await self.pilot.press(*keys)
+        await self.pilot.pause()
+
+    async def answer(self, **answers):
+        """Answer questions of the open dialog."""
+        screen = self.screen
+        assert isinstance(screen, FormScreen), screen
+        for name, value in answers.items():
+            screen.query_one(f"#{name}").value = value
+            await self.pilot.pause()
+
+    async def fill(self, **answers):
+        """Answer questions of the open dialog and press OK."""
+        await self.answer(**answers)
+        await self.button("ok")
+
+    async def button(self, name):
+        self.screen.query_one(f"#{name}", Button).press()
+        await self.pilot.pause()
+
+    def error(self):
+        return str(self.screen.query_one("#error", Static).render())
+
+    async def select_register(self, name):
+        names = [reg.name for reg in self.app.session.registers]
+        await self._select("registers", names.index(name))
+
+    async def select_field(self, name):
+        register = self.app.session.registers[self.main.register]
+        await self._select("fields", [f.name for f in register.fields].index(name))
+
+    async def _select(self, table, row):
+        widget = self.main.query_one(f"#{table}", DataTable)
+        widget.focus()
+        widget.move_cursor(row=row)
+        await self.pilot.pause()
+
+    async def edit(self, key):
+        """Open the dialog for a key of the register or field in focus."""
+        keys = [prop.key for prop in self.main.properties] + ["enums"]
+        table = self.main.query_one("#properties", DataTable)
+        table.focus()
+        table.move_cursor(row=keys.index(key))
+        await self.press("enter")
 
 
-class _Answers:
-    def __init__(self, *pairs):
-        self.pending = list(pairs)
+def _session(path, script, create=False):
+    """Run the editor on `path` through `script` and return what it showed."""
 
-    def __call__(self, prompt):
-        assert self.pending, f"unexpected question: {prompt!r}"
-        expected, answer = self.pending.pop(0)
-        assert prompt.startswith(expected), f"asked {prompt!r}, not {expected!r}"
-        return answer
+    async def run():
+        app = EditorApp(str(path), *open_session(str(path), create))
+        async with app.run_test(size=(160, 50)) as pilot:
+            editor = _Editor(app, pilot)
+            await pilot.pause()
+            await script(editor)
+            await pilot.pause()
+        return editor
 
-
-def _session(start, path, *pairs):
-    """Run the editor through the answers and return what it showed."""
-    answers = _Answers(*pairs)
-    shown = []
-    start(str(path), answers, shown.append).run()
-    assert answers.pending == [], f"not asked: {answers.pending}"
-    return shown
+    return asyncio.run(run())
 
 
 def _timer(tmp_path):
@@ -74,68 +143,33 @@ def _registers(path):
 def test_create_a_register_map(tmp_path):
     path = tmp_path / "uart.json"
 
-    shown = _session(
-        Editor.create,
-        path,
-        ("Bus", ""),
-        ("Address width", "16"),
-        ("Data width", ""),
-        ("Module name [uart]", ""),
-        ("Version [1.0]", ""),
-        ("Description", "UART registers"),
-        ("Do addresses count bytes", ""),
-        ("Add the first register now?", ""),
-        ("Name", "ctrl"),
-        ("Address [0x0]", "0x2"),
-        ("Address [0x0]", "0x4"),
-        ("Type", "fields"),
-        ("Software access", ""),
-        ("Hardware access", ""),
-        ("Field name", "tx_en"),
-        ("Field type", ""),
-        ("Lowest bit [0]", ""),
-        ("Software access", ""),
-        ("Hardware access", ""),
-        ("Reset value", ""),
-        ("Description", "Enable transmit"),
-        ("Add another field?", "y"),
-        ("Field name", "parity"),
-        ("Field type", "vector"),
-        ("Lowest bit [1]", "4"),
-        ("Width in bits", "40"),
-        ("Width in bits", "2"),
-        ("Software access", "ro"),
-        ("Hardware access", "w"),
-        ("Reset value", "0x7"),
-        ("Reset value", "0x1"),
-        ("Description", "Parity"),
-        ("Add another field?", ""),
-        ("Description", "Control"),
-        ("Set more properties of ctrl", ""),
-        ("Menu", _ADD),
-        ("Name", "status"),
-        ("Address [0x0]", ""),
-        ("Type", "vector"),
-        ("Width in bits", "8"),
-        ("Software access", "na"),
-        ("Hardware access", "na"),
-        ("Software access", "ro"),
-        ("Hardware access", "w"),
-        ("Reset value", ""),
-        ("Description", ""),
-        ("Set more properties of status", ""),
-        ("Menu", _SAVE),
-        ("Menu", _QUIT),
-    )
+    async def script(editor):
+        assert editor.screen.query_one("#name", Input).value == "uart"
+        await editor.fill(addr_width="16", description="UART registers")
+        # The editor asks for the first register at once.
+        await editor.fill(name="ctrl", address="0x2", type="fields")
+        assert "Address 0x2 of register ctrl is not a multiple of 4" in editor.error()
+        await editor.fill(address="0x4", description="Control")
+        await editor.fill(name="tx_en", description="Enable transmit")
+        assert editor.screen.__class__ is MainScreen
+        await editor.press("f")
+        assert editor.screen.query_one("#position", Input).value == "1"
+        await editor.fill(name="parity", type="vector", position="4", width="40")
+        assert "Register width exceeded module data width" in editor.error()
+        await editor.fill(width="2", sw="ro", hw="w", reset="0x7")
+        assert "Reset value does not match field: parity" in editor.error()
+        await editor.fill(reset="0x1", description="Parity")
+        await editor.press("a")
+        assert editor.screen.query_one("#address", Input).value == "0x0"
+        await editor.fill(name="status", type="vector", width="8", sw="na", hw="na")
+        assert "neither software nor hardware access" in editor.error()
+        await editor.fill(sw="ro", hw="w")
+        await editor.press("s")
+        await editor.press("q")
 
-    for message in (
-        "Address 0x2 of register ctrl is not a multiple of 4",
-        "Register width exceeded module data width",
-        "Reset value does not match field: parity",
-        "field has neither software nor hardware access",
-        "Saved",
-    ):
-        assert any(message in line for line in shown), message
+    editor = _session(path, script, create=True)
+
+    assert f"Saved {path}." in editor.messages
     expected = {
         "bus": {"type": "axi", "addr_width": 16, "data_width": 32},
         "module": {
@@ -187,22 +221,33 @@ def test_create_a_register_map(tmp_path):
     assert path.read_text() == json.dumps(expected, indent=4) + "\n"
 
 
-def test_create_does_not_ask_the_data_width_of_ipbus_and_can_quit_unsaved(tmp_path):
+def test_create_hides_the_data_width_of_ipbus_and_can_quit_unsaved(tmp_path):
     path = tmp_path / "m.json"
 
-    _session(
-        Editor.create,
-        path,
-        ("Bus", "ipbus"),
-        ("Address width", ""),
-        ("Module name", ""),
-        ("Version", ""),
-        ("Description", ""),
-        ("Do addresses count bytes, not data words (byte_addressable)? (y/N)", ""),
-        ("Add the first register now?", "n"),
-        ("Menu", _QUIT),
-        ("There are unsaved changes", "2"),
-    )
+    async def script(editor):
+        await editor.answer(bus="ipbus")
+        assert not editor.screen.query_one("#row-data_width").display
+        assert editor.screen.query_one("#byte_addressable", Select).value == "false"
+        await editor.fill(addr_width="32")
+        assert editor.app.session.document.module.data_width == 32
+        await editor.press("escape")
+        await editor.press("q")
+        assert isinstance(editor.screen, QuestionScreen)
+        await editor.button("discard")
+
+    _session(path, script, create=True)
+
+    assert not path.exists()
+
+
+def test_cancelling_the_new_register_map_quits(tmp_path):
+    path = tmp_path / "m.json"
+
+    async def script(editor):
+        await editor.press("escape")
+        assert not editor.app.is_running
+
+    _session(path, script, create=True)
 
     assert not path.exists()
 
@@ -211,7 +256,7 @@ def test_create_refuses_an_existing_file(tmp_path):
     path = _timer(tmp_path)
 
     with pytest.raises(FileExistsError, match="Edit it with bust"):
-        Editor.create(str(path), _Answers())
+        open_session(str(path), create=True)
 
 
 def test_open_and_quit_without_a_change_does_not_write(tmp_path):
@@ -221,7 +266,13 @@ def test_open_and_quit_without_a_change_does_not_write(tmp_path):
     )
     os.utime(path, (0, 0))
 
-    _session(Editor.open, path, ("Menu", _LIST), ("Menu", _SAVE), ("Menu", _QUIT))
+    async def script(editor):
+        await editor.press("down", "down", "s")
+        assert "There are no changes to save." in editor.messages
+        await editor.press("q")
+        assert not editor.app.is_running
+
+    _session(path, script)
 
     assert os.stat(path).st_mtime == 0
 
@@ -229,19 +280,15 @@ def test_open_and_quit_without_a_change_does_not_write(tmp_path):
 def test_edit_register_keys_in_place(tmp_path):
     path = _timer(tmp_path)
 
-    _session(
-        Editor.open,
-        path,
-        ("Menu", _EDIT),
-        ("Register", "count"),
-        ("Change", "7"),
-        ("New sw", "rw"),
-        ("Change", "9"),
-        ("New onread", "rclr"),
-        ("Change", "18"),
-        ("Menu", _SAVE),
-        ("Menu", _QUIT),
-    )
+    async def script(editor):
+        await editor.select_register("count")
+        await editor.edit("sw")
+        await editor.fill(value="rw")
+        await editor.edit("onread")
+        await editor.fill(value="rclr")
+        await editor.press("ctrl+s")
+
+    _session(path, script)
 
     assert path.read_text() == _TIMER.replace(
         'sw: "ro", hw: "w"}', 'sw: "rw", hw: "w", onread: "rclr"}'
@@ -251,17 +298,15 @@ def test_edit_register_keys_in_place(tmp_path):
 def test_unset_a_key(tmp_path):
     path = _timer(tmp_path)
 
-    _session(
-        Editor.open,
-        path,
-        ("Menu", _EDIT),
-        ("Register", "2"),
-        ("Change", "8"),
-        ("New hw", "5"),
-        ("Change", "18"),
-        ("Menu", _QUIT),
-        ("There are unsaved changes", "1"),
-    )
+    async def script(editor):
+        await editor.select_register("count")
+        await editor.edit("hw")
+        await editor.fill(value=NOT_SET)
+        await editor.press("q")
+        await editor.button("save")
+        assert not editor.app.is_running
+
+    _session(path, script)
 
     assert path.read_text() == _TIMER.replace(', hw: "w"}', "}")
 
@@ -269,72 +314,50 @@ def test_unset_a_key(tmp_path):
 def test_a_rejected_change_is_shown_and_not_made(tmp_path):
     path = _timer(tmp_path)
 
-    shown = _session(
-        Editor.open,
-        path,
-        ("Menu", _EDIT),
-        ("Register", "count"),
-        ("Change", "10"),
-        ("New onwrite", "woclr"),
-        ("Change", "18"),
-        ("Menu", _QUIT),
-    )
+    async def script(editor):
+        await editor.select_register("count")
+        await editor.edit("onwrite")
+        await editor.fill(value="woclr")
+        assert "onwrite requires a software-writable" in editor.error()
+        await editor.press("escape")
+        assert isinstance(editor.screen, MainScreen)
+        await editor.press("q")
+        assert not editor.app.is_running
 
-    assert any(
-        line.startswith("Not changed: ")
-        and "onwrite requires a software-writable" in line
-        for line in shown
-    )
+    _session(path, script)
+
     assert path.read_text() == _TIMER
 
 
 def test_fields_and_enumerated_values(tmp_path):
     path = _timer(tmp_path)
 
-    shown = _session(
-        Editor.open,
-        path,
-        ("Menu", _EDIT),
-        ("Register", "ctrl"),
-        ("Change", "16"),
-        ("Fields", "1"),
-        ("Field name", "mode"),
-        ("Field type", "vector"),
-        ("Lowest bit [1]", ""),
-        ("Width in bits", ""),
-        ("Software access", ""),
-        ("Hardware access", ""),
-        ("Reset value", ""),
-        ("Description", "Mode"),
-        ("Fields", "2"),
-        ("Field", "mode"),
-        ("Change", "18"),
-        ("Enumerated values", "1"),
-        ("Name", "ONCE"),
-        ("Value [0]", ""),
-        ("Enumerated values", "1"),
-        ("Name", "RUN"),
-        ("Value [1]", ""),
-        ("Enumerated values", "2"),
-        ("Value", "RUN"),
-        ("Change", "2"),
-        ("New value", "3"),
-        ("Enumerated values", "3"),
-        ("Value", "ONCE"),
-        ("Enumerated values", "4"),
-        ("Change", "19"),
-        ("Fields", "3"),
-        ("Field", "enable"),
-        ("Remove field enable?", "y"),
-        ("Fields", "4"),
-        ("Change", "17"),
-        ("Menu", _SAVE),
-        ("Menu", _QUIT),
-    )
+    async def script(editor):
+        await editor.select_register("ctrl")
+        await editor.press("f")
+        await editor.fill(name="mode", type="vector", description="Mode")
+        await editor.select_field("mode")
+        await editor.edit("enums")
+        await editor.press("a")
+        assert editor.screen.query_one("#value", Input).value == "0"
+        await editor.fill(name="ONCE")
+        await editor.press("a")
+        await editor.fill(name="RUN")
+        await editor.press("down")
+        await editor.press("enter")
+        await editor.fill(value="3")
+        await editor.press("up", "delete")
+        await editor.press("escape")
+        await editor.select_field("enable")
+        await editor.press("delete")
+        await editor.button("remove")
+        await editor.press("s")
+
+    editor = _session(path, script)
 
     # Removing ONCE would leave the reset of 0 without a name.
-    assert any("matches no declared enum value" in line for line in shown)
-    (ctrl, _) = _registers(path)
+    assert any("matches no declared enum value" in line for line in editor.messages)
+    ctrl, _ = _registers(path)
     assert ctrl["fields"] == [
         {
             "name": "mode",
@@ -350,38 +373,35 @@ def test_fields_and_enumerated_values(tmp_path):
     assert "// A timer" in path.read_text()
 
 
+def test_add_field_needs_a_fields_register(tmp_path):
+    path = _timer(tmp_path)
+
+    async def script(editor):
+        await editor.select_register("count")
+        await editor.press("f")
+        assert isinstance(editor.screen, MainScreen)
+        assert "Change the type of the register first" in editor.messages[-1]
+
+    _session(path, script)
+
+
 def test_change_the_register_type(tmp_path):
     path = _timer(tmp_path)
 
-    _session(
-        Editor.open,
-        path,
-        ("Menu", _EDIT),
-        ("Register", "count"),
-        ("Change", "4"),
-        ("New type", "fields"),
-        ("Field name", "value"),
-        ("Field type", "vector"),
-        ("Lowest bit", ""),
-        ("Width in bits", "16"),
-        ("Software access", ""),
-        ("Hardware access", ""),
-        ("Reset value", ""),
-        ("Description", ""),
-        ("Add another field?", ""),
-        ("Change", "17"),
-        ("Menu", _SAVE),
-        ("Menu", _EDIT),
-        ("Register", "count"),
-        ("Change", "4"),
-        ("New type", "bit"),
-        ("Remove the fields of count?", "y"),
-        ("Change", "17"),
-        ("Menu", _SAVE),
-        ("Menu", _QUIT),
-    )
+    async def script(editor):
+        await editor.select_register("count")
+        await editor.edit("type")
+        await editor.fill(type="fields")
+        await editor.fill(name="value", type="vector", width="16")
+        await editor.press("s")
+        assert _registers(path)[1]["fields"][0]["width"] == 16
+        await editor.edit("type")
+        await editor.fill(type="bit")
+        await editor.press("s")
 
-    (_, count) = _registers(path)
+    _session(path, script)
+
+    _, count = _registers(path)
     assert count == {
         "name": "count",
         "address": 4,
@@ -395,27 +415,18 @@ def test_change_the_register_type(tmp_path):
 def test_fields_inherit_the_register_access(tmp_path):
     path = _timer(tmp_path)
 
-    _session(
-        Editor.open,
-        path,
-        ("Menu", _EDIT),
-        ("Register", "count"),
-        ("Change", "4"),
-        ("New type", "fields"),
-        ("Field name", "value"),
-        ("Field type", ""),
-        ("Lowest bit", ""),
-        ("Software access (sw) of the field [2]", ""),
-        ("Hardware access (hw) of the field [2]", "rw"),
-        ("Reset value", ""),
-        ("Description", ""),
-        ("Add another field?", ""),
-        ("Change", "17"),
-        ("Menu", _QUIT),
-        ("There are unsaved changes", "1"),
-    )
+    async def script(editor):
+        await editor.select_register("count")
+        await editor.edit("type")
+        await editor.fill(type="fields")
+        assert editor.screen.query_one("#sw", Select).value == "ro"
+        assert editor.screen.query_one("#hw", Select).value == "w"
+        await editor.fill(name="value", hw="rw")
+        await editor.press("s")
 
-    (_, count) = _registers(path)
+    _session(path, script)
+
+    _, count = _registers(path)
     assert count["fields"] == [
         {
             "name": "value",
@@ -439,17 +450,20 @@ def test_remove_a_register_and_fill_in_addresses(tmp_path):
     }
     path.write_text(json.dumps(register_map, indent=4))
 
-    _session(
-        Editor.open,
-        path,
-        ("Menu", _ADDRESSES),
-        ("Menu", _REMOVE),
-        ("Register", "b"),
-        ("Remove register b?", "y"),
-        ("Menu", _ADDRESSES),
-        ("Menu", _SAVE),
-        ("Menu", _QUIT),
-    )
+    async def script(editor):
+        await editor.press("g")
+        assert "Gave 2 registers their address." in editor.messages
+        await editor.select_register("b")
+        await editor.press("d")
+        await editor.button("cancel")
+        assert len(editor.app.session.registers) == 3
+        await editor.press("delete")
+        await editor.button("remove")
+        await editor.press("g")
+        assert "Every register has an address." in editor.messages
+        await editor.press("s")
+
+    _session(path, script)
 
     assert _registers(path) == [
         {"name": "a", "address": "0x0"},
@@ -460,18 +474,15 @@ def test_remove_a_register_and_fill_in_addresses(tmp_path):
 def test_edit_the_module_and_bus(tmp_path):
     path = _timer(tmp_path)
 
-    _session(
-        Editor.open,
-        path,
-        ("Menu", _MODULE),
-        ("Change", "3"),
-        ("New version", "2.0"),
-        ("Change", "5"),
-        ("New type", "apb"),
-        ("Change", "8"),
-        ("Menu", _SAVE),
-        ("Menu", _QUIT),
-    )
+    async def script(editor):
+        await editor.press("m")
+        await editor.press("down", "down", "enter")
+        await editor.fill(value="2.0")
+        await editor.press("down", "down", "enter")
+        await editor.fill(value="apb")
+        await editor.press("escape", "s")
+
+    _session(path, script)
 
     assert path.read_text() == _TIMER.replace('{type: "axi"', '{type: "apb"').replace(
         "    ],\n  },\n}", '    ],\n    version: "2.0",\n  },\n}'
@@ -482,15 +493,14 @@ def test_convert_a_bust_0_14_file(tmp_path):
     path = tmp_path / "blinky.json"
     shutil.copyfile(_BLINKY, path)
 
-    shown = _session(
-        Editor.open,
-        path,
-        ("Convert it?", ""),
-        ("Menu", _SAVE),
-        ("Menu", _QUIT),
-    )
+    async def script(editor):
+        detail = str(editor.screen.query_one(".detail Static", Static).render())
+        assert '• clear: address "10" is now "0x10"' in detail
+        await editor.button("convert")
+        await editor.press("s")
 
-    assert '  - clear: address "10" is now "0x10"' in shown
+    _session(path, script)
+
     saved = json.loads(path.read_text())
     assert "settings" not in saved
     assert [r.get("mode") for r in saved["module"]["register"]] == [None] * 3
@@ -501,49 +511,59 @@ def test_declining_the_conversion_does_not_open_the_file(tmp_path):
     path = tmp_path / "blinky.json"
     shutil.copyfile(_BLINKY, path)
     text = path.read_text()
-    answers = _Answers(("Convert it?", "n"))
 
-    assert Editor.open(str(path), answers, [].append) is None
-    assert answers.pending == []
+    async def script(editor):
+        await editor.button("quit")
+        assert not editor.app.is_running
+
+    _session(path, script)
+
     assert path.read_text() == text
-
-
-def test_end_of_input_quits(tmp_path):
-    path = _timer(tmp_path)
-    shown = []
-
-    def no_more_input(prompt):
-        raise EOFError
-
-    Editor.open(str(path), no_more_input, shown.append).run()
-
-    assert shown[-1] == "\nNo more input. Unsaved changes are lost."
 
 
 def test_edit_text_number_and_true_false_keys(tmp_path):
     path = _timer(tmp_path)
 
-    _session(
-        Editor.open,
-        path,
-        ("Menu", _EDIT),
-        ("Register", "count"),
-        ("Change", "2"),
-        ("New description", "Counter"),
-        ("Change", "5"),
-        ("New width (Enter keeps it, - removes it) [16]", "0x8"),
-        ("Change", "6"),
-        ("New reset", ""),
-        ("Change", "6"),
-        ("New reset", "-"),
-        ("Change", "14"),
-        ("New hwset [3]", "1"),
-        ("Change", "18"),
-        ("Menu", _SAVE),
-        ("Menu", _QUIT),
-    )
+    async def script(editor):
+        await editor.select_register("count")
+        await editor.edit("description")
+        await editor.fill(value="Count")
+        await editor.edit("description")
+        await editor.button("remove")
+        await editor.edit("width")
+        await editor.fill(value="0x8")
+        await editor.edit("reset")
+        # Not set in the file, so there is nothing to remove.
+        assert not editor.screen.query("#remove")
+        await editor.press("escape")
+        await editor.edit("description")
+        await editor.fill(value="Counter")
+        await editor.edit("hwset")
+        await editor.fill(value="true")
+        await editor.edit("width")
+        await editor.fill(value="eight")
+        assert "eight" in editor.error()
+        await editor.press("escape", "s")
+
+    _session(path, script)
 
     assert path.read_text() == _TIMER.replace(
         'width: 16, sw: "ro", hw: "w"}',
         'width: 8, sw: "ro", hw: "w", description: "Counter", hwset: true}',
     )
+
+
+def test_a_file_changed_on_disk_is_not_saved(tmp_path):
+    path = _timer(tmp_path)
+
+    async def script(editor):
+        await editor.select_register("count")
+        await editor.edit("description")
+        await editor.fill(value="Counter")
+        path.write_text(_TIMER + "\n")
+        await editor.press("s")
+        assert any(m.startswith("Not saved: ") for m in editor.messages)
+
+    _session(path, script)
+
+    assert path.read_text() == _TIMER + "\n"

@@ -30,6 +30,7 @@ Arguments:
   DIR          Output directory for VHDL, header files and documentation
 
 """
+
 from docopt import docopt
 import sys
 import shlex
@@ -58,9 +59,8 @@ from bust.exceptions import (
     InvalidResetMode,
 )
 from bust.migrate import migrate
-from bust.editor import Editor
+from bust.editor import run_editor
 from bust._version import __VERSION__
-
 
 # bust 0.14 options that bust 1.0 accepts and ignores, so that old command lines
 # and Makefiles keep working during the switch. The value is the reason the
@@ -157,8 +157,8 @@ def _run(args):
         if args["FILE"] is not None:
             json_file = args["FILE"]
 
-            # Without a terminal the editor's questions get no answers, and bust
-            # would exit 0 with nothing saved.
+            # The editor draws on the terminal and reads its keys, so it cannot
+            # run without one.
             is_terminal = sys.stdin.isatty() and sys.stdout.isatty()
             if (args["-c"] or args["-e"]) and not is_terminal:
                 logger.error("The editor (-c, -e) needs an interactive terminal.")
@@ -166,10 +166,7 @@ def _run(args):
 
             if args["-c"] or args["-e"]:
                 try:
-                    start = Editor.create if args["-c"] else Editor.open
-                    editor = start(json_file)
-                    if editor is not None:
-                        editor.run()
+                    run_editor(json_file, create=bool(args["-c"]))
                 except Exception as e:
                     logger.error(str(e) or type(e).__name__)
                     logger.debug("Detailed traceback:", exc_info=True)

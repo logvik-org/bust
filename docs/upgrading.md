@@ -209,9 +209,11 @@ with a warning, so a 0.14 command line in a Makefile still runs, but remove them
 when you can. `-F` is kept as another name for `-f`.
 [Command line](command-line.md) lists the options.
 
-The editor behind `-c` and `-e` writes the bust 1.0 format. When `bust FILE -e`
-opens a 0.14 file, it lists the changes that convert it and asks `Convert it?`.
-The changes are those of `--migrate`. Nothing is written until you save. If you do not convert the file, the editor does not open it.
+The editor behind `-c` and `-e` writes the bust 1.0 format, and needs
+`pip install "bust[editor]"`. When `bust FILE -e` opens a 0.14 file, it lists
+the changes that convert it and offers **Convert** or **Quit**. The changes are
+those of `--migrate`. Nothing is written until you save. If you do not convert
+the file, the editor does not open it.
 See [Interactive editor](command-line.md#interactive-editor).
 
 ## Python imports
