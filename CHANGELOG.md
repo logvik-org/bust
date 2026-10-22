@@ -10,6 +10,21 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Added
+- Every output carries the `version` of the module and a 32-bit hash of the
+  register map. The register file package has `C_<MODULE>_REGMAP_VERSION` and
+  `C_<MODULE>_REGMAP_HASH`, the headers `REGMAP_VERSION` and `REGMAP_HASH`, the
+  IPBus address table has both in the `parameters` of its top node, and the
+  documentation shows the hash on its title page. The hash changes exactly when
+  something that hardware or software depends on changes, and descriptions do
+  not count (#99).
+- The register types `hash` and `version`, read-only constants that hold the
+  register map hash and the `version` of the module, so that software can
+  check at run time which register map the hardware holds. A version register
+  needs a `version` of the form `MAJOR.MINOR` or `MAJOR.MINOR.PATCH` and holds
+  it as `0x00MMmmpp`. The generated testbench reads both back, and the
+  AXI4-Lite example has both (#99).
+
 ### Changed
 - bust checks the register map against its JSON Schema before anything else,
   and lists every problem the schema finds in one run instead of stopping at
@@ -21,6 +36,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
   misspelt key.
 - A JSON syntax error gives the line and the column, and a missing file says
   so, instead of `An unknown error has occurred`.
+- `version` must be a string of printable ASCII characters other than `"`,
+  `\`, `;` and `=`, so that it can go into every output as it is. bust stops
+  with an error for any other value.
 
 ## [1.0.0a4] - 2026-10-22
 

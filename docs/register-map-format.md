@@ -173,10 +173,91 @@ the timing of each protocol.
 |---|---|---|---|
 | `name` | string | required | Module name. It names the generated files and VHDL units, such as `uart_regfile` and `uart_regfile_pkg`. See [Names](#names). |
 | `register` | list | required | The registers, see [Registers](#registers). |
-| `version` | string | `""` | Shown in the LaTeX documentation. |
+| `version` | string | `""` | The version of the register map. Every generated file carries it, see [Version and hash](#version-and-hash). Printable ASCII characters other than `"`, `\`, `;` and `=`. A module with a `version` register needs the form `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`. |
 | `description` | string | `""` | Shown in the LaTeX documentation. |
 | `byte_addressable` | boolean | from the bus | `true` if an address counts bytes, `false` if it counts data words. See [Byte and word addresses](#byte-and-word-addresses). |
 | `git_hash` | string | none | Accepted and ignored. |
+
+### Version and hash
+
+bust gives software and hardware two ways to tell which register map they
+are built from. `version` is the text you give in the JSON file, such as
+`"1.2"`. bust does not check or change it, so raise it yourself when the
+register map changes. The hash is a 32-bit number that bust computes from the
+register map on every run, so it changes whenever the register map changes,
+with nothing for you to keep up to date.
+
+The hash covers the module name, the data width, `byte_addressable` and, for
+each register and field, the name, register offset, bit position, width, type,
+reset, access modes and enumeration values. Descriptions, `version`, the bus
+type and `addr_width` do not count. Neither does the bust version, so a newer
+bust gives the same hash for the same register map. The value is the first 32
+bits of the SHA-256 of these values written as JSON.
+
+Both appear in every output:
+
+| Output | Version | Hash |
+|---|---|---|
+| `<module>_regfile_pkg` | `C_<MODULE>_REGMAP_VERSION`, a `string` | `C_<MODULE>_REGMAP_HASH`, a 32-bit `std_logic_vector` |
+| C header | `<MODULE>_REGMAP_VERSION` | `<MODULE>_REGMAP_HASH` |
+| C++ and Python headers | `REGMAP_VERSION` | `REGMAP_HASH` |
+| IPBus address table | `regmap_version=` in the `parameters` of the top node | `regmap_hash=` in the same `parameters` |
+| LaTeX documentation | Title page and page footer | Title page, under the version |
+
+### Hash and version registers
+
+To let software check at run time which register map the hardware holds, add
+a register with `"type": "hash"`, `"type": "version"` or both. bust sets their
+values: the hash, and the `version` of the module as a number. Both have `sw`
+`ro` and `hw` `na`, and they are constants, so they cost no flip-flops.
+Software reads them and compares them with `REGMAP_HASH` and `REGMAP_VERSION`
+in its header. A different hash means the software and the hardware come from
+different register maps. The version tells you which version the hardware
+says it is.
+
+```json
+"module": {
+    "name": "uart",
+    "version": "1.2.0",
+    "register": [
+        {
+            "name": "id_hash",
+            "type": "hash",
+            "description": "Register map hash"
+        },
+        {
+            "name": "id_version",
+            "type": "version",
+            "description": "Register map version"
+        },
+        {
+            "name": "ctrl",
+            "sw": "rw",
+            "hw": "r"
+        }
+    ]
+}
+```
+
+A version register needs a `version` of the form `MAJOR.MINOR` or
+`MAJOR.MINOR.PATCH`, with each number from 0 to 255. It holds the version as
+`0x00MMmmpp`: the major number in bits 23 to 16, the minor number in bits 15
+to 8 and the patch number in bits 7 to 0, so `"1.2"` reads as `0x00010200`. A
+larger version reads as a larger number, so software can also check for a
+minimum version.
+
+A hash or version register takes only `name`, `type`, `address` and
+`description`, since bust sets the rest. It spans `data_width` bits, which
+must be at least 32, and a module has at most one of each. Otherwise it is a
+register like any other, with a name and an address of your choice, and it
+appears in the headers, the IPBus address table, the documentation and the
+generated testbench. The hash covers both registers, apart from their values.
+So, like the version itself, the value of the version register does not
+change the hash.
+
+Put them first, as above, or give them an `address`, so that they keep their
+register offsets while the register map grows. Software built from an older
+header then still finds them.
 
 ## Registers
 
@@ -185,7 +266,7 @@ Each entry in `register` is one register.
 | Key | Type | Default | Meaning |
 |---|---|---|---|
 | `name` | string | required | Register name. See [Names](#names). |
-| `type` | string | `"default"` | `default`, `vector`, `bit` or `fields`. See [Register types](#register-types). |
+| `type` | string | `"default"` | `default`, `vector`, `bit`, `fields`, `hash` or `version`. See [Register types](#register-types). |
 | `address` | [number](#numbers) | next free address | Register offset. See [Addresses](#addresses). |
 | `width` | [number](#numbers) | `data_width` | Width of a `vector` register. |
 | `reset` | [number](#numbers) | `0` | Reset value of a register without fields. See [Reset values](#reset-values). |
@@ -201,6 +282,8 @@ Each entry in `register` is one register.
 | `vector` | one `std_logic_vector` of `width` bits, from bit 0 |
 | `bit` | one `std_logic`, at bit 0 |
 | `fields` | the fields listed under `fields` |
+| `hash` | the register map hash, as a read-only constant of `data_width` bits. See [Hash and version registers](#hash-and-version-registers). |
+| `version` | the `version` of the module as a number, as a read-only constant of `data_width` bits. See [Hash and version registers](#hash-and-version-registers). |
 
 A register without fields works like one field that spans the register. It
 takes the register's `reset` and access keys, and `to_hw` and `from_hw` hold

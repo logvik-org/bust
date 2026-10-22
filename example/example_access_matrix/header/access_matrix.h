@@ -2,6 +2,10 @@
 #ifndef ACCESS_MATRIX_H
 #define ACCESS_MATRIX_H
 
+/* Register map version and content hash */
+#define ACCESS_MATRIX_REGMAP_VERSION "1.0"
+#define ACCESS_MATRIX_REGMAP_HASH 0x5E218695
+
 
 /* Register: plain */
 #define ACCESS_MATRIX_PLAIN_SW "rw"

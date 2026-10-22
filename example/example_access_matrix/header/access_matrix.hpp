@@ -7,6 +7,10 @@
 
 namespace ACCESS_MATRIX
 {
+/* Register map version and content hash */
+const std::string REGMAP_VERSION = "1.0";
+const uint32_t REGMAP_HASH = 0x5E218695;
+
 /* Register: plain */
 const std::string PLAIN_SW = "rw";
 const std::string PLAIN_HW = "r";

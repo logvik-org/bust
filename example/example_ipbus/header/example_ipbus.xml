@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<node id="example_ipbus">
+<node id="example_ipbus" parameters="regmap_version=1.0;regmap_hash=0xFCD085B6">
     <node id="reg0" address="0x00000000" permission="rw" description="RW std_logic register that resets to 0x0" parameters="reset=0x0"/>
     <node id="reg1" address="0x00000004" permission="rw" description="RW std_logic register that resets to 0x1" parameters="reset=0x1"/>
     <node id="reg2" address="0x00000008" permission="r" description="RO std_logic register" parameters="reset=0x0"/>

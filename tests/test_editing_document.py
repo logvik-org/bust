@@ -221,7 +221,7 @@ def test_a_new_register_map_is_checked():
 def test_next_free_address(tmp_path):
     document = _opened(_example(tmp_path, "example_axi.json"))
 
-    assert document.next_free_address() == 0x30
+    assert document.next_free_address() == 0x38
 
 
 def test_legacy_conversion_keeps_the_generated_hdl(tmp_path):
