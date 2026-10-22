@@ -10,6 +10,11 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Changed
+- The generated Python header is formatted as black formats it: the blank
+  line follows the first register docstring and hex values use upper-case
+  digits. black leaves it unchanged.
+
 ## [1.0.0a4] - 2026-10-22
 
 Fifth pre-release of bust 1.0.0, for testing. Install it with
