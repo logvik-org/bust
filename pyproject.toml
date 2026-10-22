@@ -83,7 +83,6 @@ bust = ["templates/**/*.j2"]
 source = ["bust"]
 omit = [
     "bust/_version.py",
-    "bust/editor.py",         # interactive curses UI, not exercised in CI
     "bust/__main__.py",       # docopt CLI entrypoint
 ]
 

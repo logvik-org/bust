@@ -121,7 +121,7 @@ class _Scanner:
         start = self.pos
         if self._peek() in ('"', "'"):
             self._string()
-            return str(json5.loads(self.text[start : self.pos]))
+            return str(_decode_scalar(self.text[start : self.pos]))
         self._word()
         return self.text[start : self.pos]
 
@@ -156,6 +156,14 @@ class _Scanner:
                 raise self._error(f"expected ',' or '{close}'")
         self.pos += 1
         return _Node(start, self.pos, members, is_object)
+
+
+def _decode_scalar(raw: str) -> Any:
+    # json is much faster than json5 and reads most values.
+    try:
+        return json.loads(raw)
+    except ValueError:
+        return json5.loads(raw)
 
 
 def join_pointer(*tokens: Any) -> str:
@@ -270,11 +278,7 @@ class JsonSource:
 
     def _decode(self, node: _Node) -> Any:
         if node.members is None:
-            raw = self.text[node.start : node.end]
-            try:
-                return json.loads(raw)
-            except ValueError:
-                return json5.loads(raw)
+            return _decode_scalar(self.text[node.start : node.end])
         if node.is_object:
             return {m.key: self._decode(m.value) for m in node.members}
         return [self._decode(m.value) for m in node.members]
