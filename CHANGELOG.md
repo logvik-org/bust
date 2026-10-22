@@ -10,6 +10,10 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Changed
+- bust no longer warns about a name longer than 16 characters. VHDL has no
+  such limit, and the warning fired for most names in real register maps.
+
 ## [1.0.0b1] - 2026-10-22
 
 First beta of bust 1.0.0, and the sixth pre-release, for testing. Install it
@@ -31,8 +35,6 @@ with `pip install --pre bust` or `pip install bust==1.0.0b1`.
   AXI4-Lite example has both (#99).
 
 ### Changed
-- bust no longer warns about a name longer than 16 characters. VHDL has no
-  such limit, and the warning fired for most names in real register maps.
 - bust checks the register map against its JSON Schema before anything else,
   and lists every problem the schema finds in one run instead of stopping at
   the first. Each message starts with the file, the line and the path to the
