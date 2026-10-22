@@ -10,6 +10,11 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+## [1.0.0a4] - 2026-10-22
+
+Fifth pre-release of bust 1.0.0, for testing. Install it with
+`pip install --pre bust` or `pip install bust==1.0.0a4`.
+
 ### Added
 - `C_<MODULE>_TO_HW_RESET`, a `to_hw` with every value at its reset and every
   strobe inactive, for models and testbenches that drive `to_hw`.
@@ -370,7 +375,8 @@ First pre-release of bust 1.0.0, for testing. Install it with
   packages. The wheel also left out the Jinja2 templates, without which an
   installed bust cannot generate anything.
 
-[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0a3...HEAD
+[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0a4...HEAD
+[1.0.0a4]: https://github.com/logvik-org/bust/compare/v1.0.0a3...v1.0.0a4
 [1.0.0a3]: https://github.com/logvik-org/bust/compare/v1.0.0a2...v1.0.0a3
 [1.0.0a2]: https://github.com/logvik-org/bust/compare/v1.0.0a1...v1.0.0a2
 [1.0.0a1]: https://github.com/logvik-org/bust/compare/v1.0.0a0...v1.0.0a1
