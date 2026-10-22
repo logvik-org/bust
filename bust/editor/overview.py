@@ -25,6 +25,7 @@ class OverviewScreen(Screen[None]):
 
     BINDINGS = [
         Binding("escape,o,q", "close", "Back to the editor"),
+        Binding("t", "app.toggle_theme", "Light/dark"),
     ]
 
     DEFAULT_CSS = """

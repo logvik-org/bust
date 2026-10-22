@@ -214,19 +214,11 @@ When every address is right already, bust says
 
 ## Interactive editor
 
-`-c` and `-e` open a full-screen editor in the terminal. It is built on
-[Textual](https://textual.textualize.io/), which bust installs only when you
-ask for the editor:
-
-```bash
-pip install "bust[editor]"
-```
-
-Without Textual, bust stops with
-`The editor needs Textual. Install it with: pip install 'bust[editor]'`. The
-editor needs an interactive terminal. Without one, bust stops with
-`The editor (-c, -e) needs an interactive terminal.` Both exit with status 1.
-The editor runs in any terminal Textual supports, on Linux, macOS and Windows.
+`-c` and `-e` open a full-screen editor in the terminal, built on
+[Textual](https://textual.textualize.io/). It runs in any terminal Textual
+supports, on Linux, macOS and Windows. It needs an interactive terminal.
+Without one, bust stops with
+`The editor (-c, -e) needs an interactive terminal.` and exits with status 1.
 
 ### The main screen
 
@@ -255,6 +247,7 @@ These keys work on the main screen, and the footer lists most of them:
 | `m` | Change the module's `name`, `description`, `version` and `byte_addressable`, and the bus `type`, `addr_width` and `data_width`. |
 | `g` | Write the address bust gives each register without an `address`. Unlike `-a`, it leaves the other addresses alone. |
 | `o` | Show the overview of the register map. |
+| `t` | Switch between the light and the dark theme, which use the colours of this documentation. |
 | `?` | List every key. |
 | `s` or `Ctrl+S` | Save `FILE` if the register map changed. |
 | `q` or `Ctrl+Q` | Quit. With unsaved changes, the editor asks whether to save first. |

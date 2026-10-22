@@ -37,6 +37,7 @@ from bust.editor.screens import (
     default_choice,
 )
 from bust.editor.overview import OverviewScreen
+from bust.editor.theme import DARK, LIGHT
 from bust.editor.session import (
     EditSession,
     Property,
@@ -52,7 +53,7 @@ _CSS = """
 #right { width: 2fr; }
 #hints { height: 1; padding: 0 1; color: $text-muted; }
 MainScreen DataTable {
-    border: round $panel-lighten-2; border-title-color: $text-muted;
+    border: round $foreground 25%; border-title-color: $text-muted;
     border-subtitle-color: $text-muted;
 }
 MainScreen DataTable:focus {
@@ -99,6 +100,7 @@ _HELP = """\
 
 [b]Looking and saving[/b]
   [b]o[/b]                overview of the register map, as in the documentation
+  [b]t[/b]                switch between the light and the dark theme
   [b]s[/b], [b]Ctrl+S[/b]        save
   [b]q[/b], [b]Ctrl+Q[/b]        quit, asking first about unsaved changes
 
@@ -138,6 +140,7 @@ class MainScreen(Screen[None]):
         Binding("m", "edit_module", "Module and bus"),
         Binding("g", "fill_addresses", "Give addresses", show=False),
         Binding("o", "overview", "Overview"),
+        Binding("t", "app.toggle_theme", "Light/dark"),
         Binding("question_mark", "help", "Help"),
         Binding("1", "focus_pane('registers')", "Registers", show=False),
         Binding("2", "focus_pane('fields')", "Fields", show=False),
@@ -488,6 +491,9 @@ class EditorApp(App[Optional[str]]):
         # bust warns about the whole register map on every change, so each
         # warning is shown once.
         self._warnings_shown: Set[str] = set()
+        self.register_theme(LIGHT)
+        self.register_theme(DARK)
+        self.theme = DARK.name
 
     def on_mount(self) -> None:
         if self.session is None:
@@ -1044,3 +1050,6 @@ class EditorApp(App[Optional[str]]):
 
     def action_quit_editor(self) -> None:
         self.quit_editor()
+
+    def action_toggle_theme(self) -> None:
+        self.theme = LIGHT.name if self.theme == DARK.name else DARK.name

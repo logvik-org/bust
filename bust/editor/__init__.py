@@ -1,8 +1,8 @@
 """The interactive register map editor behind ``bust FILE -c`` and ``-e``.
 
-The editor is a full-screen terminal application built on Textual, which
-``pip install bust[editor]`` installs. bust imports Textual only when the editor
-starts, so generating code does not need it.
+The editor is a full-screen terminal application built on Textual. bust
+imports Textual only when the editor starts, so generating code does not pay
+for loading it.
 """
 
 import os
@@ -10,8 +10,6 @@ from typing import List, Optional, Tuple
 
 from bust.editing.document import Operation, RegisterMapDocument
 from bust.editor.session import EditSession
-
-INSTALL_HINT = "The editor needs Textual. Install it with: pip install 'bust[editor]'"
 
 
 def open_session(
@@ -52,18 +50,15 @@ def run_editor(path: str, create: bool) -> None:
     Raises:
         FileExistsError: If `create` and `path` exists.
         EditRejected: If bust rejects the register map in `path`.
-        ImportError: With INSTALL_HINT, if Textual is not installed.
         RuntimeError: If the editor stopped with a message.
     """
     session, changes, operations = open_session(path, create)
-    try:
-        from bust.editor.app import EditorApp
-    except ImportError as error:
-        raise ImportError(INSTALL_HINT) from error
+    from bust.editor.app import EditorApp
+
     app = EditorApp(path, session, changes, operations)
     app.run()
     if app.return_value is not None:
         raise RuntimeError(app.return_value)
 
 
-__all__ = ["EditSession", "INSTALL_HINT", "open_session", "run_editor"]
+__all__ = ["EditSession", "open_session", "run_editor"]
