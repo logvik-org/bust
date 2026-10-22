@@ -49,7 +49,7 @@ def test_sl_and_slv_become_bit_and_vector():
 
 
 def test_saved_file_uses_the_current_type_names():
-    """bust -a writes the file back with bit and vector."""
+    """Module.to_json writes bit and vector."""
     data = _load("example_axi")
     path = os.path.join(_DATA, "example_axi.json")
     module = Module(data["module"], Bus(data["bus"]), Settings(path, data["settings"]))
