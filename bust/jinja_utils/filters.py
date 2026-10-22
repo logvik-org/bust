@@ -6,6 +6,7 @@ Custom Jinja2 filters for use across `bust` templates.
 Filters defined:
 - to_binary: Format an integer as a binary string for VHDL literals.
 - align: Line up a token, such as ":" or "<=", in a column.
+- wrap: Break a call that is too long after a comma.
 - utf8tolatex: Convert UTF-8 text to LaTeX-safe encoding.
 
 Copyright (c) 2025 Ola Groettvik
@@ -21,6 +22,7 @@ def to_binary(value, width):
 
 
 _CONDITION = re.compile(r"(if|elsif|while|when|return|assert|report)\b")
+_CONTROL = re.compile(r"(if|elsif|else|end|case|when|for|while|loop)\b")
 
 
 def align(text, *tokens, nested=False):
@@ -28,13 +30,13 @@ def align(text, *tokens, nested=False):
 
     A token is matched with a space before it and a space or the end of the
     line after it, such as " : ". "<=|:=" matches either of the two, so both
-    line up in one column. A group is a run of consecutive lines with the same
-    indentation that contain the token, and the continuation lines of their
-    statements. With `nested`, as in a constant with nested aggregates, a
-    group also takes in the lines between that are indented more or do not
-    contain the token, and ends only at a blank line or a line with less
-    indentation. The token goes one space after the longest text in front of
-    it in the group.
+    line up in one column. A group is a run of lines with the same indentation
+    that contain the token. A blank line, a comment line, a control statement
+    such as if or end if, or a line with less indentation ends it. With
+    `nested`, as in a constant with nested aggregates, a group also takes in
+    the lines between that are indented more or do not contain the token, and
+    ends only at a blank line or a line with less indentation. The token goes
+    one space after the longest text in front of it in the group.
     """
     lines = text.split("\n")
     for token in tokens:
@@ -56,12 +58,19 @@ def align(text, *tokens, nested=False):
             )
             # A comparison in a condition, such as if (a <= b), is no assignment.
             found = position > indent and not _CONDITION.match(line.strip())
+            stripped = line.strip()
             if nested:
-                ends = not line.strip() or indent < base
+                ends = not stripped or indent < base
             else:
-                # A more deeply indented line without the token continues the
-                # statement above it.
-                ends = not line.strip() or indent < base or found != (indent == base)
+                # Other statements, such as a wait, and the continuation lines
+                # of a statement do not end a group.
+                ends = (
+                    not stripped
+                    or stripped.startswith("--")
+                    or bool(_CONTROL.match(stripped))
+                    or indent < base
+                    or (found and indent != base)
+                )
             if group and ends:
                 width = max(len(lines[n][:p].rstrip()) for n, p in group)
                 for n, p in group:
@@ -73,6 +82,43 @@ def align(text, *tokens, nested=False):
                     base = indent
                 group.append((number, position))
     return "\n".join(lines)
+
+
+def wrap(text, width=120):
+    """Break each line longer than `width` that holds a call, as vsg accepts.
+
+    The arguments of the first call on the line go on as many lines as needed,
+    each continuation line starting one column after its opening parenthesis.
+    """
+    out = []
+    for line in text.split("\n"):
+        if len(line) <= width or "(" not in line:
+            out.append(line)
+            continue
+        opening = line.index("(")
+        parts, depth, start, quoted = [], 0, opening + 1, False
+        for i in range(opening, len(line)):
+            char = line[i]
+            if char == '"':
+                quoted = not quoted
+            elif quoted:
+                continue
+            elif char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+            elif char == "," and depth == 1:
+                parts.append(line[start : i + 1].strip())
+                start = i + 1
+        parts.append(line[start:].strip())
+        lines = [line[: opening + 1] + parts[0]]
+        for part in parts[1:]:
+            if len(lines[-1]) + 1 + len(part) <= width:
+                lines[-1] += " " + part
+            else:
+                lines.append(" " * (opening + 1) + part)
+        out.extend(lines)
+    return "\n".join(out)
 
 
 def utf8tolatex(text):

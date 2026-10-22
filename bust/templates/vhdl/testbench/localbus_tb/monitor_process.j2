@@ -2,15 +2,17 @@
 
   p_strobe_monitor : process (clk) is
   begin
+
     if rising_edge(clk) then
+{% filter align("<=") %}
 {% for reg in module.strobe_registers %}
 {% for f in reg.swmod_fields %}
-      if to_hw.{{ f.hw_path }}.swmod = '1' then
+      if (to_hw.{{ f.hw_path }}.swmod = '1') then
         {{ reg.name }}_{{ f.name }}_swmod_count <= {{ reg.name }}_{{ f.name }}_swmod_count + 1;
       end if;
 {% endfor %}
 {% for f in reg.swacc_fields %}
-      if to_hw.{{ f.hw_path }}.swacc = '1' then
+      if (to_hw.{{ f.hw_path }}.swacc = '1') then
         {{ reg.name }}_{{ f.name }}_swacc_count <= {{ reg.name }}_{{ f.name }}_swacc_count + 1;
 {% if reg.is_hwset_read_clear_register %}
         {{ reg.name }}_{{ f.name }}_at_swacc <= to_hw.{{ f.hw_path }}.value;
@@ -18,12 +20,14 @@
       end if;
 {% endfor %}
 {% for f in reg.singlepulse_fields %}
-      if to_hw.{{ f.hw_path }}{{ ".value" if f.to_hw_is_record else "" }} /= {{ f.value_literal(f.reset_state) }} then
+      if (to_hw.{{ f.hw_path }}{{ ".value" if f.to_hw_is_record else "" }} /= {{ f.value_literal(f.reset_state) }}) then
         {{ reg.name }}_{{ f.name }}_sp_count <= {{ reg.name }}_{{ f.name }}_sp_count + 1;
         {{ reg.name }}_{{ f.name }}_sp_value <= to_hw.{{ f.hw_path }}{{ ".value" if f.to_hw_is_record else "" }};
       end if;
 {% endfor %}
 {% endfor %}
+{% endfilter %}
     end if;
+
   end process p_strobe_monitor;
 {% endif %}
