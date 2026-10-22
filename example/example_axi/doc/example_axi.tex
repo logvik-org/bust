@@ -23,7 +23,7 @@
 }
 
 \title{example{\_}axi}
-\author{Version: 1.0 \\ Register map hash: \texttt{0x55C3AEDF}}
+\author{Version: 1.0 \\ Register map hash: \texttt{0x0CF519FC}}
 \date{\today\ \currenttime}
 
 \pagestyle{fancy}
@@ -75,7 +75,9 @@ An example module that contain all the register types that are currently support
       \hline
       11 & reg11 & WO/R & \texttt{0x0000002C} & FIELDS & 16 & \texttt{0x3} \\
       \hline
-      12 & regmap{\_}hash & RO/NA & \texttt{0x00000030} & HASH & 32 & \texttt{0x55C3AEDF} \\
+      12 & regmap{\_}hash & RO/NA & \texttt{0x00000030} & HASH & 32 & \texttt{0xCF519FC} \\
+      \hline
+      13 & regmap{\_}version & RO/NA & \texttt{0x00000034} & VERSION & 32 & \texttt{0x10000} \\
       \hline
     \end{tabularx}
   \end{center}
@@ -190,7 +192,13 @@ An example module that contain all the register types that are currently support
 
 \begin{register}{H}{regmap{\_}hash - RO/NA}{0x00000030}  \par Hash of the register map, to compare with EXAMPLE{\_}AXI{\_}REGMAP{\_}HASH in the header \regnewline
   \label{regmap_hash}
-  \regfield{}{32}{0}{{0x55C3AEDF}}
+  \regfield{}{32}{0}{{0xCF519FC}}
+\reglabel{Reset}\regnewline
+\end{register}
+
+\begin{register}{H}{regmap{\_}version - RO/NA}{0x00000034}  \par Version of the register map, 1.0 as 0x00010000 \regnewline
+  \label{regmap_version}
+  \regfield{}{32}{0}{{0x10000}}
 \reglabel{Reset}\regnewline
 \end{register}
 

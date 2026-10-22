@@ -216,7 +216,10 @@ begin
     gen_pulse(areset_n, '0', 500 ns, BLOCKING, "Reset for 500 ns");
 
     log(ID_LOG_HDR, "regmap_hash: reads the register map hash", C_SCOPE);
-    bus_check(f_addr(C_EXAMPLE_AXI_REGMAP_HASH_OFFSET), 32x"55C3AEDF", "regmap_hash holds C_EXAMPLE_AXI_REGMAP_HASH");
+    bus_check(f_addr(C_EXAMPLE_AXI_REGMAP_HASH_OFFSET), 32x"0CF519FC", "regmap_hash holds the register map hash");
+
+    log(ID_LOG_HDR, "regmap_version: reads the version", C_SCOPE);
+    bus_check(f_addr(C_EXAMPLE_AXI_REGMAP_VERSION_OFFSET), 32x"00010000", "regmap_version holds the version");
 
     log(ID_LOG_HDR, "reg0: software read-write round-trip", C_SCOPE);
     bus_write(f_addr(C_EXAMPLE_AXI_REG0_OFFSET), 32x"00000001", "write reg0");
@@ -325,6 +328,8 @@ begin
     bus_write_unmapped(f_addr(C_EXAMPLE_AXI_REG8_OFFSET), 32x"0", "write reg8, which software cannot write");
     bus_write_unmapped(f_addr(C_EXAMPLE_AXI_REGMAP_HASH_OFFSET), 32x"0",
                        "write regmap_hash, which software cannot write");
+    bus_write_unmapped(f_addr(C_EXAMPLE_AXI_REGMAP_VERSION_OFFSET), 32x"0",
+                       "write regmap_version, which software cannot write");
     bus_check_unmapped(f_addr(C_EXAMPLE_AXI_REG9_OFFSET), "read reg9, which software cannot read");
     bus_check_unmapped(f_addr(C_EXAMPLE_AXI_REG10_OFFSET), "read reg10, which software cannot read");
     bus_check_unmapped(f_addr(C_EXAMPLE_AXI_REG11_OFFSET), "read reg11, which software cannot read");
@@ -332,8 +337,8 @@ begin
     -- An address where no register sits gets an error response where the bus
     -- has one, reads as G_UNMAPPED_READ_DATA, and a write to it changes no register.
     log(ID_LOG_HDR, "addresses without a register get an error and change nothing", C_SCOPE);
-    bus_write_unmapped(f_addr(32x"34"), 32x"0", "write 0x34, an unused register offset");
-    bus_check_unmapped(f_addr(32x"34"), "read 0x34, an unused register offset");
+    bus_write_unmapped(f_addr(32x"38"), 32x"0", "write 0x38, an unused register offset");
+    bus_check_unmapped(f_addr(32x"38"), "read 0x38, an unused register offset");
     bus_write_unmapped(f_addr(32x"1"), 32x"0", "write 0x1, an address inside a register");
     bus_check_unmapped(f_addr(32x"1"), "read 0x1, an address inside a register");
     bus_write_unmapped(f_addr(32x"40"), 32x"0", "write 0x40, an address above the registers");

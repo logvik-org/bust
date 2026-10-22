@@ -290,8 +290,8 @@ class Editor:
         types = RegisterType.valid_values()
         register["type"] = types[prompts.choose("Type", types)]
         is_fields = register["type"] == RegisterType.FIELDS.value
-        if register["type"] == RegisterType.HASH.value:
-            # bust sets the access and the value of a hash register.
+        if RegisterType(register["type"]).is_constant:
+            # bust sets the access and the value of a hash or version register.
             register["description"] = prompts.text("Description", "")
             self._apply(adding())
             return
@@ -442,9 +442,9 @@ class Editor:
             keys = ["name", "description", "address", "type"]
             if register.type == RegisterType.VECTOR:
                 keys.append("width")
-            if register.type not in (RegisterType.FIELDS, RegisterType.HASH):
+            if register.type != RegisterType.FIELDS and not register.type.is_constant:
                 keys.append("reset")
-            if register.type != RegisterType.HASH:
+            if not register.type.is_constant:
                 keys += INHERITABLE_ACCESS
             labels = [
                 _row(key, self._register_value(index, key), key in data) for key in keys
@@ -530,12 +530,12 @@ class Editor:
         unused = ["reset"] if is_fields else ["fields"]
         if new != RegisterType.VECTOR.value:
             unused.append("width")
-        if new == RegisterType.HASH.value:
+        if RegisterType(new).is_constant:
             unused += ["reset", "mode", *INHERITABLE_ACCESS]
         operations += [
             {"op": "remove", "path": f"{path}/{key}"} for key in unused if key in data
         ]
-        if new == RegisterType.HASH.value:
+        if RegisterType(new).is_constant:
             if old == RegisterType.FIELDS.value and not self.prompts.yes(
                 f"Remove the fields of {data['name']}?", False
             ):

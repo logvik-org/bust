@@ -334,7 +334,7 @@ class TestHashRegister:
             module_with(register=[hash_reg(fields=fields)])
 
     def test_second_hash_register_rejected(self):
-        with pytest.raises(InvalidRegister, match="at most one"):
+        with pytest.raises(InvalidRegister, match="at most one hash"):
             module_with(register=[hash_reg(), hash_reg(name="other")])
 
     def test_narrow_data_width_rejected(self):
@@ -344,7 +344,9 @@ class TestHashRegister:
     def test_wide_data_width_holds_the_hash(self):
         mod = module_with(register=[hash_reg()], bus=stub_bus(data_width=64))
         assert int(mod.hash_register.reset, 16) == mod.regmap_hash
-        assert mod.hash_register_value_vhdl == f'64x"{mod.regmap_hash:016X}"'
+        assert mod.value_vhdl(mod.hash_register.reset) == (
+            f'64x"{mod.regmap_hash:016X}"'
+        )
 
     def test_counts_in_the_hash(self):
         with_hash = module_with(register=regs("R0", "R1") + [hash_reg()])
@@ -364,4 +366,58 @@ class TestHashRegister:
         assert (
             mod.regmap_hash
             == module_with(register=[hash_reg()] + regs("R0")).regmap_hash
+        )
+
+
+def version_reg(**keys):
+    return {"name": "id_version", "type": "version", **keys}
+
+
+class TestVersionRegister:
+    @pytest.mark.parametrize(
+        "version, value",
+        [("1.2", 0x010200), ("1.2.3", 0x010203), ("0.0", 0), ("255.255.255", 0xFFFFFF)],
+    )
+    def test_holds_the_packed_version(self, version, value):
+        mod = module_with(version=version, register=[version_reg()])
+        reg = mod.version_register
+        assert (reg.type.value, reg.sw.value, reg.hw.value, reg.width) == (
+            "version",
+            "ro",
+            "na",
+            32,
+        )
+        assert int(reg.reset, 16) == value
+        assert mod.constant_registers == [reg]
+
+    @pytest.mark.parametrize(
+        "version", ["", "1", "v1.2", "1.2-rc1", "1.256", "1.2.3.4"]
+    )
+    def test_version_that_does_not_pack_rejected(self, version):
+        with pytest.raises(InvalidRegister, match="MAJOR.MINOR"):
+            module_with(version=version, register=[version_reg()])
+
+    def test_any_version_without_a_version_register(self):
+        assert module_with(version="v1.2-rc1").version_register is None
+
+    def test_other_keys_rejected(self):
+        with pytest.raises(InvalidRegister, match="takes only name"):
+            module_with(version="1.0", register=[version_reg(reset="0x1")])
+
+    def test_second_version_register_rejected(self):
+        registers = [version_reg(), version_reg(name="other")]
+        with pytest.raises(InvalidRegister, match="at most one version"):
+            module_with(version="1.0", register=registers)
+
+    def test_with_a_hash_register(self):
+        mod = module_with(version="1.0", register=[hash_reg(), version_reg()])
+        assert mod.constant_registers == mod.registers
+        assert int(mod.hash_register.reset, 16) == mod.regmap_hash
+
+    def test_version_does_not_change_the_hash(self):
+        assert (
+            module_with(version="1.0", register=[hash_reg(), version_reg()]).regmap_hash
+            == module_with(
+                version="2.1", register=[hash_reg(), version_reg()]
+            ).regmap_hash
         )

@@ -30,6 +30,7 @@ Arguments:
   DIR          Output directory for VHDL, header files and documentation
 
 """
+
 from docopt import docopt
 import sys
 import shlex
@@ -60,7 +61,6 @@ from bust.exceptions import (
 from bust.migrate import migrate
 from bust.editor import Editor
 from bust._version import __VERSION__
-
 
 # bust 0.14 options that bust 1.0 accepts and ignores, so that old command lines
 # and Makefiles keep working during the switch. The value is the reason the

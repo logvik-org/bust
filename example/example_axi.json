@@ -176,6 +176,12 @@
                 "type": "hash",
                 "address": "0x30",
                 "description": "Hash of the register map, to compare with EXAMPLE_AXI_REGMAP_HASH in the header"
+            },
+            {
+                "name": "regmap_version",
+                "type": "version",
+                "address": "0x34",
+                "description": "Version of the register map, 1.0 as 0x00010000"
             }
         ]
     }

@@ -39,6 +39,9 @@ if TYPE_CHECKING:
 # key from value with =.
 VERSION_PATTERN = re.compile(r"[ !#-:<>-\[\]-~]*")
 
+# The version a version register packs into 0x00MMmmpp.
+VERSION_NUMBER_PATTERN = re.compile(r"(\d+)\.(\d+)(?:\.(\d+))?")
+
 MODULE_KEYS = (
     "name",
     "description",
@@ -159,9 +162,14 @@ class Module:
         try:
             register = Register(reg, addr, self.name, self.data_width)
             self._check_register_name(register.name)
+            if register.type.is_constant:
+                self._check_one_constant_register(register)
             if register.type == RegisterType.HASH:
-                self._check_one_hash_register(register.name)
                 self._hash_register_config = reg
+            elif register.type == RegisterType.VERSION:
+                register = Register(
+                    reg, addr, self.name, self.data_width, value=self.version_number
+                )
         except Exception as e:
             self.logger.debug(f"Register configuration: {reg}")
             raise InvalidRegister(reg, e) from e
@@ -233,20 +241,47 @@ class Module:
             )
         is_unique(name, [reg.name for reg in self.registers])
 
-    def _check_one_hash_register(self, name: str) -> None:
-        """Reject a second register with type hash."""
-        if self.hash_register is not None:
+    def _check_one_constant_register(self, register: Register) -> None:
+        """Reject a second register with type hash, or with type version."""
+        kind = register.type.value
+        other = self._register_of_type(register.type)
+        if other is not None:
             raise InvalidRegisterFormat(
-                f"Register {name} has type hash, and {self.hash_register.name} "
-                "already holds the hash. A module has at most one hash register."
+                f"Register {register.name} has type {kind}, and so does "
+                f"{other.name}. A module has at most one {kind} register."
             )
+
+    def _register_of_type(self, kind: RegisterType) -> Optional[Register]:
+        return next((reg for reg in self.registers if reg.type == kind), None)
 
     @property
     def hash_register(self) -> Optional[Register]:
         """The register with type hash, or None."""
-        return next(
-            (reg for reg in self.registers if reg.type == RegisterType.HASH), None
-        )
+        return self._register_of_type(RegisterType.HASH)
+
+    @property
+    def version_register(self) -> Optional[Register]:
+        """The register with type version, or None."""
+        return self._register_of_type(RegisterType.VERSION)
+
+    @property
+    def version_number(self) -> int:
+        """The version as the value of a version register, 0x00MMmmpp.
+
+        Raises:
+            FormatError: If the version is not MAJOR.MINOR or
+                MAJOR.MINOR.PATCH with each number from 0 to 255.
+        """
+        match = VERSION_NUMBER_PATTERN.fullmatch(self.version)
+        numbers = [int(n or 0) for n in match.groups()] if match else []
+        if not numbers or max(numbers) > 255:
+            raise FormatError(
+                "A version register needs a version of the form MAJOR.MINOR or "
+                "MAJOR.MINOR.PATCH, with each number from 0 to 255 "
+                f"(version is {self.version!r})"
+            )
+        major, minor, patch = numbers
+        return (major << 16) | (minor << 8) | patch
 
     def _update_hash_register(self) -> None:
         """Give the hash register the register map hash as its value.
@@ -262,14 +297,18 @@ class Module:
             hash_register.address,
             self.name,
             self.data_width,
-            hash_value=self.regmap_hash,
+            value=self.regmap_hash,
         )
 
     @property
-    def hash_register_value_vhdl(self) -> str:
-        """The value of the hash register as a data-width VHDL literal."""
+    def constant_registers(self) -> List[Register]:
+        """The hash and version registers, in register order."""
+        return [reg for reg in self.registers if reg.type.is_constant]
+
+    def value_vhdl(self, value: str) -> str:
+        """A register value such as "0x1f" as a data-width VHDL literal."""
         digits = (self.data_width + 3) // 4
-        return f'{self.data_width}x"{self.regmap_hash:0{digits}X}"'
+        return f'{self.data_width}x"{int(value, 16):0{digits}X}"'
 
     def get_next_address(self) -> int:
         """Find next available register address.
@@ -405,10 +444,9 @@ class Module:
         reset, access modes and enumerations. Descriptions and the version do not
         count, and the hash does not depend on the bus or the bust version. The
         hash is the first 32 bits of the SHA-256 of the canonical JSON of those
-        values. The value of the hash register does not count either, since it
-        is the hash.
+        values. The values of the hash and version registers do not count
+        either, since they are the hash and the version.
         """
-        hash_register = self.hash_register
         content: Dict[str, Any] = {
             "hash_format": 1,
             "name": self.name,
@@ -420,9 +458,9 @@ class Module:
                     "address": reg.address,
                     "type": reg.type.value,
                     "width": reg.width,
-                    "reset": None if reg is hash_register else reg.reset,
+                    "reset": None if reg.type.is_constant else reg.reset,
                     "fields": [
-                        _field_content(f, reg is not hash_register)
+                        _field_content(f, not reg.type.is_constant)
                         for f in reg.effective_fields
                     ],
                 }
