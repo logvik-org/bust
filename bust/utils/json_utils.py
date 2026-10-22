@@ -29,17 +29,6 @@ def json_parser(filename: str = "module.json") -> Any:
         return json5.loads(text)
 
 
-def uses_json5(filename: str) -> bool:
-    """True if the file is JSON5 but not plain JSON."""
-    with open(filename, encoding="utf-8") as fp:
-        text = fp.read()
-    try:
-        json.loads(text)
-    except ValueError:
-        return True
-    return False
-
-
 def compare_JSON(json1: str, json2: str, raise_error: bool = False) -> bool:
     """Compare two JSON strings line by line.
 
