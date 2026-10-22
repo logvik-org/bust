@@ -12,7 +12,9 @@ pip install --upgrade bust
 
 `bust FILE --migrate` makes the JSON changes listed in
 [Check your JSON files](#check-your-json-files) that need no decision, and
-connects a bust 0.14 `<module>.vhd` to the bust 1.0 endpoint as described in
+replaces each `mode` with the access keys it stands for. It changes only those
+values in the file, so comments and the layout stay. It also connects a bust
+0.14 `<module>.vhd` to the bust 1.0 endpoint as described in
 [Connect your top-level file](#connect-your-top-level-file). It lists the
 changes and asks first, unless you add `-f`, and keeps each old file with the
 suffix `.0_14`. Give it the same `-o` as your other runs, then generate the
@@ -120,8 +122,9 @@ what the testbench needs, so you can add it to your own simulation flow.
 
 The old `mode` key still works. bust translates it to software (`sw`) and
 hardware (`hw`) access, as described in
-[Register map format](register-map-format.md). You can keep your files as they
-are, or move to `sw` and `hw` to use the new [access modes](access-modes.md).
+[Register map format](register-map-format.md). `bust FILE --migrate` replaces
+each `mode` with the `sw` and `hw` keys it stands for, in the same place, so
+you can use the new [access modes](access-modes.md).
 
 A few keys need changes:
 
@@ -208,9 +211,7 @@ when you can. `-F` is kept as another name for `-f`.
 
 The editor behind `-c` and `-e` writes the bust 1.0 format. When `bust FILE -e`
 opens a 0.14 file, it lists the changes that convert it and asks `Convert it?`.
-The changes are those of `--migrate`, and in addition each register's `mode`
-becomes the access keys it stands for, in the same place. Nothing is written
-until you save. If you do not convert the file, the editor does not open it.
+The changes are those of `--migrate`. Nothing is written until you save. If you do not convert the file, the editor does not open it.
 See [Interactive editor](command-line.md#interactive-editor).
 
 ## Python imports
