@@ -6,60 +6,60 @@ class EXAMPLE_AXI_H:
     REGMAP_HASH = 0x0CF519FC
 
     """Register: reg0"""
-    REG0_SW = "rw"
-    REG0_HW = "r"
     REG0_WIDTH = 1
     REG0_OFFSET = 0x0
     REG0_RESET = 0x0
+    REG0_SW = "rw"
+    REG0_HW = "r"
 
     """Register: reg1"""
-    REG1_SW = "rw"
-    REG1_HW = "r"
     REG1_WIDTH = 1
     REG1_OFFSET = 0x4
     REG1_RESET = 0x1
+    REG1_SW = "rw"
+    REG1_HW = "r"
 
     """Register: reg2"""
-    REG2_SW = "ro"
-    REG2_HW = "w"
     REG2_WIDTH = 1
     REG2_OFFSET = 0x8
     REG2_RESET = 0x0
+    REG2_SW = "ro"
+    REG2_HW = "w"
 
     """Register: reg3"""
-    REG3_SW = "rw"
-    REG3_HW = "r"
     REG3_WIDTH = 8
     REG3_OFFSET = 0xC
     REG3_RESET = 0x3
+    REG3_SW = "rw"
+    REG3_HW = "r"
 
     """Register: reg4"""
-    REG4_SW = "ro"
-    REG4_HW = "w"
     REG4_WIDTH = 14
     REG4_OFFSET = 0x10
     REG4_RESET = 0x0
+    REG4_SW = "ro"
+    REG4_HW = "w"
 
     """Register: reg5"""
-    REG5_SW = "rw"
-    REG5_HW = "r"
     REG5_WIDTH = 32
     REG5_OFFSET = 0x14
     REG5_RESET = 0xFFFFFFFF
+    REG5_SW = "rw"
+    REG5_HW = "r"
 
     """Register: reg6"""
-    REG6_SW = "ro"
-    REG6_HW = "w"
     REG6_WIDTH = 32
     REG6_OFFSET = 0x18
     REG6_RESET = 0x0
+    REG6_SW = "ro"
+    REG6_HW = "w"
 
     """Register: reg7"""
-    REG7_SW = "rw"
-    REG7_HW = "r"
     REG7_WIDTH = 21
     REG7_OFFSET = 0x1C
     REG7_RESET = 0xAD7
+    REG7_SW = "rw"
+    REG7_HW = "r"
 
     """ Field: field0 """
     REG7_FIELD0_OFFSET = 0
@@ -94,11 +94,11 @@ class EXAMPLE_AXI_H:
     REG7_FIELD3_HW = "r"
 
     """Register: reg8"""
-    REG8_SW = "ro"
-    REG8_HW = "w"
     REG8_WIDTH = 24
     REG8_OFFSET = 0x20
     REG8_RESET = 0x0
+    REG8_SW = "ro"
+    REG8_HW = "w"
 
     """ Field: field0 """
     REG8_FIELD0_OFFSET = 0
@@ -133,27 +133,27 @@ class EXAMPLE_AXI_H:
     REG8_FIELD3_HW = "w"
 
     """Register: reg9"""
-    REG9_SW = "wo"
-    REG9_HW = "r"
     REG9_WIDTH = 1
     REG9_OFFSET = 0x24
     REG9_RESET = 0x1
+    REG9_SW = "wo"
+    REG9_HW = "r"
     REG9_SINGLEPULSE = True
 
     """Register: reg10"""
-    REG10_SW = "wo"
-    REG10_HW = "r"
     REG10_WIDTH = 4
     REG10_OFFSET = 0x28
     REG10_RESET = 0xA
+    REG10_SW = "wo"
+    REG10_HW = "r"
     REG10_SINGLEPULSE = True
 
     """Register: reg11"""
-    REG11_SW = "wo"
-    REG11_HW = "r"
     REG11_WIDTH = 16
     REG11_OFFSET = 0x2C
     REG11_RESET = 0x3
+    REG11_SW = "wo"
+    REG11_HW = "r"
 
     """ Field: field0 """
     REG11_FIELD0_OFFSET = 0
@@ -174,15 +174,15 @@ class EXAMPLE_AXI_H:
     REG11_FIELD1_SINGLEPULSE = True
 
     """Register: regmap_hash"""
-    REGMAP_HASH_SW = "ro"
-    REGMAP_HASH_HW = "na"
     REGMAP_HASH_WIDTH = 32
     REGMAP_HASH_OFFSET = 0x30
     REGMAP_HASH_RESET = 0xCF519FC
+    REGMAP_HASH_SW = "ro"
+    REGMAP_HASH_HW = "na"
 
     """Register: regmap_version"""
-    REGMAP_VERSION_SW = "ro"
-    REGMAP_VERSION_HW = "na"
     REGMAP_VERSION_WIDTH = 32
     REGMAP_VERSION_OFFSET = 0x34
     REGMAP_VERSION_RESET = 0x10000
+    REGMAP_VERSION_SW = "ro"
+    REGMAP_VERSION_HW = "na"

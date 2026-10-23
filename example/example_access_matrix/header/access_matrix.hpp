@@ -12,11 +12,11 @@ const std::string REGMAP_VERSION = "1.0";
 const uint32_t REGMAP_HASH = 0x5E218695;
 
 /* Register: plain */
-const std::string PLAIN_SW = "rw";
-const std::string PLAIN_HW = "r";
 const uint32_t PLAIN_WIDTH = 8;
 const uint32_t PLAIN_OFFSET = 0x0;
 const uint32_t PLAIN_RESET = 0x0;
+const std::string PLAIN_SW = "rw";
+const std::string PLAIN_HW = "r";
 
 /* Field: flag */
 const uint32_t PLAIN_FLAG_OFFSET = 0;
@@ -43,11 +43,11 @@ const std::string PLAIN_SCRATCH_SW = "rw";
 const std::string PLAIN_SCRATCH_HW = "na";
 
 /* Register: status */
-const std::string STATUS_SW = "ro";
-const std::string STATUS_HW = "w";
 const uint32_t STATUS_WIDTH = 6;
 const uint32_t STATUS_OFFSET = 0x4;
 const uint32_t STATUS_RESET = 0x0;
+const std::string STATUS_SW = "ro";
+const std::string STATUS_HW = "w";
 
 /* Field: busy */
 const uint32_t STATUS_BUSY_OFFSET = 0;
@@ -74,11 +74,11 @@ const std::string STATUS_FAULT_SW = "ro";
 const std::string STATUS_FAULT_HW = "w";
 
 /* Register: command */
-const std::string COMMAND_SW = "wo";
-const std::string COMMAND_HW = "r";
 const uint32_t COMMAND_WIDTH = 4;
 const uint32_t COMMAND_OFFSET = 0x8;
 const uint32_t COMMAND_RESET = 0x0;
+const std::string COMMAND_SW = "wo";
+const std::string COMMAND_HW = "r";
 
 /* Field: opcode */
 const uint32_t COMMAND_OPCODE_OFFSET = 0;
@@ -89,11 +89,11 @@ const std::string COMMAND_OPCODE_SW = "wo";
 const std::string COMMAND_OPCODE_HW = "r";
 
 /* Register: identity */
-const std::string IDENTITY_SW = "ro";
-const std::string IDENTITY_HW = "r";
 const uint32_t IDENTITY_WIDTH = 10;
 const uint32_t IDENTITY_OFFSET = 0xc;
 const uint32_t IDENTITY_RESET = 0x1a5;
+const std::string IDENTITY_SW = "ro";
+const std::string IDENTITY_HW = "r";
 
 /* Field: id */
 const uint32_t IDENTITY_ID_OFFSET = 0;
@@ -124,11 +124,11 @@ const uint32_t IDENTITY_PWR_SPARE_PWR_OFF = 0;
 const uint32_t IDENTITY_PWR_SPARE_PWR_ON = 1;
 
 /* Register: hw_modify */
-const std::string HW_MODIFY_SW = "rw";
-const std::string HW_MODIFY_HW = "rw";
 const uint32_t HW_MODIFY_WIDTH = 5;
 const uint32_t HW_MODIFY_OFFSET = 0x10;
 const uint32_t HW_MODIFY_RESET = 0x0;
+const std::string HW_MODIFY_SW = "rw";
+const std::string HW_MODIFY_HW = "rw";
 
 /* Field: override */
 const uint32_t HW_MODIFY_OVERRIDE_OFFSET = 0;
@@ -147,11 +147,11 @@ const std::string HW_MODIFY_STICKY_SW = "rw";
 const std::string HW_MODIFY_STICKY_HW = "r";
 
 /* Register: hw_set_clear */
-const std::string HW_SET_CLEAR_SW = "rw";
-const std::string HW_SET_CLEAR_HW = "rw";
 const uint32_t HW_SET_CLEAR_WIDTH = 5;
 const uint32_t HW_SET_CLEAR_OFFSET = 0x14;
 const uint32_t HW_SET_CLEAR_RESET = 0x0;
+const std::string HW_SET_CLEAR_SW = "rw";
+const std::string HW_SET_CLEAR_HW = "rw";
 
 /* Field: set_only */
 const uint32_t HW_SET_CLEAR_SET_ONLY_OFFSET = 0;
@@ -170,11 +170,11 @@ const std::string HW_SET_CLEAR_CLR_ONLY_SW = "rw";
 const std::string HW_SET_CLEAR_CLR_ONLY_HW = "rw";
 
 /* Register: read_effects */
-const std::string READ_EFFECTS_SW = "rw";
-const std::string READ_EFFECTS_HW = "r";
 const uint32_t READ_EFFECTS_WIDTH = 8;
 const uint32_t READ_EFFECTS_OFFSET = 0x18;
 const uint32_t READ_EFFECTS_RESET = 0x0;
+const std::string READ_EFFECTS_SW = "rw";
+const std::string READ_EFFECTS_HW = "r";
 
 /* Field: clear_on_read */
 const uint32_t READ_EFFECTS_CLEAR_ON_READ_OFFSET = 0;
@@ -195,11 +195,11 @@ const std::string READ_EFFECTS_SET_ON_READ_HW = "r";
 const std::string READ_EFFECTS_SET_ON_READ_ONREAD = "rset";
 
 /* Register: write_effects */
-const std::string WRITE_EFFECTS_SW = "rw";
-const std::string WRITE_EFFECTS_HW = "r";
 const uint32_t WRITE_EFFECTS_WIDTH = 13;
 const uint32_t WRITE_EFFECTS_OFFSET = 0x1c;
 const uint32_t WRITE_EFFECTS_RESET = 0xf0;
+const std::string WRITE_EFFECTS_SW = "rw";
+const std::string WRITE_EFFECTS_HW = "r";
 
 /* Field: set_bits */
 const uint32_t WRITE_EFFECTS_SET_BITS_OFFSET = 0;
@@ -238,11 +238,11 @@ const std::string WRITE_EFFECTS_SET_ALL_HW = "r";
 const std::string WRITE_EFFECTS_SET_ALL_ONWRITE = "wset";
 
 /* Register: pulses */
-const std::string PULSES_SW = "rw";
-const std::string PULSES_HW = "r";
 const uint32_t PULSES_WIDTH = 5;
 const uint32_t PULSES_OFFSET = 0x20;
 const uint32_t PULSES_RESET = 0x0;
+const std::string PULSES_SW = "rw";
+const std::string PULSES_HW = "r";
 
 /* Field: go */
 const uint32_t PULSES_GO_OFFSET = 0;
@@ -263,11 +263,11 @@ const std::string PULSES_KICK_HW = "r";
 const bool PULSES_KICK_SINGLEPULSE = true;
 
 /* Register: strobes */
-const std::string STROBES_SW = "rw";
-const std::string STROBES_HW = "r";
 const uint32_t STROBES_WIDTH = 8;
 const uint32_t STROBES_OFFSET = 0x24;
 const uint32_t STROBES_RESET = 0x0;
+const std::string STROBES_SW = "rw";
+const std::string STROBES_HW = "r";
 
 /* Field: modified */
 const uint32_t STROBES_MODIFIED_OFFSET = 0;
@@ -286,11 +286,11 @@ const std::string STROBES_ACCESSED_SW = "rw";
 const std::string STROBES_ACCESSED_HW = "r";
 
 /* Register: enum_vector */
-const std::string ENUM_VECTOR_SW = "rw";
-const std::string ENUM_VECTOR_HW = "r";
 const uint32_t ENUM_VECTOR_WIDTH = 2;
 const uint32_t ENUM_VECTOR_OFFSET = 0x28;
 const uint32_t ENUM_VECTOR_RESET = 0x0;
+const std::string ENUM_VECTOR_SW = "rw";
+const std::string ENUM_VECTOR_HW = "r";
 
 /* Field: mode */
 const uint32_t ENUM_VECTOR_MODE_OFFSET = 0;
@@ -303,11 +303,11 @@ const uint32_t ENUM_VECTOR_MODE_MODE_SLOW = 0;
 const uint32_t ENUM_VECTOR_MODE_MODE_FAST = 3;
 
 /* Register: enum_bit */
-const std::string ENUM_BIT_SW = "rw";
-const std::string ENUM_BIT_HW = "r";
 const uint32_t ENUM_BIT_WIDTH = 1;
 const uint32_t ENUM_BIT_OFFSET = 0x2c;
 const uint32_t ENUM_BIT_RESET = 0x0;
+const std::string ENUM_BIT_SW = "rw";
+const std::string ENUM_BIT_HW = "r";
 
 /* Field: power */
 const uint32_t ENUM_BIT_POWER_OFFSET = 0;
@@ -320,11 +320,11 @@ const uint32_t ENUM_BIT_POWER_PWR_OFF = 0;
 const uint32_t ENUM_BIT_POWER_PWR_ON = 1;
 
 /* Register: enum_hw */
-const std::string ENUM_HW_SW = "ro";
-const std::string ENUM_HW_HW = "rw";
 const uint32_t ENUM_HW_WIDTH = 3;
 const uint32_t ENUM_HW_OFFSET = 0x30;
 const uint32_t ENUM_HW_RESET = 0x2;
+const std::string ENUM_HW_SW = "ro";
+const std::string ENUM_HW_HW = "rw";
 
 /* Field: state */
 const uint32_t ENUM_HW_STATE_OFFSET = 0;
@@ -348,11 +348,11 @@ const uint32_t ENUM_HW_SUPPLY_PWR_OFF = 0;
 const uint32_t ENUM_HW_SUPPLY_PWR_ON = 1;
 
 /* Register: enum_swacc */
-const std::string ENUM_SWACC_SW = "rw";
-const std::string ENUM_SWACC_HW = "r";
 const uint32_t ENUM_SWACC_WIDTH = 2;
 const uint32_t ENUM_SWACC_OFFSET = 0x34;
 const uint32_t ENUM_SWACC_RESET = 0x0;
+const std::string ENUM_SWACC_SW = "rw";
+const std::string ENUM_SWACC_HW = "r";
 
 /* Field: phase */
 const uint32_t ENUM_SWACC_PHASE_OFFSET = 0;
@@ -366,11 +366,11 @@ const uint32_t ENUM_SWACC_PHASE_PH_ARM = 1;
 const uint32_t ENUM_SWACC_PHASE_PH_FIRE = 2;
 
 /* Register: mixed_swacc */
-const std::string MIXED_SWACC_SW = "rw";
-const std::string MIXED_SWACC_HW = "r";
 const uint32_t MIXED_SWACC_WIDTH = 19;
 const uint32_t MIXED_SWACC_OFFSET = 0x38;
 const uint32_t MIXED_SWACC_RESET = 0x40900;
+const std::string MIXED_SWACC_SW = "rw";
+const std::string MIXED_SWACC_HW = "r";
 
 /* Field: clear_bits */
 const uint32_t MIXED_SWACC_CLEAR_BITS_OFFSET = 0;
@@ -436,11 +436,11 @@ const uint32_t MIXED_SWACC_POWER_FIXED_PWR_OFF = 0;
 const uint32_t MIXED_SWACC_POWER_FIXED_PWR_ON = 1;
 
 /* Register: mixed_history */
-const std::string MIXED_HISTORY_SW = "rw";
-const std::string MIXED_HISTORY_HW = "r";
 const uint32_t MIXED_HISTORY_WIDTH = 16;
 const uint32_t MIXED_HISTORY_OFFSET = 0x3c;
 const uint32_t MIXED_HISTORY_RESET = 0xf00;
+const std::string MIXED_HISTORY_SW = "rw";
+const std::string MIXED_HISTORY_HW = "r";
 
 /* Field: toggle */
 const uint32_t MIXED_HISTORY_TOGGLE_OFFSET = 0;
@@ -479,11 +479,11 @@ const std::string MIXED_HISTORY_TOGGLE_ON_ZERO_HW = "r";
 const std::string MIXED_HISTORY_TOGGLE_ON_ZERO_ONWRITE = "wzt";
 
 /* Register: hw_status_swacc */
-const std::string HW_STATUS_SWACC_SW = "ro";
-const std::string HW_STATUS_SWACC_HW = "rw";
 const uint32_t HW_STATUS_SWACC_WIDTH = 8;
 const uint32_t HW_STATUS_SWACC_OFFSET = 0x40;
 const uint32_t HW_STATUS_SWACC_RESET = 0x0;
+const std::string HW_STATUS_SWACC_SW = "ro";
+const std::string HW_STATUS_SWACC_HW = "rw";
 
 /* Field: level */
 const uint32_t HW_STATUS_SWACC_LEVEL_OFFSET = 0;
@@ -502,11 +502,11 @@ const std::string HW_STATUS_SWACC_LATCHED_SW = "ro";
 const std::string HW_STATUS_SWACC_LATCHED_HW = "rw";
 
 /* Register: hw_only */
-const std::string HW_ONLY_SW = "rw";
-const std::string HW_ONLY_HW = "rw";
 const uint32_t HW_ONLY_WIDTH = 5;
 const uint32_t HW_ONLY_OFFSET = 0x44;
 const uint32_t HW_ONLY_RESET = 0x0;
+const std::string HW_ONLY_SW = "rw";
+const std::string HW_ONLY_HW = "rw";
 
 /* Field: shadow */
 const uint32_t HW_ONLY_SHADOW_OFFSET = 0;
@@ -525,11 +525,11 @@ const std::string HW_ONLY_ENABLE_SW = "rw";
 const std::string HW_ONLY_ENABLE_HW = "r";
 
 /* Register: irq_status */
-const std::string IRQ_STATUS_SW = "ro";
-const std::string IRQ_STATUS_HW = "r";
 const uint32_t IRQ_STATUS_WIDTH = 1;
 const uint32_t IRQ_STATUS_OFFSET = 0x48;
 const uint32_t IRQ_STATUS_RESET = 0x0;
+const std::string IRQ_STATUS_SW = "ro";
+const std::string IRQ_STATUS_HW = "r";
 
 /* Field: pending */
 const uint32_t IRQ_STATUS_PENDING_OFFSET = 0;
@@ -541,39 +541,39 @@ const std::string IRQ_STATUS_PENDING_HW = "r";
 const std::string IRQ_STATUS_PENDING_ONREAD = "rclr";
 
 /* Register: flat_level */
-const std::string FLAT_LEVEL_SW = "rw";
-const std::string FLAT_LEVEL_HW = "r";
 const uint32_t FLAT_LEVEL_WIDTH = 8;
 const uint32_t FLAT_LEVEL_OFFSET = 0x4c;
 const uint32_t FLAT_LEVEL_RESET = 0x0;
+const std::string FLAT_LEVEL_SW = "rw";
+const std::string FLAT_LEVEL_HW = "r";
 
 /* Register: flat_strobe */
-const std::string FLAT_STROBE_SW = "rw";
-const std::string FLAT_STROBE_HW = "r";
 const uint32_t FLAT_STROBE_WIDTH = 4;
 const uint32_t FLAT_STROBE_OFFSET = 0x50;
 const uint32_t FLAT_STROBE_RESET = 0x0;
+const std::string FLAT_STROBE_SW = "rw";
+const std::string FLAT_STROBE_HW = "r";
 
 /* Register: flat_override */
-const std::string FLAT_OVERRIDE_SW = "rw";
-const std::string FLAT_OVERRIDE_HW = "rw";
 const uint32_t FLAT_OVERRIDE_WIDTH = 8;
 const uint32_t FLAT_OVERRIDE_OFFSET = 0x54;
 const uint32_t FLAT_OVERRIDE_RESET = 0x0;
+const std::string FLAT_OVERRIDE_SW = "rw";
+const std::string FLAT_OVERRIDE_HW = "rw";
 
 /* Register: flat_status */
-const std::string FLAT_STATUS_SW = "ro";
-const std::string FLAT_STATUS_HW = "w";
 const uint32_t FLAT_STATUS_WIDTH = 6;
 const uint32_t FLAT_STATUS_OFFSET = 0x58;
 const uint32_t FLAT_STATUS_RESET = 0x0;
+const std::string FLAT_STATUS_SW = "ro";
+const std::string FLAT_STATUS_HW = "w";
 
 /* Register: flat_flag */
-const std::string FLAT_FLAG_SW = "rw";
-const std::string FLAT_FLAG_HW = "r";
 const uint32_t FLAT_FLAG_WIDTH = 1;
 const uint32_t FLAT_FLAG_OFFSET = 0x5c;
 const uint32_t FLAT_FLAG_RESET = 0x0;
+const std::string FLAT_FLAG_SW = "rw";
+const std::string FLAT_FLAG_HW = "r";
 
 };
 

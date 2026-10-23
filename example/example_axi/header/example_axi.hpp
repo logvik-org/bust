@@ -12,60 +12,60 @@ const std::string REGMAP_VERSION = "1.0";
 const uint32_t REGMAP_HASH = 0x0CF519FC;
 
 /* Register: reg0 */
-const std::string REG0_SW = "rw";
-const std::string REG0_HW = "r";
 const uint32_t REG0_WIDTH = 1;
 const uint32_t REG0_OFFSET = 0x0;
 const uint32_t REG0_RESET = 0x0;
+const std::string REG0_SW = "rw";
+const std::string REG0_HW = "r";
 
 /* Register: reg1 */
-const std::string REG1_SW = "rw";
-const std::string REG1_HW = "r";
 const uint32_t REG1_WIDTH = 1;
 const uint32_t REG1_OFFSET = 0x4;
 const uint32_t REG1_RESET = 0x1;
+const std::string REG1_SW = "rw";
+const std::string REG1_HW = "r";
 
 /* Register: reg2 */
-const std::string REG2_SW = "ro";
-const std::string REG2_HW = "w";
 const uint32_t REG2_WIDTH = 1;
 const uint32_t REG2_OFFSET = 0x8;
 const uint32_t REG2_RESET = 0x0;
+const std::string REG2_SW = "ro";
+const std::string REG2_HW = "w";
 
 /* Register: reg3 */
-const std::string REG3_SW = "rw";
-const std::string REG3_HW = "r";
 const uint32_t REG3_WIDTH = 8;
 const uint32_t REG3_OFFSET = 0xc;
 const uint32_t REG3_RESET = 0x3;
+const std::string REG3_SW = "rw";
+const std::string REG3_HW = "r";
 
 /* Register: reg4 */
-const std::string REG4_SW = "ro";
-const std::string REG4_HW = "w";
 const uint32_t REG4_WIDTH = 14;
 const uint32_t REG4_OFFSET = 0x10;
 const uint32_t REG4_RESET = 0x0;
+const std::string REG4_SW = "ro";
+const std::string REG4_HW = "w";
 
 /* Register: reg5 */
-const std::string REG5_SW = "rw";
-const std::string REG5_HW = "r";
 const uint32_t REG5_WIDTH = 32;
 const uint32_t REG5_OFFSET = 0x14;
 const uint32_t REG5_RESET = 0xffffffff;
+const std::string REG5_SW = "rw";
+const std::string REG5_HW = "r";
 
 /* Register: reg6 */
-const std::string REG6_SW = "ro";
-const std::string REG6_HW = "w";
 const uint32_t REG6_WIDTH = 32;
 const uint32_t REG6_OFFSET = 0x18;
 const uint32_t REG6_RESET = 0x0;
+const std::string REG6_SW = "ro";
+const std::string REG6_HW = "w";
 
 /* Register: reg7 */
-const std::string REG7_SW = "rw";
-const std::string REG7_HW = "r";
 const uint32_t REG7_WIDTH = 21;
 const uint32_t REG7_OFFSET = 0x1c;
 const uint32_t REG7_RESET = 0xad7;
+const std::string REG7_SW = "rw";
+const std::string REG7_HW = "r";
 
 /* Field: field0 */
 const uint32_t REG7_FIELD0_OFFSET = 0;
@@ -100,11 +100,11 @@ const std::string REG7_FIELD3_SW = "rw";
 const std::string REG7_FIELD3_HW = "r";
 
 /* Register: reg8 */
-const std::string REG8_SW = "ro";
-const std::string REG8_HW = "w";
 const uint32_t REG8_WIDTH = 24;
 const uint32_t REG8_OFFSET = 0x20;
 const uint32_t REG8_RESET = 0x0;
+const std::string REG8_SW = "ro";
+const std::string REG8_HW = "w";
 
 /* Field: field0 */
 const uint32_t REG8_FIELD0_OFFSET = 0;
@@ -139,27 +139,27 @@ const std::string REG8_FIELD3_SW = "ro";
 const std::string REG8_FIELD3_HW = "w";
 
 /* Register: reg9 */
-const std::string REG9_SW = "wo";
-const std::string REG9_HW = "r";
 const uint32_t REG9_WIDTH = 1;
 const uint32_t REG9_OFFSET = 0x24;
 const uint32_t REG9_RESET = 0x1;
+const std::string REG9_SW = "wo";
+const std::string REG9_HW = "r";
 const bool REG9_SINGLEPULSE = true;
 
 /* Register: reg10 */
-const std::string REG10_SW = "wo";
-const std::string REG10_HW = "r";
 const uint32_t REG10_WIDTH = 4;
 const uint32_t REG10_OFFSET = 0x28;
 const uint32_t REG10_RESET = 0xa;
+const std::string REG10_SW = "wo";
+const std::string REG10_HW = "r";
 const bool REG10_SINGLEPULSE = true;
 
 /* Register: reg11 */
-const std::string REG11_SW = "wo";
-const std::string REG11_HW = "r";
 const uint32_t REG11_WIDTH = 16;
 const uint32_t REG11_OFFSET = 0x2c;
 const uint32_t REG11_RESET = 0x3;
+const std::string REG11_SW = "wo";
+const std::string REG11_HW = "r";
 
 /* Field: field0 */
 const uint32_t REG11_FIELD0_OFFSET = 0;
@@ -180,18 +180,18 @@ const std::string REG11_FIELD1_HW = "r";
 const bool REG11_FIELD1_SINGLEPULSE = true;
 
 /* Register: regmap_hash */
-const std::string REGMAP_HASH_SW = "ro";
-const std::string REGMAP_HASH_HW = "na";
 const uint32_t REGMAP_HASH_WIDTH = 32;
 const uint32_t REGMAP_HASH_OFFSET = 0x30;
 const uint32_t REGMAP_HASH_RESET = 0xcf519fc;
+const std::string REGMAP_HASH_SW = "ro";
+const std::string REGMAP_HASH_HW = "na";
 
 /* Register: regmap_version */
-const std::string REGMAP_VERSION_SW = "ro";
-const std::string REGMAP_VERSION_HW = "na";
 const uint32_t REGMAP_VERSION_WIDTH = 32;
 const uint32_t REGMAP_VERSION_OFFSET = 0x34;
 const uint32_t REGMAP_VERSION_RESET = 0x10000;
+const std::string REGMAP_VERSION_SW = "ro";
+const std::string REGMAP_VERSION_HW = "na";
 
 };
 

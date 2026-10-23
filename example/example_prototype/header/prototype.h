@@ -8,11 +8,11 @@
 
 
 /* Register: reg0 */
-#define PROTOTYPE_REG0_SW "rw"
-#define PROTOTYPE_REG0_HW "r"
 #define PROTOTYPE_REG0_WIDTH 3
 #define PROTOTYPE_REG0_OFFSET 0x0
 #define PROTOTYPE_REG0_RESET 0x0
+#define PROTOTYPE_REG0_SW "rw"
+#define PROTOTYPE_REG0_HW "r"
 
 /* Field: field0 */
 #define PROTOTYPE_REG0_FIELD0_OFFSET 0
@@ -31,11 +31,11 @@
 #define PROTOTYPE_REG0_FIELD1_HW "r"
 
 /* Register: reg1 */
-#define PROTOTYPE_REG1_SW "ro"
-#define PROTOTYPE_REG1_HW "w"
 #define PROTOTYPE_REG1_WIDTH 6
 #define PROTOTYPE_REG1_OFFSET 0x4
 #define PROTOTYPE_REG1_RESET 0x0
+#define PROTOTYPE_REG1_SW "ro"
+#define PROTOTYPE_REG1_HW "w"
 
 /* Field: field0 */
 #define PROTOTYPE_REG1_FIELD0_OFFSET 0
@@ -62,11 +62,11 @@
 #define PROTOTYPE_REG1_FIELD2_HW "w"
 
 /* Register: reg2 */
-#define PROTOTYPE_REG2_SW "wo"
-#define PROTOTYPE_REG2_HW "r"
 #define PROTOTYPE_REG2_WIDTH 1
 #define PROTOTYPE_REG2_OFFSET 0x8
 #define PROTOTYPE_REG2_RESET 0x0
+#define PROTOTYPE_REG2_SW "wo"
+#define PROTOTYPE_REG2_HW "r"
 
 /* Field: field0 */
 #define PROTOTYPE_REG2_FIELD0_OFFSET 0
@@ -77,11 +77,11 @@
 #define PROTOTYPE_REG2_FIELD0_HW "r"
 
 /* Register: reg3 */
-#define PROTOTYPE_REG3_SW "rw"
-#define PROTOTYPE_REG3_HW "na"
 #define PROTOTYPE_REG3_WIDTH 8
 #define PROTOTYPE_REG3_OFFSET 0xc
 #define PROTOTYPE_REG3_RESET 0x0
+#define PROTOTYPE_REG3_SW "rw"
+#define PROTOTYPE_REG3_HW "na"
 
 /* Field: field0 */
 #define PROTOTYPE_REG3_FIELD0_OFFSET 0
@@ -92,11 +92,11 @@
 #define PROTOTYPE_REG3_FIELD0_HW "na"
 
 /* Register: reg4 */
-#define PROTOTYPE_REG4_SW "rw"
-#define PROTOTYPE_REG4_HW "rw"
 #define PROTOTYPE_REG4_WIDTH 9
 #define PROTOTYPE_REG4_OFFSET 0x10
 #define PROTOTYPE_REG4_RESET 0x0
+#define PROTOTYPE_REG4_SW "rw"
+#define PROTOTYPE_REG4_HW "rw"
 
 /* Field: field0 */
 #define PROTOTYPE_REG4_FIELD0_OFFSET 0
@@ -115,11 +115,11 @@
 #define PROTOTYPE_REG4_FIELD1_HW "r"
 
 /* Register: reg5 */
-#define PROTOTYPE_REG5_SW "rw"
-#define PROTOTYPE_REG5_HW "r"
 #define PROTOTYPE_REG5_WIDTH 8
 #define PROTOTYPE_REG5_OFFSET 0x14
 #define PROTOTYPE_REG5_RESET 0x0
+#define PROTOTYPE_REG5_SW "rw"
+#define PROTOTYPE_REG5_HW "r"
 
 /* Field: field0 */
 #define PROTOTYPE_REG5_FIELD0_OFFSET 0
@@ -140,11 +140,11 @@
 #define PROTOTYPE_REG5_FIELD1_ONREAD "rset"
 
 /* Register: reg6 */
-#define PROTOTYPE_REG6_SW "rw"
-#define PROTOTYPE_REG6_HW "r"
 #define PROTOTYPE_REG6_WIDTH 12
 #define PROTOTYPE_REG6_OFFSET 0x18
 #define PROTOTYPE_REG6_RESET 0xf0
+#define PROTOTYPE_REG6_SW "rw"
+#define PROTOTYPE_REG6_HW "r"
 
 /* Field: field0 */
 #define PROTOTYPE_REG6_FIELD0_OFFSET 0
@@ -174,11 +174,11 @@
 #define PROTOTYPE_REG6_FIELD2_ONWRITE "wot"
 
 /* Register: reg7 */
-#define PROTOTYPE_REG7_SW "rw"
-#define PROTOTYPE_REG7_HW "r"
 #define PROTOTYPE_REG7_WIDTH 12
 #define PROTOTYPE_REG7_OFFSET 0x1c
 #define PROTOTYPE_REG7_RESET 0xf0
+#define PROTOTYPE_REG7_SW "rw"
+#define PROTOTYPE_REG7_HW "r"
 
 /* Field: field0 */
 #define PROTOTYPE_REG7_FIELD0_OFFSET 0
@@ -208,11 +208,11 @@
 #define PROTOTYPE_REG7_FIELD2_ONWRITE "wzt"
 
 /* Register: reg8 */
-#define PROTOTYPE_REG8_SW "rw"
-#define PROTOTYPE_REG8_HW "r"
 #define PROTOTYPE_REG8_WIDTH 8
 #define PROTOTYPE_REG8_OFFSET 0x20
 #define PROTOTYPE_REG8_RESET 0xf
+#define PROTOTYPE_REG8_SW "rw"
+#define PROTOTYPE_REG8_HW "r"
 
 /* Field: field0 */
 #define PROTOTYPE_REG8_FIELD0_OFFSET 0
@@ -233,11 +233,11 @@
 #define PROTOTYPE_REG8_FIELD1_ONWRITE "wset"
 
 /* Register: reg9 */
-#define PROTOTYPE_REG9_SW "rw"
-#define PROTOTYPE_REG9_HW "r"
 #define PROTOTYPE_REG9_WIDTH 8
 #define PROTOTYPE_REG9_OFFSET 0x24
 #define PROTOTYPE_REG9_RESET 0x0
+#define PROTOTYPE_REG9_SW "rw"
+#define PROTOTYPE_REG9_HW "r"
 
 /* Field: field0 */
 #define PROTOTYPE_REG9_FIELD0_OFFSET 0
@@ -256,11 +256,11 @@
 #define PROTOTYPE_REG9_FIELD1_HW "r"
 
 /* Register: reg10 */
-#define PROTOTYPE_REG10_SW "rw"
-#define PROTOTYPE_REG10_HW "r"
 #define PROTOTYPE_REG10_WIDTH 4
 #define PROTOTYPE_REG10_OFFSET 0x28
 #define PROTOTYPE_REG10_RESET 0x0
+#define PROTOTYPE_REG10_SW "rw"
+#define PROTOTYPE_REG10_HW "r"
 
 /* Field: field0 */
 #define PROTOTYPE_REG10_FIELD0_OFFSET 0
@@ -272,11 +272,11 @@
 #define PROTOTYPE_REG10_FIELD0_SINGLEPULSE 1
 
 /* Register: reg11 */
-#define PROTOTYPE_REG11_SW "rw"
-#define PROTOTYPE_REG11_HW "r"
 #define PROTOTYPE_REG11_WIDTH 2
 #define PROTOTYPE_REG11_OFFSET 0x2c
 #define PROTOTYPE_REG11_RESET 0x0
+#define PROTOTYPE_REG11_SW "rw"
+#define PROTOTYPE_REG11_HW "r"
 
 /* Field: field0 */
 #define PROTOTYPE_REG11_FIELD0_OFFSET 0
