@@ -458,26 +458,19 @@ package prototype_regfile_pkg is
     )
   );
 
-  -- base_match and above_registers get the register file's G_MODULE_ADDR_WIDTH
-  -- as module_addr_width. In an address, bits 0 to C_PROTOTYPE_MODULE_ADDR_WIDTH - 1
+  -- is_in_range gets the register file's G_MODULE_ADDR_WIDTH as
+  -- module_addr_width. In an address, bits 0 to C_PROTOTYPE_MODULE_ADDR_WIDTH - 1
   -- select a register, bits C_PROTOTYPE_MODULE_ADDR_WIDTH to module_addr_width - 1 must
   -- be 0, and bit module_addr_width and up are the base address.
 
-  -- True when check is false, or when the base address bits of addr equal the
-  -- same bits of base.
-  function base_match (
+  -- True when addr falls within the module's registers: bits
+  -- C_PROTOTYPE_MODULE_ADDR_WIDTH to module_addr_width - 1 are all 0, so the
+  -- address cannot reach a register through its low bits, and the base address
+  -- bits equal the same bits of base, unless check is false.
+  function is_in_range (
     addr              : std_logic_vector(31 downto 0);
     base              : unsigned(31 downto 0);
     check             : boolean;
-    module_addr_width : natural
-  ) return boolean;
-
-  -- True when any of bits C_PROTOTYPE_MODULE_ADDR_WIDTH to module_addr_width - 1 of addr
-  -- is set. The address is then in the module's address range but above the
-  -- registers, and the register file answers it with an error, so that it
-  -- cannot reach a register through its low bits.
-  function above_registers (
-    addr              : std_logic_vector(31 downto 0);
     module_addr_width : natural
   ) return boolean;
 
@@ -509,7 +502,7 @@ end package prototype_regfile_pkg;
 
 package body prototype_regfile_pkg is
 
-  function base_match (
+  function is_in_range (
     addr              : std_logic_vector(31 downto 0);
     base              : unsigned(31 downto 0);
     check             : boolean;
@@ -520,6 +513,14 @@ package body prototype_regfile_pkg is
 
   begin
 
+    for i in C_PROTOTYPE_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
+
+      if addr(i) /= '0' then
+        return false;
+      end if;
+
+    end loop;
+
     if not check then
       return true;
     end if;
@@ -527,25 +528,7 @@ package body prototype_regfile_pkg is
     return addr(31 downto module_addr_width)
            = BASE_SLV(31 downto module_addr_width);
 
-  end function base_match;
-
-  function above_registers (
-    addr              : std_logic_vector(31 downto 0);
-    module_addr_width : natural
-  ) return boolean is
-  begin
-
-    for i in C_PROTOTYPE_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
-
-      if addr(i) /= '0' then
-        return true;
-      end if;
-
-    end loop;
-
-    return false;
-
-  end function above_registers;
+  end function is_in_range;
 
   function reg_addr_match (
     reg_offset : std_logic_vector(C_PROTOTYPE_MODULE_ADDR_WIDTH - 1 downto 0);
