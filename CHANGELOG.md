@@ -13,6 +13,10 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 ### Changed
 - bust no longer warns about a name longer than 16 characters. VHDL has no
   such limit, and the warning fired for most names in real register maps.
+- In the C, C++ and Python headers, `<REG>_SW` and `<REG>_HW` now come after
+  `<REG>_RESET`, as the access constants of a field come after its `_MASK`.
+  The access constants of a register now sit next to its `_ONREAD`,
+  `_ONWRITE` and `_SINGLEPULSE`. Only the order of the lines changes.
 
 ## [1.0.0b1] - 2026-10-22
 

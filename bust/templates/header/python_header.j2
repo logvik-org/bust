@@ -7,11 +7,11 @@ class {{ module.name.upper() }}_H:
 {% for reg in module.registers %}
 
     """Register: {{ reg.name }}"""
-    {{ reg.name.upper() }}_SW = "{{ reg.sw.value }}"
-    {{ reg.name.upper() }}_HW = "{{ reg.hw.value }}"
     {{ reg.name.upper() }}_WIDTH = {{ reg.width }}
     {{ reg.name.upper() }}_OFFSET = {{ "0x%X" | format(reg.address) }}
     {{ reg.name.upper() }}_RESET = {{ "0x%X" | format(reg.reset | int(base=16)) }}
+    {{ reg.name.upper() }}_SW = "{{ reg.sw.value }}"
+    {{ reg.name.upper() }}_HW = "{{ reg.hw.value }}"
 {% if not reg.fields %}
 {% set f = reg.effective_fields[0] %}
 {% if f.onread %}

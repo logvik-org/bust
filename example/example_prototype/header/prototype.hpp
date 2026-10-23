@@ -12,11 +12,11 @@ const std::string REGMAP_VERSION = "1.0";
 const uint32_t REGMAP_HASH = 0x593FA68E;
 
 /* Register: reg0 */
-const std::string REG0_SW = "rw";
-const std::string REG0_HW = "r";
 const uint32_t REG0_WIDTH = 3;
 const uint32_t REG0_OFFSET = 0x0;
 const uint32_t REG0_RESET = 0x0;
+const std::string REG0_SW = "rw";
+const std::string REG0_HW = "r";
 
 /* Field: field0 */
 const uint32_t REG0_FIELD0_OFFSET = 0;
@@ -35,11 +35,11 @@ const std::string REG0_FIELD1_SW = "rw";
 const std::string REG0_FIELD1_HW = "r";
 
 /* Register: reg1 */
-const std::string REG1_SW = "ro";
-const std::string REG1_HW = "w";
 const uint32_t REG1_WIDTH = 6;
 const uint32_t REG1_OFFSET = 0x4;
 const uint32_t REG1_RESET = 0x0;
+const std::string REG1_SW = "ro";
+const std::string REG1_HW = "w";
 
 /* Field: field0 */
 const uint32_t REG1_FIELD0_OFFSET = 0;
@@ -66,11 +66,11 @@ const std::string REG1_FIELD2_SW = "ro";
 const std::string REG1_FIELD2_HW = "w";
 
 /* Register: reg2 */
-const std::string REG2_SW = "wo";
-const std::string REG2_HW = "r";
 const uint32_t REG2_WIDTH = 1;
 const uint32_t REG2_OFFSET = 0x8;
 const uint32_t REG2_RESET = 0x0;
+const std::string REG2_SW = "wo";
+const std::string REG2_HW = "r";
 
 /* Field: field0 */
 const uint32_t REG2_FIELD0_OFFSET = 0;
@@ -81,11 +81,11 @@ const std::string REG2_FIELD0_SW = "wo";
 const std::string REG2_FIELD0_HW = "r";
 
 /* Register: reg3 */
-const std::string REG3_SW = "rw";
-const std::string REG3_HW = "na";
 const uint32_t REG3_WIDTH = 8;
 const uint32_t REG3_OFFSET = 0xc;
 const uint32_t REG3_RESET = 0x0;
+const std::string REG3_SW = "rw";
+const std::string REG3_HW = "na";
 
 /* Field: field0 */
 const uint32_t REG3_FIELD0_OFFSET = 0;
@@ -96,11 +96,11 @@ const std::string REG3_FIELD0_SW = "rw";
 const std::string REG3_FIELD0_HW = "na";
 
 /* Register: reg4 */
-const std::string REG4_SW = "rw";
-const std::string REG4_HW = "rw";
 const uint32_t REG4_WIDTH = 9;
 const uint32_t REG4_OFFSET = 0x10;
 const uint32_t REG4_RESET = 0x0;
+const std::string REG4_SW = "rw";
+const std::string REG4_HW = "rw";
 
 /* Field: field0 */
 const uint32_t REG4_FIELD0_OFFSET = 0;
@@ -119,11 +119,11 @@ const std::string REG4_FIELD1_SW = "rw";
 const std::string REG4_FIELD1_HW = "r";
 
 /* Register: reg5 */
-const std::string REG5_SW = "rw";
-const std::string REG5_HW = "r";
 const uint32_t REG5_WIDTH = 8;
 const uint32_t REG5_OFFSET = 0x14;
 const uint32_t REG5_RESET = 0x0;
+const std::string REG5_SW = "rw";
+const std::string REG5_HW = "r";
 
 /* Field: field0 */
 const uint32_t REG5_FIELD0_OFFSET = 0;
@@ -144,11 +144,11 @@ const std::string REG5_FIELD1_HW = "r";
 const std::string REG5_FIELD1_ONREAD = "rset";
 
 /* Register: reg6 */
-const std::string REG6_SW = "rw";
-const std::string REG6_HW = "r";
 const uint32_t REG6_WIDTH = 12;
 const uint32_t REG6_OFFSET = 0x18;
 const uint32_t REG6_RESET = 0xf0;
+const std::string REG6_SW = "rw";
+const std::string REG6_HW = "r";
 
 /* Field: field0 */
 const uint32_t REG6_FIELD0_OFFSET = 0;
@@ -178,11 +178,11 @@ const std::string REG6_FIELD2_HW = "r";
 const std::string REG6_FIELD2_ONWRITE = "wot";
 
 /* Register: reg7 */
-const std::string REG7_SW = "rw";
-const std::string REG7_HW = "r";
 const uint32_t REG7_WIDTH = 12;
 const uint32_t REG7_OFFSET = 0x1c;
 const uint32_t REG7_RESET = 0xf0;
+const std::string REG7_SW = "rw";
+const std::string REG7_HW = "r";
 
 /* Field: field0 */
 const uint32_t REG7_FIELD0_OFFSET = 0;
@@ -212,11 +212,11 @@ const std::string REG7_FIELD2_HW = "r";
 const std::string REG7_FIELD2_ONWRITE = "wzt";
 
 /* Register: reg8 */
-const std::string REG8_SW = "rw";
-const std::string REG8_HW = "r";
 const uint32_t REG8_WIDTH = 8;
 const uint32_t REG8_OFFSET = 0x20;
 const uint32_t REG8_RESET = 0xf;
+const std::string REG8_SW = "rw";
+const std::string REG8_HW = "r";
 
 /* Field: field0 */
 const uint32_t REG8_FIELD0_OFFSET = 0;
@@ -237,11 +237,11 @@ const std::string REG8_FIELD1_HW = "r";
 const std::string REG8_FIELD1_ONWRITE = "wset";
 
 /* Register: reg9 */
-const std::string REG9_SW = "rw";
-const std::string REG9_HW = "r";
 const uint32_t REG9_WIDTH = 8;
 const uint32_t REG9_OFFSET = 0x24;
 const uint32_t REG9_RESET = 0x0;
+const std::string REG9_SW = "rw";
+const std::string REG9_HW = "r";
 
 /* Field: field0 */
 const uint32_t REG9_FIELD0_OFFSET = 0;
@@ -260,11 +260,11 @@ const std::string REG9_FIELD1_SW = "rw";
 const std::string REG9_FIELD1_HW = "r";
 
 /* Register: reg10 */
-const std::string REG10_SW = "rw";
-const std::string REG10_HW = "r";
 const uint32_t REG10_WIDTH = 4;
 const uint32_t REG10_OFFSET = 0x28;
 const uint32_t REG10_RESET = 0x0;
+const std::string REG10_SW = "rw";
+const std::string REG10_HW = "r";
 
 /* Field: field0 */
 const uint32_t REG10_FIELD0_OFFSET = 0;
@@ -276,11 +276,11 @@ const std::string REG10_FIELD0_HW = "r";
 const bool REG10_FIELD0_SINGLEPULSE = true;
 
 /* Register: reg11 */
-const std::string REG11_SW = "rw";
-const std::string REG11_HW = "r";
 const uint32_t REG11_WIDTH = 2;
 const uint32_t REG11_OFFSET = 0x2c;
 const uint32_t REG11_RESET = 0x0;
+const std::string REG11_SW = "rw";
+const std::string REG11_HW = "r";
 
 /* Field: field0 */
 const uint32_t REG11_FIELD0_OFFSET = 0;

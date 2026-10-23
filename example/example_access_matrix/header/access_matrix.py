@@ -6,11 +6,11 @@ class ACCESS_MATRIX_H:
     REGMAP_HASH = 0x5E218695
 
     """Register: plain"""
-    PLAIN_SW = "rw"
-    PLAIN_HW = "r"
     PLAIN_WIDTH = 8
     PLAIN_OFFSET = 0x0
     PLAIN_RESET = 0x0
+    PLAIN_SW = "rw"
+    PLAIN_HW = "r"
 
     """ Field: flag """
     PLAIN_FLAG_OFFSET = 0
@@ -37,11 +37,11 @@ class ACCESS_MATRIX_H:
     PLAIN_SCRATCH_HW = "na"
 
     """Register: status"""
-    STATUS_SW = "ro"
-    STATUS_HW = "w"
     STATUS_WIDTH = 6
     STATUS_OFFSET = 0x4
     STATUS_RESET = 0x0
+    STATUS_SW = "ro"
+    STATUS_HW = "w"
 
     """ Field: busy """
     STATUS_BUSY_OFFSET = 0
@@ -68,11 +68,11 @@ class ACCESS_MATRIX_H:
     STATUS_FAULT_HW = "w"
 
     """Register: command"""
-    COMMAND_SW = "wo"
-    COMMAND_HW = "r"
     COMMAND_WIDTH = 4
     COMMAND_OFFSET = 0x8
     COMMAND_RESET = 0x0
+    COMMAND_SW = "wo"
+    COMMAND_HW = "r"
 
     """ Field: opcode """
     COMMAND_OPCODE_OFFSET = 0
@@ -83,11 +83,11 @@ class ACCESS_MATRIX_H:
     COMMAND_OPCODE_HW = "r"
 
     """Register: identity"""
-    IDENTITY_SW = "ro"
-    IDENTITY_HW = "r"
     IDENTITY_WIDTH = 10
     IDENTITY_OFFSET = 0xC
     IDENTITY_RESET = 0x1A5
+    IDENTITY_SW = "ro"
+    IDENTITY_HW = "r"
 
     """ Field: id """
     IDENTITY_ID_OFFSET = 0
@@ -118,11 +118,11 @@ class ACCESS_MATRIX_H:
     IDENTITY_PWR_SPARE_PWR_ON = 1
 
     """Register: hw_modify"""
-    HW_MODIFY_SW = "rw"
-    HW_MODIFY_HW = "rw"
     HW_MODIFY_WIDTH = 5
     HW_MODIFY_OFFSET = 0x10
     HW_MODIFY_RESET = 0x0
+    HW_MODIFY_SW = "rw"
+    HW_MODIFY_HW = "rw"
 
     """ Field: override """
     HW_MODIFY_OVERRIDE_OFFSET = 0
@@ -141,11 +141,11 @@ class ACCESS_MATRIX_H:
     HW_MODIFY_STICKY_HW = "r"
 
     """Register: hw_set_clear"""
-    HW_SET_CLEAR_SW = "rw"
-    HW_SET_CLEAR_HW = "rw"
     HW_SET_CLEAR_WIDTH = 5
     HW_SET_CLEAR_OFFSET = 0x14
     HW_SET_CLEAR_RESET = 0x0
+    HW_SET_CLEAR_SW = "rw"
+    HW_SET_CLEAR_HW = "rw"
 
     """ Field: set_only """
     HW_SET_CLEAR_SET_ONLY_OFFSET = 0
@@ -164,11 +164,11 @@ class ACCESS_MATRIX_H:
     HW_SET_CLEAR_CLR_ONLY_HW = "rw"
 
     """Register: read_effects"""
-    READ_EFFECTS_SW = "rw"
-    READ_EFFECTS_HW = "r"
     READ_EFFECTS_WIDTH = 8
     READ_EFFECTS_OFFSET = 0x18
     READ_EFFECTS_RESET = 0x0
+    READ_EFFECTS_SW = "rw"
+    READ_EFFECTS_HW = "r"
 
     """ Field: clear_on_read """
     READ_EFFECTS_CLEAR_ON_READ_OFFSET = 0
@@ -189,11 +189,11 @@ class ACCESS_MATRIX_H:
     READ_EFFECTS_SET_ON_READ_ONREAD = "rset"
 
     """Register: write_effects"""
-    WRITE_EFFECTS_SW = "rw"
-    WRITE_EFFECTS_HW = "r"
     WRITE_EFFECTS_WIDTH = 13
     WRITE_EFFECTS_OFFSET = 0x1C
     WRITE_EFFECTS_RESET = 0xF0
+    WRITE_EFFECTS_SW = "rw"
+    WRITE_EFFECTS_HW = "r"
 
     """ Field: set_bits """
     WRITE_EFFECTS_SET_BITS_OFFSET = 0
@@ -232,11 +232,11 @@ class ACCESS_MATRIX_H:
     WRITE_EFFECTS_SET_ALL_ONWRITE = "wset"
 
     """Register: pulses"""
-    PULSES_SW = "rw"
-    PULSES_HW = "r"
     PULSES_WIDTH = 5
     PULSES_OFFSET = 0x20
     PULSES_RESET = 0x0
+    PULSES_SW = "rw"
+    PULSES_HW = "r"
 
     """ Field: go """
     PULSES_GO_OFFSET = 0
@@ -257,11 +257,11 @@ class ACCESS_MATRIX_H:
     PULSES_KICK_SINGLEPULSE = True
 
     """Register: strobes"""
-    STROBES_SW = "rw"
-    STROBES_HW = "r"
     STROBES_WIDTH = 8
     STROBES_OFFSET = 0x24
     STROBES_RESET = 0x0
+    STROBES_SW = "rw"
+    STROBES_HW = "r"
 
     """ Field: modified """
     STROBES_MODIFIED_OFFSET = 0
@@ -280,11 +280,11 @@ class ACCESS_MATRIX_H:
     STROBES_ACCESSED_HW = "r"
 
     """Register: enum_vector"""
-    ENUM_VECTOR_SW = "rw"
-    ENUM_VECTOR_HW = "r"
     ENUM_VECTOR_WIDTH = 2
     ENUM_VECTOR_OFFSET = 0x28
     ENUM_VECTOR_RESET = 0x0
+    ENUM_VECTOR_SW = "rw"
+    ENUM_VECTOR_HW = "r"
 
     """ Field: mode """
     ENUM_VECTOR_MODE_OFFSET = 0
@@ -297,11 +297,11 @@ class ACCESS_MATRIX_H:
     ENUM_VECTOR_MODE_MODE_FAST = 3
 
     """Register: enum_bit"""
-    ENUM_BIT_SW = "rw"
-    ENUM_BIT_HW = "r"
     ENUM_BIT_WIDTH = 1
     ENUM_BIT_OFFSET = 0x2C
     ENUM_BIT_RESET = 0x0
+    ENUM_BIT_SW = "rw"
+    ENUM_BIT_HW = "r"
 
     """ Field: power """
     ENUM_BIT_POWER_OFFSET = 0
@@ -314,11 +314,11 @@ class ACCESS_MATRIX_H:
     ENUM_BIT_POWER_PWR_ON = 1
 
     """Register: enum_hw"""
-    ENUM_HW_SW = "ro"
-    ENUM_HW_HW = "rw"
     ENUM_HW_WIDTH = 3
     ENUM_HW_OFFSET = 0x30
     ENUM_HW_RESET = 0x2
+    ENUM_HW_SW = "ro"
+    ENUM_HW_HW = "rw"
 
     """ Field: state """
     ENUM_HW_STATE_OFFSET = 0
@@ -342,11 +342,11 @@ class ACCESS_MATRIX_H:
     ENUM_HW_SUPPLY_PWR_ON = 1
 
     """Register: enum_swacc"""
-    ENUM_SWACC_SW = "rw"
-    ENUM_SWACC_HW = "r"
     ENUM_SWACC_WIDTH = 2
     ENUM_SWACC_OFFSET = 0x34
     ENUM_SWACC_RESET = 0x0
+    ENUM_SWACC_SW = "rw"
+    ENUM_SWACC_HW = "r"
 
     """ Field: phase """
     ENUM_SWACC_PHASE_OFFSET = 0
@@ -360,11 +360,11 @@ class ACCESS_MATRIX_H:
     ENUM_SWACC_PHASE_PH_FIRE = 2
 
     """Register: mixed_swacc"""
-    MIXED_SWACC_SW = "rw"
-    MIXED_SWACC_HW = "r"
     MIXED_SWACC_WIDTH = 19
     MIXED_SWACC_OFFSET = 0x38
     MIXED_SWACC_RESET = 0x40900
+    MIXED_SWACC_SW = "rw"
+    MIXED_SWACC_HW = "r"
 
     """ Field: clear_bits """
     MIXED_SWACC_CLEAR_BITS_OFFSET = 0
@@ -430,11 +430,11 @@ class ACCESS_MATRIX_H:
     MIXED_SWACC_POWER_FIXED_PWR_ON = 1
 
     """Register: mixed_history"""
-    MIXED_HISTORY_SW = "rw"
-    MIXED_HISTORY_HW = "r"
     MIXED_HISTORY_WIDTH = 16
     MIXED_HISTORY_OFFSET = 0x3C
     MIXED_HISTORY_RESET = 0xF00
+    MIXED_HISTORY_SW = "rw"
+    MIXED_HISTORY_HW = "r"
 
     """ Field: toggle """
     MIXED_HISTORY_TOGGLE_OFFSET = 0
@@ -473,11 +473,11 @@ class ACCESS_MATRIX_H:
     MIXED_HISTORY_TOGGLE_ON_ZERO_ONWRITE = "wzt"
 
     """Register: hw_status_swacc"""
-    HW_STATUS_SWACC_SW = "ro"
-    HW_STATUS_SWACC_HW = "rw"
     HW_STATUS_SWACC_WIDTH = 8
     HW_STATUS_SWACC_OFFSET = 0x40
     HW_STATUS_SWACC_RESET = 0x0
+    HW_STATUS_SWACC_SW = "ro"
+    HW_STATUS_SWACC_HW = "rw"
 
     """ Field: level """
     HW_STATUS_SWACC_LEVEL_OFFSET = 0
@@ -496,11 +496,11 @@ class ACCESS_MATRIX_H:
     HW_STATUS_SWACC_LATCHED_HW = "rw"
 
     """Register: hw_only"""
-    HW_ONLY_SW = "rw"
-    HW_ONLY_HW = "rw"
     HW_ONLY_WIDTH = 5
     HW_ONLY_OFFSET = 0x44
     HW_ONLY_RESET = 0x0
+    HW_ONLY_SW = "rw"
+    HW_ONLY_HW = "rw"
 
     """ Field: shadow """
     HW_ONLY_SHADOW_OFFSET = 0
@@ -519,11 +519,11 @@ class ACCESS_MATRIX_H:
     HW_ONLY_ENABLE_HW = "r"
 
     """Register: irq_status"""
-    IRQ_STATUS_SW = "ro"
-    IRQ_STATUS_HW = "r"
     IRQ_STATUS_WIDTH = 1
     IRQ_STATUS_OFFSET = 0x48
     IRQ_STATUS_RESET = 0x0
+    IRQ_STATUS_SW = "ro"
+    IRQ_STATUS_HW = "r"
 
     """ Field: pending """
     IRQ_STATUS_PENDING_OFFSET = 0
@@ -535,36 +535,36 @@ class ACCESS_MATRIX_H:
     IRQ_STATUS_PENDING_ONREAD = "rclr"
 
     """Register: flat_level"""
-    FLAT_LEVEL_SW = "rw"
-    FLAT_LEVEL_HW = "r"
     FLAT_LEVEL_WIDTH = 8
     FLAT_LEVEL_OFFSET = 0x4C
     FLAT_LEVEL_RESET = 0x0
+    FLAT_LEVEL_SW = "rw"
+    FLAT_LEVEL_HW = "r"
 
     """Register: flat_strobe"""
-    FLAT_STROBE_SW = "rw"
-    FLAT_STROBE_HW = "r"
     FLAT_STROBE_WIDTH = 4
     FLAT_STROBE_OFFSET = 0x50
     FLAT_STROBE_RESET = 0x0
+    FLAT_STROBE_SW = "rw"
+    FLAT_STROBE_HW = "r"
 
     """Register: flat_override"""
-    FLAT_OVERRIDE_SW = "rw"
-    FLAT_OVERRIDE_HW = "rw"
     FLAT_OVERRIDE_WIDTH = 8
     FLAT_OVERRIDE_OFFSET = 0x54
     FLAT_OVERRIDE_RESET = 0x0
+    FLAT_OVERRIDE_SW = "rw"
+    FLAT_OVERRIDE_HW = "rw"
 
     """Register: flat_status"""
-    FLAT_STATUS_SW = "ro"
-    FLAT_STATUS_HW = "w"
     FLAT_STATUS_WIDTH = 6
     FLAT_STATUS_OFFSET = 0x58
     FLAT_STATUS_RESET = 0x0
+    FLAT_STATUS_SW = "ro"
+    FLAT_STATUS_HW = "w"
 
     """Register: flat_flag"""
-    FLAT_FLAG_SW = "rw"
-    FLAT_FLAG_HW = "r"
     FLAT_FLAG_WIDTH = 1
     FLAT_FLAG_OFFSET = 0x5C
     FLAT_FLAG_RESET = 0x0
+    FLAT_FLAG_SW = "rw"
+    FLAT_FLAG_HW = "r"
