@@ -11,7 +11,8 @@
         "register": [
             {
                 "name": "reg0",
-                "mode": "rw",
+                "sw": "rw",
+                "hw": "r",
                 "type": "bit",
                 "address": "0x0",
                 "reset": "0x0",
@@ -19,7 +20,8 @@
             },
             {
                 "name": "reg1",
-                "mode": "rw",
+                "sw": "rw",
+                "hw": "r",
                 "type": "bit",
                 "address": "0x4",
                 "reset": "0x1",
@@ -27,7 +29,8 @@
             },
             {
                 "name": "reg2",
-                "mode": "ro",
+                "sw": "ro",
+                "hw": "w",
                 "type": "bit",
                 "address": "0x8",
                 "reset": "0x0",
@@ -35,7 +38,8 @@
             },
             {
                 "name": "reg3",
-                "mode": "rw",
+                "sw": "rw",
+                "hw": "r",
                 "type": "vector",
                 "address": "0xc",
                 "width": 8,
@@ -44,7 +48,8 @@
             },
             {
                 "name": "reg4",
-                "mode": "ro",
+                "sw": "ro",
+                "hw": "w",
                 "type": "vector",
                 "address": "0x10",
                 "width": 14,
@@ -53,7 +58,8 @@
             },
             {
                 "name": "reg5",
-                "mode": "rw",
+                "sw": "rw",
+                "hw": "r",
                 "type": "default",
                 "address": "0x14",
                 "reset": "0xffffffff",
@@ -61,7 +67,8 @@
             },
             {
                 "name": "reg6",
-                "mode": "ro",
+                "sw": "ro",
+                "hw": "w",
                 "type": "default",
                 "address": "0x18",
                 "reset": "0x0",
@@ -69,7 +76,8 @@
             },
             {
                 "name": "reg7",
-                "mode": "rw",
+                "sw": "rw",
+                "hw": "r",
                 "type": "fields",
                 "address": "0x1c",
                 "fields": [
@@ -103,7 +111,8 @@
             },
             {
                 "name": "reg8",
-                "mode": "ro",
+                "sw": "ro",
+                "hw": "w",
                 "type": "fields",
                 "address": "0x20",
                 "fields": [
@@ -134,7 +143,9 @@
             },
             {
                 "name": "reg9",
-                "mode": "pulse",
+                "sw": "wo",
+                "hw": "r",
+                "singlepulse": true,
                 "type": "bit",
                 "address": "0x24",
                 "reset": "0x1",
@@ -142,8 +153,9 @@
             },
             {
                 "name": "reg10",
-                "mode": "pulse",
-                "pulse_cycles": 1,
+                "sw": "wo",
+                "hw": "r",
+                "singlepulse": true,
                 "type": "vector",
                 "address": "0x28",
                 "width": 4,
@@ -152,7 +164,9 @@
             },
             {
                 "name": "reg11",
-                "mode": "pulse",
+                "sw": "wo",
+                "hw": "r",
+                "singlepulse": true,
                 "type": "fields",
                 "address": "0x2c",
                 "fields": [

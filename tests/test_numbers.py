@@ -199,10 +199,6 @@ def test_width_and_position_take_strings():
             },
             "Value of enum A in field f",
         ),
-        (
-            {"name": "r", "mode": "pulse", "pulse_cycles": "two"},
-            "pulse_cycles of register r",
-        ),
     ],
 )
 def test_errors_name_the_key_and_where_it_is(register, message):

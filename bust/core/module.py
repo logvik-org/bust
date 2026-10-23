@@ -12,7 +12,7 @@ import logging
 import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
-from bust.core.enums import RegisterMode, RegisterType
+from bust.core.enums import RegisterType
 from bust.exceptions import (
     FormatError,
     InvalidAddress,
@@ -131,7 +131,6 @@ class Module:
 
         for reg in mod["register"]:
             self.add_register(reg)
-        self._warn_legacy_type_names()
         self._update_hash_register()
 
     def add_register(self, reg: Dict) -> None:
@@ -174,16 +173,10 @@ class Module:
         self.registers.append(register)
 
     def _read_byte_addressable(self) -> bool:
-        """Read byte_addressable, which bust 0.14 wrote as "True" or "False"."""
+        """Read byte_addressable, which must be true or false."""
         value = self._config.get("byte_addressable")
         if isinstance(value, bool):
             return value
-        if isinstance(value, str) and value in ("True", "False"):
-            self.logger.warning(
-                f'byte_addressable "{value}" is the deprecated bust 0.14 form. '
-                f"Use {value.lower()}, without quotes."
-            )
-            return value == "True"
         raise FormatError(f"byte_addressable must be true or false (got {value!r})")
 
     def _read_version(self) -> str:
@@ -199,19 +192,6 @@ class Module:
                 'other than ", \\, ; and ='
             )
         return value
-
-    def _warn_legacy_type_names(self) -> None:
-        """Warn once about the bust 0.14 type names sl and slv."""
-        count = sum(
-            (reg.legacy_type_name is not None)
-            + sum(f.legacy_type_name is not None for f in reg.fields)
-            for reg in self.registers
-        )
-        if count:
-            self.logger.warning(
-                "The bust 0.14 type names 'sl' and 'slv' are deprecated. Use "
-                f"'bit' and 'vector' instead ({count} registers and fields)."
-            )
 
     def _explicit_address(self, reg: Dict) -> int:
         """Parse a register's `address` and check that the bus can reach it."""
@@ -472,33 +452,6 @@ class Module:
     def regmap_hash_hex(self) -> str:
         """The register map hash as eight upper-case hexadecimal digits."""
         return f"{self.regmap_hash:08X}"
-
-    @property
-    def num_ro_regs(self) -> int:
-        """Count of read-only registers.
-
-        Returns:
-            Number of registers with RO mode.
-        """
-        return sum(1 for reg in self.registers if reg.mode == RegisterMode.RO)
-
-    @property
-    def num_rw_regs(self) -> int:
-        """Count of read-write registers.
-
-        Returns:
-            Number of registers with RW mode.
-        """
-        return sum(1 for reg in self.registers if reg.mode == RegisterMode.RW)
-
-    @property
-    def num_pulse_regs(self) -> int:
-        """Count of pulse registers.
-
-        Returns:
-            Number of registers with PULSE mode.
-        """
-        return sum(1 for reg in self.registers if reg.mode == RegisterMode.PULSE)
 
     def __str__(self) -> str:
         string = "Name: " + self.name + "\n"

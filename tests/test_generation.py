@@ -1,11 +1,9 @@
 """<module>.vhd belongs to the user. bust writes a starter only when the file is
 missing, does not replace it with -f, and replaces it with --replace-top, keeping
-the old file. A bust 0.14 top level, with user logic between marker comments
-and an instance of the 0.14 _pif entity, is left alone."""
+the old file."""
 
 import logging
 import os
-import subprocess
 import sys
 
 import pytest
@@ -18,26 +16,6 @@ from bust.utils.json_utils import json_parser
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
 _EXAMPLE_JSON = os.path.join(_REPO_ROOT, "example", "example_axi.json")
-_LEGACY_TOP = """\
-library ieee;
-use ieee.std_logic_1164.all;
--- User Libraries Start
-
--- User Libraries End
-
-architecture rtl of example_axi is
-  -- User Architecture Start
-  signal counter : unsigned(7 downto 0);
-  -- User Architecture End
-begin
-  -- User Logic Start
-  counter <= counter + 1 when rising_edge(clk);
-  -- User Logic End
-
-  i_example_axi_axi_pif : entity work.example_axi_axi_pif
-    port map (clk => clk);
-end architecture rtl;
-"""
 
 
 def _hdl_dir(out_dir):
@@ -54,7 +32,7 @@ def _write_top(out_dir, text):
 
 def _generate(out_dir, force_ow=True, replace_top=False):
     cfg = json_parser(_EXAMPLE_JSON)
-    settings = Settings(_EXAMPLE_JSON, cfg.get("settings"))
+    settings = Settings(_EXAMPLE_JSON)
     bus = Bus(cfg["bus"])
     gen_settings = {
         "dir": str(out_dir),
@@ -124,50 +102,3 @@ def test_replace_top_without_a_terminal_asks_for_force(tmp_path, monkeypatch):
 
     assert _read(top) == "-- my own top level\n"
     assert not os.path.exists(top + ".bak")
-
-
-def test_legacy_top_is_left_alone(tmp_path, caplog):
-    top = _write_top(tmp_path, _LEGACY_TOP)
-
-    with caplog.at_level(logging.INFO):
-        _generate(tmp_path)
-
-    assert _read(top) == _LEGACY_TOP
-    assert "is a bust 0.14 top level, so bust leaves it alone" in caplog.text
-    assert os.path.isfile(
-        os.path.join(_hdl_dir(tmp_path), "example_axi_axi_endpoint.vhd")
-    )
-
-
-def test_cli_leaves_a_legacy_top_alone(tmp_path):
-    top = _write_top(tmp_path, _LEGACY_TOP)
-
-    result = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "bust",
-            _EXAMPLE_JSON,
-            "-o",
-            str(tmp_path),
-            "-f",
-            "-d",
-            "-i",
-        ],
-        cwd=str(tmp_path),
-        env=dict(
-            os.environ,
-            PYTHONPATH=os.pathsep.join(
-                filter(None, [_REPO_ROOT, os.environ.get("PYTHONPATH")])
-            ),
-        ),
-        stdin=subprocess.DEVNULL,
-        capture_output=True,
-        text=True,
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert "connect it to example_axi_axi_endpoint, run bust with --migrate" in (
-        result.stderr
-    )
-    assert _read(top) == _LEGACY_TOP

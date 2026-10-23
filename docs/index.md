@@ -56,7 +56,6 @@ testbench of every bus in CI.
   headers, the IPBus address table and the LaTeX documentation.
 - [Testbenches](testbenches.md): what the testbench checks and how to run it.
 - [Command line](command-line.md): every option of the `bust` command.
-- [Upgrading from 0.14](upgrading.md): what changed in 1.0 and what to update.
 
 ```{toctree}
 :hidden:
@@ -77,7 +76,6 @@ generated-hdl
 headers-and-docs
 testbenches
 command-line
-upgrading
 ```
 
 ```{toctree}

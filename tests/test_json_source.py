@@ -122,11 +122,11 @@ def test_add_a_key_before_another():
 
 
 def test_apply_to_data_puts_a_key_before_another():
-    data = {"name": "ctrl", "mode": "rw"}
+    data = {"name": "ctrl", "type": "bit"}
 
-    apply_to_data(data, "add", "/sw", "rw", before="mode")
+    apply_to_data(data, "add", "/sw", "rw", before="type")
 
-    assert list(data.items()) == [("name", "ctrl"), ("sw", "rw"), ("mode", "rw")]
+    assert list(data.items()) == [("name", "ctrl"), ("sw", "rw"), ("type", "bit")]
 
 
 def test_add_an_existing_key_replaces_its_value():

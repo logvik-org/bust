@@ -9,6 +9,21 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Removed
+- bust no longer reads register maps in the bust 0.14 format. The register
+  keys `mode`, `pulse_cycles` and `stall_cycles`, the `settings` section, the
+  bus keys `comp_library` and `reset`, the type names `sl` and `slv`, and
+  `byte_addressable` as the string `"True"` or `"False"` are now errors that
+  point to `bust FILE --migrate`, which still converts such a file.
+- The options `-u`, `-b`, `-t` and `-m`, which bust ignored with a warning.
+- The warning about a bust 0.14 `<module>.vhd`. bust leaves the file alone as
+  it does any `<module>.vhd`.
+- The editor (`-e`) no longer converts a bust 0.14 file when it opens it. It
+  opens only files in the bust 1.0 format.
+- `RegisterMode` in the Python API, and `Register.mode`.
+- The page Upgrading from 0.14 in the documentation. The command line page
+  describes `--migrate`.
+
 ## [1.0.0]
 
 First release of bust 1.0, a rewrite of bust 0.14. Install it with

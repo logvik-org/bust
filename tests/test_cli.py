@@ -72,7 +72,7 @@ def test_existing_output_without_terminal_asks_for_force(tmp_path):
 
 def test_save_addresses_with_force_changes_only_addresses(tmp_path):
     register_map = json.loads(json.dumps(_REGISTER_MAP))
-    register_map["bus"]["comp_library"] = "regs"
+    register_map["bus"]["owner"] = "regs"
     register_map["module"]["register"].append(
         {"name": "status", "sw": "ro", "hw": "w", "address": "0x10"}
     )
@@ -113,15 +113,30 @@ def test_save_addresses_without_terminal_asks_for_force(tmp_path):
 
 def test_register_error_is_reported_once_with_its_cause(tmp_path):
     register_map = json.loads(json.dumps(_REGISTER_MAP))
-    register_map["module"]["register"][0]["pulse_cycles"] = 4
+    register_map["module"]["register"][0]["fields"][0].update(type="vector", width=40)
     path = _write_register_map(tmp_path, register_map)
 
     code, output = _run_bust(tmp_path, str(path), "-o", "out", "-p")
 
     assert code == 1
     assert "Could not parse register ctrl:" in output
-    assert "pulse_cycles=4 is not supported" in output
+    assert output.count("Register width exceeded module data width") == 1
     assert "misspelt" not in output
+
+
+def test_bust_0_14_key_points_to_migrate(tmp_path):
+    register_map = json.loads(json.dumps(_REGISTER_MAP))
+    register_map["module"]["register"][0]["pulse_cycles"] = 1
+    path = _write_register_map(tmp_path, register_map)
+
+    code, output = _run_bust(tmp_path, str(path), "-o", "out", "-p")
+
+    assert code == 1
+    assert (
+        "module.register[0].pulse_cycles: a bust 0.14 key, which bust no longer "
+        "reads. Run bust with --migrate to convert the file."
+    ) in output
+    assert not (tmp_path / "out").exists()
 
 
 def test_file_in_the_working_directory_writes_next_to_it(tmp_path):
@@ -156,17 +171,15 @@ def test_editor_without_terminal_fails(tmp_path):
     assert "needs an interactive terminal" in output
 
 
-def test_bust_0_14_options_are_ignored_with_a_warning(tmp_path):
+def test_bust_0_14_options_are_gone(tmp_path):
     path = _write_register_map(tmp_path)
 
-    code, output = _run_bust(
-        tmp_path, str(path), "-o", "out", "-d", "-u", "-b", "-t", "-m"
-    )
-
-    assert code == 0, output
     for option in ("-u", "-b", "-t", "-m"):
-        assert f"Ignoring {option}, a bust 0.14 option" in output
-    assert (tmp_path / "out/timer/tb/timer_tb.vhd").is_file()
+        code, output = _run_bust(tmp_path, str(path), "-o", "out", "-d", option)
+
+        assert code == 1, output
+        assert "Usage:" in output
+    assert not (tmp_path / "out").exists()
 
 
 def test_empty_version_leaves_no_version_label_in_the_latex(tmp_path):

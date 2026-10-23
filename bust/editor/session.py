@@ -331,7 +331,7 @@ class EditSession:
             unused.append("width")
         is_constant = RegisterType(new).is_constant
         if is_constant:
-            unused += ["reset", "mode", *INHERITABLE_ACCESS]
+            unused += ["reset", *INHERITABLE_ACCESS]
         operations += [
             {"op": "remove", "path": f"{path}/{key}"} for key in unused if key in data
         ]

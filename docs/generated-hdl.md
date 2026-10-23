@@ -498,8 +498,3 @@ port.
 
 To start over from a fresh starter, run bust with `--replace-top`. It keeps
 your old file as `<module>.vhd.bak`, and asks first unless you add `-f`.
-
-bust 0.14 kept user logic in the top-level file between `-- User ... Start`
-and `-- User ... End` markers. bust leaves such a file alone and warns about
-it. [Upgrading](upgrading.md) describes how to connect it to
-`<module>_<bus>_endpoint`.

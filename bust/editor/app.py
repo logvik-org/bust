@@ -471,22 +471,16 @@ class EditorApp(App[Optional[str]]):
         self,
         path: str,
         session: Optional[EditSession] = None,
-        conversion: Optional[List[str]] = None,
-        conversion_operations: Optional[List[Operation]] = None,
     ) -> None:
         """Edit the register map in `path`.
 
         Args:
             path: The file the register map is saved to.
             session: The register map to edit, or None to create one.
-            conversion: The changes that convert a bust 0.14 file, if any.
-            conversion_operations: The operations that make them.
         """
         super().__init__()
         self.path = path
         self.session = session
-        self.conversion = conversion or []
-        self.conversion_operations = conversion_operations or []
         self.sub_title = path
         # bust warns about the whole register map on every change, so each
         # warning is shown once.
@@ -498,15 +492,13 @@ class EditorApp(App[Optional[str]]):
     def on_mount(self) -> None:
         if self.session is None:
             self._ask_new_map()
-        elif self.conversion_operations:
-            self._ask_conversion()
         else:
-            self._start(self.session, [])
+            self._start(self.session)
 
-    def _start(self, session: EditSession, operations: List[Operation]) -> None:
+    def _start(self, session: EditSession) -> None:
         self.session = session
         try:
-            warnings = session.document.apply(operations)
+            warnings = session.document.check()
         except EditRejected as error:
             self.exit(f"bust rejects {self.path}: {error}")
             return
@@ -528,26 +520,6 @@ class EditorApp(App[Optional[str]]):
         raise RuntimeError("The editor has not started")
 
     # Starting.
-
-    def _ask_conversion(self) -> None:
-        assert self.session is not None
-        session = self.session
-
-        def done(answer: Optional[str]) -> None:
-            if answer == "convert":
-                self._start(session, self.conversion_operations)
-            else:
-                self.exit()
-
-        self.push_screen(
-            QuestionScreen(
-                f"{os.path.basename(self.path)} is in the bust 0.14 format",
-                [("convert", "Convert"), ("quit", "Quit")],
-                "The editor converts it. The file changes when you save.\n\n"
-                + "\n".join(f"• {change}" for change in self.conversion),
-            ),
-            done,
-        )
 
     def _ask_new_map(self) -> None:
         stem = os.path.splitext(os.path.basename(self.path))[0]
@@ -590,7 +562,7 @@ class EditorApp(App[Optional[str]]):
             if values is None:
                 self.exit()
                 return
-            self._start(EditSession(make(values), self.path), [])
+            self._start(EditSession(make(values), self.path))
             self.add_register()
 
         byte = str(Bus.BUS_CONFIG["axi"]["byte_addressable"]).lower()

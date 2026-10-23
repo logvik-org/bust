@@ -7,22 +7,164 @@ becomes an instance of the bus endpoint, and the 0.14 register records become
 to_hw and from_hw.
 """
 
+import json
 import logging
 import os
 import re
 import shutil
 import sys
+from typing import Any, Dict, List, Tuple
 
-from bust.editing.document import RegisterMapDocument
+from bust.core.field import INHERITABLE_ACCESS
+from bust.editing.document import (
+    EditRejected,
+    Operation,
+    RegisterMapDocument,
+    diff_operations,
+)
+from bust.editing.json_source import join_pointer
 from bust.exceptions import FormatError
 from bust.interaction import ConsoleInteractionHandler
 from bust.jinja_utils.environment import render_template
 from bust.settings import Settings
+from bust.validation.config_validator import parse_number
 
 logger = logging.getLogger(__name__)
 
 _USER_MARKER = re.compile(r"^\s*-- User \w+ (Start|End)\s*$", re.MULTILINE)
 _PIF_INSTANCE = re.compile(r"\bentity\s+work\.\w+_(ipb|axi)_pif\b", re.IGNORECASE)
+
+# The access keys each bust 0.14 `mode` stands for. A register without a mode
+# was rw, which is also what a register without access keys is in bust 1.0.
+_MODE_ACCESS: Dict[str, Dict[str, Any]] = {
+    "rw": {"sw": "rw", "hw": "r"},
+    "ro": {"sw": "ro", "hw": "w"},
+    "pulse": {"sw": "wo", "hw": "r", "singlepulse": True},
+}
+
+# The bust 0.14 names of the bit and vector types.
+_TYPE_NAMES = {"sl": "bit", "slv": "vector"}
+
+
+def _reject_unsupported_timing(reg):
+    """Reject `pulse_cycles` and `stall_cycles` that bust 1.0 cannot generate.
+
+    `pulse_cycles: 1` and `stall_cycles: 0` describe what every register does
+    in bust 1.0, so --migrate removes them.
+    """
+    name = reg.get("name", "<unknown>")
+    pulse_cycles = parse_number(
+        reg.get("pulse_cycles", 1), f"pulse_cycles of register {name}"
+    )
+    if pulse_cycles != 1:
+        raise FormatError(
+            f"Register '{name}': pulse_cycles={pulse_cycles} is not supported in "
+            "bust 1.0. A pulse register drives the written value for one clock "
+            "cycle and then returns to its reset value. Remove pulse_cycles."
+        )
+    stall_cycles = parse_number(
+        reg.get("stall_cycles", 0), f"stall_cycles of register {name}"
+    )
+    if stall_cycles != 0:
+        raise FormatError(
+            f"Register '{name}': stall_cycles is not supported in bust 1.0, "
+            "because registers live in the generated register file and always "
+            "answer in one cycle. Remove stall_cycles."
+        )
+
+
+def migrate_register_map(cfg):
+    """Rewrite a bust 0.14 register map in place and return the changes made.
+
+    Each register's `mode` is left for `conversion`, which puts the access keys
+    in its place in the file.
+    """
+    changes = []
+    if cfg.pop("settings", None) is not None:
+        changes.append("removed the settings section")
+    for key in ("comp_library", "reset"):
+        if cfg["bus"].pop(key, None) is not None:
+            changes.append(f"removed bus.{key}")
+    module = cfg["module"]
+    if module.get("byte_addressable") in ("True", "False"):
+        module["byte_addressable"] = module["byte_addressable"] == "True"
+        changes.append("byte_addressable is now a boolean")
+    for reg in module["register"]:
+        _reject_unsupported_timing(reg)
+        for key in ("pulse_cycles", "stall_cycles"):
+            if reg.pop(key, None) is not None:
+                changes.append(f"removed {key} from register {reg['name']}")
+        for item in [reg, *reg.get("fields", [])]:
+            old_type = item.get("type")
+            if isinstance(old_type, str) and old_type.lower() in _TYPE_NAMES:
+                item["type"] = _TYPE_NAMES[old_type.lower()]
+                changes.append(f"{item['name']}: type is now {item['type']}")
+            for key in ("address", "reset"):
+                value = item.get(key)
+                # bust 0.14 read these as hexadecimal, bust 1.0 reads them as
+                # decimal. 0 to 9 mean the same in both.
+                if (
+                    isinstance(value, str)
+                    and re.fullmatch(r"[0-9a-fA-F]+", value)
+                    and not re.fullmatch(r"[0-9]", value)
+                ):
+                    item[key] = "0x" + value
+                    changes.append(
+                        f'{item["name"]}: {key} "{value}" is now "0x{value}"'
+                    )
+    return changes
+
+
+def conversion(document: RegisterMapDocument) -> Tuple[List[str], List[Operation]]:
+    """The changes that turn a bust 0.14 register map into the 1.0 form.
+
+    Each register's `mode` becomes the access keys it stands for, in its place.
+
+    Returns:
+        A description of each change, and the operations that make them.
+        Both are empty for a register map in the 1.0 form.
+
+    Raises:
+        EditRejected: If the register map uses 0.14 timing bust 1.0 cannot
+            generate, or a register has `mode` together with access keys.
+    """
+    original = document.data
+    migrated = document.data
+    try:
+        changes = migrate_register_map(migrated)
+    except Exception as error:
+        raise EditRejected(str(error) or type(error).__name__) from error
+    operations = diff_operations(original, migrated)
+    for index, register in enumerate(migrated["module"]["register"]):
+        if "mode" not in register:
+            continue
+        name = register["name"]
+        if any(key in register for key in INHERITABLE_ACCESS):
+            raise EditRejected(
+                f"Register {name} has the bust 0.14 'mode' key together with "
+                "access keys (sw/hw/...). Remove one of them."
+            )
+        mode = register["mode"]
+        access = _MODE_ACCESS.get(str(mode).lower())
+        if access is None:
+            raise EditRejected(
+                f"Register {name} has mode {json.dumps(mode)}, which is not one "
+                'of "rw", "ro", "pulse"'
+            )
+        path = join_pointer("module", "register", index)
+        operations += [
+            {
+                "op": "add",
+                "path": path + join_pointer(key),
+                "value": value,
+                "before": "mode",
+            }
+            for key, value in access.items()
+        ]
+        operations.append({"op": "remove", "path": path + "/mode"})
+        keys = ", ".join(f"{key} {json.dumps(v)}" for key, v in access.items())
+        changes.append(f"{name}: mode {mode} is now {keys}")
+    return changes, operations
 
 
 def is_legacy_top(text):
@@ -63,7 +205,7 @@ def migrate_top(text, module):
         if count == 0:
             raise FormatError(
                 f"{name}.vhd does not look like a bust 0.14 {kind} top level. "
-                "Connect it by hand as described in Upgrading from 0.14."
+                "Connect it to the bus endpoint by hand."
             )
     text = re.sub(rf"\b{kind}_(rw|pulse)_regs\.", "to_hw.", text, flags=re.I)
     text = re.sub(rf"\b{kind}_ro_regs\.", "from_hw.", text, flags=re.I)
@@ -85,10 +227,10 @@ def migrate(json_file, out_dir, force):
     """
     document = RegisterMapDocument.open(json_file)
     old = document.data.get("settings") or {}
-    changes, operations = document.legacy_conversion()
+    changes, operations = conversion(document)
     document.apply(operations)
     module = document.module
-    settings = Settings(json_file, None)
+    settings = Settings(json_file)
 
     # Where the 0.14 settings put the output, and where bust 1.0 puts it.
     new_dir = os.path.expanduser(out_dir or settings.project_path)

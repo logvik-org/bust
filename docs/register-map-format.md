@@ -553,17 +553,6 @@ bust and lists the valid ones:
 uart.json:14: module.register[0].sw: "rx" is not one of "rw", "ro", "wo", "na". Did you mean "rw"?
 ```
 
-## Settings
-
-bust 1.0 has no `settings` section. Without `-o`, `bust uart.json` writes
-`uart/hdl`, `uart/tb`, `uart/header` and `uart/doc` next to `uart.json`, and
-`-o DIR` puts the `uart/` directory in `DIR` instead.
-
-bust ignores a `settings` section left from bust 0.14 and warns about it. A
-`proj_dir` or `"mod_subdir": false` in it stops bust, because the output would
-land somewhere else. `bust FILE --migrate` removes the section and says which
-`-o` to use.
-
 ## Keys bust does not know
 
 bust warns about each key it does not read, and otherwise ignores it. A
@@ -617,66 +606,5 @@ without the file name and the line.
 `bust.schema.register_map_schema()` returns the JSON Schema (draft 2020-12) of
 the register map, which step 2 checks. It lists each key with its allowed
 values, its default and a short description, for editors and other tools.
-bust also reads a few forms that the schema leaves out: the values of `sw`,
-`hw`, `onread`, `onwrite`, `type` and `mode` in upper case, and the bust 0.14
-forms, which it warns about. Those are the type names `sl` and `slv`, and
-`byte_addressable` as the string `"True"` or `"False"`.
-
-## Files from bust 0.14
-
-bust 1.0 reads JSON files written for bust 0.14. A 0.14 register has a `mode`
-instead of access keys, and bust translates it:
-
-| `mode` | Becomes |
-|---|---|
-| `rw`, or no `mode` | `"sw": "rw", "hw": "r"` |
-| `ro` | `"sw": "ro", "hw": "w"` |
-| `pulse` | `"sw": "wo", "hw": "r", "singlepulse": true` |
-
-A `pulse` register therefore returns to its reset value one clock cycle after
-a software write.
-
-bust 0.14 called the `bit` and `vector` types `sl` and `slv`, for registers and
-fields. bust 1.0 still reads these names and warns once per file that they are
-deprecated:
-
-```text
-The bust 0.14 type names 'sl' and 'slv' are deprecated. Use 'bit' and 'vector' instead (17 registers and fields).
-```
-
-`bust FILE --migrate` saves the file with the new names. The types `default` and
-`fields` are the same in both versions.
-
-bust 0.14 wrote `byte_addressable` as the string `"True"` or `"False"`. bust
-1.0 reads both and warns that they are deprecated, and `bust FILE --migrate` saves
-`true` or `false`:
-
-```text
-byte_addressable "False" is the deprecated bust 0.14 form. Use false, without quotes.
-```
-
-bust 0.14 read an `address` or a `reset` as hexadecimal even without `0x`, so
-`"10"` meant 0x10. bust 1.0 reads a string without a prefix as decimal, so
-`"10"` is 10. Add `0x` to such values before you run bust 1.0. The values 0 to
-9 are the same either way. A value with a hexadecimal letter, such as `"1c"`,
-stops bust with a message that suggests `"0x1c"`. bust 0.14 and its editor
-wrote `0x` themselves, so only values typed by hand can lack it.
-
-The fields of a `mode` register can set their own access keys, but a register
-cannot have `mode` together with access keys of its own:
-
-```text
-Could not parse register baud_div: Invalid register format: Register baud_div sets the legacy 'mode' key together with bust 1.0 access-mode keys (sw/hw/...); use one schema, not both
-```
-
-In bust 1.0 a pulse lasts one clock cycle, and the register file has no
-configurable stall. `pulse_cycles: 1` and `stall_cycles: 0` are accepted and
-have no effect. Other values stop bust:
-
-```text
-Could not parse register go: Invalid register format: Register 'go': pulse_cycles=2 is not supported in bust 1.0. A pulse register drives the written value for one clock cycle and then returns to its reset value. Remove pulse_cycles.
-Could not parse register st: Invalid register format: Register 'st': stall_cycles is not supported in bust 1.0, because registers live in the generated register file and always answer in one cycle. Remove stall_cycles.
-```
-
-bust no longer reads the 0.14 `settings` section, see [Settings](#settings).
-[Upgrading from 0.14](upgrading.md) lists everything else that changed.
+bust also reads the values of `sw`, `hw`, `onread`, `onwrite` and `type` in
+upper case, which the schema leaves out.

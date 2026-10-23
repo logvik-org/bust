@@ -421,15 +421,13 @@ def test_selftest_value_covers_non_nibble_width():
     widths are not truncated."""
     from bust.core.register import Register
 
-    reg = Register(
-        {"name": "r", "type": "vector", "width": 18, "mode": "rw"}, 0, "m", 18
-    )
+    reg = Register({"name": "r", "type": "vector", "width": 18, "sw": "rw"}, 0, "m", 18)
     assert reg.selftest_value_vhdl == '18x"3FFFF"'
 
 
 def _one_register_module(bus):
     return Module(
-        {"name": "m", "register": [{"name": "r", "type": "default", "mode": "rw"}]},
+        {"name": "m", "register": [{"name": "r", "type": "default", "sw": "rw"}]},
         bus,
         settings=None,
     )
@@ -501,18 +499,16 @@ def test_constant_only_entity_uses_literals_not_regs():
 
 def test_non_fields_registers_normalize_to_implicit_field():
     """A bit/vector/default register stands for one full-width field named after
-    it, so the field-based regfile generator works on legacy register maps."""
+    it, so the field-based regfile generator works on registers without fields."""
     registers = [
-        {"name": "flag", "type": "bit", "mode": "rw"},
-        {"name": "word", "type": "vector", "width": 12, "mode": "rw"},
-        {"name": "whole", "type": "default", "mode": "rw"},
+        {"name": "flag", "type": "bit", "sw": "rw"},
+        {"name": "word", "type": "vector", "width": 12, "sw": "rw"},
+        {"name": "whole", "type": "default", "sw": "rw"},
     ]
-    module = Module(
-        {"name": "legacy", "register": registers}, _axi_bus(), settings=None
-    )
+    module = Module({"name": "plain", "register": registers}, _axi_bus(), settings=None)
 
     flag, word, whole = module.registers
-    assert flag.fields == []  # legacy generator still sees no fields
+    assert flag.fields == []
     assert [f.name for f in flag.effective_fields] == ["flag"]
     assert [f.name for f in word.effective_fields] == ["word"]
     assert [f.name for f in whole.effective_fields] == ["whole"]
@@ -531,7 +527,7 @@ def test_non_fields_registers_normalize_to_implicit_field():
 def _generate_only_localbus(out_dir, gen_localbus):
     cfg_path = os.path.join(_REPO_ROOT, "example", "example_axi.json")
     cfg = json_parser(cfg_path)
-    settings = Settings(cfg_path, cfg.get("settings"))
+    settings = Settings(cfg_path)
     bus = Bus(cfg["bus"])
     module = Module(cfg["module"], bus, settings)
     gen_settings = {

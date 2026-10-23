@@ -15,6 +15,7 @@ import pytest
 
 from textual.widgets import Button, DataTable, Input, Select, Static  # noqa: E402
 
+from bust.editing.document import EditRejected  # noqa: E402
 from bust.editor import open_session  # noqa: E402
 from bust.editor.app import EditorApp, MainScreen  # noqa: E402
 from bust.editor.diagram import bit_diagram  # noqa: E402
@@ -126,7 +127,7 @@ def _session(path, script, create=False):
     """Run the editor on `path` through `script` and return what it showed."""
 
     async def run():
-        app = EditorApp(str(path), *open_session(str(path), create))
+        app = EditorApp(str(path), open_session(str(path), create))
         async with app.run_test(size=(160, 50)) as pilot:
             editor = _Editor(app, pilot)
             await pilot.pause()
@@ -496,36 +497,12 @@ def test_edit_the_module_and_bus(tmp_path):
     )
 
 
-def test_convert_a_bust_0_14_file(tmp_path):
+def test_a_bust_0_14_file_is_not_opened(tmp_path):
     path = tmp_path / "blinky.json"
     shutil.copyfile(_BLINKY, path)
 
-    async def script(editor):
-        detail = str(editor.screen.query_one(".detail Static", Static).render())
-        assert '• clear: address "10" is now "0x10"' in detail
-        await editor.button("convert")
-        await editor.press("s")
-
-    _session(path, script)
-
-    saved = json.loads(path.read_text())
-    assert "settings" not in saved
-    assert [r.get("mode") for r in saved["module"]["register"]] == [None] * 3
-    assert [r["sw"] for r in saved["module"]["register"]] == ["rw", "ro", "wo"]
-
-
-def test_declining_the_conversion_does_not_open_the_file(tmp_path):
-    path = tmp_path / "blinky.json"
-    shutil.copyfile(_BLINKY, path)
-    text = path.read_text()
-
-    async def script(editor):
-        await editor.button("quit")
-        assert not editor.app.is_running
-
-    _session(path, script)
-
-    assert path.read_text() == text
+    with pytest.raises(EditRejected, match="Run bust with --migrate"):
+        open_session(str(path), create=False)
 
 
 def test_edit_text_number_and_true_false_keys(tmp_path):
@@ -661,8 +638,7 @@ def test_help_overview_and_pane_keys(tmp_path):
 
 def test_bit_diagram():
     path = os.path.join(_REPO_ROOT, "example", "example_axi.json")
-    session, _, conversion = open_session(path, create=False)
-    session.document.apply(conversion)
+    session = open_session(path, create=False)
     reg3 = session.registers[3]
 
     lines = bit_diagram(reg3, 32)
