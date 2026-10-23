@@ -13,10 +13,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/bust.svg)](https://pypi.org/project/bust/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/logvik-org/bust/blob/master/LICENSE)
 
-**bust** generates the register file of an FPGA or ASIC module from a JSON
-register map. From one file it writes the VHDL register file with its bus
-endpoint, a self-checking UVVM testbench, C, C++ and Python headers, an IPBus
-address table and LaTeX documentation.
+**bust** generates the register file of a register map from a JSON for FPGA or ASIC modules. From one file it writes the VHDL register file with its bus endpoint, a self-checking UVVM testbench, C, C++ and Python headers, and documentation.
 
 ## Features
 
@@ -24,17 +21,16 @@ address table and LaTeX documentation.
   [IPBus](https://ipbus.web.cern.ch/), SBI (the UVVM simple bus interface),
   [Avalon-MM](https://www.intel.com/content/www/us/en/docs/programmable/683091/current/introduction-to-the-interface-specifications.html),
   [Wishbone](https://wishbone-interconnect.readthedocs.io/) and
-  [APB](https://developer.arm.com/documentation/ihi0024/latest/). Each is a thin
-  endpoint in front of the same register file.
-- Your design reaches every field by name through the `to_hw` and `from_hw`
-  VHDL records, and enumerated fields become VHDL enumeration types.
-- Separate software and hardware access per field, with SystemRDL-style side
-  effects: clear or set on read, set, clear or toggle on write, single-cycle
-  pulses, hardware set and clear, write enables and access strobes.
-- The base address is a VHDL generic, so one module can sit at any address.
+  [APB](https://developer.arm.com/documentation/ihi0024/latest/).
+- Your design reaches every field by name through the `to_hw` and `from_hw` VHDL records, and enumerated fields become VHDL enumeration types.
+- Separate software and hardware access per field, with SystemRDL-style side effects:
+  - clear or set on read,
+  - set, clear or toggle on write,
+  - single-cycle pulses,
+  - hardware set and clear, write enables and access strobes.
 - A self-checking UVVM testbench for every module, on every bus.
-- C, C++ and Python headers, an IPBus address table for uHAL and LaTeX/PDF
-  documentation from the same file.
+- The base address is a VHDL generic, so one module can sit at any or even multiple addresses.
+- C, C++ and Python headers, an IPBus address table for uHAL and documentation from the same file.
 
 ## Installation
 
@@ -52,7 +48,7 @@ bust --version
 bust -h | --help
 ```
 
-A minimal register map with one control register:
+A minimal register map with one control register with two fields:
 
 ```json
 {
@@ -79,23 +75,13 @@ A minimal register map with one control register:
 bust blinky.json -o out -p
 ```
 
-This writes `out/blinky/` with the VHDL in `hdl/`, the testbench in `tb/`, the
-headers in `header/` and the LaTeX documentation in `doc/`. `hdl/blinky.vhd`
-is a starter top level that is yours to edit: bust writes it once and leaves it
-alone after that. Your logic reads `to_hw.ctrl.enable` and `to_hw.ctrl.rate`
-from `blinky_axi_endpoint`, which bust regenerates on every run.
+This writes `out/blinky/` with the VHDL in `hdl/`, the testbench in `tb/`, the headers in `header/` and the LaTeX documentation in `doc/`. `hdl/blinky.vhd` is a starter top level that is yours to edit: bust writes it once and leaves it alone after that. Your logic reads `to_hw.ctrl.enable` and `to_hw.ctrl.rate` from `blinky_axi_endpoint`, which bust regenerates on every run.
 
 ## How bust is tested
 
-- The generated files for the example register maps are kept in the
-  repository. Every change is compared with them byte for byte, on Python 3.9
-  to 3.14.
-- Every change to the generated VHDL is simulated with nvc and UVVM. This runs
-  the generated testbench on all six buses, a register map with every class of
-  access mode combination, and two modules compiled into one library.
-- Hand-written reference VHDL and testbenches for all six buses run against the
-  generated VHDL. They are the one check that does not come from the generator
-  itself.
+- The generated files for the example register maps are kept in the repository. Every change is compared with them.
+- Every change to the generated VHDL is simulated with `nvc` and `UVVM`. This runs the generated testbench on all six buses, a register map with every class of access mode combination.
+- Hand-written reference VHDL and testbenches for all six buses run against the generated VHDL.
 
 ## Documentation
 
@@ -105,7 +91,6 @@ The full documentation is at [bust.readthedocs.io](https://bust.readthedocs.io):
 - [Register map format](https://bust.readthedocs.io/en/latest/register-map-format.html)
 - [Access modes](https://bust.readthedocs.io/en/latest/access-modes.html)
 - [Buses](https://bust.readthedocs.io/en/latest/buses.html)
-- [Upgrading from 0.14](https://bust.readthedocs.io/en/latest/upgrading.html)
 - [Development](https://bust.readthedocs.io/en/latest/development.html)
 
 Release notes are in the [changelog](https://github.com/logvik-org/bust/blob/master/CHANGELOG.md).
@@ -113,8 +98,7 @@ Report bugs and ideas as [GitHub issues](https://github.com/logvik-org/bust/issu
 
 ## License
 
-Licensed under the **Apache License 2.0**. See [LICENSE](https://github.com/logvik-org/bust/blob/master/LICENSE) and
-[NOTICE](https://github.com/logvik-org/bust/blob/master/NOTICE).
+Licensed under the **Apache License 2.0**. See [LICENSE](https://github.com/logvik-org/bust/blob/master/LICENSE) and [NOTICE](https://github.com/logvik-org/bust/blob/master/NOTICE).
 
 ## Author
 
@@ -122,6 +106,4 @@ Licensed under the **Apache License 2.0**. See [LICENSE](https://github.com/logv
 
 ### AI assistance
 
-bust started as a hand-written tool. Most of the code for 1.0 was written with
-AI assistance. The author reviewed every change, and no change is merged before
-it passes the checks under How bust is tested above.
+bust is mainly a hand-written tool. Some of the code is written with AI assistance. The author reviewed every change, and no change is merged before it passes the checks under `How bust is tested` above.
