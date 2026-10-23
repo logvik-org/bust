@@ -13,11 +13,11 @@ const uint32_t REGMAP_HASH = 0x{{ module.regmap_hash_hex }};
 
 {% for reg in module.registers %}
 /* Register: {{ reg.name }} */
-const std::string {{ reg.name.upper() }}_SW = "{{ reg.sw.value }}";
-const std::string {{ reg.name.upper() }}_HW = "{{ reg.hw.value }}";
 const uint32_t {{ reg.name.upper() }}_WIDTH = {{ reg.width }};
 const uint32_t {{ reg.name.upper() }}_OFFSET = {{ "0x%x" | format(reg.address) }};
 const uint32_t {{ reg.name.upper() }}_RESET = {{ reg.reset }};
+const std::string {{ reg.name.upper() }}_SW = "{{ reg.sw.value }}";
+const std::string {{ reg.name.upper() }}_HW = "{{ reg.hw.value }}";
 {% if not reg.fields %}
 {% set f = reg.effective_fields[0] %}
 {% if f.onread %}const std::string {{ reg.name.upper() }}_ONREAD = "{{ f.onread.value }}";
