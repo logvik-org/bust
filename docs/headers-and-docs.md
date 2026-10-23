@@ -78,11 +78,11 @@ named after the module:
 #define PROTOTYPE_REGMAP_HASH 0x593FA68E
 
 /* Register: reg11 */
-#define PROTOTYPE_REG11_SW "rw"
-#define PROTOTYPE_REG11_HW "r"
 #define PROTOTYPE_REG11_WIDTH 2
 #define PROTOTYPE_REG11_OFFSET 0x2c
 #define PROTOTYPE_REG11_RESET 0x0
+#define PROTOTYPE_REG11_SW "rw"
+#define PROTOTYPE_REG11_HW "r"
 
 /* Field: field0 */
 #define PROTOTYPE_REG11_FIELD0_OFFSET 0
@@ -140,11 +140,11 @@ const std::string REGMAP_VERSION = "1.0";
 const uint32_t REGMAP_HASH = 0x593FA68E;
 
 /* Register: reg11 */
-const std::string REG11_SW = "rw";
-const std::string REG11_HW = "r";
 const uint32_t REG11_WIDTH = 2;
 const uint32_t REG11_OFFSET = 0x2c;
 const uint32_t REG11_RESET = 0x0;
+const std::string REG11_SW = "rw";
+const std::string REG11_HW = "r";
 
 /* Field: field0 */
 const uint32_t REG11_FIELD0_OFFSET = 0;
@@ -178,11 +178,11 @@ class PROTOTYPE_H:
     REGMAP_HASH = 0x593FA68E
 
     """Register: reg11"""
-    REG11_SW = "rw"
-    REG11_HW = "r"
     REG11_WIDTH = 2
     REG11_OFFSET = 0x2C
     REG11_RESET = 0x0
+    REG11_SW = "rw"
+    REG11_HW = "r"
 
     """ Field: field0 """
     REG11_FIELD0_OFFSET = 0
