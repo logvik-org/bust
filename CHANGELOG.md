@@ -9,6 +9,10 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Changed
+- `<module>_regfile_pkg` merges `base_match` and `above_registers` into one
+  function, `is_in_range`.
+
 ## [1.0.0]
 
 First release of bust 1.0, a rewrite of bust 0.14. Install it with
