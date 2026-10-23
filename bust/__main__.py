@@ -2,14 +2,13 @@
 """bust register tool.
 
 Usage:
-  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i] [--replace-top]] | [-a [-F | -f]] | [--migrate [-F | -f]] | [-c | -e]]
+  bust FILE [-o DIR] [[[-f] [-d | -p] [-i] [--replace-top]] | [-a [-f]] | [--migrate [-f]] | [-c | -e]]
   bust --version
   bust -h | --help
 
 Options:
   -o DIR         Specify output directory (default: the directory of FILE)
   -f             Force overwrite of existing files, except <module>.vhd, which is yours
-  -F             Alias for -f, kept for compatibility
   -d             Do not generate documentation (neither LaTeX nor PDF)
   -p             Do not generate PDF from LaTeX
   -i             Do not generate the include header files (.h, .hpp & .py)
@@ -192,7 +191,7 @@ def _run(args):
             # Before the normal parse, which a bust 0.14 file may not pass.
             if args["--migrate"]:
                 try:
-                    migrate(json_file, args["-o"], bool(args["-F"] or args["-f"]))
+                    migrate(json_file, args["-o"], bool(args["-f"]))
                 except Exception as e:
                     logger.error(str(e))
                     logger.debug("Detailed traceback:", exc_info=True)
@@ -237,7 +236,7 @@ def _run(args):
                 gs["dir"] = args["-o"]
 
             # Check if force overwrite is set
-            gs["force_ow"] = bool(args["-F"] or args["-f"])
+            gs["force_ow"] = bool(args["-f"])
             gs["replace_top"] = bool(args["--replace-top"])
 
             gs["gen_doc"] = True

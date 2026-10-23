@@ -174,7 +174,7 @@ def test_editor_without_terminal_fails(tmp_path):
 def test_bust_0_14_options_are_gone(tmp_path):
     path = _write_register_map(tmp_path)
 
-    for option in ("-u", "-b", "-t", "-m"):
+    for option in ("-u", "-b", "-t", "-m", "-F"):
         code, output = _run_bust(tmp_path, str(path), "-o", "out", "-d", option)
 
         assert code == 1, output

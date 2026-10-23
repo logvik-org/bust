@@ -45,7 +45,6 @@ MODULE_KEYS = (
     "name",
     "description",
     "version",
-    "git_hash",
     "byte_addressable",
     "register",
 )
@@ -63,7 +62,6 @@ class Module:
         name: Module name (must be valid VHDL identifier).
         description: Optional module description.
         version: Module version string.
-        git_hash: Git commit hash (currently unused).
         byte_addressable: Whether addresses are byte-based (defaults to the bus).
         addr_width: Address bus width in bits.
         data_width: Data bus width in bits.
@@ -81,7 +79,6 @@ class Module:
                 - name: Module identifier (required)
                 - description: Module description (default: "")
                 - version: Version string (default: "")
-                - git_hash: Git hash for tracking (optional)
                 - byte_addressable: Use byte addressing (default: from the bus)
                 - register: List of register configurations (required)
             bus: Bus interface configuration.
@@ -112,7 +109,6 @@ class Module:
             defaults={
                 "description": "",
                 "version": "",
-                "git_hash": None,
                 "byte_addressable": bus.byte_addressable,
             },
         )
@@ -123,7 +119,6 @@ class Module:
         # Store some config values for easy access
         self.description: str = self._config.get("description")
         self.version = self._read_version()
-        self.git_hash = self._config.get("git_hash")  # Currently not used
         self.byte_addressable = self._read_byte_addressable()
 
         self.addr_width = bus.addr_width

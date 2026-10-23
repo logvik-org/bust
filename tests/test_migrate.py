@@ -21,6 +21,7 @@ def test_register_map():
         "module": {
             "name": "m",
             "byte_addressable": "False",
+            "git_hash": "abc123",
             "register": [
                 {"name": "a", "mode": "pulse", "type": "sl", "pulse_cycles": 1},
                 {
@@ -39,6 +40,7 @@ def test_register_map():
     assert "settings" not in cfg
     assert "reset" not in cfg["bus"]
     assert cfg["module"]["byte_addressable"] is False
+    assert "git_hash" not in cfg["module"]
     a, b = cfg["module"]["register"]
     assert a == {"name": "a", "mode": "pulse", "type": "bit"}
     assert (b["address"], b["reset"]) == ("0x10", "9")

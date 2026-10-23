@@ -38,6 +38,7 @@ _MIGRATE = "Run bust with --migrate to convert the file."
 _OLD_KEYS = {
     "top": ("settings",),
     "bus": ("comp_library", "reset"),
+    "module": ("git_hash",),
     "register": ("mode", "pulse_cycles", "stall_cycles"),
 }
 
@@ -152,6 +153,7 @@ def _take_old_forms(data: Any) -> Iterator[Tuple[Path, str]]:
     module = data.get("module")
     if not isinstance(module, dict):
         return
+    yield from _take_old_keys(module, "module", ("module",))
     value = module.get("byte_addressable")
     if value in ("True", "False"):
         del module["byte_addressable"]

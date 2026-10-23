@@ -230,6 +230,7 @@ _MIGRATE = "Run bust with --migrate to convert the file."
         (("settings",), {"coverage": True}, "a bust 0.14 key"),
         (("bus", "comp_library"), "regs", "a bust 0.14 key"),
         (("bus", "reset"), "async", "a bust 0.14 key"),
+        (("module", "git_hash"), "abc123", "a bust 0.14 key"),
         (("module", "register", 0, "mode"), "pulse", "a bust 0.14 key"),
         (("module", "register", 0, "pulse_cycles"), 1, "a bust 0.14 key"),
         (("module", "register", 0, "stall_cycles"), 0, "a bust 0.14 key"),

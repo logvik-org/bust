@@ -176,7 +176,6 @@ the timing of each protocol.
 | `version` | string | `""` | The version of the register map. Every generated file carries it, see [Version and hash](#version-and-hash). Printable ASCII characters other than `"`, `\`, `;` and `=`. A module with a `version` register needs the form `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`. |
 | `description` | string | `""` | Shown in the LaTeX documentation. |
 | `byte_addressable` | boolean | from the bus | `true` if an address counts bytes, `false` if it counts data words. See [Byte and word addresses](#byte-and-word-addresses). |
-| `git_hash` | string | none | Accepted and ignored. |
 
 ### Version and hash
 

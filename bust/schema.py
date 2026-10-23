@@ -162,7 +162,6 @@ _MODULE: Dict[str, Any] = {
             default="",
             pattern=f"^{VERSION_PATTERN.pattern}$",
         ),
-        "git_hash": _string("Accepted and ignored."),
         "byte_addressable": {
             "description": "true if an address counts bytes, false if it counts "
             "data words. Default: from the bus.",

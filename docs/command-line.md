@@ -10,7 +10,7 @@ files go, and what bust does when they already exist.
 
 ```text
 Usage:
-  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i] [--replace-top]] | [-a [-F | -f]] | [--migrate [-F | -f]] | [-c | -e]]
+  bust FILE [-o DIR] [[[-f] [-d | -p] [-i] [--replace-top]] | [-a [-f]] | [--migrate [-f]] | [-c | -e]]
   bust --version
   bust -h | --help
 ```
@@ -21,12 +21,12 @@ options go together:
 
 - `-o` combines with everything else, but only a run that generates files
   uses it.
-- `-f` (or `-F`), one of `-d` and `-p`, and `-i` combine with each other. They
+- `-f`, one of `-d` and `-p`, and `-i` combine with each other. They
   control a normal run that generates files.
-- `-a` saves the JSON file instead of generating files. It takes `-f` (or `-F`)
+- `-a` saves the JSON file instead of generating files. It takes `-f`
   to save without asking.
 - `--migrate` converts the files instead of generating them. It takes `-f`
-  (or `-F`) to convert without asking.
+  to convert without asking.
 - `-c` and `-e` open the editor, so they stand alone.
 
 Any other combination, such as `-d -p` or `-c -f`, makes bust print the usage
@@ -38,7 +38,6 @@ and exit with status 1.
 |----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `-o DIR`       | Write the output under `DIR` instead of next to the JSON file. See [Output directory](#output-directory).                                                                 |
 | `-f`           | Overwrite existing files without asking, except `<module>.vhd`, which is yours. See [Existing files](#existing-files).                                               |
-| `-F`           | The same as `-f`.                                                                                                                                                       |
 | `-d`           | Do not write the documentation, neither the `.tex` file nor the PDF.                                                                                                    |
 | `-p`           | Write the `.tex` file, but do not run `pdflatex` to make the PDF.                                                                                                       |
 | `-i`           | Do not write the headers: the `.h`, `.hpp` and `.py` files, and for IPBus the `.xml` address table.                                                                     |

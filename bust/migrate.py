@@ -86,6 +86,8 @@ def migrate_register_map(cfg):
         if cfg["bus"].pop(key, None) is not None:
             changes.append(f"removed bus.{key}")
     module = cfg["module"]
+    if module.pop("git_hash", None) is not None:
+        changes.append("removed module.git_hash")
     if module.get("byte_addressable") in ("True", "False"):
         module["byte_addressable"] = module["byte_addressable"] == "True"
         changes.append("byte_addressable is now a boolean")
