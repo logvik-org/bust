@@ -10,6 +10,12 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-23
+
+First release of bust 1.0, a rewrite of bust 0.14. Install it with
+`pip install bust`. This section lists the changes since 1.0.0b1, and the
+sections of the pre-releases below list the changes since 0.14.1.
+
 ### Changed
 - bust no longer warns about a name longer than 16 characters. VHDL has no
   such limit, and the warning fired for most names in real register maps.
@@ -432,7 +438,8 @@ First pre-release of bust 1.0.0, for testing. Install it with
   packages. The wheel also left out the Jinja2 templates, without which an
   installed bust cannot generate anything.
 
-[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0b1...HEAD
+[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/logvik-org/bust/compare/v1.0.0b1...v1.0.0
 [1.0.0b1]: https://github.com/logvik-org/bust/compare/v1.0.0a4...v1.0.0b1
 [1.0.0a4]: https://github.com/logvik-org/bust/compare/v1.0.0a3...v1.0.0a4
 [1.0.0a3]: https://github.com/logvik-org/bust/compare/v1.0.0a2...v1.0.0a3
