@@ -13,7 +13,6 @@ from bust.editing.document import (
     RegisterMapDocument,
     diff_operations,
 )
-from bust.generators.factory import GeneratorFactory
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
 _EXAMPLES = sorted(
@@ -21,7 +20,6 @@ _EXAMPLES = sorted(
     for name in os.listdir(os.path.join(_REPO_ROOT, "example"))
     if name.endswith(".json")
 )
-_BLINKY = os.path.join(_REPO_ROOT, "tests", "data", "migrate", "axi", "blinky.json")
 
 _JSON5 = """{
   // An AXI module
@@ -222,62 +220,6 @@ def test_next_free_address(tmp_path):
     document = _opened(_example(tmp_path, "example_axi.json"))
 
     assert document.next_free_address() == 0x38
-
-
-def test_legacy_conversion_keeps_the_generated_hdl(tmp_path):
-    document = _opened(_example(tmp_path, "example_axi.json"))
-    old_module = document.module
-
-    _, operations = document.legacy_conversion()
-    document.apply(operations)
-
-    registers = document.data["module"]["register"]
-    assert list(registers[0]) == [
-        "name",
-        "sw",
-        "hw",
-        "type",
-        "address",
-        "reset",
-        "description",
-    ]
-    assert (
-        '"sw": "rw",\n                "hw": "r",\n                "type"'
-        in document.text
-    )
-    for generate in (
-        GeneratorFactory.generate_regfile_vhdl,
-        GeneratorFactory.generate_regfile_package_vhdl,
-    ):
-        assert generate(document.module) == generate(old_module)
-    assert document.legacy_conversion() == ([], [])
-
-
-def test_legacy_conversion_of_a_file_bust_1_0_rejects(tmp_path):
-    # Its address "10" is hexadecimal in bust 0.14 and not a multiple of 4 in 1.0.
-    document = RegisterMapDocument.open(_copy(tmp_path, _BLINKY))
-    with pytest.raises(EditRejected, match="Address 0xa of register clear"):
-        document.check()
-
-    changes, operations = document.legacy_conversion()
-    document.apply(operations)
-
-    assert changes[:3] == [
-        "removed the settings section",
-        "removed bus.comp_library",
-        "enable: type is now bit",
-    ]
-    assert 'clear: address "10" is now "0x10"' in changes
-    assert 'ctrl: mode rw is now sw "rw", hw "r"' in changes
-    assert [reg.address for reg in document.module.registers] == [0x0, 0x4, 0x10]
-
-
-def test_legacy_conversion_rejects_unsupported_timing(tmp_path):
-    text = _JSON5.replace('sw: "rw", hw: "r"', 'mode: "pulse", pulse_cycles: 2')
-    document = RegisterMapDocument.open(_write(tmp_path, text))
-
-    with pytest.raises(EditRejected, match="pulse_cycles=2 is not supported"):
-        document.legacy_conversion()
 
 
 def test_diff_operations():

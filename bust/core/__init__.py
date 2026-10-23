@@ -14,14 +14,13 @@ from bust.core.module import Module
 from bust.core.bus import Bus
 from bust.core.register import Register
 from bust.core.field import Field
-from bust.core.enums import RegisterMode, RegisterType, FieldType
+from bust.core.enums import RegisterType, FieldType
 
 __all__ = [
     "Module",
     "Bus",
     "Register",
     "Field",
-    "RegisterMode",
     "RegisterType",
     "FieldType",
 ]

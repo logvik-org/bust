@@ -15,7 +15,6 @@ import sys
 
 from bust.generators.factory import GeneratorFactory
 from bust.interaction import ConsoleInteractionHandler
-from bust.migrate import is_legacy_top
 from bust.utils.file_utils import write_string_to_file
 
 logger = logging.getLogger(__name__)
@@ -38,12 +37,6 @@ _TESTBENCH_GENERATORS = {
     "wishbone": GeneratorFactory.generate_localbus_wishbone_testbench_vhdl,
     "apb": GeneratorFactory.generate_localbus_apb_testbench_vhdl,
 }
-
-
-def _is_legacy_top(top_path):
-    """True if `top_path` is a bust 0.14 top level that --migrate has not migrated."""
-    with open(top_path, encoding="utf-8") as top:
-        return is_legacy_top(top.read())
 
 
 def _write_top(module, mod_hdl, gen_settings):
@@ -80,12 +73,6 @@ def _write_top(module, mod_hdl, gen_settings):
         shutil.copyfile(path, backup)
         write_string_to_file(starter, filename, mod_hdl, True)
         logger.info(f"Replaced {path} with a fresh starter. The old file is {backup}.")
-    elif _is_legacy_top(path):
-        logger.warning(
-            f"{path} is a bust 0.14 top level, so bust leaves it alone. To "
-            f"connect it to {module.name}_{module.bus.endpoint_suffix}, run bust "
-            "with --migrate."
-        )
     elif gen_settings["force_ow"]:
         logger.info(
             f"{path} is yours, so -f did not replace it. To replace it with a "

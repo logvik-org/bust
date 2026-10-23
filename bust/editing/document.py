@@ -14,7 +14,6 @@ from contextlib import contextmanager
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from bust.core.bus import Bus
-from bust.core.legacy_schema import migrate_register_map, register_access_defaults
 from bust.core.module import Module
 from bust.editing.json_source import (
     JsonSource,
@@ -200,45 +199,6 @@ class RegisterMapDocument:
         module, _ = _build_module(self._data)
         return module.get_next_address()
 
-    def legacy_conversion(self) -> Tuple[List[str], List[Operation]]:
-        """The changes that turn a bust 0.14 register map into the 1.0 form.
-
-        Each register's `mode` becomes the access keys it stands for, in its
-        place. `bust --migrate` makes these changes.
-
-        Returns:
-            A description of each change, and the operations that make them.
-            Both are empty for a register map in the 1.0 form.
-
-        Raises:
-            EditRejected: If the register map uses 0.14 timing bust 1.0 cannot
-                generate.
-        """
-        migrated = self.data
-        try:
-            changes = migrate_register_map(migrated)
-        except Exception as error:
-            raise EditRejected(_message(error)) from error
-        operations = diff_operations(self._data, migrated)
-        for index, register in enumerate(migrated["module"]["register"]):
-            if "mode" not in register:
-                continue
-            path = join_pointer("module", "register", index)
-            access = register_access_defaults({"mode": register["mode"]})
-            operations += [
-                {
-                    "op": "add",
-                    "path": path + join_pointer(key),
-                    "value": value,
-                    "before": "mode",
-                }
-                for key, value in access.items()
-            ]
-            operations.append({"op": "remove", "path": path + "/mode"})
-            keys = ", ".join(f"{key} {json.dumps(v)}" for key, v in access.items())
-            changes.append(f"{register['name']}: mode {register['mode']} is now {keys}")
-        return changes, operations
-
     def save(self, path: str) -> bool:
         """Write the register map to `path` if it changed.
 
@@ -359,7 +319,7 @@ def _build_module(data: Any) -> Tuple[Module, List[str]]:
     with _captured_warnings() as warnings:
         warnings.extend(str(problem) for problem in report.warnings)
         try:
-            settings = Settings(None, data.get("settings"))
+            settings = Settings(None)
             module = Module(data["module"], Bus(data["bus"]), settings)
         # Anything Bus or Module raises means bust rejects the register map.
         except Exception as error:

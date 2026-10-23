@@ -7,10 +7,11 @@ import shutil
 
 import pytest
 
-from bust.core.legacy_schema import migrate_register_map
-from bust.migrate import migrate
+from bust.editing.document import EditRejected, RegisterMapDocument
+from bust.migrate import conversion, migrate, migrate_register_map
 
-_DATA = os.path.join(os.path.dirname(__file__), "data", "migrate")
+_REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
+_DATA = os.path.join(_REPO_ROOT, "tests", "data", "migrate")
 
 
 def test_register_map():
@@ -20,6 +21,7 @@ def test_register_map():
         "module": {
             "name": "m",
             "byte_addressable": "False",
+            "git_hash": "abc123",
             "register": [
                 {"name": "a", "mode": "pulse", "type": "sl", "pulse_cycles": 1},
                 {
@@ -38,6 +40,7 @@ def test_register_map():
     assert "settings" not in cfg
     assert "reset" not in cfg["bus"]
     assert cfg["module"]["byte_addressable"] is False
+    assert "git_hash" not in cfg["module"]
     a, b = cfg["module"]["register"]
     assert a == {"name": "a", "mode": "pulse", "type": "bit"}
     assert (b["address"], b["reset"]) == ("0x10", "9")
@@ -122,3 +125,82 @@ def test_nothing_to_migrate(tmp_path, caplog):
     assert "Nothing to migrate." in caplog.text
     assert json_file.read_text() == text
     assert not (tmp_path / "m.json5.0_14").exists()
+
+
+def test_conversion_gives_back_the_example(tmp_path):
+    """The example, with each register's access keys turned back into the
+    bust 0.14 mode, converts to the example as it is shipped."""
+    with open(os.path.join(_REPO_ROOT, "example", "example_axi.json")) as fp:
+        example = fp.read()
+    indent = "\n" + " " * 16
+    old = example
+    for mode, keys in [
+        ("pulse", ['"sw": "wo"', '"hw": "r"', '"singlepulse": true']),
+        ("ro", ['"sw": "ro"', '"hw": "w"']),
+        ("rw", ['"sw": "rw"', '"hw": "r"']),
+    ]:
+        old = old.replace(
+            indent + ("," + indent).join(keys) + ",", indent + f'"mode": "{mode}",'
+        )
+    assert old.count('"mode"') == 12
+    json_file = tmp_path / "example_axi.json"
+    json_file.write_text(old)
+    document = RegisterMapDocument.open(str(json_file))
+
+    _, operations = conversion(document)
+    document.apply(operations)
+
+    assert document.text == example
+    assert conversion(document) == ([], [])
+
+
+def test_conversion_of_a_file_bust_1_0_rejects(tmp_path):
+    # Its address "10" is hexadecimal in bust 0.14 and not a multiple of 4 in 1.0.
+    json_file = tmp_path / "blinky.json"
+    shutil.copyfile(os.path.join(_DATA, "axi", "blinky.json"), str(json_file))
+    document = RegisterMapDocument.open(str(json_file))
+    with pytest.raises(EditRejected, match="Run bust with --migrate"):
+        document.check()
+
+    changes, operations = conversion(document)
+    document.apply(operations)
+
+    assert changes[:3] == [
+        "removed the settings section",
+        "removed bus.comp_library",
+        "enable: type is now bit",
+    ]
+    assert 'clear: address "10" is now "0x10"' in changes
+    assert 'ctrl: mode rw is now sw "rw", hw "r"' in changes
+    assert [reg.address for reg in document.module.registers] == [0x0, 0x4, 0x10]
+
+
+@pytest.mark.parametrize(
+    "keys, message",
+    [
+        ('mode: "pulse", pulse_cycles: 2', "pulse_cycles=2 is not supported"),
+        ('mode: "rw", stall_cycles: 30', "stall_cycles is not supported"),
+        ('mode: "pulse", pulse_cycles: "two"', "pulse_cycles of register ctrl"),
+        ('mode: "ro", sw: "rw"', "'mode' key together with access keys"),
+    ],
+)
+def test_conversion_rejects_what_bust_1_0_cannot_generate(tmp_path, keys, message):
+    json_file = tmp_path / "m.json5"
+    json_file.write_text(_JSON5.replace('mode: "rw"', keys))
+    document = RegisterMapDocument.open(str(json_file))
+
+    with pytest.raises(EditRejected, match=message):
+        conversion(document)
+
+
+def test_timing_bust_1_0_has_is_removed(tmp_path):
+    json_file = tmp_path / "m.json5"
+    json_file.write_text(
+        _JSON5.replace('mode: "rw"', 'mode: "pulse", pulse_cycles: 1, stall_cycles: 0')
+    )
+
+    migrate(str(json_file), None, force=True)
+
+    assert json_file.read_text() == _JSON5.replace(
+        'mode: "rw", type: "sl"', 'sw: "wo", hw: "r", singlepulse: true, type: "bit"'
+    )

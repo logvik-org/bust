@@ -18,7 +18,6 @@ from bust.core import (
     Bus,
     Register,
     Field,
-    RegisterMode,
     RegisterType,
     FieldType,
 )
@@ -33,7 +32,6 @@ __all__ = [
     "Bus",
     "Register",
     "Field",
-    "RegisterMode",
     "RegisterType",
     "FieldType",
     "HeaderGenerator",

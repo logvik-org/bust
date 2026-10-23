@@ -54,10 +54,6 @@ def _string(description: str, **extra: Any) -> Dict[str, Any]:
     return {"description": description, "type": "string", **extra}
 
 
-def _deprecated(description: str) -> Dict[str, Any]:
-    return {"description": description, "deprecated": True}
-
-
 _ACCESS_KEYS: Dict[str, Dict[str, Any]] = {
     "sw": _choice(
         "What software can do: read and write, read only, write only, or nothing.",
@@ -149,9 +145,6 @@ _REGISTER: Dict[str, Any] = {
             "items": {"$ref": "#/$defs/field"},
         },
         **_ACCESS_KEYS,
-        "mode": _deprecated("bust 0.14 access mode. Use sw and hw."),
-        "pulse_cycles": _deprecated("bust 0.14 key. Remove it."),
-        "stall_cycles": _deprecated("bust 0.14 key. Remove it."),
     },
 }
 
@@ -169,7 +162,6 @@ _MODULE: Dict[str, Any] = {
             default="",
             pattern=f"^{VERSION_PATTERN.pattern}$",
         ),
-        "git_hash": _string("Accepted and ignored."),
         "byte_addressable": {
             "description": "true if an address counts bytes, false if it counts "
             "data words. Default: from the bus.",
@@ -206,7 +198,6 @@ def register_map_schema() -> Dict[str, Any]:
         "properties": {
             "bus": {"$ref": "#/$defs/bus"},
             "module": {"$ref": "#/$defs/module"},
-            "settings": _deprecated("bust 0.14 section. bust ignores it."),
         },
         "$defs": {
             "bus": _BUS,

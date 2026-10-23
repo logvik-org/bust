@@ -2,22 +2,17 @@
 """bust register tool.
 
 Usage:
-  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i] [--replace-top] [-u] [-b] [-t] [-m]] | [-a [-F | -f]] | [--migrate [-F | -f]] | [-c | -e]]
+  bust FILE [-o DIR] [[[-f] [-d | -p] [-i] [--replace-top]] | [-a [-f]] | [--migrate [-f]] | [-c | -e]]
   bust --version
   bust -h | --help
 
 Options:
-  -o DIR         Specify output directory. Overrides settings (either JSON dir, or specified project dir in JSON)
+  -o DIR         Specify output directory (default: the directory of FILE)
   -f             Force overwrite of existing files, except <module>.vhd, which is yours
-  -F             Alias for -f, kept for compatibility
   -d             Do not generate documentation (neither LaTeX nor PDF)
   -p             Do not generate PDF from LaTeX
   -i             Do not generate the include header files (.h, .hpp & .py)
   --replace-top  Replace <module>.vhd with a fresh starter, keeping the old file as <module>.vhd.bak
-  -u             Ignored with a warning, a bust 0.14 option
-  -b             Ignored with a warning, a bust 0.14 option
-  -t             Ignored with a warning, a bust 0.14 option
-  -m             Ignored with a warning, a bust 0.14 option
   -a             Update register addresses and save JSON file (with -f, without asking)
   --migrate      Migrate a bust 0.14 JSON file and <module>.vhd (with -f, without asking)
   -e             Edit the JSON file
@@ -61,16 +56,6 @@ from bust.exceptions import (
 from bust.migrate import migrate
 from bust.editor import run_editor
 from bust._version import __VERSION__
-
-# bust 0.14 options that bust 1.0 accepts and ignores, so that old command lines
-# and Makefiles keep working during the switch. The value is the reason the
-# warning gives.
-_IGNORED_0_14_OPTIONS = {
-    "-u": "bust 1.0 always regenerates the top-level file",
-    "-b": "bust 1.0 always writes the local-bus package",
-    "-t": "bust 1.0 always writes the testbench",
-    "-m": "bust 1.0 always writes the module VHDL",
-}
 
 
 class _DebugLog(logging.handlers.BufferingHandler):
@@ -182,10 +167,6 @@ def main():
 def _run(args):
     logger = logging.getLogger(__name__)
 
-    for option, reason in _IGNORED_0_14_OPTIONS.items():
-        if args.get(option):
-            logger.warning(f"Ignoring {option}, a bust 0.14 option: {reason}.")
-
     try:
 
         if args["FILE"] is not None:
@@ -210,7 +191,7 @@ def _run(args):
             # Before the normal parse, which a bust 0.14 file may not pass.
             if args["--migrate"]:
                 try:
-                    migrate(json_file, args["-o"], bool(args["-F"] or args["-f"]))
+                    migrate(json_file, args["-o"], bool(args["-f"]))
                 except Exception as e:
                     logger.error(str(e))
                     logger.debug("Detailed traceback:", exc_info=True)
@@ -222,7 +203,7 @@ def _run(args):
             json_dict = _read_register_map(json_file)
 
             try:
-                settings = Settings(json_file, json_dict.get("settings"))
+                settings = Settings(json_file)
                 bus = Bus(json_dict["bus"])
                 module = Module(json_dict["module"], bus, settings)
                 header = HeaderGenerator(module)
@@ -255,7 +236,7 @@ def _run(args):
                 gs["dir"] = args["-o"]
 
             # Check if force overwrite is set
-            gs["force_ow"] = bool(args["-F"] or args["-f"])
+            gs["force_ow"] = bool(args["-f"])
             gs["replace_top"] = bool(args["--replace-top"])
 
             gs["gen_doc"] = True

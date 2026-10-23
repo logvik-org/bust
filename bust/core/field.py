@@ -17,7 +17,6 @@ from bust.core.enums import (
     OnRead,
     OnWrite,
     SwAccess,
-    current_type_name,
 )
 from bust.exceptions import InvalidFieldFormat
 from bust.validation.vhdl_validator import is_valid_VHDL
@@ -146,11 +145,7 @@ class Field:
         if self.name != parent_register_name:
             is_valid_VHDL(self.name)
 
-        type_name = self._config.require("type")
-        self.legacy_type_name = (
-            type_name if current_type_name(type_name) != type_name else None
-        )
-        self.type = FieldType.from_string(current_type_name(type_name))
+        self.type = FieldType.from_string(self._config.require("type"))
         where = f"field {self.name} in register {parent_register_name}"
         # Width can be overridden depending on register type
         self.width = parse_number(self._config.get("width"), f"Width of {where}")
@@ -521,7 +516,7 @@ class Field:
         """True for a status field: hardware writes it every cycle, software only reads it.
 
         The register file reads it from from_hw directly instead of storing it,
-        as bust 0.14 did, so a read takes no extra cycle.
+        so a read takes no extra cycle.
         """
         return (
             self.hw_writes_continuously

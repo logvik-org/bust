@@ -7,12 +7,10 @@ from types import SimpleNamespace
 import pytest
 
 from bust.core.module import Module
-from bust.core.enums import RegisterMode
 from bust.exceptions import (
     FormatError,
     InvalidAddress,
     InvalidRegister,
-    InvalidRegisterFormat,
 )
 from bust.validation.vhdl_validator import InvalidVHDLIdentifier
 
@@ -32,7 +30,7 @@ def make_module(registers, bus=None):
 
 
 def regs(*names):
-    return [{"name": name, "mode": "rw"} for name in names]
+    return [{"name": name, "sw": "rw"} for name in names]
 
 
 class TestAddressAssignment:
@@ -45,8 +43,7 @@ class TestAddressAssignment:
         assert mod.addresses == [0, 1, 2]
 
     def test_word_addressing_on_a_byte_bus(self):
-        # bust 0.14 allowed this on AXI, and the endpoint compares the address
-        # as the master drives it.
+        # The endpoint compares the address as the master drives it.
         mod = Module(
             {
                 "name": "testmod",
@@ -58,23 +55,7 @@ class TestAddressAssignment:
         )
         assert mod.addresses == [0, 1, 3]
 
-    @pytest.mark.parametrize("value, step", [("True", 4), ("False", 1)])
-    def test_byte_addressable_reads_the_0_14_strings(self, value, step, caplog):
-        mod = Module(
-            {
-                "name": "testmod",
-                "byte_addressable": value,
-                "register": regs("R0", "R1"),
-            },
-            stub_bus(),
-            settings=None,
-        )
-        assert mod.addresses == [0, step]
-        assert f'byte_addressable "{value}" is the deprecated bust 0.14 form' in (
-            caplog.text
-        )
-
-    @pytest.mark.parametrize("value", ["false", "yes", 0])
+    @pytest.mark.parametrize("value", ["false", "True", "yes", 0])
     def test_byte_addressable_must_be_a_boolean(self, value):
         with pytest.raises(FormatError, match="byte_addressable must be true or false"):
             Module(
@@ -84,38 +65,38 @@ class TestAddressAssignment:
             )
 
     def test_explicit_address_honoured(self):
-        mod = make_module([{"name": "R0", "mode": "rw", "address": "0x10"}])
+        mod = make_module([{"name": "R0", "sw": "rw", "address": "0x10"}])
         assert mod.registers[0].address == 0x10
 
     def test_conflicting_explicit_address_rejected(self):
         with pytest.raises(InvalidAddress):
             make_module(
                 [
-                    {"name": "R0", "mode": "rw", "address": "0x0"},
-                    {"name": "R1", "mode": "rw", "address": "0x0"},
+                    {"name": "R0", "sw": "rw", "address": "0x0"},
+                    {"name": "R1", "sw": "rw", "address": "0x0"},
                 ]
             )
 
     def test_out_of_range_address_rejected(self):
         with pytest.raises(FormatError, match="does not fit in addr_width 4"):
             make_module(
-                [{"name": "R0", "mode": "rw", "address": "0x100"}],
+                [{"name": "R0", "sw": "rw", "address": "0x100"}],
                 bus=stub_bus(addr_width=4),
             )
 
     def test_unaligned_address_rejected(self):
         with pytest.raises(FormatError, match="not a multiple of 4"):
-            make_module([{"name": "R0", "mode": "rw", "address": "0x2"}])
+            make_module([{"name": "R0", "sw": "rw", "address": "0x2"}])
 
     def test_word_addressed_bus_takes_any_address(self):
         mod = make_module(
-            [{"name": "R0", "mode": "rw", "address": "0x3"}],
+            [{"name": "R0", "sw": "rw", "address": "0x3"}],
             bus=stub_bus(bus_type="ipbus"),
         )
         assert mod.addresses == [3]
 
     def test_numeric_address_is_decimal(self):
-        mod = make_module([{"name": "R0", "mode": "rw", "address": 16}])
+        mod = make_module([{"name": "R0", "sw": "rw", "address": 16}])
         assert mod.registers[0].address == 0x10
 
     def test_update_addresses_reassigns_sequentially(self):
@@ -125,29 +106,6 @@ class TestAddressAssignment:
 
 
 class TestRegisterBookkeeping:
-    def test_mode_counts(self):
-        mod = make_module(
-            [
-                {"name": "R0", "mode": "rw"},
-                {"name": "R1", "mode": "ro"},
-                {"name": "R2", "mode": "pulse"},
-                {"name": "R3", "mode": "rw"},
-            ]
-        )
-        assert mod.num_rw_regs == 2
-        assert mod.num_ro_regs == 1
-        assert mod.num_pulse_regs == 1
-
-    @pytest.mark.parametrize("bus_type", ["axi", "ipbus"])
-    def test_stall_rejected_on_every_bus(self, bus_type):
-        with pytest.raises(InvalidRegister) as excinfo:
-            make_module(
-                [{"name": "R0", "mode": "rw", "stall_cycles": 4}],
-                bus=stub_bus(bus_type=bus_type),
-            )
-        assert isinstance(excinfo.value.__cause__, InvalidRegisterFormat)
-        assert "stall_cycles is not supported" in str(excinfo.value.__cause__)
-
     def test_default_byte_addressable_follows_bus_type(self):
         assert make_module(regs("R0")).byte_addressable is True
         assert (
@@ -163,12 +121,8 @@ class TestModuleValidation:
 
     def test_long_name_gives_no_warning(self, caplog):
         name = "a_register_name_longer_than_sixteen_characters"
-        make_module([{"name": name, "mode": "rw"}])
+        make_module([{"name": name, "sw": "rw"}])
         assert caplog.text == ""
-
-    def test_mode_enum_resolved(self):
-        mod = make_module([{"name": "R0", "mode": "pulse"}])
-        assert mod.registers[0].mode is RegisterMode.PULSE
 
 
 def fields_register(name="R0", fields=None, **keys):
@@ -250,16 +204,11 @@ class TestRegmapHash:
             description="A module",
             version="9.9",
             register=[
-                {"name": "R0", "mode": "rw", "description": "first"},
-                {"name": "R1", "mode": "rw", "description": "second"},
+                {"name": "R0", "sw": "rw", "description": "first"},
+                {"name": "R1", "sw": "rw", "description": "second"},
             ],
         )
         assert described.regmap_hash == plain.regmap_hash
-
-    def test_same_for_legacy_mode_and_explicit_access(self):
-        legacy = module_with(register=[{"name": "R0", "mode": "ro"}])
-        current = module_with(register=[{"name": "R0", "sw": "ro", "hw": "w"}])
-        assert legacy.regmap_hash == current.regmap_hash
 
     def test_independent_of_the_address_width(self):
         assert (
@@ -270,16 +219,16 @@ class TestRegmapHash:
     @pytest.mark.parametrize(
         "register",
         [
-            [{"name": "R0", "mode": "rw"}],
-            [{"name": "R0", "mode": "rw"}, {"name": "R2", "mode": "rw"}],
-            [{"name": "R0", "mode": "rw"}, {"name": "R1", "mode": "ro"}],
-            [{"name": "R0", "mode": "rw"}, {"name": "R1", "mode": "rw", "reset": 1}],
-            [{"name": "R0", "mode": "rw"}, {"name": "R1", "address": "0x8"}],
+            [{"name": "R0", "sw": "rw"}],
+            [{"name": "R0", "sw": "rw"}, {"name": "R2", "sw": "rw"}],
+            [{"name": "R0", "sw": "rw"}, {"name": "R1", "sw": "ro", "hw": "w"}],
+            [{"name": "R0", "sw": "rw"}, {"name": "R1", "sw": "rw", "reset": 1}],
+            [{"name": "R0", "sw": "rw"}, {"name": "R1", "address": "0x8"}],
             [
-                {"name": "R0", "mode": "rw"},
+                {"name": "R0", "sw": "rw"},
                 {"name": "R1", "type": "vector", "width": 8},
             ],
-            [{"name": "R0", "mode": "rw"}, {"name": "R1", "swmod": True}],
+            [{"name": "R0", "sw": "rw"}, {"name": "R1", "swmod": True}],
         ],
     )
     def test_changes_with_the_register_map(self, register):
@@ -327,7 +276,7 @@ class TestHashRegister:
 
     @pytest.mark.parametrize(
         "key, value",
-        [("sw", "rw"), ("hw", "w"), ("reset", "0x1"), ("width", 32), ("mode", "ro")],
+        [("sw", "rw"), ("hw", "w"), ("reset", "0x1"), ("width", 32)],
     )
     def test_other_keys_rejected(self, key, value):
         with pytest.raises(InvalidRegister, match="takes only name"):

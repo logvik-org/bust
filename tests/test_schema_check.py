@@ -208,11 +208,7 @@ def test_unknown_keys_are_warnings():
     "path, value",
     [
         (("module", "register", 0, "sw"), "RW"),
-        (("module", "register", 0, "type"), "SLV"),
-        (("module", "register", 1, "fields", 0, "type"), "sl"),
-        (("module", "byte_addressable"), "False"),
-        (("module", "register", 0, "mode"), "pulse"),
-        (("settings",), {"coverage": True}),
+        (("module", "register", 0, "type"), "VECTOR"),
         (("module", "register", 0, "address"), "0X1C"),
         (("module", "register", 0, "we"), False),
     ],
@@ -223,6 +219,51 @@ def test_forms_bust_reads_are_not_problems(path, value):
     report = check_register_map(register_map)
 
     assert report.errors == report.warnings == []
+
+
+_MIGRATE = "Run bust with --migrate to convert the file."
+
+
+@pytest.mark.parametrize(
+    "path, value, message",
+    [
+        (("settings",), {"coverage": True}, "a bust 0.14 key"),
+        (("bus", "comp_library"), "regs", "a bust 0.14 key"),
+        (("bus", "reset"), "async", "a bust 0.14 key"),
+        (("module", "git_hash"), "abc123", "a bust 0.14 key"),
+        (("module", "register", 0, "mode"), "pulse", "a bust 0.14 key"),
+        (("module", "register", 0, "pulse_cycles"), 1, "a bust 0.14 key"),
+        (("module", "register", 0, "stall_cycles"), 0, "a bust 0.14 key"),
+        (
+            ("module", "register", 0, "type"),
+            "SLV",
+            '"SLV" is the bust 0.14 name of "vector"',
+        ),
+        (
+            ("module", "register", 1, "fields", 0, "type"),
+            "sl",
+            '"sl" is the bust 0.14 name of "bit"',
+        ),
+        (
+            ("module", "byte_addressable"),
+            "False",
+            '"False" is the bust 0.14 form of false',
+        ),
+    ],
+)
+def test_bust_0_14_forms_are_errors_that_point_to_migrate(path, value, message):
+    report = check_register_map(_changed(path, value))
+
+    assert [str(problem) for problem in report.errors] == [
+        f"{Problem(path, message).location}: {message}{_end(message)}"
+    ]
+    assert report.warnings == []
+
+
+def _end(message):
+    if message == "a bust 0.14 key":
+        return ", which bust no longer reads. " + _MIGRATE
+    return ". " + _MIGRATE
 
 
 def test_null_counts_as_false():

@@ -10,7 +10,6 @@ while retaining enum benefits such as validation and introspection.
 Enums defined:
 - FieldType: Types of individual register fields
 - RegisterType: Data representation types of full registers
-- RegisterMode: Access modes for registers
 
 All enums include a `from_string()` method to safely convert user-provided
 strings with validation and case normalization.
@@ -39,18 +38,6 @@ class ConfigEnum(Enum):
     def valid_values(cls):
         """Return a list of valid enum values as strings."""
         return list(e.value for e in cls)
-
-
-# The bust 0.14 names of the bit and vector types. bust accepts them for
-# registers and fields, and Module warns that they are deprecated.
-LEGACY_TYPE_NAMES = {"sl": "bit", "slv": "vector"}
-
-
-def current_type_name(value):
-    """Return `bit` for `sl` and `vector` for `slv`, and any other value as it is."""
-    if isinstance(value, str):
-        return LEGACY_TYPE_NAMES.get(value.lower(), value)
-    return value
 
 
 class FieldType(ConfigEnum):
@@ -92,25 +79,6 @@ class RegisterType(ConfigEnum):
     def is_constant(self) -> bool:
         """True for the types whose value bust sets: hash and version."""
         return self in (RegisterType.HASH, RegisterType.VERSION)
-
-
-class RegisterMode(ConfigEnum):
-    """Enumeration of access modes for a register.
-
-    Values:
-    - RW:    Read/write access
-    - RO:    Read-only access
-    - PULSE: Write-only, single-cycle pulse
-
-    Use `RegisterMode.from_string(value)` to safely create from user input.
-
-    Legacy schema. New configs use the per-field `SwAccess`/`HwAccess` model;
-    these values are translated onto it (see the compatibility layer).
-    """
-
-    RW = "rw"
-    RO = "ro"
-    PULSE = "pulse"
 
 
 class SwAccess(ConfigEnum):

@@ -43,7 +43,7 @@ pip install bust
 ## Usage
 
 ```bash
-bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i]] | [-a] | [-c | -e]]
+bust FILE [-o DIR] [[[-f] [-d | -p] [-i]] | [-a] | [-c | -e]]
 bust --version
 bust -h | --help
 ```

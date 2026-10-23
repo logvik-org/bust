@@ -2,7 +2,8 @@
 
 This module defines the Register class, which represents a memory-mapped
 register within a bus slave module. Registers can have various types
-(default, vector, bit, fields) and access modes (RW, RO, PULSE).
+(default, vector, bit, fields), and access keys (sw, hw and the rest) that
+its fields inherit.
 
 Each register has a fixed address, configurable width, reset value, and
 can optionally contain multiple named bitfields.
@@ -18,11 +19,6 @@ from bust.exceptions import (
     InvalidFieldFormat,
 )
 from bust.core.field import INHERITABLE_ACCESS, Field
-from bust.core.legacy_schema import (
-    register_access_defaults,
-    reject_unsupported_timing,
-    uses_new_schema,
-)
 from bust.utils.formatting import indent_string
 from bust.validation.vhdl_validator import is_unique, is_valid_VHDL
 from bust.validation.config_validator import (
@@ -32,10 +28,8 @@ from bust.validation.config_validator import (
 from bust.core.enums import (
     HwAccess,
     OnRead,
-    RegisterMode,
     RegisterType,
     SwAccess,
-    current_type_name,
 )
 
 # Register-level access summarised from its fields, keyed by
@@ -54,8 +48,6 @@ _HW_BY_READ_WRITE = {
 }
 
 
-# pulse_cycles and stall_cycles are bust 0.14 keys, kept so that 0.14 files are
-# rejected with an explanation when they use values 1.0 cannot generate.
 # The keys a hash or version register takes. bust sets everything else.
 CONSTANT_REGISTER_KEYS = {"name", "description", "address", "type"}
 
@@ -67,9 +59,6 @@ REGISTER_KEYS = {
     "width",
     "reset",
     "fields",
-    "mode",
-    "pulse_cycles",
-    "stall_cycles",
     *INHERITABLE_ACCESS,
 }
 
@@ -78,14 +67,13 @@ class Register:
     """Represents a memory-mapped register in a bus slave module.
 
     A Register encapsulates all information needed to generate a memory-mapped
-    register, including its address, data type, access mode, reset value, and
-    optional bitfields. Registers support various modes (read-write, read-only,
-    pulse) and types (default width, custom vector, single-bit, or composite fields).
+    register, including its address, data type, access keys, reset value, and
+    optional bitfields. Registers support various types (default width, custom
+    vector, single-bit, or composite fields).
 
     Attributes:
         name: Register name (must be valid VHDL identifier).
         address: Memory address of the register.
-        mode: Access mode (RW, RO, or PULSE).
         type: Data type (DEFAULT, VECTOR, BIT, or FIELDS).
         width: Data width in bits.
         reset: Reset value as hex string.
@@ -108,13 +96,10 @@ class Register:
         Args:
             reg: Dictionary containing register configuration with keys:
                 - name: Register identifier (required)
-                - mode: Access mode "rw", "ro", or "pulse" (default: "rw")
                 - type: Register type "default", "vector", "bit", or "fields" (default: "default")
                 - width: Bit width (default: module_data_width)
                 - reset: Reset value as hex string (default: "0x0")
                 - description: Register description (default: "")
-                - pulse_cycles: Legacy pulse duration, accepted only as 1
-                - stall_cycles: Legacy IPBus stall, accepted only as 0
                 - fields: List of field dictionaries for FIELDS type
             address: Memory address for this register.
             module_name: Name of the parent module.
@@ -123,8 +108,7 @@ class Register:
                 computes.
 
         Raises:
-            InvalidRegisterFormat: If reset value doesn't match width or is invalid,
-                or pulse_cycles/stall_cycles ask for timing bust 1.0 cannot honour.
+            InvalidRegisterFormat: If reset value doesn't match width or is invalid.
             ModuleDataBitsExceeded: If register width exceeds module data width.
             UndefinedRegisterType: If register type is not supported.
             ValueError: If register name is not a valid VHDL identifier.
@@ -141,7 +125,6 @@ class Register:
             required_keys=["name"],
             defaults={
                 "description": "",
-                "mode": RegisterMode.RW.value,
                 "type": (
                     RegisterType.FIELDS.value
                     if "fields" in reg
@@ -154,23 +137,9 @@ class Register:
 
         self.name = self._config.require("name")
         is_valid_VHDL(self.name)
-        reject_unsupported_timing(reg)
 
         self.description: str = self._config.get("description")
-        self.mode = RegisterMode.from_string(self._config.get("mode"))
-        self.uses_new_schema = uses_new_schema(reg)
-        # The legacy `mode` and the bust 1.0 `sw`/`hw` keys are two ways to say the
-        # same thing; honoring one and silently dropping the other hides intent.
-        if self._config.is_set("mode") and self.uses_new_schema:
-            raise InvalidRegisterFormat(
-                f"Register {self.name} sets the legacy 'mode' key together with "
-                "bust 1.0 access-mode keys (sw/hw/...); use one schema, not both"
-            )
-        type_name = self._config.get("type")
-        self.legacy_type_name = (
-            type_name if current_type_name(type_name) != type_name else None
-        )
-        self.type = RegisterType.from_string(current_type_name(type_name))
+        self.type = RegisterType.from_string(self._config.get("type"))
         if self._config.is_set("fields") and self.type != RegisterType.FIELDS:
             raise InvalidRegisterFormat(
                 f"Register {self.name} has fields but type '{self.type.value}'. "
@@ -186,10 +155,11 @@ class Register:
             parse_number(self._config.get("reset"), f"Reset of register {self.name}")
         )
 
-        # bust 1.0 access-mode defaults the register's fields inherit. Legacy `mode`
-        # registers are translated onto sw/hw here (see legacy_schema). Fields
-        # are constructed below, so this must precede _init_fields.
-        self.access_defaults = register_access_defaults(reg)
+        # The access keys the register's fields inherit. Fields are constructed
+        # below, so this must precede _init_fields.
+        self.access_defaults = {
+            key: reg[key] for key in INHERITABLE_ACCESS if key in reg
+        }
         if self.type.is_constant:
             self._init_constant_register(reg, value)
 
@@ -250,8 +220,8 @@ class Register:
         The local-bus generator is field-based, so a `bit`/`vector`/`default`
         register is treated as one field spanning the whole register, named after
         the register and inheriting its access. A register with real fields keeps
-        `self.fields` empty here so the legacy generator (which keys off the
-        register type) is unaffected.
+        `self.fields` empty here so code that keys off the register type is
+        unaffected.
         """
         if self.fields:  # real fields were parsed (type fields or a `fields` key)
             return None  # type: ignore[return-value]
@@ -307,7 +277,6 @@ class Register:
     def __str__(self) -> str:
         string = "Name: " + self.name + "\n"
         string += "Address: " + hex(self.address) + "\n"
-        string += "Mode: " + str(self.mode.value) + "\n"
         string += "Type: " + str(self.type.value) + "\n"
         string += "Width: " + str(self.width) + "\n"
         string += "Reset: " + self.reset
@@ -368,7 +337,7 @@ class Register:
         elif self.type == RegisterType.BIT:
             return "std_logic"
         else:
-            return f"t_{self.module_name}_{self.mode.value}_{self.name}"
+            return f"t_{self.module_name}_{self.name}"
 
     @property
     def reset_val_vhdl(self) -> str:

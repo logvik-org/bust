@@ -9,7 +9,8 @@ passes.
 The checker covers the parts of JSON Schema that bust.schema uses: type, enum,
 pattern, minimum, minItems, required, properties, additionalProperties, items,
 anyOf and $ref. A key the schema does not list gives a warning, not an error,
-as bust ignores it.
+as bust ignores it. The keys and values of bust 0.14 are errors that point to
+--migrate.
 """
 
 import copy
@@ -19,7 +20,6 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
-from bust.core.enums import current_type_name
 from bust.editing.json_source import JsonSource, JsonSourceError, join_pointer
 from bust.exceptions import FormatError
 from bust.schema import NUMBER_FORMS, register_map_schema
@@ -30,7 +30,20 @@ Path = Tuple[Union[str, int], ...]
 _SCHEMA = register_map_schema()
 
 # bust reads these values in any case, as Enum.from_string lowers them.
-_CASE_FREE_KEYS = ("type", "mode", "sw", "hw", "onread", "onwrite")
+_CASE_FREE_KEYS = ("type", "sw", "hw", "onread", "onwrite")
+
+_MIGRATE = "Run bust with --migrate to convert the file."
+
+# The keys of bust 0.14 that bust 1.0 does not read, by the object they sit in.
+_OLD_KEYS = {
+    "top": ("settings",),
+    "bus": ("comp_library", "reset"),
+    "module": ("git_hash",),
+    "register": ("mode", "pulse_cycles", "stall_cycles"),
+}
+
+# The bust 0.14 names of the bit and vector types.
+_OLD_TYPE_NAMES = {"sl": "bit", "slv": "vector"}
 
 # The JSON Schema keywords the check applies, and the ones it reads past
 # because they only describe. tests/test_schema_check.py fails if the schema
@@ -50,9 +63,7 @@ CHECKED_KEYWORDS = frozenset(
         "$ref",
     ]
 )
-ANNOTATION_KEYWORDS = frozenset(
-    ["$schema", "$defs", "title", "description", "default", "deprecated"]
-)
+ANNOTATION_KEYWORDS = frozenset(["$schema", "$defs", "title", "description", "default"])
 
 _TYPE_NAMES = {
     "string": "a string",
@@ -119,28 +130,95 @@ def check_register_map(data: Any, text: Optional[str] = None) -> SchemaReport:
     Returns:
         Every problem the schema finds, in the order of the file.
     """
-    errors: List[Problem] = []
+    copied = copy.deepcopy(data)
+    errors = [Problem(path, message) for path, message in _take_old_forms(copied)]
     warnings: List[Problem] = []
-    for is_error, path, message in _check(_as_bust_reads(data), _SCHEMA, ()):
+    for is_error, path, message in _check(_as_bust_reads(copied), _SCHEMA, ()):
         (errors if is_error else warnings).append(Problem(path, message))
+    errors.sort(key=lambda problem: _order(data, problem.path))
     lines = _LineFinder(text)
     return SchemaReport(
         [lines.place(p) for p in errors], [lines.place(p) for p in warnings]
     )
 
 
+def _take_old_forms(data: Any) -> Iterator[Tuple[Path, str]]:
+    """Yield a problem for each bust 0.14 key and value, and take it out of
+    `data`, so that the schema check does not report it again."""
+    if not isinstance(data, dict):
+        return
+    yield from _take_old_keys(data, "top", ())
+    if isinstance(data.get("bus"), dict):
+        yield from _take_old_keys(data["bus"], "bus", ("bus",))
+    module = data.get("module")
+    if not isinstance(module, dict):
+        return
+    yield from _take_old_keys(module, "module", ("module",))
+    value = module.get("byte_addressable")
+    if value in ("True", "False"):
+        del module["byte_addressable"]
+        yield ("module", "byte_addressable"), (
+            f'"{value}" is the bust 0.14 form of {value.lower()}. {_MIGRATE}'
+        )
+    registers = module.get("register")
+    for index, register in enumerate(registers if isinstance(registers, list) else []):
+        if not isinstance(register, dict):
+            continue
+        path: Path = ("module", "register", index)
+        yield from _take_old_keys(register, "register", path)
+        yield from _take_old_type(register, path)
+        fields = register.get("fields")
+        for number, field in enumerate(fields if isinstance(fields, list) else []):
+            if isinstance(field, dict):
+                yield from _take_old_type(field, path + ("fields", number))
+
+
+def _take_old_keys(
+    config: Dict[str, Any], kind: str, path: Path
+) -> Iterator[Tuple[Path, str]]:
+    for key in _OLD_KEYS[kind]:
+        if key in config:
+            del config[key]
+            yield path + (
+                key,
+            ), f"a bust 0.14 key, which bust no longer reads. {_MIGRATE}"
+
+
+def _take_old_type(config: Dict[str, Any], path: Path) -> Iterator[Tuple[Path, str]]:
+    value = config.get("type")
+    if isinstance(value, str) and value.lower() in _OLD_TYPE_NAMES:
+        new = _OLD_TYPE_NAMES[value.lower()]
+        config["type"] = new
+        yield path + ("type",), (
+            f'"{value}" is the bust 0.14 name of "{new}". {_MIGRATE}'
+        )
+
+
+def _order(data: Any, path: Path) -> Tuple[Any, ...]:
+    """A key that sorts problems in the order of their place in the file."""
+    order: List[Any] = []
+    current = data
+    for token in path:
+        if isinstance(current, list) and isinstance(token, int):
+            order.append(token)
+            current = current[token] if token < len(current) else None
+        elif isinstance(current, dict):
+            keys = list(current)
+            order.append(keys.index(token) if token in keys else len(keys))
+            current = current.get(token)
+        else:
+            order.append(0)
+            current = None
+    return tuple(order)
+
+
 def _as_bust_reads(data: Any) -> Any:
     """A copy of the data with the forms bust reads but the schema does not
-    describe turned into their bust 1.0 form.
-
-    Module warns about the bust 0.14 forms, so the check does not.
-    """
+    describe, such as upper-case values, turned into the form it describes."""
     data = copy.deepcopy(data)
     module = data.get("module") if isinstance(data, dict) else None
     if not isinstance(module, dict):
         return data
-    if module.get("byte_addressable") in ("True", "False"):
-        module["byte_addressable"] = module["byte_addressable"] == "True"
     registers = module.get("register")
     for register in registers if isinstance(registers, list) else []:
         if not isinstance(register, dict):
@@ -156,7 +234,7 @@ def _as_bust_reads(data: Any) -> Any:
 def _lower_case_keys(config: Dict[str, Any]) -> None:
     for key in _CASE_FREE_KEYS:
         if isinstance(config.get(key), str):
-            config[key] = current_type_name(config[key].lower())
+            config[key] = config[key].lower()
 
 
 def _check(

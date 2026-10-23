@@ -6,15 +6,13 @@ for loading it.
 """
 
 import os
-from typing import List, Optional, Tuple
+from typing import Optional
 
-from bust.editing.document import Operation, RegisterMapDocument
+from bust.editing.document import RegisterMapDocument
 from bust.editor.session import EditSession
 
 
-def open_session(
-    path: str, create: bool
-) -> Tuple[Optional[EditSession], List[str], List[Operation]]:
+def open_session(path: str, create: bool) -> Optional[EditSession]:
     """Read the register map the editor starts from.
 
     Args:
@@ -22,8 +20,7 @@ def open_session(
         create: True to start a new register map, which `path` must not hold.
 
     Returns:
-        The register map, None to create one, and the changes and operations
-        that convert a bust 0.14 file.
+        The register map, or None to create one.
 
     Raises:
         FileExistsError: If `create` and `path` exists.
@@ -32,12 +29,10 @@ def open_session(
     if create:
         if os.path.exists(path):
             raise FileExistsError(f"{path} exists. Edit it with bust {path} -e.")
-        return None, [], []
+        return None
     document = RegisterMapDocument.open(path)
-    changes, operations = document.legacy_conversion()
-    if not operations:
-        document.check()
-    return EditSession(document, path), changes, operations
+    document.check()
+    return EditSession(document, path)
 
 
 def run_editor(path: str, create: bool) -> None:
@@ -52,10 +47,10 @@ def run_editor(path: str, create: bool) -> None:
         EditRejected: If bust rejects the register map in `path`.
         RuntimeError: If the editor stopped with a message.
     """
-    session, changes, operations = open_session(path, create)
+    session = open_session(path, create)
     from bust.editor.app import EditorApp
 
-    app = EditorApp(path, session, changes, operations)
+    app = EditorApp(path, session)
     app.run()
     if app.return_value is not None:
         raise RuntimeError(app.return_value)

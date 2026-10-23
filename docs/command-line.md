@@ -10,7 +10,7 @@ files go, and what bust does when they already exist.
 
 ```text
 Usage:
-  bust FILE [-o DIR] [[[-F | -f] [-d | -p] [-i] [--replace-top] [-u] [-b] [-t] [-m]] | [-a [-F | -f]] | [--migrate [-F | -f]] | [-c | -e]]
+  bust FILE [-o DIR] [[[-f] [-d | -p] [-i] [--replace-top]] | [-a [-f]] | [--migrate [-f]] | [-c | -e]]
   bust --version
   bust -h | --help
 ```
@@ -21,11 +21,12 @@ options go together:
 
 - `-o` combines with everything else, but only a run that generates files
   uses it.
-- `-f` (or `-F`), one of `-d` and `-p`, and `-i` combine with each other. They
-  control a normal run that generates files. So do `-u`, `-b`, `-t` and `-m`,
-  which bust ignores.
-- `-a` saves the JSON file instead of generating files. It takes `-f` (or `-F`)
+- `-f`, one of `-d` and `-p`, and `-i` combine with each other. They
+  control a normal run that generates files.
+- `-a` saves the JSON file instead of generating files. It takes `-f`
   to save without asking.
+- `--migrate` converts the files instead of generating them. It takes `-f`
+  to convert without asking.
 - `-c` and `-e` open the editor, so they stand alone.
 
 Any other combination, such as `-d -p` or `-c -f`, makes bust print the usage
@@ -37,14 +38,12 @@ and exit with status 1.
 |----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `-o DIR`       | Write the output under `DIR` instead of next to the JSON file. See [Output directory](#output-directory).                                                                 |
 | `-f`           | Overwrite existing files without asking, except `<module>.vhd`, which is yours. See [Existing files](#existing-files).                                               |
-| `-F`           | The same as `-f`.                                                                                                                                                       |
 | `-d`           | Do not write the documentation, neither the `.tex` file nor the PDF.                                                                                                    |
 | `-p`           | Write the `.tex` file, but do not run `pdflatex` to make the PDF.                                                                                                       |
 | `-i`           | Do not write the headers: the `.h`, `.hpp` and `.py` files, and for IPBus the `.xml` address table.                                                                     |
 | `--replace-top` | Replace `<module>.vhd` with a fresh starter and keep the old file as `<module>.vhd.bak`. Asks first unless you add `-f`. See [Your top level](#your-top-level). |
-| `-u`, `-b`, `-t`, `-m` | Ignored, with a warning. These bust 0.14 options are accepted so that old command lines and Makefiles keep working. Remove them when you can.                    |
 | `-a`           | Give every register a new address and save the JSON file. Generates nothing. With `-f`, saves without asking. See [Renumber addresses](#renumber-addresses).          |
-| `--migrate`    | Migrate a bust 0.14 JSON file and its `<module>.vhd`. Generates nothing. With `-f`, without asking. See [Upgrading](upgrading.md#migrate-with---migrate). |
+| `--migrate`    | Convert a bust 0.14 JSON file and its `<module>.vhd`. Generates nothing. With `-f`, without asking. See [Migrate a bust 0.14 file](#migrate-a-bust-014-file). |
 | `-c`           | Create `FILE` with the interactive editor. See [Interactive editor](#interactive-editor).                                                                               |
 | `-e`           | Open `FILE` in the interactive editor.                                                                                                                                  |
 | `--version`    | Print `bust` and the version, such as `bust v1.0.0`, then exit.                                                                                                         |
@@ -211,6 +210,33 @@ become:
 
 When every address is right already, bust says
 `The addresses in FILE are in order already.` and does not write `FILE`.
+
+## Migrate a bust 0.14 file
+
+bust reads only the bust 1.0 register map format. A file written for bust
+0.14 stops bust with an error for each 0.14 key or value, such as:
+
+```text
+timer.json:14: module.register[0].mode: a bust 0.14 key, which bust no longer reads. Run bust with --migrate to convert the file.
+```
+
+`bust FILE --migrate` converts such a file to the bust 1.0 format. It replaces
+each `mode` with the access keys it stands for, removes the `settings` section
+and the keys bust 1.0 has no use for, and changes the old type names and
+values. It changes only those values in the file, so comments and the layout
+stay. It also connects a bust 0.14 `<module>.vhd` to the bust 1.0 endpoint.
+It lists the changes and asks first, unless you add `-f`, and keeps each old
+file with the suffix `.0_14`. Give it the same `-o` as your other runs, then
+generate the files:
+
+```bash
+bust timer.json -o out --migrate
+bust timer.json -o out
+```
+
+bust lists any line of `<module>.vhd` it could not change. Change those by
+hand. A register with a `pulse_cycles` other than 1 or a `stall_cycles` other
+than 0 stops the migration, because bust 1.0 cannot generate that timing.
 
 ## Interactive editor
 
