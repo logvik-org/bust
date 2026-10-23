@@ -169,17 +169,13 @@ package example_ipbus_regfile_pkg is
     )
   );
 
-  -- True when check is false or the bits of addr from module_addr_width up equal base.
-  function base_match (
+  -- True when addr falls within the module's registers: the bits from
+  -- module_addr_width up equal base (unless check is false), and the bits
+  -- between the registers and module_addr_width are all 0.
+  function is_in_range (
     addr              : std_logic_vector(15 downto 0);
     base              : unsigned(15 downto 0);
     check             : boolean;
-    module_addr_width : natural
-  ) return boolean;
-
-  -- True when addr is in the module's address range but above the registers.
-  function above_registers (
-    addr              : std_logic_vector(15 downto 0);
     module_addr_width : natural
   ) return boolean;
 
@@ -208,7 +204,7 @@ end package example_ipbus_regfile_pkg;
 
 package body example_ipbus_regfile_pkg is
 
-  function base_match (
+  function is_in_range (
     addr              : std_logic_vector(15 downto 0);
     base              : unsigned(15 downto 0);
     check             : boolean;
@@ -219,6 +215,14 @@ package body example_ipbus_regfile_pkg is
 
   begin
 
+    for i in C_EXAMPLE_IPBUS_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
+
+      if addr(i) /= '0' then
+        return false;
+      end if;
+
+    end loop;
+
     if not check then
       return true;
     end if;
@@ -226,25 +230,7 @@ package body example_ipbus_regfile_pkg is
     return addr(15 downto module_addr_width)
            = BASE_SLV(15 downto module_addr_width);
 
-  end function base_match;
-
-  function above_registers (
-    addr              : std_logic_vector(15 downto 0);
-    module_addr_width : natural
-  ) return boolean is
-  begin
-
-    for i in C_EXAMPLE_IPBUS_MODULE_ADDR_WIDTH to module_addr_width - 1 loop
-
-      if addr(i) /= '0' then
-        return true;
-      end if;
-
-    end loop;
-
-    return false;
-
-  end function above_registers;
+  end function is_in_range;
 
   function reg_addr_match (
     reg_offset : std_logic_vector(C_EXAMPLE_IPBUS_MODULE_ADDR_WIDTH - 1 downto 0);

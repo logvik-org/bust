@@ -9,6 +9,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Changed
+- `<module>_regfile_pkg` merges `base_match` and `above_registers` into one function, `is_in_range`.
+
 ### Removed
 - Support for bust 0.14 register maps. `mode`, `pulse_cycles`, `stall_cycles`, `settings`, `bus.comp_library`, `bus.reset`, `module.git_hash`, `sl`/`slv` and `"True"`/`"False"` for `byte_addressable` are now errors that point to `bust FILE --migrate`.
 - The ignored options `-u`, `-b`, `-t` and `-m`, and `-F`, an alias for `-f`.

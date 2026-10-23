@@ -87,14 +87,12 @@ begin
       wr_ack <= '0';
       wr_err <= '0';
 
-      -- A software access only takes effect on the cycle it is first seen
-      -- (wr_ack/rd_err/... still low). The master holds the request until it
-      -- observes the response, so these guards keep the effect single-shot.
       reg_offset := lb_m2s.address(C_PROTOTYPE_MODULE_ADDR_WIDTH - 1 downto 0);
-      mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
-                               G_MODULE_ADDR_WIDTH)
-                    and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
+      mapped     := is_in_range(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
+                                G_MODULE_ADDR_WIDTH)
                     and is_mapped(reg_offset);
+
+      -- wen and ren stay high until ack or err, so act only while neither is set.
       sw_write   := lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' and mapped;
       rd_service := lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' and mapped;
 
@@ -246,9 +244,8 @@ begin
       if lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' then
         rdata      <= (others => '0');
         reg_offset := lb_m2s.address(C_PROTOTYPE_MODULE_ADDR_WIDTH - 1 downto 0);
-        mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
-                                 G_MODULE_ADDR_WIDTH)
-                      and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
+        mapped     := is_in_range(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
+                                  G_MODULE_ADDR_WIDTH)
                       and is_mapped(reg_offset);
         if not mapped then
           rd_err <= '1';

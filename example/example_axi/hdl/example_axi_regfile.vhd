@@ -87,13 +87,13 @@ begin
         wr_ack <= '0';
         wr_err <= '0';
 
-        -- A held request takes effect once, while its response is still low.
         reg_offset := lb_m2s.address(C_EXAMPLE_AXI_MODULE_ADDR_WIDTH - 1 downto 0);
-        mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
-                                 G_MODULE_ADDR_WIDTH)
-                      and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
+        mapped     := is_in_range(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
+                                  G_MODULE_ADDR_WIDTH)
                       and is_mapped(reg_offset);
-        sw_write   := lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' and mapped;
+
+        -- wen and ren stay high until ack or err, so act only while neither is set.
+        sw_write := lb_m2s.wen = '1' and wr_ack = '0' and wr_err = '0' and mapped;
 
         if sw_write and reg_addr_match(reg_offset, C_EXAMPLE_AXI_REG0_OFFSET) then
           regs.reg0.reg0 <= lb_m2s.wdata(0);
@@ -168,9 +168,8 @@ begin
         if lb_m2s.ren = '1' and rd_ack = '0' and rd_err = '0' then
           rdata      <= (others => '0');
           reg_offset := lb_m2s.address(C_EXAMPLE_AXI_MODULE_ADDR_WIDTH - 1 downto 0);
-          mapped     := base_match(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
-                                   G_MODULE_ADDR_WIDTH)
-                        and not above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)
+          mapped     := is_in_range(lb_m2s.address, G_BASE_ADDRESS, G_CHECK_BASE_ADDRESS,
+                                    G_MODULE_ADDR_WIDTH)
                         and is_mapped(reg_offset);
           if not mapped or (G_ERR_ON_BAD_ACCESS and not is_sw_readable(reg_offset)) then
             rd_err <= '1';

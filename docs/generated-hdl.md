@@ -244,7 +244,7 @@ use work.timer_regfile_pkg.all;
 | `C_<MODULE>_FROM_HW_RESET` | A `t_<module>_from_hw` with every value at its `reset` and every strobe inactive. Use it to tie off `from_hw` or as its initial value. |
 | `t_<module>_<reg>_from_hw` | The fields of one register that the hardware drives. A register without fields has none. |
 | `t_<module>_<reg>_<field>_in` | One field's value together with its `we`, `wel`, `set` or `clr` input. |
-| `t_<module>_regs`, `t_<reg>_regs`, `C_<MODULE>_REGS_RESET`, `base_match`, `above_registers`, `reg_addr_match`, `is_mapped`, `is_sw_writable`, `is_sw_readable` | The register file's internal storage, its reset value and its address decoding. Your design does not need them. |
+| `t_<module>_regs`, `t_<reg>_regs`, `C_<MODULE>_REGS_RESET`, `is_in_range`, `reg_addr_match`, `is_mapped`, `is_sw_writable`, `is_sw_readable` | The register file's internal storage, its reset value and its address decoding. Your design does not need them. |
 
 Module, register and field names keep the case you gave them in the JSON. The
 constants are in upper case.

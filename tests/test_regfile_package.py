@@ -259,7 +259,7 @@ def test_module_addr_width_generic_reaches_the_regfile():
         GeneratorFactory.generate_module_top_vhdl(module)
     )
     regfile = GeneratorFactory.generate_regfile_vhdl(module)
-    assert "above_registers(lb_m2s.address, G_MODULE_ADDR_WIDTH)" in regfile
+    assert "is_in_range(lb_m2s.address, G_BASE_ADDRESS" in regfile
     assert "and is_mapped(reg_offset);" in regfile
     assert (
         "if mapped and (is_sw_writable(reg_offset) or not G_ERR_ON_BAD_ACCESS) then"
