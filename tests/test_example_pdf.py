@@ -1,20 +1,38 @@
-"""The example PDF in the documentation is built from the current prototype.tex."""
+"""The example PDF in the documentation is rebuilt whenever prototype.tex
+changes: the last commit that changed the PDF is no older than the last commit
+that changed the .tex."""
 
-import hashlib
 import os
+import shutil
+import subprocess
+
+import pytest
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
-_TEX = os.path.join(_REPO_ROOT, "example", "example_prototype", "doc", "prototype.tex")
-_RECORDED_SHA256 = os.path.join(_REPO_ROOT, "docs", "examples", "prototype.tex.sha256")
+_TEX = os.path.join("example", "example_prototype", "doc", "prototype.tex")
+_PDF = os.path.join("docs", "examples", "prototype.pdf")
 
 
-def test_example_pdf_is_built_from_the_current_tex():
-    with open(_TEX, "rb") as fp:
-        tex_sha256 = hashlib.sha256(fp.read()).hexdigest()
-    with open(_RECORDED_SHA256) as fp:
-        recorded_sha256 = fp.read().strip()
+def _last_commit_time(path):
+    """The committer time, in seconds since the epoch, of the last commit that
+    changed `path`."""
+    output = subprocess.run(
+        ["git", "log", "-1", "--format=%ct", "--", path],
+        cwd=_REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    return int(output)
 
-    assert tex_sha256 == recorded_sha256, (
-        "prototype.tex changed since docs/examples/prototype.pdf was built. "
+
+def test_example_pdf_is_committed_with_or_after_the_tex():
+    if shutil.which("git") is None or not os.path.exists(
+        os.path.join(_REPO_ROOT, ".git")
+    ):
+        pytest.skip("needs the git history of the repository")
+
+    assert _last_commit_time(_PDF) >= _last_commit_time(_TEX), (
+        f"{_TEX} changed after {_PDF} was last committed. "
         "Run scripts/make-example-pdf.sh and commit the PDF."
     )

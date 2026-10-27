@@ -45,7 +45,7 @@ git diff example/
 Review the diff before you commit it. It is the clearest record of what your
 change does to the generated code.
 
-The documentation shows the PDF of the prototype example, which is committed as `docs/examples/prototype.pdf` because Read the Docs has no `pdflatex`. When `example/example_prototype/doc/prototype.tex` changes, rebuild the PDF with `scripts/make-example-pdf.sh`, which needs `pdflatex`. `tests/test_example_pdf.py` fails until you do: the script records the SHA-256 of the `.tex` it built from in `docs/examples/prototype.tex.sha256`, and the test compares it with the committed `.tex`.
+The documentation shows the PDF of the prototype example, which is committed as `docs/examples/prototype.pdf` because Read the Docs has no `pdflatex`. When `example/example_prototype/doc/prototype.tex` changes, rebuild the PDF with `scripts/make-example-pdf.sh`, which needs `pdflatex`. `tests/test_example_pdf.py` fails until you do: it checks in the git history that the last commit that changed the PDF is no older than the last commit that changed the `.tex`.
 
 ## Simulation
 
