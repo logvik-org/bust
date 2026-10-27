@@ -9,6 +9,8 @@ examples="$(cd "$(dirname "$0")/../example" && pwd)"
 output_dir="$(mktemp -d)"
 # bust writes debug.log to the working directory.
 cd "$output_dir"
+# The HTML documentation shows the time of the run, which the goldens pin to 0.
+export SOURCE_DATE_EPOCH=0
 
 bust --version | grep -Fx "bust v$expected_version"
 for example in example_axi example_ipbus; do

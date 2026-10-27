@@ -69,7 +69,7 @@ def module_outputs(
         localbus: Include the local-bus VHDL stack, the starter top level and
             the testbench.
         headers: Include the language headers.
-        documentation: Include the LaTeX documentation.
+        documentation: Include the LaTeX and HTML documentation.
 
     Returns:
         The content of each file by its path relative to the output directory,
@@ -108,9 +108,10 @@ def module_outputs(
         if module.bus.bus_type == "ipbus":
             outputs[f"{base}.xml"] = header.generate_ipbus_addr_table()
     if documentation:
-        outputs[f"{name}/{settings.doc_dir}/{name}.tex"] = DocumentationGenerator(
-            module
-        ).generate_tex_documentation()
+        doc = DocumentationGenerator(module)
+        base = f"{name}/{settings.doc_dir}/{name}"
+        outputs[f"{base}.tex"] = doc.generate_tex_documentation()
+        outputs[f"{base}.html"] = doc.generate_html_documentation()
     return outputs
 
 
@@ -199,7 +200,7 @@ def generate_output(settings, module, gen_settings):
             - gen_localbus: Generate the local-bus VHDL stack and testbench
             - gen_header: Generate language headers
             - gen_doc: Generate documentation
-            - gen_pdf: Generate PDF from LaTeX
+            - gen_pdf: Generate PDF from LaTeX, if pdflatex is installed
     """
     proj_dir = os.path.expanduser(gen_settings["dir"])
     logger.info(f"Project path: {os.path.abspath(proj_dir)}")
@@ -220,22 +221,34 @@ def generate_output(settings, module, gen_settings):
         else:
             write_string_to_file(content, filename, directory, gen_settings["force_ow"])
 
-    mod_doc = os.path.join(proj_dir, module.name, settings.doc_dir)
     if gen_settings["gen_pdf"]:
-        logger.info("Generating Documentation PDF...")
-        try:
-            status = subprocess.call(
-                [
-                    "pdflatex",
-                    "--interaction=batchmode",
-                    f"--output-directory={mod_doc}",
-                    os.path.join(mod_doc, module.name + ".tex"),
-                ],
-                stdout=subprocess.DEVNULL,
-            )
-        except OSError as e:
-            logger.error(f"Could not run pdflatex ({e}). Use -p to skip the PDF.")
-        else:
-            if status != 0:
-                log = os.path.join(mod_doc, module.name + ".log")
-                logger.warning(f"pdflatex reported errors. See {log}")
+        _build_pdf(module, os.path.join(proj_dir, module.name, settings.doc_dir))
+
+
+def _build_pdf(module, mod_doc):
+    """Run pdflatex on <module>.tex, or say that the PDF was skipped when
+    pdflatex is not installed. Neither stops the run."""
+    pdflatex = shutil.which("pdflatex")
+    if pdflatex is None:
+        logger.info(
+            "pdflatex is not on PATH, so bust skipped the PDF. "
+            f"The documentation is in {os.path.join(mod_doc, module.name + '.html')}."
+        )
+        return
+    logger.info("Generating Documentation PDF...")
+    try:
+        status = subprocess.call(
+            [
+                pdflatex,
+                "--interaction=batchmode",
+                f"--output-directory={mod_doc}",
+                os.path.join(mod_doc, module.name + ".tex"),
+            ],
+            stdout=subprocess.DEVNULL,
+        )
+    except OSError as e:
+        logger.error(f"Could not run pdflatex ({e}). Use -p to skip the PDF.")
+    else:
+        if status != 0:
+            log = os.path.join(mod_doc, module.name + ".log")
+            logger.warning(f"pdflatex reported errors. See {log}")

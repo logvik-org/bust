@@ -173,12 +173,16 @@ class Test_Suite(unittest.TestCase):
         for holder in self.buzz:
             with self.subTest(holder=holder):
                 self.logger.info("Testing Doc generation...")
+                base = "example/example_{0}/doc/example_{0}".format(holder.bus.bus_type)
                 self._assert_matches(
                     holder.doc.generate_tex_documentation("1.0.0-dev"),
-                    "example/example_{0}/doc/example_{0}.tex".format(
-                        holder.bus.bus_type
-                    ),
+                    base + ".tex",
                     "doc must match manual file",
+                )
+                self._assert_matches(
+                    holder.doc.generate_html_documentation("1.0.0-dev"),
+                    base + ".html",
+                    "html doc must match manual file",
                 )
 
     ############## Prototype (full access-mode coverage) ##################
@@ -341,6 +345,11 @@ class Test_Suite(unittest.TestCase):
             doc.generate_tex_documentation("1.0.0-dev"),
             "example/example_prototype/doc/prototype.tex",
             "prototype doc must match manual file",
+        )
+        self._assert_matches(
+            doc.generate_html_documentation("1.0.0-dev"),
+            "example/example_prototype/doc/prototype.html",
+            "prototype html doc must match manual file",
         )
 
     ############## Access-mode combination matrix ##################

@@ -11,8 +11,10 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ### Added
 - `bust.generate_files` returns every output file as `{path: content}`, without writing to disk or running `pdflatex`. The command line writes that result.
+- `doc/<module>.html`, the documentation as one self-contained HTML page with inline SVG bit diagrams, links between the register list and the registers, a sidebar and a print stylesheet.
 
 ### Changed
+- bust builds the PDF only when `pdflatex` is on `PATH`. Without it, bust writes the `.tex` and `.html` files and prints one line saying the PDF was skipped.
 - `<module>_regfile_pkg` merges `base_match` and `above_registers` into one function, `is_in_range`.
 
 ### Removed
