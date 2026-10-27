@@ -13,6 +13,19 @@ pip install bust
 bust --version
 ```
 
+### In the browser
+
+bust runs under [Pyodide](https://pyodide.org), Python in the browser. Install it without its dependencies and add the ones that generating code needs:
+
+```python
+import micropip
+
+await micropip.install(["json5", "Jinja2", "pylatexenc"])
+await micropip.install("bust", deps=False)
+```
+
+That leaves out Textual, which only the editor (`-c`, `-e`) uses, and docopt, which only the command line uses. Generate the files with [`bust.generate_files`](command-line.md#from-python).
+
 ## Describe your registers
 
 A register map is one JSON file with a `bus` section and a `module` section.

@@ -27,8 +27,20 @@ bust runs on Python 3.9 to 3.14. mypy checks against 3.9.
 
 CI runs mypy and the tests on Python 3.9 to 3.14 (plus the next Python while it
 is in pre-release), builds the docs, builds the package and smoke-tests the
-wheel, runs the pre-commit hooks and simulates the generated VHDL. A pull
+wheel, checks that the wheel generates the same files under Pyodide as under
+CPython, runs the pre-commit hooks and simulates the generated VHDL. A pull
 request needs all of it green.
+
+To run the Pyodide check locally, with Node.js 18 or newer:
+
+```bash
+python -m build -w
+cd scripts/pyodide
+npm ci
+node run.mjs ../../dist/bust-*.whl /tmp/bust-pyodide
+```
+
+`tests/test_pure_python.py` fails if a runtime dependency is not pure Python, since Pyodide cannot install it.
 
 ## Golden files
 

@@ -1,0 +1,9 @@
+{
+  "name": "bust-pyodide-check",
+  "private": true,
+  "description": "Runs bust under Pyodide, as the browser does",
+  "type": "module",
+  "dependencies": {
+    "pyodide": "314.0.7"
+  }
+}

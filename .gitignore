@@ -37,3 +37,6 @@ example/*/doc/*.pdf
 
 # bust writes its log to the working directory
 debug.log
+
+# npm install in scripts/pyodide
+node_modules/
