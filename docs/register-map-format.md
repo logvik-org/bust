@@ -201,7 +201,7 @@ Both appear in every output:
 | C header | `<MODULE>_REGMAP_VERSION` | `<MODULE>_REGMAP_HASH` |
 | C++ and Python headers | `REGMAP_VERSION` | `REGMAP_HASH` |
 | IPBus address table | `regmap_version=` in the `parameters` of the top node | `regmap_hash=` in the same `parameters` |
-| Documentation | Title and page footer (HTML: running header) | Title, under the version |
+| Documentation | Title and page footer (HTML: running header, Markdown: line under the title) | Title, under the version |
 
 ### Hash and version registers
 

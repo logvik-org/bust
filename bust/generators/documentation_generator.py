@@ -1,7 +1,7 @@
 """Documentation generation module for bust.
 
 This module provides the DocumentationGenerator class for automatically generating
-LaTeX and HTML documentation from module definitions. The generated documentation
+LaTeX, HTML and Markdown documentation from module definitions. The generated documentation
 includes register maps, bit field descriptions, and access modes.
 """
 
@@ -89,7 +89,7 @@ def _text(x, y, text, anchor, css_class):
 class DocumentationGenerator:
     """Generates documentation for bus slave modules.
 
-    The DocumentationGenerator class creates LaTeX and HTML documentation with complete register
+    The DocumentationGenerator class creates LaTeX, HTML and Markdown documentation with complete register
     specifications including addresses, bit positions, access modes, and
     descriptions.
 
@@ -164,3 +164,14 @@ class DocumentationGenerator:
             field_notes=field_notes,
             bit_diagram_svg=bit_diagram_svg,
         )
+
+    def generate_markdown_documentation(self, test_version=None):
+        """Generate Markdown documentation for the module, readable on GitHub.
+
+        Args:
+            test_version: Version string for testing (default: None, uses bust version).
+
+        Returns:
+            Markdown document as string.
+        """
+        return self._render_template("markdown/documentation.j2", test_version)

@@ -184,6 +184,11 @@ class Test_Suite(unittest.TestCase):
                     base + ".html",
                     "html doc must match manual file",
                 )
+                self._assert_matches(
+                    holder.doc.generate_markdown_documentation("1.0.0-dev"),
+                    base + ".md",
+                    "markdown doc must match manual file",
+                )
 
     ############## Prototype (full access-mode coverage) ##################
 
@@ -350,6 +355,11 @@ class Test_Suite(unittest.TestCase):
             doc.generate_html_documentation("1.0.0-dev"),
             "example/example_prototype/doc/prototype.html",
             "prototype html doc must match manual file",
+        )
+        self._assert_matches(
+            doc.generate_markdown_documentation("1.0.0-dev"),
+            "example/example_prototype/doc/prototype.md",
+            "prototype markdown doc must match manual file",
         )
 
     ############## Access-mode combination matrix ##################

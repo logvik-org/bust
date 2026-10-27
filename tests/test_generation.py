@@ -112,5 +112,9 @@ def test_docs_without_pdflatex_skip_only_the_pdf(tmp_path, monkeypatch, caplog):
         _generate(tmp_path, gen_doc=True)
 
     doc_dir = os.path.join(str(tmp_path), "example_axi", "doc")
-    assert sorted(os.listdir(doc_dir)) == ["example_axi.html", "example_axi.tex"]
+    assert sorted(os.listdir(doc_dir)) == [
+        "example_axi.html",
+        "example_axi.md",
+        "example_axi.tex",
+    ]
     assert "pdflatex is not on PATH, so bust skipped the PDF" in caplog.text

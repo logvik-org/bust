@@ -75,7 +75,7 @@ A minimal register map with one control register with two fields:
 bust blinky.json -o out -p
 ```
 
-This writes `out/blinky/` with the VHDL in `hdl/`, the testbench in `tb/`, the headers in `header/` and the documentation in `doc/`, as HTML and LaTeX, plus a PDF when `pdflatex` is installed. `hdl/blinky.vhd` is a starter top level that is yours to edit: bust writes it once and leaves it alone after that. Your logic reads `to_hw.ctrl.enable` and `to_hw.ctrl.rate` from `blinky_axi_endpoint`, which bust regenerates on every run.
+This writes `out/blinky/` with the VHDL in `hdl/`, the testbench in `tb/`, the headers in `header/` and the documentation in `doc/`, as HTML, Markdown and LaTeX, plus a PDF when `pdflatex` is installed. `hdl/blinky.vhd` is a starter top level that is yours to edit: bust writes it once and leaves it alone after that. Your logic reads `to_hw.ctrl.enable` and `to_hw.ctrl.rate` from `blinky_axi_endpoint`, which bust regenerates on every run.
 
 ## How bust is tested
 
