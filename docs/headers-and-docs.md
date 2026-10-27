@@ -318,6 +318,10 @@ and `listings`. On Debian and Ubuntu, the packages `texlive-latex-base`,
 `pdflatex` writes `<module>.pdf` to `doc/`, together with its `<module>.aux`
 and `<module>.log` files.
 
+This is the PDF of the prototype example. <a href="examples/prototype.pdf">Open it on its own</a> if your browser does not show it here.
+
+<iframe class="doc-example" src="examples/prototype.pdf" title="PDF documentation of the prototype example" loading="lazy"></iframe>
+
 When `pdflatex` is not on your `PATH`, bust writes the `.tex` and `.html` files, prints `pdflatex is not on PATH, so bust skipped the PDF.` followed by the path of the HTML page, and exits with status 0.
 
 bust runs `pdflatex` in batch mode and does not show its output. When

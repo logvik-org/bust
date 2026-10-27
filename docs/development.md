@@ -45,6 +45,8 @@ git diff example/
 Review the diff before you commit it. It is the clearest record of what your
 change does to the generated code.
 
+The documentation shows the PDF of the prototype example, which is committed as `docs/examples/prototype.pdf` because Read the Docs has no `pdflatex`. When `example/example_prototype/doc/prototype.tex` changes, rebuild the PDF with `scripts/make-example-pdf.sh`, which needs `pdflatex`.
+
 ## Simulation
 
 `sim/` simulates the generated example testbenches, and the hand-written

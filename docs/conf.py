@@ -12,7 +12,7 @@ version = release
 
 extensions = ["myst_parser"]
 myst_heading_anchors = 3
-exclude_patterns = ["_build"]
+exclude_patterns = ["_build", "examples"]
 
 html_theme = "furo"
 html_title = "bust"
@@ -61,10 +61,12 @@ html_theme_options = {
 
 
 # The documentation bust generated for the prototype example, copied into the
-# built site so the docs can show it. The copies come from the committed
-# goldens, which the tests keep in step with the generator.
+# built site so the docs can show it. The HTML is the committed golden, which
+# the tests keep in step with the generator. Read the Docs has no pdflatex, so
+# the PDF is committed too: scripts/make-example-pdf.sh rebuilds it.
 _EXAMPLE_DOCS = [
     os.path.join("..", "example", "example_prototype", "doc", "prototype.html"),
+    os.path.join("examples", "prototype.pdf"),
 ]
 
 
