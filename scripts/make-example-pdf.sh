@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Build docs/examples/prototype.pdf, the example PDF the documentation shows,
 # from the committed prototype.tex. Read the Docs has no pdflatex, so the PDF is
-# committed. Run this after the LaTeX golden changes.
+# committed. Run this after the LaTeX golden changes: tests/test_example_pdf.py
+# fails until you do, by comparing prototype.tex with the SHA-256 recorded in
+# docs/examples/prototype.tex.sha256.
 # Usage: scripts/make-example-pdf.sh
 set -euo pipefail
 
@@ -19,3 +21,4 @@ for _ in 1 2; do
 done
 mkdir -p "$repo/docs/examples"
 cp prototype.pdf "$repo/docs/examples/prototype.pdf"
+sha256sum prototype.tex | cut -d " " -f 1 > "$repo/docs/examples/prototype.tex.sha256"
