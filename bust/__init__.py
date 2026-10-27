@@ -26,6 +26,7 @@ from bust.generators import (
     DocumentationGenerator,
     GeneratorFactory,
 )
+from bust.generation import generate_files
 
 __all__ = [
     "Module",
@@ -37,4 +38,5 @@ __all__ = [
     "HeaderGenerator",
     "DocumentationGenerator",
     "GeneratorFactory",
+    "generate_files",
 ]
