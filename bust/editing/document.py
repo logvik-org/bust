@@ -22,6 +22,7 @@ from bust.editing.json_source import (
     join_pointer,
     split_pointer,
 )
+from bust.schema import SCHEMA_URL
 from bust.settings import Settings
 from bust.utils.json_utils import json_parser
 from bust.validation.schema_check import check_register_map
@@ -85,7 +86,11 @@ class RegisterMapDocument:
         Raises:
             EditRejected: If bust rejects the bus or module settings.
         """
-        data = {"bus": bus, "module": {**module, "register": []}}
+        data = {
+            "$schema": SCHEMA_URL,
+            "bus": bus,
+            "module": {**module, "register": []},
+        }
         document = cls(json.dumps(data, indent=4) + "\n", data, saved_text=None)
         document.check()
         return document

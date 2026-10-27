@@ -9,6 +9,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Added
+- The documentation hosts the register map JSON Schema at https://bust.readthedocs.io/en/stable/register-map.schema.json. A register map may point to it with a `"$schema"` key, which gives completion, hover text and errors in editors with JSON Schema support. The editor adds the key to new register maps.
+
 ### Changed
 - `<module>_regfile_pkg` merges `base_match` and `above_registers` into one function, `is_in_range`.
 
