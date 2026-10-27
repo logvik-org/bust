@@ -9,6 +9,12 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+### Added
+- `reserved_fields` in `module`. With `true`, the documentation and the editor overview show the bits that no field covers as reserved fields, and list them among the fields.
+
+### Fixed
+- The LaTeX bit diagram leaves out no bits between two fields. A gap made by `position` is marked unused, as the editor overview already showed it.
+
 ### Changed
 - `<module>_regfile_pkg` merges `base_match` and `above_registers` into one function, `is_in_range`.
 

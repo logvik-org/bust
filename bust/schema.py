@@ -167,6 +167,12 @@ _MODULE: Dict[str, Any] = {
             "data words. Default: from the bus.",
             "type": "boolean",
         },
+        "reserved_fields": {
+            "description": "true to show the bits that no field covers as "
+            "reserved fields in the documentation.",
+            "type": "boolean",
+            "default": False,
+        },
         "register": {
             "description": "The registers.",
             "type": "array",

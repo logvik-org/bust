@@ -46,6 +46,7 @@ MODULE_KEYS = (
     "description",
     "version",
     "byte_addressable",
+    "reserved_fields",
     "register",
 )
 
@@ -63,6 +64,8 @@ class Module:
         description: Optional module description.
         version: Module version string.
         byte_addressable: Whether addresses are byte-based (defaults to the bus).
+        reserved_fields: Whether the documentation shows the bits that no field
+            covers as reserved fields.
         addr_width: Address bus width in bits.
         data_width: Data bus width in bits.
         bus: Bus configuration instance.
@@ -80,12 +83,15 @@ class Module:
                 - description: Module description (default: "")
                 - version: Version string (default: "")
                 - byte_addressable: Use byte addressing (default: from the bus)
+                - reserved_fields: Document unused bits as reserved fields
+                  (default: False)
                 - register: List of register configurations (required)
             bus: Bus interface configuration.
             settings: Project-wide settings.
 
         Raises:
-            FormatError: If byte_addressable is not a boolean.
+            FormatError: If byte_addressable or reserved_fields is not a
+                boolean.
             InvalidAddress: If register addresses conflict.
             InvalidRegister: If register configuration is invalid.
             ValueError: If module name is not a valid VHDL identifier.
@@ -110,6 +116,7 @@ class Module:
                 "description": "",
                 "version": "",
                 "byte_addressable": bus.byte_addressable,
+                "reserved_fields": False,
             },
         )
 
@@ -119,7 +126,8 @@ class Module:
         # Store some config values for easy access
         self.description: str = self._config.get("description")
         self.version = self._read_version()
-        self.byte_addressable = self._read_byte_addressable()
+        self.byte_addressable = self._read_boolean("byte_addressable")
+        self.reserved_fields = self._read_boolean("reserved_fields")
 
         self.addr_width = bus.addr_width
         self.data_width = bus.data_width
@@ -167,12 +175,12 @@ class Module:
             raise InvalidRegister(reg, e) from e
         self.registers.append(register)
 
-    def _read_byte_addressable(self) -> bool:
-        """Read byte_addressable, which must be true or false."""
-        value = self._config.get("byte_addressable")
+    def _read_boolean(self, key: str) -> bool:
+        """Read `key`, which must be true or false."""
+        value = self._config.get(key)
         if isinstance(value, bool):
             return value
-        raise FormatError(f"byte_addressable must be true or false (got {value!r})")
+        raise FormatError(f"{key} must be true or false (got {value!r})")
 
     def _read_version(self) -> str:
         """Read the version, which every generated file carries as a string."""

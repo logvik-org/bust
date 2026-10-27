@@ -275,7 +275,7 @@ module:
   and hardware access, address, type, width and reset value.
 - **Registers**, a section for each register with its description and a
   diagram of its bits, with the field names, bit positions and reset values.
-  The bits above the highest field are marked unused. A register with fields
+  The bits that no field covers are marked unused, or reserved with [`reserved_fields`](register-map-format.md#reserved-fields). A register with fields
   also gets a list of them, with the description, `sw` and `hw` of each field,
   and its `onread`, `onwrite`, `singlepulse` and enumeration values where it
   has them.

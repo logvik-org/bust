@@ -486,7 +486,7 @@ def test_edit_the_module_and_bus(tmp_path):
         await editor.press("m")
         await editor.press("down", "down", "enter")
         await editor.fill(value="2.0")
-        await editor.press("down", "down", "enter")
+        await editor.press("down", "down", "down", "enter")
         await editor.fill(value="apb")
         await editor.press("escape", "s")
 

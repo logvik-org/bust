@@ -176,6 +176,7 @@ the timing of each protocol.
 | `version` | string | `""` | The version of the register map. Every generated file carries it, see [Version and hash](#version-and-hash). Printable ASCII characters other than `"`, `\`, `;` and `=`. A module with a `version` register needs the form `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`. |
 | `description` | string | `""` | Shown in the LaTeX documentation. |
 | `byte_addressable` | boolean | from the bus | `true` if an address counts bytes, `false` if it counts data words. See [Byte and word addresses](#byte-and-word-addresses). |
+| `reserved_fields` | boolean | `false` | `true` to show the bits that no field covers as reserved fields in the documentation. See [Reserved fields](#reserved-fields). |
 
 ### Version and hash
 
@@ -473,6 +474,30 @@ Register width: 33
 ```
 
 Bits that no field covers read as 0, and writes to them have no effect.
+
+### Reserved fields
+
+The bit diagrams in the documentation mark the bits that no field covers as `unused`. With `"reserved_fields": true` in `module`, they show as `reserved` fields instead, and the field list of a `fields` register gets an entry for each run of them, in bit order. For `ctrl` in the example:
+
+```latex
+  \regfield{reserved}{23}{9}{-}
+  \regfield{flush}{1}{8}{0}
+  \regfield{reserved}{4}{4}{-}
+  \regfield{parity}{2}{2}{{0x0}}
+  \regfield{rx{\_}en}{1}{1}{0}
+  \regfield{tx{\_}en}{1}{0}{0}
+\reglabel{Reset}\regnewline
+  \begin{regdesc}\begin{reglist}[flush]
+    \item [tx{\_}en] Enable the transmitter. (sw: rw, hw: r)
+    \item [rx{\_}en] Enable the receiver. (sw: rw, hw: r)
+    \item [parity] Parity bit. (sw: rw, hw: r; values: PAR_NONE=0, PAR_EVEN=1, PAR_ODD=2)
+    \item [reserved] Bits 7:4. Read as 0, writes have no effect.
+    \item [flush] Write 1 to empty both FIFOs. (sw: rw, hw: r, singlepulse)
+    \item [reserved] Bits 31:9. Read as 0, writes have no effect.
+  \end{reglist}\end{regdesc}
+```
+
+Reserved fields exist only in the documentation and the editor overview. The VHDL, the headers and the IPBus address table do not change, and neither does the [hash](#version-and-hash).
 
 ## Enumerations
 
