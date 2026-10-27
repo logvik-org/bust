@@ -1,4 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
+import os
+import shutil
+
 from bust._version import __VERSION__
 
 project = "bust"
@@ -55,3 +58,24 @@ html_theme_options = {
         "color-highlighted-background": "#2f2c2a",
     },
 }
+
+
+# The documentation bust generated for the prototype example, copied into the
+# built site so the docs can show it. The copies come from the committed
+# goldens, which the tests keep in step with the generator.
+_EXAMPLE_DOCS = [
+    os.path.join("..", "example", "example_prototype", "doc", "prototype.html"),
+]
+
+
+def _copy_example_docs(app, exception):
+    if exception is not None or app.builder.format != "html":
+        return
+    examples_dir = os.path.join(app.outdir, "examples")
+    os.makedirs(examples_dir, exist_ok=True)
+    for path in _EXAMPLE_DOCS:
+        shutil.copy(os.path.join(app.confdir, path), examples_dir)
+
+
+def setup(app):
+    app.connect("build-finished", _copy_example_docs)

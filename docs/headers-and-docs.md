@@ -299,6 +299,10 @@ This is the section for `reg11` from `prototype.tex`:
 
 `doc/<module>.html` is one self-contained file: the styles are in the page and the bit diagrams are inline SVG, so it opens in any browser and can be copied or served on its own. On top of the layout of the LaTeX document it adds links: each row of the register list links to the section of its register, a sidebar lists every register, and each section links back to the register list. The page has a print stylesheet that hides the sidebar and the links back, so printing it to PDF from a browser gives a clean document without `pdflatex`.
 
+This is the page bust writes for the prototype example, `example/example_prototype.json` in the repository. <a href="examples/prototype.html">Open it on its own</a> to try the links and the print layout.
+
+<iframe class="doc-example" src="examples/prototype.html" title="HTML documentation of the prototype example" loading="lazy"></iframe>
+
 ### The PDF
 
 When `pdflatex` is on your `PATH`, bust runs it once on the `.tex` file to make the PDF:

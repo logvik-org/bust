@@ -16,7 +16,7 @@ nav { position: fixed; top: 0; bottom: 0; left: 0; width: 13rem; overflow-y: aut
 nav h2 { font-size: 0.95rem; margin: 0 0 0.5rem; }
 nav ol { list-style: none; margin: 0; padding: 0; }
 nav li { margin: 0.15rem 0; }
-main { margin-left: 13rem; padding: 1.5rem 2.5rem 4rem; max-width: 62rem; }
+main { margin-left: 13rem; padding: 1.5rem 2rem 4rem; max-width: 62rem; }
 .running { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.85rem; border-bottom: 1px solid var(--rule); padding-bottom: 0.3rem; }
 header.title { text-align: center; margin: 2.5rem 0 2rem; }
 header.title h1 { font-size: 2rem; font-weight: normal; margin: 0 0 0.8rem; }
@@ -27,6 +27,7 @@ table.list th, table.list td { border: 1px solid var(--ink); padding: 0.15rem 0.
 table.list td.num { text-align: center; }
 section.register { margin: 0 0 2.5rem; break-inside: avoid; }
 section.register h3 { display: flex; justify-content: space-between; font-size: 1.05rem; margin: 0 0 0.4rem; }
+.scroll { overflow-x: auto; }
 .diagram { overflow-x: auto; margin: 0.6rem 0; }
 svg.bits { width: 100%; height: auto; }
 svg.bits rect.field { fill: #fff; stroke: var(--ink); }
@@ -39,8 +40,9 @@ dl.fields { margin: 0.5rem 0 0 1.5rem; }
 dl.fields dt { font-weight: bold; float: left; clear: left; margin-right: 0.6rem; }
 dl.fields dd { margin: 0 0 0.3rem; }
 .back { font-size: 0.85rem; }
-@media (max-width: 50rem) {
+@media (max-width: 40rem) {
   nav { position: static; width: auto; border-right: none; border-bottom: 1px solid var(--rule); }
+  nav ol { display: flex; flex-wrap: wrap; gap: 0 0.9rem; }
   main { margin-left: 0; padding: 1rem; }
 }
 @media print {
@@ -82,6 +84,7 @@ dl.fields dd { margin: 0 0 0.3rem; }
 <p>Comprehensive example exercising every v1 access mode, mirroring the prototype demo module (reg0..reg11).</p>
 
 <h2 id="register-list">1 Register List</h2>
+<div class="scroll">
 <table class="list">
 <thead>
 <tr><th>#</th><th>Name</th><th>SW/HW</th><th>Address</th><th>Type</th><th>Width</th><th>Reset</th></tr>
@@ -101,6 +104,7 @@ dl.fields dd { margin: 0 0 0.3rem; }
 <tr><td>11</td><td><a href="#reg11">reg11</a></td><td>RW/R</td><td class="mono">0x0000002C</td><td>FIELDS</td><td class="num">2</td><td class="mono">0x0</td></tr>
 </tbody>
 </table>
+</div>
 
 <h2>2 Registers</h2>
 <section class="register" id="reg0">
