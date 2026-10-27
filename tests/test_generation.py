@@ -1,6 +1,6 @@
 """<module>.vhd belongs to the user. bust writes a starter only when the file is
 missing, does not replace it with -f, and replaces it with --replace-top, keeping
-the old file."""
+the old file. The documentation needs no pdflatex."""
 
 import logging
 import os
@@ -30,7 +30,7 @@ def _write_top(out_dir, text):
     return top
 
 
-def _generate(out_dir, force_ow=True, replace_top=False):
+def _generate(out_dir, force_ow=True, replace_top=False, gen_doc=False):
     cfg = json_parser(_EXAMPLE_JSON)
     settings = Settings(_EXAMPLE_JSON)
     bus = Bus(cfg["bus"])
@@ -38,13 +38,13 @@ def _generate(out_dir, force_ow=True, replace_top=False):
         "dir": str(out_dir),
         "force_ow": force_ow,
         "replace_top": replace_top,
-        "gen_doc": False,
-        "gen_pdf": False,
+        "gen_doc": gen_doc,
+        "gen_pdf": gen_doc,
         "gen_header": False,
         "gen_localbus": True,
     }
     module = Module(cfg["module"], bus, settings)
-    generate_output(settings, bus, module, None, None, gen_settings)
+    generate_output(settings, module, gen_settings)
 
 
 def _read(path):
@@ -102,3 +102,19 @@ def test_replace_top_without_a_terminal_asks_for_force(tmp_path, monkeypatch):
 
     assert _read(top) == "-- my own top level\n"
     assert not os.path.exists(top + ".bak")
+
+
+def test_docs_without_pdflatex_skip_only_the_pdf(tmp_path, monkeypatch, caplog):
+    pytest.importorskip("pylatexenc")
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+
+    with caplog.at_level(logging.INFO):
+        _generate(tmp_path, gen_doc=True)
+
+    doc_dir = os.path.join(str(tmp_path), "example_axi", "doc")
+    assert sorted(os.listdir(doc_dir)) == [
+        "example_axi.html",
+        "example_axi.md",
+        "example_axi.tex",
+    ]
+    assert "pdflatex is not on PATH, so bust skipped the PDF" in caplog.text

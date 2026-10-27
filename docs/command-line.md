@@ -38,8 +38,8 @@ and exit with status 1.
 |----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `-o DIR`       | Write the output under `DIR` instead of next to the JSON file. See [Output directory](#output-directory).                                                                 |
 | `-f`           | Overwrite existing files without asking, except `<module>.vhd`, which is yours. See [Existing files](#existing-files).                                               |
-| `-d`           | Do not write the documentation, neither the `.tex` file nor the PDF.                                                                                                    |
-| `-p`           | Write the `.tex` file, but do not run `pdflatex` to make the PDF.                                                                                                       |
+| `-d`           | Do not write the documentation: no `.tex`, `.html` or `.md` file and no PDF.                                                                                             |
+| `-p`           | Write the `.tex`, `.html` and `.md` files, but do not run `pdflatex` to make the PDF, even when it is installed.                                                         |
 | `-i`           | Do not write the headers: the `.h`, `.hpp` and `.py` files, and for IPBus the `.xml` address table.                                                                     |
 | `--replace-top` | Replace `<module>.vhd` with a fresh starter and keep the old file as `<module>.vhd.bak`. Asks first unless you add `-f`. See [Your top level](#your-top-level). |
 | `-a`           | Give every register a new address and save the JSON file. Generates nothing. With `-f`, saves without asking. See [Renumber addresses](#renumber-addresses).          |
@@ -50,8 +50,7 @@ and exit with status 1.
 | `-h`, `--help` | Print the usage and a short description of each option, then exit.                                                                                                      |
 
 Every run that generates files writes the VHDL files and the testbench. No
-option turns them off. [Headers and documentation](headers-and-docs.md)
-describes the headers, the address table and the documentation.
+option turns them off. [Software headers](headers.md) describes the headers and the address table, and [Documentation](documentation.md) the documentation.
 
 ## Output directory
 
@@ -68,7 +67,9 @@ out/
 └── example_ipbus/
     ├── doc/
     │   ├── example_ipbus.aux
+    │   ├── example_ipbus.html
     │   ├── example_ipbus.log
+    │   ├── example_ipbus.md
     │   ├── example_ipbus.pdf
     │   └── example_ipbus.tex
     ├── hdl/
@@ -90,8 +91,8 @@ out/
 |-----------|-----------------------------------------------------------------------------------------------------------|----------------------------------------------------|
 | `hdl/`    | `<module>_localbus_pkg.vhd`, `<module>_regfile_pkg.vhd`, `<module>_regfile.vhd`, the endpoint, `<module>.vhd` | [Generated HDL](generated-hdl.md)                  |
 | `tb/`     | `<module>_tb.vhd`                                                                                         | [Testbenches](testbenches.md)                      |
-| `header/` | `<module>.h`, `<module>.hpp`, `<module>.py`, and `<module>.xml` for IPBus                                 | [Headers and documentation](headers-and-docs.md)   |
-| `doc/`    | `<module>.tex`, `<module>.pdf`, and the `.aux` and `.log` files from `pdflatex`                           | [Headers and documentation](headers-and-docs.md)   |
+| `header/` | `<module>.h`, `<module>.hpp`, `<module>.py`, and `<module>.xml` for IPBus                                 | [Software headers](headers.md)                     |
+| `doc/`    | `<module>.tex`, `<module>.html`, `<module>.md`, and with `pdflatex` installed `<module>.pdf` and its `.aux` and `.log` files | [Documentation](documentation.md)                  |
 
 The endpoint file is named after the bus:
 
@@ -290,7 +291,7 @@ Delete removes one.
 ### The overview
 
 `o` shows the whole register map the way the
-[documentation](headers-and-docs.md) does. It has the module's name, version,
+[documentation](documentation.md) does. It has the module's name, version,
 register map hash and bus, then the register list with the number, name,
 software and hardware access, address, type, width and reset of each register.
 Then each register follows with its address, its description and a bit
@@ -380,16 +381,16 @@ Generating Module Documentation...
 Generating Documentation PDF...
 ```
 
-When `pdflatex` is not on your `PATH`, the last line is followed by:
+When `pdflatex` is not on your `PATH`, the last line is instead:
 
 ```text
-Could not run pdflatex ([Errno 2] No such file or directory: 'pdflatex'). Use -p to skip the PDF.
+pdflatex is not on PATH, so bust skipped the PDF. The documentation is in /path/to/out/example_axi/doc/example_axi.html.
 ```
 
 When `pdflatex` runs but reports errors, bust prints
 `pdflatex reported errors. See <doc dir>/<module>.log`. In both cases bust
 still exits with status 0, since every other file was written.
-[Headers and documentation](headers-and-docs.md) describes the PDF step.
+[Documentation](documentation.md#pdf) describes the PDF step.
 
 An error in the register map is printed as a message that names the problem,
 and bust exits with status 1. A value of the wrong form gives the file, the
@@ -426,3 +427,18 @@ the file when you no longer need it.
 |------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 0    | Success. Also when you answered no to an overwrite question, when the PDF could not be made, and for `--version` and `--help`.                                                                                               |
 | 1    | Any error: invalid command-line arguments, a JSON file that is missing or not valid JSON, a register map that fails validation, a file that could not be written (including an existing file with no terminal to ask), or the editor without a terminal. |
+
+## From Python
+
+`bust.generate_files` returns every file the command line writes, without writing anything or running `pdflatex`. It takes the text of a register map or the parsed JSON, and gives the content of each file by its path under the output directory:
+
+```python
+import bust
+
+with open("timer.json", encoding="utf-8") as fp:
+    files = bust.generate_files(fp.read())
+
+print(files["timer/hdl/timer_regfile.vhd"])
+```
+
+The paths are the ones `bust timer.json -o DIR -p` writes under `DIR`, with `/` on every platform. The result always holds a starter `timer/hdl/timer.vhd`. The command line writes that file only when it is missing, since it is yours to edit, so a program that keeps files should do the same. A register map with problems raises `bust.exceptions.FormatError`, with every problem in the message.

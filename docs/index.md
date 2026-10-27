@@ -8,7 +8,7 @@
 **bust** generates the register file of an FPGA or ASIC module from a JSON
 register map. From one file it writes the VHDL register file with its bus
 endpoint, a self-checking UVVM testbench, C, C++ and Python headers, an IPBus
-address table and LaTeX documentation.
+address table and documentation as HTML, Markdown, LaTeX and PDF.
 
 bust supports six buses: AXI4-Lite, IPBus, SBI, Avalon-MM, Wishbone and APB.
 
@@ -52,8 +52,8 @@ testbench of every bus in CI.
   and the generics that set its base address and address range.
 - [Generated HDL](generated-hdl.md): the generated files, the records and how
   to instantiate the module.
-- [Headers and documentation](headers-and-docs.md): the C, C++ and Python
-  headers, the IPBus address table and the LaTeX documentation.
+- [Documentation](documentation.md): the HTML, Markdown, LaTeX and PDF documentation, with examples.
+- [Software headers](headers.md): the C, C++ and Python headers and the IPBus address table.
 - [Testbenches](testbenches.md): what the testbench checks and how to run it.
 - [Command line](command-line.md): every option of the `bust` command.
 
@@ -73,7 +73,8 @@ access-modes
 buses
 addressing
 generated-hdl
-headers-and-docs
+documentation
+headers
 testbenches
 command-line
 ```

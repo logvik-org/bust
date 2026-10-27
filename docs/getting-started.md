@@ -86,6 +86,8 @@ bust writes one directory per module:
 ```text
 out/timer/
 ├── doc/
+│   ├── timer.html
+│   ├── timer.md
 │   ├── timer.pdf
 │   └── timer.tex
 ├── hdl/
@@ -102,7 +104,7 @@ out/timer/
     └── timer_tb.vhd
 ```
 
-The PDF needs `pdflatex` on your `PATH`. Add `-p` to skip it.
+`timer.html` is the documentation of the register map. Open it in a browser. bust writes `timer.pdf` only when `pdflatex` is on your `PATH`, and `-p` skips it.
 [Command line](command-line.md) describes every option.
 
 ## Use the VHDL
@@ -193,7 +195,7 @@ write32(TIMER_BASE + TIMER_CTRL_OFFSET, ctrl);
 ```
 
 `read32`, `write32` and `TIMER_BASE` stand for whatever your platform uses.
-[Headers and documentation](headers-and-docs.md) covers the C++, Python and
+[Software headers](headers.md) covers the C++, Python and
 IPBus outputs.
 
 ## Run the testbench

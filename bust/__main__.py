@@ -9,8 +9,8 @@ Usage:
 Options:
   -o DIR         Specify output directory (default: the directory of FILE)
   -f             Force overwrite of existing files, except <module>.vhd, which is yours
-  -d             Do not generate documentation (neither LaTeX nor PDF)
-  -p             Do not generate PDF from LaTeX
+  -d             Do not generate documentation (LaTeX, HTML, Markdown or PDF)
+  -p             Do not generate PDF from LaTeX, even if pdflatex is installed
   -i             Do not generate the include header files (.h, .hpp & .py)
   --replace-top  Replace <module>.vhd with a fresh starter, keeping the old file as <module>.vhd.bak
   -a             Update register addresses and save JSON file (with -f, without asking)
@@ -42,8 +42,6 @@ from bust.editing.json_source import join_pointer
 from bust.validation.config_validator import parse_number
 from bust.core.module import Module
 from bust.core.bus import Bus
-from bust.generators.header_generator import HeaderGenerator
-from bust.generators.documentation_generator import DocumentationGenerator
 from bust.settings import Settings
 from bust.generation import generate_output
 from bust.exceptions import (
@@ -206,8 +204,6 @@ def _run(args):
                 settings = Settings(json_file)
                 bus = Bus(json_dict["bus"])
                 module = Module(json_dict["module"], bus, settings)
-                header = HeaderGenerator(module)
-                documentation = DocumentationGenerator(module)
 
             except (
                 FormatError,
@@ -261,7 +257,7 @@ def _run(args):
                     exit(1)
             else:
                 try:
-                    generate_output(settings, bus, module, header, documentation, gs)
+                    generate_output(settings, module, gs)
                 except Exception as e:
                     logger.error("An error occurred during output generation...")
                     logger.error(f"{type(e).__name__}: {e}")
