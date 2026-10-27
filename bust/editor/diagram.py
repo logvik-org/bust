@@ -21,6 +21,7 @@ class _Segment:
     high: int
     low: int
     reset: str
+    is_unused: bool = False
 
     @property
     def width(self) -> int:
@@ -47,11 +48,11 @@ def bit_segments(register: Register, data_width: int) -> List[_Segment]:
     next_high = data_width - 1
     for segment in sorted(used, key=lambda s: s.high, reverse=True):
         if segment.high < next_high:
-            segments.append(_Segment("unused", next_high, segment.high + 1, "-"))
+            segments.append(_Segment("unused", next_high, segment.high + 1, "-", True))
         segments.append(segment)
         next_high = segment.low - 1
     if next_high >= 0:
-        segments.append(_Segment("unused", next_high, 0, "-"))
+        segments.append(_Segment("unused", next_high, 0, "-", True))
     return segments
 
 

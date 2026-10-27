@@ -17,9 +17,8 @@ from bust.editor.diagram import (
 )
 from bust.jinja_utils.environment import render_template
 
-_FONT = 11
-# An estimate of a character's width at _FONT, enough to tell whether a name
-# fits across its box or must be turned on its side.
+# An estimate of a character's width at the 11px font of the names, enough to
+# tell whether a name fits across its box or must be turned on its side.
 _CHAR_WIDTH = 7
 _NUMBERS_HEIGHT = 16
 _RESET_HEIGHT = 18
@@ -63,7 +62,7 @@ def bit_diagram_svg(register, data_width):
         else:
             parts.append(_text(x + 3, box_top - 4, segment.high, "start", "num"))
             parts.append(_text(x + w - 3, box_top - 4, segment.low, "end", "num"))
-        css_class = "unused" if segment.name == "unused" else "field"
+        css_class = "unused" if segment.is_unused else "field"
         parts.append(
             f'<rect class="{css_class}" x="{x}" y="{box_top}" '
             f'width="{w}" height="{box_height}"/>'

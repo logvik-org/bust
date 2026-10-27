@@ -138,22 +138,21 @@ def utf8tolatex(text):
         unknown_char_policy="ignore",
         unknown_char_warning=False,
     )
-    parts = re.split(r"`([^`]*)`", str(text))
-    return "".join(
-        (
-            encoder.unicode_to_latex(part)
-            if i % 2 == 0
-            else "\\texttt{" + encoder.unicode_to_latex(part) + "}"
-        )
-        for i, part in enumerate(parts)
+    return _convert_code_spans(
+        text, encoder.unicode_to_latex, lambda code: "\\texttt{" + code + "}"
     )
 
 
 def utf8tohtml(text):
     """Escape text for HTML, with a `code` span as <code>, as utf8tolatex sets
     it in typewriter type."""
+    return _convert_code_spans(text, html.escape, lambda code: f"<code>{code}</code>")
+
+
+def _convert_code_spans(text, convert, mark_code):
+    """Convert all of `text`, and mark each `code` span in it after converting."""
     parts = re.split(r"`([^`]*)`", str(text))
     return "".join(
-        html.escape(part) if i % 2 == 0 else "<code>" + html.escape(part) + "</code>"
+        convert(part) if i % 2 == 0 else mark_code(convert(part))
         for i, part in enumerate(parts)
     )
