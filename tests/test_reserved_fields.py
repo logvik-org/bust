@@ -115,3 +115,14 @@ def test_the_editor_overview_shows_reserved_fields():
         "reserved",
     ]
     assert [name for name, _ in field_notes(ctrl)] == ["enable", "mode"]
+
+
+def test_html_documentation_lists_reserved_fields():
+    html = DocumentationGenerator(_module(reserved_fields=True))
+    page = html.generate_html_documentation("1.0.0")
+
+    assert (
+        "<dt>reserved</dt><dd>Bits 3:1. Read as 0, writes have no effect.</dd>" in page
+    )
+    assert ">reserved</text>" in page
+    assert ">unused</text>" not in page

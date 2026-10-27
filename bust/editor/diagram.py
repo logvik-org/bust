@@ -22,6 +22,7 @@ class _Segment:
     high: int
     low: int
     reset: str
+    is_unused: bool = False
 
     @property
     def width(self) -> int:
@@ -33,13 +34,13 @@ def _reset(text: str, width: int) -> str:
     return str(value) if width < 2 else f"0x{value:X}"
 
 
-def _segments(register: Register, unused_name: str) -> List[_Segment]:
+def bit_segments(register: Register, unused_name: str = "unused") -> List[_Segment]:
     """The fields of `register` from the highest bit down, with the unused
     bits between them."""
     segments = []
     for bits in register.bit_ranges:
         if bits.field is None:
-            segments.append(_Segment(unused_name, bits.high, bits.low, "-"))
+            segments.append(_Segment(unused_name, bits.high, bits.low, "-", True))
             continue
         name = (
             bits.field.name if register.type == RegisterType.FIELDS else register.name
@@ -71,7 +72,7 @@ def bit_diagram(
     named `unused`."""
     bit = bit_width(data_width)
     numbers = top = names = bottom = resets = ""
-    for number, segment in enumerate(_segments(register, unused)):
+    for number, segment in enumerate(bit_segments(register, unused)):
         high, low = str(segment.high), str(segment.low)
         bits = high if segment.width == 1 else f"{high} {low}"
         # A box grows past its bits rather than cut a name short.

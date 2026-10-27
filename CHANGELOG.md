@@ -10,12 +10,12 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 ## [Unreleased]
 
 ### Added
+- `bust.generate_files` returns every output file as `{path: content}`, without writing to disk or running `pdflatex`. The command line writes that result.
+- `doc/<module>.html`, the documentation as one self-contained HTML page with inline SVG bit diagrams, links between the register list and the registers, a sidebar and a print stylesheet.
 - `reserved_fields` in `module`. With `true`, the documentation and the editor overview show the bits that no field covers as reserved fields, and list them among the fields.
 
-### Fixed
-- The LaTeX bit diagram leaves out no bits between two fields. A gap made by `position` is marked unused, as the editor overview already showed it.
-
 ### Changed
+- bust builds the PDF only when `pdflatex` is on `PATH`. Without it, bust writes the `.tex` and `.html` files and prints one line saying the PDF was skipped.
 - `<module>_regfile_pkg` merges `base_match` and `above_registers` into one function, `is_in_range`.
 
 ### Removed
@@ -23,6 +23,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 - The ignored options `-u`, `-b`, `-t` and `-m`, and `-F`, an alias for `-f`.
 - 0.14 conversion in the editor, the 0.14 `<module>.vhd` warning, and `RegisterMode` in the Python API.
 - The Upgrading from 0.14 page. `--migrate` is described on the command line page.
+
+### Fixed
+- The LaTeX bit diagram leaves out no bits between two fields. A gap made by `position` is marked unused, as the editor overview already showed it.
 
 ## [1.0.0]
 
