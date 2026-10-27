@@ -426,3 +426,18 @@ the file when you no longer need it.
 |------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 0    | Success. Also when you answered no to an overwrite question, when the PDF could not be made, and for `--version` and `--help`.                                                                                               |
 | 1    | Any error: invalid command-line arguments, a JSON file that is missing or not valid JSON, a register map that fails validation, a file that could not be written (including an existing file with no terminal to ask), or the editor without a terminal. |
+
+## From Python
+
+`bust.generate_files` returns every file the command line writes, without writing anything or running `pdflatex`. It takes the text of a register map or the parsed JSON, and gives the content of each file by its path under the output directory:
+
+```python
+import bust
+
+with open("timer.json", encoding="utf-8") as fp:
+    files = bust.generate_files(fp.read())
+
+print(files["timer/hdl/timer_regfile.vhd"])
+```
+
+The paths are the ones `bust timer.json -o DIR -p` writes under `DIR`, with `/` on every platform. The result always holds a starter `timer/hdl/timer.vhd`. The command line writes that file only when it is missing, since it is yours to edit, so a program that keeps files should do the same. A register map with problems raises `bust.exceptions.FormatError`, with every problem in the message.

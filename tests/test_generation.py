@@ -44,7 +44,7 @@ def _generate(out_dir, force_ow=True, replace_top=False):
         "gen_localbus": True,
     }
     module = Module(cfg["module"], bus, settings)
-    generate_output(settings, bus, module, None, None, gen_settings)
+    generate_output(settings, module, gen_settings)
 
 
 def _read(path):

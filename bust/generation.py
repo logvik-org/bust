@@ -12,10 +12,19 @@ import logging
 import shutil
 import subprocess
 import sys
+from typing import Any, Dict, Optional, Union
 
+from bust.core.bus import Bus
+from bust.core.module import Module
+from bust.exceptions import FormatError
+from bust.generators.documentation_generator import DocumentationGenerator
 from bust.generators.factory import GeneratorFactory
+from bust.generators.header_generator import HeaderGenerator
 from bust.interaction import ConsoleInteractionHandler
+from bust.settings import Settings
 from bust.utils.file_utils import write_string_to_file
+from bust.utils.json_utils import parse_json_text
+from bust.validation.schema_check import check_register_map
 
 logger = logging.getLogger(__name__)
 
@@ -39,16 +48,113 @@ _TESTBENCH_GENERATORS = {
 }
 
 
-def _write_top(module, mod_hdl, gen_settings):
+def top_level_path(module: Module, settings: Optional[Settings] = None) -> str:
+    """The key of the starter <module>.vhd in the outputs of `module`."""
+    settings = settings or Settings(None)
+    return f"{module.name}/{settings.hdl_dir}/{module.name}.vhd"
+
+
+def module_outputs(
+    module: Module,
+    settings: Optional[Settings] = None,
+    localbus: bool = True,
+    headers: bool = True,
+    documentation: bool = True,
+) -> Dict[str, str]:
+    """Render the output files of `module` without writing them.
+
+    Args:
+        module: Module instance with register definitions.
+        settings: Names the hdl, tb, header and doc directories.
+        localbus: Include the local-bus VHDL stack, the starter top level and
+            the testbench.
+        headers: Include the language headers.
+        documentation: Include the LaTeX documentation.
+
+    Returns:
+        The content of each file by its path relative to the output directory,
+        such as ``uart/hdl/uart_regfile.vhd``, in the order the CLI writes them.
+        The paths use ``/`` on every platform.
+    """
+    settings = settings or Settings(None)
+    name = module.name
+    hdl = f"{name}/{settings.hdl_dir}"
+    outputs: Dict[str, str] = {}
+    if localbus:
+        generate_endpoint = _ENDPOINT_GENERATORS[module.bus.bus_type]
+        generate_testbench = _TESTBENCH_GENERATORS[module.bus.bus_type]
+        outputs[f"{hdl}/{name}_localbus_pkg.vhd"] = (
+            GeneratorFactory.generate_localbus_package_vhdl(module)
+        )
+        outputs[f"{hdl}/{name}_regfile_pkg.vhd"] = (
+            GeneratorFactory.generate_regfile_package_vhdl(module)
+        )
+        outputs[f"{hdl}/{name}_regfile.vhd"] = GeneratorFactory.generate_regfile_vhdl(
+            module
+        )
+        outputs[f"{hdl}/{name}_{module.bus.endpoint_suffix}.vhd"] = generate_endpoint(
+            module
+        )
+        outputs[top_level_path(module, settings)] = (
+            GeneratorFactory.generate_module_top_vhdl(module)
+        )
+        outputs[f"{name}/{settings.tb_dir}/{name}_tb.vhd"] = generate_testbench(module)
+    if headers:
+        header = HeaderGenerator(module)
+        base = f"{name}/{settings.header_dir}/{name}"
+        outputs[f"{base}.h"] = header.generate_c_header()
+        outputs[f"{base}.hpp"] = header.generate_cpp_header()
+        outputs[f"{base}.py"] = header.generate_python_header()
+        if module.bus.bus_type == "ipbus":
+            outputs[f"{base}.xml"] = header.generate_ipbus_addr_table()
+    if documentation:
+        outputs[f"{name}/{settings.doc_dir}/{name}.tex"] = DocumentationGenerator(
+            module
+        ).generate_tex_documentation()
+    return outputs
+
+
+def generate_files(register_map: Union[str, Dict[str, Any]]) -> Dict[str, str]:
+    """Render every output file of a register map, without touching the disk.
+
+    The paths and contents are the ones `bust FILE -o DIR -p` writes under DIR.
+    The starter top level, at `top_level_path`, is always included. The CLI
+    writes it only when the file is missing, and a caller that keeps files
+    should do the same, since the user edits that file.
+
+    Args:
+        register_map: The JSON or JSON5 text of a register map, or the register
+            map as `json.loads` returns it.
+
+    Returns:
+        The content of each file by its path, see `module_outputs`.
+
+    Raises:
+        FormatError: If the register map does not parse or breaks the schema.
+            The message lists every problem.
+        RuntimeError: If bust rejects the register map, such as two registers
+            at one address.
+    """
+    if isinstance(register_map, str):
+        data = parse_json_text(register_map, "<register map>")
+        report = check_register_map(data, register_map)
+    else:
+        data = register_map
+        report = check_register_map(data)
+    if report.errors:
+        raise FormatError("\n".join(str(problem) for problem in report.errors))
+    module = Module(data["module"], Bus(data["bus"]), Settings(None))
+    return module_outputs(module)
+
+
+def _write_top(path, starter, gen_settings):
     """Write the starter <module>.vhd if it is missing, or replace it if asked.
 
     <module>.vhd is the user's file. bust writes a starter once and does not
     change the file again, not even with -f. With replace_top it writes a fresh
     starter and keeps the old file as <module>.vhd.bak.
     """
-    filename = f"{module.name}.vhd"
-    path = os.path.join(mod_hdl, filename)
-    starter = GeneratorFactory.generate_module_top_vhdl(module)
+    mod_hdl, filename = os.path.split(path)
     if not os.path.isfile(path):
         write_string_to_file(starter, filename, mod_hdl, True)
         logger.info(
@@ -80,18 +186,12 @@ def _write_top(module, mod_hdl, gen_settings):
         )
 
 
-def generate_output(settings, bus, module, header, documentation, gen_settings):
-    """Generate all output files for a bus slave module.
-
-    Creates directory structure and writes the local-bus VHDL stack,
-    documentation, and language headers based on configuration.
+def generate_output(settings, module, gen_settings):
+    """Write the output files of a module, and build the PDF if asked.
 
     Args:
         settings: Settings instance with paths and configuration.
-        bus: Bus instance with interface configuration.
         module: Module instance with register definitions.
-        header: Header instance for generating language headers.
-        documentation: Documentation instance for generating docs.
         gen_settings: Dictionary with generation options:
             - dir: Output directory path
             - force_ow: Force overwrite without prompting
@@ -100,133 +200,27 @@ def generate_output(settings, bus, module, header, documentation, gen_settings):
             - gen_header: Generate language headers
             - gen_doc: Generate documentation
             - gen_pdf: Generate PDF from LaTeX
-
-    Raises:
-        Exception: If file generation fails.
     """
-
-    # Control all output directories
-    proj_dir = os.path.expanduser(gen_settings["dir"])  # Make sure that we understand ~
+    proj_dir = os.path.expanduser(gen_settings["dir"])
     logger.info(f"Project path: {os.path.abspath(proj_dir)}")
-    mod_dir = os.path.join(proj_dir, module.name)
+    outputs = module_outputs(
+        module,
+        settings,
+        localbus=bool(gen_settings.get("gen_localbus")),
+        headers=bool(gen_settings["gen_header"]),
+        documentation=bool(gen_settings["gen_doc"]),
+    )
+    top = top_level_path(module, settings)
+    for relative_path, content in outputs.items():
+        path = os.path.join(proj_dir, *relative_path.split("/"))
+        directory, filename = os.path.split(path)
+        os.makedirs(directory, exist_ok=True)
+        if relative_path == top:
+            _write_top(path, content, gen_settings)
+        else:
+            write_string_to_file(content, filename, directory, gen_settings["force_ow"])
 
-    mod_hdl = os.path.join(mod_dir, settings.hdl_dir)
-    mod_tb = os.path.join(mod_dir, settings.tb_dir)
-    mod_doc = os.path.join(mod_dir, settings.doc_dir)
-    mod_header = os.path.join(mod_dir, settings.header_dir)
-
-    logger.debug("Creating all output directories")
-    try:
-        os.makedirs(proj_dir, exist_ok=True)
-        os.makedirs(mod_dir, exist_ok=True)
-        os.makedirs(mod_hdl, exist_ok=True)
-        os.makedirs(mod_tb, exist_ok=True)
-        os.makedirs(mod_doc, exist_ok=True)
-        os.makedirs(mod_header, exist_ok=True)
-
-    except Exception as e:
-        logger.error("ERROR: Could not create output directories")
-        logger.error(e)
-
-    else:
-        logger.debug("Successfully created all output directories")
-
-    if gen_settings.get("gen_localbus"):
-        logger.info("Generating local-bus VHDL files...")
-        try:
-            filename = f"{module.name}_localbus_pkg.vhd"
-            write_string_to_file(
-                GeneratorFactory.generate_localbus_package_vhdl(module),
-                filename,
-                mod_hdl,
-                gen_settings["force_ow"],
-            )
-            filename = f"{module.name}_regfile_pkg.vhd"
-            write_string_to_file(
-                GeneratorFactory.generate_regfile_package_vhdl(module),
-                filename,
-                mod_hdl,
-                gen_settings["force_ow"],
-            )
-            filename = f"{module.name}_regfile.vhd"
-            write_string_to_file(
-                GeneratorFactory.generate_regfile_vhdl(module),
-                filename,
-                mod_hdl,
-                gen_settings["force_ow"],
-            )
-            endpoint_generator = _ENDPOINT_GENERATORS.get(bus.bus_type)
-            if endpoint_generator is not None:
-                endpoint = endpoint_generator(module)
-                filename = f"{module.name}_{bus.endpoint_suffix}.vhd"
-                write_string_to_file(
-                    endpoint, filename, mod_hdl, gen_settings["force_ow"]
-                )
-                _write_top(module, mod_hdl, gen_settings)
-                testbench_generator = _TESTBENCH_GENERATORS.get(bus.bus_type)
-                if testbench_generator is not None:
-                    testbench = testbench_generator(module)
-                    write_string_to_file(
-                        testbench,
-                        f"{module.name}_tb.vhd",
-                        mod_tb,
-                        gen_settings["force_ow"],
-                    )
-        except Exception:
-            logger.error("ERROR: Could not generate local-bus VHDL files")
-            raise
-
-    if gen_settings["gen_header"]:
-        logger.info("Generating Module Include Files...")
-        try:
-            filename = f"{module.name}.h"
-            write_string_to_file(
-                header.generate_c_header(),
-                filename,
-                mod_header,
-                gen_settings["force_ow"],
-            )
-            filename = f"{module.name}.hpp"
-            write_string_to_file(
-                header.generate_cpp_header(),
-                filename,
-                mod_header,
-                gen_settings["force_ow"],
-            )
-            filename = f"{module.name}.py"
-            write_string_to_file(
-                header.generate_python_header(),
-                filename,
-                mod_header,
-                gen_settings["force_ow"],
-            )
-            if bus.bus_type == "ipbus":
-                filename = f"{module.name}.xml"
-                write_string_to_file(
-                    header.generate_ipbus_addr_table(),
-                    filename,
-                    mod_header,
-                    gen_settings["force_ow"],
-                )
-
-        except Exception as e:
-            logger.error("ERROR: Could not generate Module Include Files")
-            raise e
-
-    if gen_settings["gen_doc"]:
-        logger.info("Generating Module Documentation...")
-        try:
-            filename = f"{module.name}.tex"
-            write_string_to_file(
-                documentation.generate_tex_documentation(),
-                filename,
-                mod_doc,
-                gen_settings["force_ow"],
-            )
-        except Exception as e:
-            logger.error("ERROR: Could not generate Module Documentation")
-            raise e
-
+    mod_doc = os.path.join(proj_dir, module.name, settings.doc_dir)
     if gen_settings["gen_pdf"]:
         logger.info("Generating Documentation PDF...")
         try:

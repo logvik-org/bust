@@ -538,7 +538,7 @@ def _generate_only_localbus(out_dir, gen_localbus):
         "gen_header": False,
         "gen_localbus": gen_localbus,
     }
-    generate_output(settings, bus, module, None, None, gen_settings)
+    generate_output(settings, module, gen_settings)
     return os.path.join(str(out_dir), "example_axi", "hdl")
 
 
