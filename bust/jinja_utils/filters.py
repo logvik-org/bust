@@ -8,11 +8,13 @@ Filters defined:
 - align: Line up a token, such as ":" or "<=", in a column.
 - wrap: Break a call that is too long after a comma.
 - utf8tolatex: Convert UTF-8 text to LaTeX-safe encoding.
+- utf8tohtml: Escape text for HTML, with `code` spans as <code>.
 
 Copyright (c) 2025 Ola Groettvik
 Licensed under the Apache License, Version 2.0. See the LICENSE file for details.
 """
 
+import html
 import re
 
 
@@ -136,12 +138,21 @@ def utf8tolatex(text):
         unknown_char_policy="ignore",
         unknown_char_warning=False,
     )
+    return _convert_code_spans(
+        text, encoder.unicode_to_latex, lambda code: "\\texttt{" + code + "}"
+    )
+
+
+def utf8tohtml(text):
+    """Escape text for HTML, with a `code` span as <code>, as utf8tolatex sets
+    it in typewriter type."""
+    return _convert_code_spans(text, html.escape, lambda code: f"<code>{code}</code>")
+
+
+def _convert_code_spans(text, convert, mark_code):
+    """Convert all of `text`, and mark each `code` span in it after converting."""
     parts = re.split(r"`([^`]*)`", str(text))
     return "".join(
-        (
-            encoder.unicode_to_latex(part)
-            if i % 2 == 0
-            else "\\texttt{" + encoder.unicode_to_latex(part) + "}"
-        )
+        convert(part) if i % 2 == 0 else mark_code(convert(part))
         for i, part in enumerate(parts)
     )

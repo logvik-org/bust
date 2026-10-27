@@ -174,7 +174,7 @@ the timing of each protocol.
 | `name` | string | required | Module name. It names the generated files and VHDL units, such as `uart_regfile` and `uart_regfile_pkg`. See [Names](#names). |
 | `register` | list | required | The registers, see [Registers](#registers). |
 | `version` | string | `""` | The version of the register map. Every generated file carries it, see [Version and hash](#version-and-hash). Printable ASCII characters other than `"`, `\`, `;` and `=`. A module with a `version` register needs the form `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`. |
-| `description` | string | `""` | Shown in the LaTeX documentation. |
+| `description` | string | `""` | Shown in the documentation. |
 | `byte_addressable` | boolean | from the bus | `true` if an address counts bytes, `false` if it counts data words. See [Byte and word addresses](#byte-and-word-addresses). |
 
 ### Version and hash
@@ -201,7 +201,7 @@ Both appear in every output:
 | C header | `<MODULE>_REGMAP_VERSION` | `<MODULE>_REGMAP_HASH` |
 | C++ and Python headers | `REGMAP_VERSION` | `REGMAP_HASH` |
 | IPBus address table | `regmap_version=` in the `parameters` of the top node | `regmap_hash=` in the same `parameters` |
-| LaTeX documentation | Title page and page footer | Title page, under the version |
+| Documentation | Title and page footer (HTML: running header) | Title, under the version |
 
 ### Hash and version registers
 
@@ -269,7 +269,7 @@ Each entry in `register` is one register.
 | `address` | [number](#numbers) | next free address | Register offset. See [Addresses](#addresses). |
 | `width` | [number](#numbers) | `data_width` | Width of a `vector` register. |
 | `reset` | [number](#numbers) | `0` | Reset value of a register without fields. See [Reset values](#reset-values). |
-| `description` | string | `""` | Shown in the LaTeX documentation and the IPBus address table. |
+| `description` | string | `""` | Shown in the documentation and the IPBus address table. |
 | `fields` | list | none | The fields of a `fields` register. See [Fields](#fields). |
 | access keys | | | Defaults for the register's fields. See [Access keys](#access-keys). |
 
@@ -438,7 +438,7 @@ A `fields` register lists its fields under `fields`. Each entry is one field.
 | `width` | [number](#numbers) | `1` | Width of a `vector` field. A `bit` field is always 1 bit wide, and bust ignores a different `width` with a warning. |
 | `position` | [number](#numbers) | next free bit | Lowest bit of the field. See [Bit positions](#bit-positions). |
 | `reset` | [number](#numbers) | `0` | Reset value of the field. |
-| `description` | string | `""` | Shown in the LaTeX documentation and the IPBus address table. |
+| `description` | string | `""` | Shown in the documentation and the IPBus address table. |
 | `enums` | list | none | Named values. See [Enumerations](#enumerations). |
 | access keys | | from the register | See [Access keys](#access-keys). |
 

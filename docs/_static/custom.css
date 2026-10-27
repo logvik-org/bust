@@ -72,3 +72,14 @@ section#bust > h1 {
 .addr-fig .row {
   font-weight: 700;
 }
+
+/* The example HTML documentation on the Headers and documentation page. The
+   page keeps its own white background in both modes, as it would on its own. */
+.doc-example {
+  display: block;
+  width: 100%;
+  height: 36rem;
+  margin: 1.5rem 0;
+  border: 1px solid var(--color-background-border);
+  background: #fff;
+}
