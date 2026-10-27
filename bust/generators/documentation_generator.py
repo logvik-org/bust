@@ -1,7 +1,7 @@
 """Documentation generation module for bust.
 
 This module provides the DocumentationGenerator class for automatically generating
-LaTeX and HTML documentation from module definitions. The generated documentation
+LaTeX, HTML and Markdown documentation from module definitions. The generated documentation
 includes register maps, bit field descriptions, and access modes.
 """
 
@@ -26,7 +26,7 @@ _RESET_HEIGHT = 18
 _MIN_BOX_HEIGHT = 28
 
 
-def bit_diagram_svg(register, data_width, unused_name):
+def bit_diagram_svg(register, data_width, unused):
     """An inline SVG of the bits of `register`, laid out as the LaTeX register
     package draws them: a box per field with its name, the numbers of its
     highest and lowest bit above it, and its reset value below.
@@ -35,7 +35,7 @@ def bit_diagram_svg(register, data_width, unused_name):
     taller to fit the longest such name.
     """
     bit = 24 if data_width <= 32 else 14
-    segments = bit_segments(register, unused_name)
+    segments = bit_segments(register, unused)
     is_turned = [len(s.name) * _CHAR_WIDTH + 6 > s.width * bit for s in segments]
     box_height = max(
         [_MIN_BOX_HEIGHT]
@@ -90,7 +90,7 @@ def _text(x, y, text, anchor, css_class):
 class DocumentationGenerator:
     """Generates documentation for bus slave modules.
 
-    The DocumentationGenerator class creates LaTeX and HTML documentation with complete register
+    The DocumentationGenerator class creates LaTeX, HTML and Markdown documentation with complete register
     specifications including addresses, bit positions, access modes, and
     descriptions.
 
@@ -125,6 +125,7 @@ class DocumentationGenerator:
                 "module": self.module,
                 "version": version,
                 "reg_type_fields": RegisterType.FIELDS,
+                "unused_name": unused_name(self.module),
                 **context,
             },
         )
@@ -164,5 +165,15 @@ class DocumentationGenerator:
             register_heading=register_heading,
             field_notes=field_notes,
             bit_diagram_svg=bit_diagram_svg,
-            unused_name=unused_name(self.module),
         )
+
+    def generate_markdown_documentation(self, test_version=None):
+        """Generate Markdown documentation for the module, readable on GitHub.
+
+        Args:
+            test_version: Version string for testing (default: None, uses bust version).
+
+        Returns:
+            Markdown document as string.
+        """
+        return self._render_template("markdown/documentation.j2", test_version)

@@ -12,6 +12,7 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 ### Added
 - `bust.generate_files` returns every output file as `{path: content}`, without writing to disk or running `pdflatex`. The command line writes that result.
 - `doc/<module>.html`, the documentation as one self-contained HTML page with inline SVG bit diagrams, links between the register list and the registers, a sidebar and a print stylesheet.
+- `doc/<module>.md`, the documentation as Markdown, with the register list and a bits table per register, readable on GitHub.
 - `reserved_fields` in `module`. With `true`, the documentation and the editor overview show the bits that no field covers as reserved fields, and list them among the fields.
 
 ### Changed
@@ -25,7 +26,7 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 - The Upgrading from 0.14 page. `--migrate` is described on the command line page.
 
 ### Fixed
-- The LaTeX bit diagram leaves out no bits between two fields. A gap made by `position` is marked unused, as the editor overview already showed it.
+- The LaTeX bit diagram drew no box for a gap made by `position`, and the Markdown bits table left out the bits below the lowest field. Both now mark them unused, as the editor overview and the HTML page already did.
 
 ## [1.0.0]
 

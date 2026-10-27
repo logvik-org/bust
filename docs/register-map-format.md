@@ -202,7 +202,7 @@ Both appear in every output:
 | C header | `<MODULE>_REGMAP_VERSION` | `<MODULE>_REGMAP_HASH` |
 | C++ and Python headers | `REGMAP_VERSION` | `REGMAP_HASH` |
 | IPBus address table | `regmap_version=` in the `parameters` of the top node | `regmap_hash=` in the same `parameters` |
-| Documentation | Title and page footer (HTML: running header) | Title, under the version |
+| Documentation | Title and page footer (HTML: running header, Markdown: line under the title) | Title, under the version |
 
 ### Hash and version registers
 
@@ -477,7 +477,7 @@ Bits that no field covers read as 0, and writes to them have no effect.
 
 ### Reserved fields
 
-The bit diagrams in the LaTeX and HTML documentation and in the editor overview mark the bits that no field covers as `unused`. With `"reserved_fields": true` in `module`, they show as `reserved` fields instead, and the field list of a `fields` register gets an entry for each run of them, in bit order. For `ctrl` in the example:
+The LaTeX, HTML and Markdown documentation and the editor overview mark the bits that no field covers as `unused`. With `"reserved_fields": true` in `module`, they show as `reserved` fields instead, and each run of them gets an entry in the field list of a `fields` register, in bit order. For `ctrl` in the example:
 
 ```text
   31                                                               9     8     7       4   3    2     1       0

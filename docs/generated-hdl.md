@@ -93,7 +93,7 @@ your design
 ### Where the files go
 
 The VHDL lands in `hdl/` and the testbench in `tb/`, next to the `header/` and
-`doc/` directories of the [headers and documentation](headers-and-docs.md). For
+`doc/` directories of the [software headers](headers.md) and the [documentation](documentation.md). For
 the timer:
 
 ```text

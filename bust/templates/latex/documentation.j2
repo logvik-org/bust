@@ -61,7 +61,6 @@
 
 \section{Registers}
 
-{% set unused_name = "reserved" if module.reserved_fields else "unused" %}
 {% for reg in module.registers %}
 \begin{register}{{ '{' }}H{{ '}' }}{{ '{' }}{{ reg.name | utf8tolatex }} - {{ reg.sw.value.upper() }}/{{ reg.hw.value.upper() }}{{ '}' }}{{ '{' }}0x{{ "%08X" | format(reg.address) }}{{ '}' }}{% if reg.description %}  \par {{ reg.description | utf8tolatex }} \regnewline{% endif +%}
   \label{{ '{' }}{{ reg.name }}{{ '}' }}

@@ -193,6 +193,20 @@ def test_empty_version_leaves_no_version_label_in_the_latex(tmp_path):
     assert "Version:" not in tex
 
 
+def test_run_writes_markdown_docs_and_d_skips_them(tmp_path):
+    path = _write_register_map(tmp_path)
+
+    code, output = _run_bust(tmp_path, str(path), "-o", "out", "-p")
+    assert code == 0, output
+    markdown = (tmp_path / "out/timer/doc/timer.md").read_text()
+    assert "| 0 | [ctrl](#ctrl) | RW/R |" in markdown
+    assert "### ctrl" in markdown
+
+    code, output = _run_bust(tmp_path, str(path), "-o", "skipped", "-d")
+    assert code == 0, output
+    assert not (tmp_path / "skipped/timer/doc/timer.md").exists()
+
+
 def test_successful_run_writes_no_debug_log(tmp_path):
     path = _write_register_map(tmp_path)
 

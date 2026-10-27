@@ -139,5 +139,5 @@ your software adds the base address.
 
 In the headers, `_OFFSET` also names the lowest bit of a field, as in
 `<MODULE>_<REG>_<FIELD>_OFFSET`. That is a bit position inside the register,
-not an address. [Headers and documentation](headers-and-docs.md#constant-names)
+not an address. [Software headers](headers.md#constant-names)
 lists the constants.

@@ -126,3 +126,26 @@ def test_html_documentation_lists_reserved_fields():
     )
     assert ">reserved</text>" in page
     assert ">unused</text>" not in page
+
+
+def test_markdown_documentation_lists_reserved_fields():
+    doc = DocumentationGenerator(_module(reserved_fields=True))
+    page = doc.generate_markdown_documentation("1.0.0")
+
+    assert (
+        "| 31:6 | reserved | | | | Read as 0, writes have no effect. |\n"
+        "| 5:4 | mode |"
+    ) in page
+    assert "| 3:1 | reserved | | | | Read as 0, writes have no effect. |\n" in page
+    assert "| unused |" not in page
+
+
+def test_markdown_documentation_marks_unused_bits_below_the_lowest_field():
+    low_gap = {
+        "name": "irq",
+        "fields": [{"name": "done", "type": "bit", "position": 2}],
+    }
+    module = Module({"name": "m", "register": [low_gap]}, Bus(_BUS), settings=None)
+    page = DocumentationGenerator(module).generate_markdown_documentation("1.0.0")
+
+    assert "| 1:0 | unused | | | | |\n" in page

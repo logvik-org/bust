@@ -69,7 +69,7 @@ def module_outputs(
         localbus: Include the local-bus VHDL stack, the starter top level and
             the testbench.
         headers: Include the language headers.
-        documentation: Include the LaTeX and HTML documentation.
+        documentation: Include the LaTeX, HTML and Markdown documentation.
 
     Returns:
         The content of each file by its path relative to the output directory,
@@ -112,6 +112,7 @@ def module_outputs(
         base = f"{name}/{settings.doc_dir}/{name}"
         outputs[f"{base}.tex"] = doc.generate_tex_documentation()
         outputs[f"{base}.html"] = doc.generate_html_documentation()
+        outputs[f"{base}.md"] = doc.generate_markdown_documentation()
     return outputs
 
 
