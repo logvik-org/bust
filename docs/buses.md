@@ -194,7 +194,7 @@ compile `components/ipbus_core/firmware/hdl/ipbus_package.vhd` from the
 - With an `addr_width` below 32, the endpoint ignores the upper bits of
   `ipb_addr`, so decode them before the module, as an IPBus fabric does.
 - bust also writes an IPBus address table for uHAL. See
-  [Headers and documentation](headers-and-docs.md).
+  [Software headers](headers.md#ipbus-address-table).
 
 ## SBI
 

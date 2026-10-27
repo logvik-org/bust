@@ -9,6 +9,7 @@ Filters defined:
 - wrap: Break a call that is too long after a comma.
 - utf8tolatex: Convert UTF-8 text to LaTeX-safe encoding.
 - utf8tohtml: Escape text for HTML, with `code` spans as <code>.
+- markdown_cell: Escape text for one cell of a Markdown table.
 
 Copyright (c) 2025 Ola Groettvik
 Licensed under the Apache License, Version 2.0. See the LICENSE file for details.
@@ -156,3 +157,21 @@ def _convert_code_spans(text, convert, mark_code):
         convert(part) if i % 2 == 0 else mark_code(convert(part))
         for i, part in enumerate(parts)
     )
+
+
+_MARKDOWN_SPECIAL = re.compile(r"([\\*\[\]<>|])")
+
+
+def markdown_cell(text):
+    """Escape text for one line of Markdown, such as a table cell.
+
+    A `code` span is kept, but a | in it is still escaped, since GitHub splits
+    the cells of a table row before it reads code spans. Line breaks become
+    spaces.
+    """
+    parts = re.split(r"(`[^`]*`)", str(text))
+    escaped = "".join(
+        part.replace("|", "\\|") if i % 2 else _MARKDOWN_SPECIAL.sub(r"\\\1", part)
+        for i, part in enumerate(parts)
+    )
+    return " ".join(escaped.split())

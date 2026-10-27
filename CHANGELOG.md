@@ -12,6 +12,7 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 ### Added
 - `bust.generate_files` returns every output file as `{path: content}`, without writing to disk or running `pdflatex`. The command line writes that result.
 - `doc/<module>.html`, the documentation as one self-contained HTML page with inline SVG bit diagrams, links between the register list and the registers, a sidebar and a print stylesheet.
+- `doc/<module>.md`, the documentation as Markdown, with the register list and a bits table per register, readable on GitHub.
 
 ### Changed
 - bust builds the PDF only when `pdflatex` is on `PATH`. Without it, bust writes the `.tex` and `.html` files and prints one line saying the PDF was skipped.

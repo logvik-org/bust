@@ -87,6 +87,7 @@ bust writes one directory per module:
 out/timer/
 ├── doc/
 │   ├── timer.html
+│   ├── timer.md
 │   ├── timer.pdf
 │   └── timer.tex
 ├── hdl/
@@ -194,7 +195,7 @@ write32(TIMER_BASE + TIMER_CTRL_OFFSET, ctrl);
 ```
 
 `read32`, `write32` and `TIMER_BASE` stand for whatever your platform uses.
-[Headers and documentation](headers-and-docs.md) covers the C++, Python and
+[Software headers](headers.md) covers the C++, Python and
 IPBus outputs.
 
 ## Run the testbench

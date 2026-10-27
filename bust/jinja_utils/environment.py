@@ -34,7 +34,7 @@ def get_environment(additional_filters=None):
         Environment: Configured Jinja2 environment with:
             - Template directory set to bust/templates
             - trim_blocks=True and lstrip_blocks=True for clean output
-            - Common filters registered (hex_format, utf8tolatex, utf8tohtml, indent_all)
+            - Common filters registered (hex_format, utf8tolatex, utf8tohtml, markdown_cell, indent_all)
             - Additional filters if provided
     """
     # Get template directory relative to this module
@@ -50,6 +50,7 @@ def get_environment(additional_filters=None):
     # Register common filters used across modules
     from bust.jinja_utils.filters import (
         align,
+        markdown_cell,
         to_binary,
         utf8tohtml,
         utf8tolatex,
@@ -57,6 +58,7 @@ def get_environment(additional_filters=None):
     )
 
     env.filters["align"] = align
+    env.filters["markdown_cell"] = markdown_cell
     env.filters["to_binary"] = to_binary
     env.filters["utf8tolatex"] = utf8tolatex
     env.filters["utf8tohtml"] = utf8tohtml

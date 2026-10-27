@@ -9,7 +9,7 @@ Usage:
 Options:
   -o DIR         Specify output directory (default: the directory of FILE)
   -f             Force overwrite of existing files, except <module>.vhd, which is yours
-  -d             Do not generate documentation (LaTeX, HTML or PDF)
+  -d             Do not generate documentation (LaTeX, HTML, Markdown or PDF)
   -p             Do not generate PDF from LaTeX, even if pdflatex is installed
   -i             Do not generate the include header files (.h, .hpp & .py)
   --replace-top  Replace <module>.vhd with a fresh starter, keeping the old file as <module>.vhd.bak

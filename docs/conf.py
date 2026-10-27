@@ -13,7 +13,8 @@ release = __VERSION__
 version = release
 
 extensions = ["myst_parser"]
-myst_heading_anchors = 3
+# 5 so the register links in the included example Markdown resolve.
+myst_heading_anchors = 5
 exclude_patterns = ["_build"]
 
 html_theme = "furo"
