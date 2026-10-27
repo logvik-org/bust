@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Build docs/examples/prototype.pdf, the example PDF the documentation shows,
 # from the committed prototype.tex. Read the Docs has no pdflatex, so the PDF is
-# committed. Run this after the LaTeX golden changes: tests/test_example_pdf.py
-# fails until the PDF is committed with or after prototype.tex.
+# committed. Run this after the LaTeX golden changes: the example_pdf workflow
+# rebuilds the PDF and fails if it differs from the committed one.
 # Usage: scripts/make-example-pdf.sh
 set -euo pipefail
 

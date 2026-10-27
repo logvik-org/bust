@@ -45,7 +45,7 @@ git diff example/
 Review the diff before you commit it. It is the clearest record of what your
 change does to the generated code.
 
-The documentation shows the PDF of the prototype example, which is committed as `docs/examples/prototype.pdf` because Read the Docs has no `pdflatex`. When `example/example_prototype/doc/prototype.tex` changes, rebuild the PDF with `scripts/make-example-pdf.sh`, which needs `pdflatex`. `tests/test_example_pdf.py` fails until you do: it checks in the git history that the last commit that changed the PDF is no older than the last commit that changed the `.tex`.
+The documentation shows the PDF of the prototype example, which is committed as `docs/examples/prototype.pdf` because Read the Docs has no `pdflatex`. When `example/example_prototype/doc/prototype.tex` changes, rebuild the PDF with `scripts/make-example-pdf.sh`, which needs `pdflatex`. The `Example PDF` workflow rebuilds the PDF on Ubuntu 24.04 whenever the `.tex`, the PDF or the script changes, and fails if the result differs from the committed file. The build is byte-for-byte reproducible with the same TeX Live, so build it on Ubuntu 24.04 (TeX Live 2023) too.
 
 ## Simulation
 
