@@ -34,13 +34,13 @@ def _reset(text: str, width: int) -> str:
     return str(value) if width < 2 else f"0x{value:X}"
 
 
-def bit_segments(register: Register, unused_name: str = "unused") -> List[_Segment]:
-    """The fields of `register` from the highest bit down, with the unused
-    bits between them."""
+def bit_segments(register: Register) -> List[_Segment]:
+    """The fields of `register` from the highest bit down, with the bits no
+    field covers between them as reserved."""
     segments = []
     for bits in register.bit_ranges:
         if bits.field is None:
-            segments.append(_Segment(unused_name, bits.high, bits.low, "-", True))
+            segments.append(_Segment("reserved", bits.high, bits.low, "-", True))
             continue
         name = (
             bits.field.name if register.type == RegisterType.FIELDS else register.name
@@ -59,20 +59,12 @@ def bit_width(data_width: int) -> int:
     return 3 if data_width <= 32 else 2
 
 
-def unused_name(module: Module) -> str:
-    """The name the diagrams give bits that no field covers."""
-    return "reserved" if module.reserved_fields else "unused"
-
-
-def bit_diagram(
-    register: Register, data_width: int, unused: str = "unused"
-) -> List[str]:
+def bit_diagram(register: Register, data_width: int) -> List[str]:
     """The lines of the bit diagram of `register`: bit numbers, the boxes with
-    the field names, and the reset values. Bits that no field covers are
-    named `unused`."""
+    the field names, and the reset values."""
     bit = bit_width(data_width)
     numbers = top = names = bottom = resets = ""
-    for number, segment in enumerate(bit_segments(register, unused)):
+    for number, segment in enumerate(bit_segments(register)):
         high, low = str(segment.high), str(segment.low)
         bits = high if segment.width == 1 else f"{high} {low}"
         # A box grows past its bits rather than cut a name short.
@@ -147,18 +139,15 @@ def _field_note(field: Field) -> str:
     return text
 
 
-def field_notes(
-    register: Register, reserved_fields: bool = False
-) -> List[Tuple[str, str]]:
+def field_notes(register: Register) -> List[Tuple[str, str]]:
     """Each field's name, and its description with its access, as the
-    documentation lists them under a register, from the lowest bit up. With
-    `reserved_fields`, the bits that no field covers are listed as reserved
-    fields among them."""
+    documentation lists them under a register, from the lowest bit up, with
+    the bits no field covers listed as reserved."""
     notes = []
     for bits in reversed(register.bit_ranges):
         if bits.field is not None:
             notes.append((bits.field.name, _field_note(bits.field)))
-        elif reserved_fields:
+        else:
             notes.append(
                 ("reserved", f"Bits {_bits(bits.high, bits.low)}. {RESERVED_NOTE}")
             )

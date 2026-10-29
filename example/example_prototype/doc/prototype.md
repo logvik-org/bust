@@ -31,7 +31,7 @@ Plain rw storage, hardware reads back.
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:3 | unused | | | | |
+| 31:3 | reserved | | | | Read as 0, writes have no effect. |
 | 2:1 | field1 | rw | r | `0x0` | |
 | 0 | field0 | rw | r | `0x0` | |
 
@@ -43,7 +43,7 @@ Hardware-driven status, software read-only.
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:6 | unused | | | | |
+| 31:6 | reserved | | | | Read as 0, writes have no effect. |
 | 5 | field2 | ro | w | `0x0` | Modifiers: wel. |
 | 4 | field1 | ro | w | `0x0` | |
 | 3:0 | field0 | ro | w | `0x0` | Modifiers: we. |
@@ -56,7 +56,7 @@ Write-only command field.
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:1 | unused | | | | |
+| 31:1 | reserved | | | | Read as 0, writes have no effect. |
 | 0 | field0 | wo | r | `0x0` | |
 
 ### reg3
@@ -67,7 +67,7 @@ Software-only scratch register.
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:8 | unused | | | | |
+| 31:8 | reserved | | | | Read as 0, writes have no effect. |
 | 7:0 | field0 | rw | na | `0x0` | |
 
 ### reg4
@@ -78,9 +78,9 @@ Hardware write-enable and hardware set/clear.
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:9 | unused | | | | |
+| 31:9 | reserved | | | | Read as 0, writes have no effect. |
 | 8 | field1 | rw | r | `0x0` | Modifiers: hwset, hwclr. |
-| 7:4 | unused | | | | |
+| 7:4 | reserved | | | | Read as 0, writes have no effect. |
 | 3:0 | field0 | rw | rw | `0x0` | Modifiers: we. |
 
 ### reg5
@@ -91,7 +91,7 @@ Read side effects.
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:8 | unused | | | | |
+| 31:8 | reserved | | | | Read as 0, writes have no effect. |
 | 7:4 | field1 | rw | r | `0x0` | onread: rset. |
 | 3:0 | field0 | rw | r | `0x0` | onread: rclr. |
 
@@ -103,7 +103,7 @@ Write-1 onwrite effects.
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:12 | unused | | | | |
+| 31:12 | reserved | | | | Read as 0, writes have no effect. |
 | 11:8 | field2 | rw | r | `0x0` | onwrite: wot. |
 | 7:4 | field1 | rw | r | `0xF` | onwrite: woclr. |
 | 3:0 | field0 | rw | r | `0x0` | onwrite: woset. |
@@ -116,7 +116,7 @@ Write-0 onwrite effects.
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:12 | unused | | | | |
+| 31:12 | reserved | | | | Read as 0, writes have no effect. |
 | 11:8 | field2 | rw | r | `0x0` | onwrite: wzt. |
 | 7:4 | field1 | rw | r | `0xF` | onwrite: wzc. |
 | 3:0 | field0 | rw | r | `0x0` | onwrite: wzs. |
@@ -129,7 +129,7 @@ Whole-field onwrite effects.
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:8 | unused | | | | |
+| 31:8 | reserved | | | | Read as 0, writes have no effect. |
 | 7:4 | field1 | rw | r | `0x0` | onwrite: wset. |
 | 3:0 | field0 | rw | r | `0xF` | onwrite: wclr. |
 
@@ -141,7 +141,7 @@ Software-access pulses.
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:8 | unused | | | | |
+| 31:8 | reserved | | | | Read as 0, writes have no effect. |
 | 7:4 | field1 | rw | r | `0x0` | Modifiers: swacc. |
 | 3:0 | field0 | rw | r | `0x0` | Modifiers: swmod. |
 
@@ -153,7 +153,7 @@ Single-cycle pulse on software write.
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:4 | unused | | | | |
+| 31:4 | reserved | | | | Read as 0, writes have no effect. |
 | 3:0 | field0 | rw | r | `0x0` | singlepulse. |
 
 ### reg11
@@ -164,5 +164,5 @@ Enumerated field.
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:2 | unused | | | | |
+| 31:2 | reserved | | | | Read as 0, writes have no effect. |
 | 1:0 | field0 | rw | r | `0x0` | Values: STATE0=0, STATE1=1, STATE2=2, STATE3=3. |

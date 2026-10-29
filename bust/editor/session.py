@@ -265,13 +265,7 @@ class EditSession:
                 key in data["module"],
                 data["module"].get(key),
             )
-            for key in (
-                "name",
-                "description",
-                "version",
-                "byte_addressable",
-                "reserved_fields",
-            )
+            for key in ("name", "description", "version", "byte_addressable")
         ]
         rows += [
             Property(

@@ -16,7 +16,6 @@ from bust.editor.diagram import (
     field_notes,
     register_heading,
     register_list,
-    unused_name,
 )
 
 
@@ -71,16 +70,12 @@ class OverviewScreen(Screen[None]):
                     )
                     if register.description:
                         yield Static(register.description, markup=False)
-                    lines: List[str] = bit_diagram(
-                        register, module.data_width, unused_name(module)
-                    )
+                    lines: List[str] = bit_diagram(register, module.data_width)
                     lines[-1] += "  Reset"
                     yield Static("\n".join(lines), classes="diagram", markup=False)
                     if register.type == RegisterType.FIELDS:
                         notes = Text()
-                        for field, note in field_notes(
-                            register, module.reserved_fields
-                        ):
+                        for field, note in field_notes(register):
                             notes.append(f"  {field}", style="bold")
                             notes.append(f"  {note}\n")
                         notes.rstrip()

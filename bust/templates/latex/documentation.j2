@@ -68,13 +68,13 @@
 {% if bits.field %}
   \regfield{{ '{' }}{% if reg.type == reg_type_fields %}{{ bits.field.name | utf8tolatex }}{% endif %}{{ '}' }}{{ '{' }}{{ bits.width }}{{ '}' }}{{ '{' }}{{ bits.low }}{{ '}' }}{{ '{' }}{% if bits.width < 2 %}{{ bits.field.reset[2:]|int(base=16) }}{% else %}{0x{{ "%X" | format(bits.field.reset[2:]|int(base=16)) }}}{% endif %}{{ '}' }}
 {% else %}
-  \regfield{{ '{' }}{{ unused_name }}{{ '}' }}{{ '{' }}{{ bits.width }}{{ '}' }}{{ '{' }}{{ bits.low }}{{ '}' }}{{ '{' }}-{{ '}' }}
+  \regfield{{ '{' }}reserved{{ '}' }}{{ '{' }}{{ bits.width }}{{ '}' }}{{ '{' }}{{ bits.low }}{{ '}' }}{{ '{' }}-{{ '}' }}
 {% endif %}
 {% endfor %}
 \reglabel{Reset}\regnewline
 {% if reg.type == reg_type_fields %}
   \begin{{ '{' }}regdesc{{ '}' }}\begin{{ '{' }}reglist{{ '}' }}[{{ reg.fields | map(attribute='name') | min | utf8tolatex }}]
-{% for bits in reg.bit_ranges | reverse if bits.field or module.reserved_fields %}
+{% for bits in reg.bit_ranges | reverse %}
 {% if not bits.field %}
     \item [reserved] Bits {% if bits.width > 1 %}{{ bits.high }}:{% endif %}{{ bits.low }}. Read as 0, writes have no effect.
 {% else %}

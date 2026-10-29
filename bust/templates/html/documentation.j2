@@ -100,10 +100,10 @@ dl.fields dd { margin: 0 0 0.3rem; }
 {% if reg.description %}
 <p>{{ reg.description | utf8tohtml }}</p>
 {% endif %}
-<div class="diagram">{{ bit_diagram_svg(reg, module.data_width, unused_name) }}</div>
+<div class="diagram">{{ bit_diagram_svg(reg, module.data_width) }}</div>
 {% if reg.type == reg_type_fields %}
 <dl class="fields">
-{% for name, note in field_notes(reg, module.reserved_fields) %}
+{% for name, note in field_notes(reg) %}
 <dt>{{ name | e }}</dt><dd>{{ note | utf8tohtml }}</dd>
 {% endfor %}
 </dl>

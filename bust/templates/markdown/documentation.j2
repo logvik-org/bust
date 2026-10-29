@@ -46,7 +46,7 @@ Address `0x{{ "%08X" | format(reg.address) }}`, {{ reg.sw.value.upper() }}/{{ re
 |------|------|----|----|-------|-------------|
 {% for range in reg.bit_ranges %}
 {% if not range.field %}
-| {{ bits(range.high, range.low) }} | {{ unused_name }} | | | |{% if module.reserved_fields %} Read as 0, writes have no effect.{% endif %} |
+| {{ bits(range.high, range.low) }} | reserved | | | | Read as 0, writes have no effect. |
 {% else %}
 {% set field = range.field %}
 {% set notes = field_notes(field) %}

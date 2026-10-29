@@ -14,9 +14,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 - `doc/<module>.html`, the documentation as one self-contained HTML page with inline SVG bit diagrams, links between the register list and the registers, a sidebar and a print stylesheet.
 - `doc/<module>.md`, the documentation as Markdown, with the register list and a bits table per register, readable on GitHub.
 - The documentation hosts the register map JSON Schema at https://bust.readthedocs.io/en/stable/register-map.schema.json. A register map may point to it with a `"$schema"` key, which gives completion, hover text and errors in editors with JSON Schema support. The editor adds the key to new register maps.
-- `reserved_fields` in `module`. With `true`, the documentation and the editor overview show the bits that no field covers as reserved fields, and list them among the fields.
 
 ### Changed
+- The documentation and the editor overview show the bits that no field covers as `reserved` instead of `unused`, and list them among the fields with "Read as 0, writes have no effect."
 - bust builds the PDF only when `pdflatex` is on `PATH`. Without it, bust writes the `.tex` and `.html` files and prints one line saying the PDF was skipped.
 - `<module>_regfile_pkg` merges `base_match` and `above_registers` into one function, `is_in_range`.
 
@@ -27,7 +27,7 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 - The Upgrading from 0.14 page. `--migrate` is described on the command line page.
 
 ### Fixed
-- The LaTeX bit diagram drew no box for a gap made by `position`, and the Markdown bits table left out the bits below the lowest field. Both now mark them unused, as the editor overview and the HTML page already did.
+- The LaTeX bit diagram drew no box for a gap made by `position`, and the Markdown bits table left out the bits below the lowest field.
 
 ## [1.0.0]
 

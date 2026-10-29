@@ -87,35 +87,35 @@ An example module that contain all the register types that are currently support
 
 \begin{register}{H}{reg0 - RW/R}{0x00000000}  \par RW std{\_}logic register that resets to 0x0 \regnewline
   \label{reg0}
-  \regfield{unused}{31}{1}{-}
+  \regfield{reserved}{31}{1}{-}
   \regfield{}{1}{0}{0}
 \reglabel{Reset}\regnewline
 \end{register}
 
 \begin{register}{H}{reg1 - RW/R}{0x00000004}  \par RW std{\_}logic register that resets to 0x1 \regnewline
   \label{reg1}
-  \regfield{unused}{31}{1}{-}
+  \regfield{reserved}{31}{1}{-}
   \regfield{}{1}{0}{1}
 \reglabel{Reset}\regnewline
 \end{register}
 
 \begin{register}{H}{reg2 - RO/W}{0x00000008}  \par RO std{\_}logic register \regnewline
   \label{reg2}
-  \regfield{unused}{31}{1}{-}
+  \regfield{reserved}{31}{1}{-}
   \regfield{}{1}{0}{0}
 \reglabel{Reset}\regnewline
 \end{register}
 
 \begin{register}{H}{reg3 - RW/R}{0x0000000C}  \par RW std{\_}logic{\_}vector[7:0] register that resets to 0x3 \regnewline
   \label{reg3}
-  \regfield{unused}{24}{8}{-}
+  \regfield{reserved}{24}{8}{-}
   \regfield{}{8}{0}{{0x3}}
 \reglabel{Reset}\regnewline
 \end{register}
 
 \begin{register}{H}{reg4 - RO/W}{0x00000010}  \par RO std{\_}logic{\_}vector[13:0] \regnewline
   \label{reg4}
-  \regfield{unused}{18}{14}{-}
+  \regfield{reserved}{18}{14}{-}
   \regfield{}{14}{0}{{0x0}}
 \reglabel{Reset}\regnewline
 \end{register}
@@ -134,7 +134,7 @@ An example module that contain all the register types that are currently support
 
 \begin{register}{H}{reg7 - RW/R}{0x0000001C}  \par RW register that have multiple fields \regnewline
   \label{reg7}
-  \regfield{unused}{11}{21}{-}
+  \regfield{reserved}{11}{21}{-}
   \regfield{field3}{15}{6}{{0x2B}}
   \regfield{field2}{1}{5}{0}
   \regfield{field1}{4}{1}{{0xB}}
@@ -145,12 +145,13 @@ An example module that contain all the register types that are currently support
     \item [field1] std{\_}logic{\_}vector[3:0] that resets to 0xb is not a valid reset value (sw: rw, hw: r)
     \item [field2] std{\_}logic that resets to 0x1 (sw: rw, hw: r)
     \item [field3] std{\_}logic{\_}vector[14:0] that resets to 0x2b (sw: rw, hw: r)
+    \item [reserved] Bits 31:21. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
 
 \begin{register}{H}{reg8 - RO/W}{0x00000020}  \par RO register with multiple types of fields \regnewline
   \label{reg8}
-  \regfield{unused}{8}{24}{-}
+  \regfield{reserved}{8}{24}{-}
   \regfield{field3}{3}{21}{{0x0}}
   \regfield{field2}{1}{20}{0}
   \regfield{field1}{19}{1}{{0x0}}
@@ -161,32 +162,34 @@ An example module that contain all the register types that are currently support
     \item [field1] std{\_}logic{\_}vector[18:0] field (sw: ro, hw: w)
     \item [field2] std{\_}logic field (sw: ro, hw: w)
     \item [field3] std{\_}logic{\_}vector[2:0] field (sw: ro, hw: w)
+    \item [reserved] Bits 31:24. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
 
 \begin{register}{H}{reg9 - WO/R}{0x00000024}  \par PULSE std{\_}logic register that resets to 0x1 \regnewline
   \label{reg9}
-  \regfield{unused}{31}{1}{-}
+  \regfield{reserved}{31}{1}{-}
   \regfield{}{1}{0}{1}
 \reglabel{Reset}\regnewline
 \end{register}
 
 \begin{register}{H}{reg10 - WO/R}{0x00000028}  \par PULSE std{\_}logic{\_}vector[3:0] register that resets to 0xA \regnewline
   \label{reg10}
-  \regfield{unused}{28}{4}{-}
+  \regfield{reserved}{28}{4}{-}
   \regfield{}{4}{0}{{0xA}}
 \reglabel{Reset}\regnewline
 \end{register}
 
 \begin{register}{H}{reg11 - WO/R}{0x0000002C}  \par PULSE register with two fields \regnewline
   \label{reg11}
-  \regfield{unused}{16}{16}{-}
+  \regfield{reserved}{16}{16}{-}
   \regfield{field1}{1}{15}{0}
   \regfield{field0}{15}{0}{{0x3}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
     \item [field0] std{\_}logic{\_}vector[14:0] field that resets to 0x3 (sw: wo, hw: r, singlepulse)
     \item [field1] std{\_}logic field that resets to 0x0 (sw: wo, hw: r, singlepulse)
+    \item [reserved] Bits 31:16. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
 

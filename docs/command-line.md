@@ -297,7 +297,7 @@ software and hardware access, address, type, width and reset of each register.
 Then each register follows with its address, its description and a bit
 diagram. The diagram draws each field as a box over its bits, with the
 numbers of its highest and lowest bit above and its reset value below. Bits no
-field uses show as `unused`, or as `reserved` with [`reserved_fields`](register-map-format.md#reserved-fields). A box is wider than its bits where its name would
+field uses show as `reserved`, see [Reserved fields](register-map-format.md#reserved-fields). A box is wider than its bits where its name would
 not fit. Under the diagram, each field is listed with its description and its
 access.
 

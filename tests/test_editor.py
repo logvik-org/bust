@@ -488,7 +488,7 @@ def test_edit_the_module_and_bus(tmp_path):
         await editor.press("m")
         await editor.press("down", "down", "enter")
         await editor.fill(value="2.0")
-        await editor.press("down", "down", "down", "enter")
+        await editor.press("down", "down", "enter")
         await editor.fill(value="apb")
         await editor.press("escape", "s")
 
@@ -646,7 +646,7 @@ def test_bit_diagram():
     lines = bit_diagram(reg3, 32)
 
     assert lines[2].split("│")[1:3] == [
-        " " * 33 + "unused" + " " * 32,
+        " " * 32 + "reserved" + " " * 31,
         " " * 10 + "reg3" + " " * 9,
     ]
     assert lines[1].startswith("┌") and lines[1].endswith("┐")

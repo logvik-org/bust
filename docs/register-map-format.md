@@ -176,7 +176,6 @@ the timing of each protocol.
 | `version` | string | `""` | The version of the register map. Every generated file carries it, see [Version and hash](#version-and-hash). Printable ASCII characters other than `"`, `\`, `;` and `=`. A module with a `version` register needs the form `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`. |
 | `description` | string | `""` | Shown in the documentation. |
 | `byte_addressable` | boolean | from the bus | `true` if an address counts bytes, `false` if it counts data words. See [Byte and word addresses](#byte-and-word-addresses). |
-| `reserved_fields` | boolean | `false` | `true` to show the bits that no field covers as reserved fields in the documentation. See [Reserved fields](#reserved-fields). |
 
 ### Version and hash
 
@@ -449,7 +448,7 @@ Fields fill the register from bit 0 upwards, in the order you list them. Each
 field starts at the bit after the previous one, unless it has a `position`. A
 `position` can leave a gap, but it cannot go back, so list the fields from the
 lowest bit to the highest. In the example, `flush` sits at bit 8 and bits 4 to
-7 of `ctrl` are unused:
+7 of `ctrl` are reserved:
 
 | Field | Bits |
 |---|---|
@@ -477,7 +476,7 @@ Bits that no field covers read as 0, and writes to them have no effect.
 
 ### Reserved fields
 
-The LaTeX, HTML and Markdown documentation and the editor overview mark the bits that no field covers as `unused`. With `"reserved_fields": true` in `module`, they show as `reserved` fields instead, and each run of them gets an entry in the field list of a `fields` register, in bit order. For `ctrl` in the example:
+The LaTeX, HTML and Markdown documentation and the editor overview show each run of bits that no field covers as a `reserved` field, in the bit diagram and among the fields, in bit order. For `ctrl` in the example:
 
 ```text
   31                                                               9     8     7       4   3    2     1       0
@@ -494,7 +493,7 @@ flush    Write 1 to empty both FIFOs. (sw: rw, hw: r, singlepulse)
 reserved Bits 31:9. Read as 0, writes have no effect.
 ```
 
-Reserved fields exist only in the documentation and the editor overview. The VHDL, the headers and the IPBus address table do not change, and neither does the [hash](#version-and-hash).
+Reserved fields exist only in the documentation and the editor overview, and you do not list them in the JSON file. The VHDL, the headers and the IPBus address table do not change, and neither does the [hash](#version-and-hash).
 
 ## Enumerations
 

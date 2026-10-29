@@ -1,10 +1,9 @@
-"""reserved_fields shows the bits that no field covers as reserved fields."""
+"""The documentation shows the bits that no field covers as reserved fields."""
 
 import pytest
 
 from bust.core.bus import Bus
 from bust.core.module import Module
-from bust.exceptions import FormatError
 from bust.generators.documentation_generator import DocumentationGenerator
 
 _BUS = {"type": "axi", "addr_width": 8, "data_width": 32}
@@ -22,8 +21,8 @@ _CTRL = {
 _COUNT = {"name": "count", "type": "vector", "width": 8, "sw": "rw", "hw": "r"}
 
 
-def _module(**keys):
-    config = {"name": "m", "register": [_CTRL, _COUNT], **keys}
+def _module(*registers):
+    config = {"name": "m", "register": list(registers or (_CTRL, _COUNT))}
     return Module(config, Bus(_BUS), settings=None)
 
 
@@ -45,39 +44,9 @@ def test_bit_ranges_cover_every_bit_from_the_highest_down():
     assert _ranges(count) == [(31, 8, None), (7, 0, "count")]
 
 
-def test_reserved_fields_is_off_by_default():
-    assert _module().reserved_fields is False
-
-
-@pytest.mark.parametrize("value", ["true", 1, None])
-def test_reserved_fields_must_be_a_boolean(value):
-    with pytest.raises(FormatError, match="reserved_fields must be true or false"):
-        _module(reserved_fields=value)
-
-
-def test_reserved_fields_does_not_change_the_hash():
-    assert _module().regmap_hash_hex == _module(reserved_fields=True).regmap_hash_hex
-
-
-def _latex(**keys):
+def test_latex_documentation_lists_reserved_fields():
     pytest.importorskip("pylatexenc")
-    return DocumentationGenerator(_module(**keys)).generate_tex_documentation("1.0.0")
-
-
-def test_documentation_marks_every_gap_unused():
-    tex = _latex()
-
-    assert (
-        "  \\regfield{unused}{26}{6}{-}\n"
-        "  \\regfield{mode}{2}{4}{{0x0}}\n"
-        "  \\regfield{unused}{3}{1}{-}\n"
-        "  \\regfield{enable}{1}{0}{0}\n"
-    ) in tex
-    assert "\\item [reserved]" not in tex
-
-
-def test_documentation_lists_reserved_fields():
-    tex = _latex(reserved_fields=True)
+    tex = DocumentationGenerator(_module()).generate_tex_documentation("1.0.0")
 
     assert (
         "  \\regfield{reserved}{26}{6}{-}\n"
@@ -92,34 +61,11 @@ def test_documentation_lists_reserved_fields():
         "    \\item [mode]  (sw: rw, hw: r)\n"
         "    \\item [reserved] Bits 31:6. Read as 0, writes have no effect.\n"
     ) in tex
-
-
-def test_the_editor_overview_shows_reserved_fields():
-    pytest.importorskip("textual")
-    from bust.editor.diagram import bit_diagram, field_notes, unused_name
-
-    module = _module(reserved_fields=True)
-    ctrl = module.registers[0]
-
-    names = bit_diagram(ctrl, 32, unused_name(module))[2]
-    assert [name.strip() for name in names.split("│")[1:-1]] == [
-        "reserved",
-        "mode",
-        "reserved",
-        "enable",
-    ]
-    assert [name for name, _ in field_notes(ctrl, module.reserved_fields)] == [
-        "enable",
-        "reserved",
-        "mode",
-        "reserved",
-    ]
-    assert [name for name, _ in field_notes(ctrl)] == ["enable", "mode"]
+    assert "unused" not in tex
 
 
 def test_html_documentation_lists_reserved_fields():
-    html = DocumentationGenerator(_module(reserved_fields=True))
-    page = html.generate_html_documentation("1.0.0")
+    page = DocumentationGenerator(_module()).generate_html_documentation("1.0.0")
 
     assert (
         "<dt>reserved</dt><dd>Bits 3:1. Read as 0, writes have no effect.</dd>" in page
@@ -129,23 +75,38 @@ def test_html_documentation_lists_reserved_fields():
 
 
 def test_markdown_documentation_lists_reserved_fields():
-    doc = DocumentationGenerator(_module(reserved_fields=True))
-    page = doc.generate_markdown_documentation("1.0.0")
+    page = DocumentationGenerator(_module()).generate_markdown_documentation("1.0.0")
 
     assert (
         "| 31:6 | reserved | | | | Read as 0, writes have no effect. |\n"
         "| 5:4 | mode |"
     ) in page
     assert "| 3:1 | reserved | | | | Read as 0, writes have no effect. |\n" in page
-    assert "| unused |" not in page
 
 
-def test_markdown_documentation_marks_unused_bits_below_the_lowest_field():
-    low_gap = {
-        "name": "irq",
-        "fields": [{"name": "done", "type": "bit", "position": 2}],
-    }
-    module = Module({"name": "m", "register": [low_gap]}, Bus(_BUS), settings=None)
-    page = DocumentationGenerator(module).generate_markdown_documentation("1.0.0")
+def test_markdown_documentation_lists_bits_below_the_lowest_field():
+    irq = {"name": "irq", "fields": [{"name": "done", "type": "bit", "position": 2}]}
+    page = DocumentationGenerator(_module(irq)).generate_markdown_documentation("1.0.0")
 
-    assert "| 1:0 | unused | | | | |\n" in page
+    assert "| 1:0 | reserved | | | | Read as 0, writes have no effect. |\n" in page
+
+
+def test_the_editor_overview_shows_reserved_fields():
+    pytest.importorskip("textual")
+    from bust.editor.diagram import bit_diagram, field_notes
+
+    ctrl = _module().registers[0]
+
+    names = bit_diagram(ctrl, 32)[2]
+    assert [name.strip() for name in names.split("│")[1:-1]] == [
+        "reserved",
+        "mode",
+        "reserved",
+        "enable",
+    ]
+    assert [name for name, _ in field_notes(ctrl)] == [
+        "enable",
+        "reserved",
+        "mode",
+        "reserved",
+    ]
