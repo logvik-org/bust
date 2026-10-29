@@ -13,6 +13,7 @@ from bust.editing.document import (
     RegisterMapDocument,
     diff_operations,
 )
+from bust.schema import SCHEMA_URL
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
 _EXAMPLES = sorted(
@@ -202,7 +203,9 @@ def test_a_new_register_map(tmp_path):
     assert document.is_modified
     assert document.save(path) is True
     with open(path, encoding="utf-8") as fp:
-        assert json.load(fp)["module"]["register"] == [{"name": "ctrl"}]
+        saved = json.load(fp)
+    assert saved["$schema"] == SCHEMA_URL
+    assert saved["module"]["register"] == [{"name": "ctrl"}]
     with pytest.raises(FileExistsError):
         RegisterMapDocument.new(
             {"type": "apb", "addr_width": 8, "data_width": 32}, {"name": "timer"}

@@ -63,7 +63,9 @@ CHECKED_KEYWORDS = frozenset(
         "$ref",
     ]
 )
-ANNOTATION_KEYWORDS = frozenset(["$schema", "$defs", "title", "description", "default"])
+ANNOTATION_KEYWORDS = frozenset(
+    ["$schema", "$id", "$defs", "title", "description", "default"]
+)
 
 _TYPE_NAMES = {
     "string": "a string",

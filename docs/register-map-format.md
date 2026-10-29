@@ -629,3 +629,20 @@ the register map, which step 2 checks. It lists each key with its allowed
 values, its default and a short description, for editors and other tools.
 bust also reads the values of `sw`, `hw`, `onread`, `onwrite` and `type` in
 upper case, which the schema leaves out.
+
+The schema of the latest release is at
+<https://bust.readthedocs.io/en/stable/register-map.schema.json>. Point a
+register map to it with a `"$schema"` key, and VS Code, JetBrains IDEs and other
+editors with JSON Schema support complete keys, show each description on hover
+and mark wrong values, with no extension:
+
+```json
+{
+    "$schema": "https://bust.readthedocs.io/en/stable/register-map.schema.json",
+    "bus": {"type": "axi", "addr_width": 32, "data_width": 32},
+    "module": {"name": "timer", "register": []}
+}
+```
+
+bust ignores the key, and the [editor](command-line.md#interactive-editor) adds
+it to each register map it creates.

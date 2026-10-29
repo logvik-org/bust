@@ -21,6 +21,10 @@ from bust.core.enums import (
     SwAccess,
 )
 
+# The docs build writes the schema to this address, and Read the Docs rebuilds
+# stable on each release. A register map points to it with a "$schema" key.
+SCHEMA_URL = "https://bust.readthedocs.io/en/stable/register-map.schema.json"
+
 # The forms parse_number reads. JSON5 0x1c parses to an integer, JSON "0x1c"
 # to a string.
 _NUMBER_PATTERN = r"^(0[xX][0-9a-fA-F]+|0[bB][01]+|[0-9]+)$"
@@ -197,11 +201,16 @@ def register_map_schema() -> Dict[str, Any]:
     """The JSON Schema of a register map file."""
     schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": SCHEMA_URL,
         "title": "bust register map",
         "type": "object",
         "required": ["bus", "module"],
         "additionalProperties": False,
         "properties": {
+            "$schema": _string(
+                "The address of this schema, which lets an editor check the "
+                "file and complete keys. bust ignores it."
+            ),
             "bus": {"$ref": "#/$defs/bus"},
             "module": {"$ref": "#/$defs/module"},
         },

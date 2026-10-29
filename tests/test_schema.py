@@ -10,7 +10,7 @@ from bust.core.bus import BUS_KEYS
 from bust.core.field import FIELD_KEYS
 from bust.core.module import MODULE_KEYS
 from bust.core.register import REGISTER_KEYS
-from bust.schema import register_map_schema
+from bust.schema import SCHEMA_URL, register_map_schema
 from bust.utils.json_utils import json_parser
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
@@ -59,6 +59,11 @@ def test_every_example_matches(path):
 )
 def test_the_schema_has_the_keys_bust_reads(definition, keys):
     assert set(register_map_schema()["$defs"][definition]["properties"]) == keys
+
+
+def test_a_register_map_may_point_to_the_schema():
+    assert register_map_schema()["$id"] == SCHEMA_URL
+    _validator().validate({"$schema": SCHEMA_URL, **_REGISTER_MAP})
 
 
 def test_numbers_in_both_forms():
