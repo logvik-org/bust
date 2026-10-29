@@ -56,9 +56,9 @@ def test_latex_documentation_lists_reserved_fields():
     ) in tex
     assert "  \\regfield{reserved}{24}{8}{-}\n  \\regfield{}{8}{0}" in tex
     assert (
-        "    \\item [enable]  (sw: rw, hw: r)\n"
+        "    \\item [enable] (sw: rw, hw: r)\n"
         "    \\item [reserved] Bits 3:1. Read as 0, writes have no effect.\n"
-        "    \\item [mode]  (sw: rw, hw: r)\n"
+        "    \\item [mode] (sw: rw, hw: r)\n"
         "    \\item [reserved] Bits 31:6. Read as 0, writes have no effect.\n"
     ) in tex
     assert "unused" not in tex
@@ -93,7 +93,8 @@ def test_markdown_documentation_lists_bits_below_the_lowest_field():
 
 def test_the_editor_overview_shows_reserved_fields():
     pytest.importorskip("textual")
-    from bust.editor.diagram import bit_diagram, field_notes
+    from bust.editor.diagram import bit_diagram
+    from bust.generators.register_layout import field_notes
 
     ctrl = _module().registers[0]
 
