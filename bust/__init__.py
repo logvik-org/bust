@@ -26,6 +26,7 @@ from bust.generators import (
     DocumentationGenerator,
     GeneratorFactory,
 )
+from bust.bundle import bundle_zip
 from bust.generation import generate_files
 
 __all__ = [
@@ -39,4 +40,5 @@ __all__ = [
     "DocumentationGenerator",
     "GeneratorFactory",
     "generate_files",
+    "bundle_zip",
 ]

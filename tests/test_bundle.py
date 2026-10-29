@@ -1,0 +1,79 @@
+import io
+import os
+import zipfile
+
+import pytest
+
+from bust.bundle import README_NAME, build_readme, bundle_zip, describe_file
+from bust.generation import generate_files
+
+_EXAMPLE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "example")
+
+
+def _generate_example(example):
+    with open(os.path.join(_EXAMPLE_DIR, f"{example}.json")) as fp:
+        return generate_files(fp.read())
+
+
+def _unzip(archive):
+    with zipfile.ZipFile(io.BytesIO(archive)) as zip_file:
+        return {name: zip_file.read(name) for name in zip_file.namelist()}
+
+
+@pytest.mark.parametrize(
+    "example",
+    ["example_axi", "example_ipbus", "example_prototype", "example_access_matrix"],
+)
+def test_zip_of_generate_files_describes_every_file(example):
+    files = _generate_example(example)
+
+    entries = _unzip(bundle_zip(files))
+
+    assert set(entries) == set(files) | {README_NAME}
+    readme = entries[README_NAME].decode("utf-8")
+    for path, content in files.items():
+        assert entries[path] == content.encode("utf-8")
+        assert describe_file(path), path
+        assert f"| `{path}` |" in readme
+
+
+def test_zip_stores_bytes_unchanged():
+    pdf = b"%PDF-1.5\x00\xff"
+
+    entries = _unzip(bundle_zip({"m/doc/m.pdf": pdf}))
+
+    assert entries["m/doc/m.pdf"] == pdf
+
+
+def test_zip_is_the_same_for_the_same_files():
+    files = _generate_example("example_axi")
+
+    assert bundle_zip(files) == bundle_zip(dict(reversed(list(files.items()))))
+
+
+@pytest.mark.parametrize(
+    "path, expected",
+    [
+        ("m/hdl/m_localbus_pkg.vhd", "Local-bus types"),
+        ("m/hdl/m_regfile_pkg.vhd", "Register types"),
+        ("m/hdl/m_regfile.vhd", "Register file."),
+        ("m/hdl/m_apb_endpoint.vhd", "Bus endpoint"),
+        ("m/tb/m_tb.vhd", "Self-checking UVVM testbench"),
+        ("m/hdl/m.vhd", "Starter top level"),
+        ("m/header/m.hpp", "C++ header"),
+        ("m/header/m.h", "C header"),
+        ("m/header/m.xml", "IPBus address table"),
+        ("m/doc/m.tex", "LaTeX documentation"),
+    ],
+)
+def test_describe_file(path, expected):
+    assert describe_file(path).startswith(expected)
+
+
+def test_readme_lists_unknown_files_without_description():
+    assert "| `m/notes.txt` |  |" in build_readme(["m/notes.txt"])
+
+
+def test_readme_name_is_reserved():
+    with pytest.raises(ValueError):
+        bundle_zip({README_NAME: "mine"})
