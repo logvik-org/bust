@@ -448,7 +448,7 @@ Fields fill the register from bit 0 upwards, in the order you list them. Each
 field starts at the bit after the previous one, unless it has a `position`. A
 `position` can leave a gap, but it cannot go back, so list the fields from the
 lowest bit to the highest. In the example, `flush` sits at bit 8 and bits 4 to
-7 of `ctrl` are unused:
+7 of `ctrl` are reserved:
 
 | Field | Bits |
 |---|---|
@@ -473,6 +473,27 @@ Register width: 33
 ```
 
 Bits that no field covers read as 0, and writes to them have no effect.
+
+### Reserved fields
+
+The LaTeX, HTML and Markdown documentation and the editor overview show each run of bits that no field covers as a `reserved` field, in the bit diagram and among the fields, in bit order. For `ctrl` in the example:
+
+```text
+  31                                                               9     8     7       4   3    2     1       0
+┌────────────────────────────────────────────────────────────────────┬───────┬───────────┬────────┬───────┬───────┐
+│                              reserved                              │ flush │  reserved │ parity │ rx_en │ tx_en │
+└────────────────────────────────────────────────────────────────────┴───────┴───────────┴────────┴───────┴───────┘
+                                  -                                      0         -        0x0       0       0
+
+tx_en    Enable the transmitter. (sw: rw, hw: r)
+rx_en    Enable the receiver. (sw: rw, hw: r)
+parity   Parity bit. (sw: rw, hw: r; values: PAR_NONE=0, PAR_EVEN=1, PAR_ODD=2)
+reserved Bits 7:4. Read as 0, writes have no effect.
+flush    Write 1 to empty both FIFOs. (sw: rw, hw: r, singlepulse)
+reserved Bits 31:9. Read as 0, writes have no effect.
+```
+
+Reserved fields exist only in the documentation and the editor overview, and you do not list them in the JSON file. The VHDL, the headers and the IPBus address table do not change, and neither does the [hash](#version-and-hash).
 
 ## Enumerations
 

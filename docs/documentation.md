@@ -22,7 +22,7 @@ bust writes documentation of the register map to `doc/`, in the output directory
   and hardware access, address, type, width and reset value.
 - **Registers**, a section for each register with its description and a
   diagram of its bits, with the field names, bit positions and reset values.
-  The bits above the highest field are marked unused. A register with fields
+  The bits that no field covers are shown as [reserved fields](register-map-format.md#reserved-fields). A register with fields
   also gets a list of them, with the description, `sw` and `hw` of each field,
   and its `onread`, `onwrite`, `singlepulse` and enumeration values where it
   has them.
@@ -34,11 +34,12 @@ This is the section for `reg11` from `prototype.tex`:
 ```latex
 \begin{register}{H}{reg11 - RW/R}{0x0000002C}  \par Enumerated field. \regnewline
   \label{reg11}
-  \regfield{unused}{30}{2}{-}
+  \regfield{reserved}{30}{2}{-}
   \regfield{field0}{2}{0}{{0x0}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
     \item [field0]  (sw: rw, hw: r; values: STATE0=0, STATE1=1, STATE2=2, STATE3=3)
+    \item [reserved] Bits 31:2. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
 ```
@@ -84,7 +85,7 @@ altogether.
 
 ## Markdown
 
-`doc/<module>.md` holds the register map as Markdown, for reading on GitHub or GitLab or in an editor, with no LaTeX needed. It has a line with the bust version, the `version` of the module and the hash of the register map under the title, then the `description` of the module, a **Register list** table where each name links to its register, and a **Registers** section with a table of the bits of each register. The bits table lists the fields from the highest bit down, with their bits, name, `sw`, `hw`, reset value and description, followed by the `onread`, `onwrite`, `singlepulse`, hardware modifiers and enumeration values where the field has them. Bits that no field uses are listed as unused. A register without fields gets one row, named after the register.
+`doc/<module>.md` holds the register map as Markdown, for reading on GitHub or GitLab or in an editor, with no LaTeX needed. It has a line with the bust version, the `version` of the module and the hash of the register map under the title, then the `description` of the module, a **Register list** table where each name links to its register, and a **Registers** section with a table of the bits of each register. The bits table lists the fields from the highest bit down, with their bits, name, `sw`, `hw`, reset value and description, followed by the `onread`, `onwrite`, `singlepulse`, hardware modifiers and enumeration values where the field has them. Bits that no field uses are listed as [reserved](register-map-format.md#reserved-fields). A register without fields gets one row, named after the register.
 
 In descriptions, a `` `code` `` span is kept, and the characters that Markdown would read as markup, such as `*` and `|`, are escaped. Line breaks become spaces.
 

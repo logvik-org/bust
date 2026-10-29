@@ -33,7 +33,7 @@ RW std_logic register that resets to 0x0
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:1 | unused | | | | |
+| 31:1 | reserved | | | | Read as 0, writes have no effect. |
 | 0 | reg0 | rw | r | `0x0` | |
 
 ### reg1
@@ -44,7 +44,7 @@ RW std_logic register that resets to 0x1
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:1 | unused | | | | |
+| 31:1 | reserved | | | | Read as 0, writes have no effect. |
 | 0 | reg1 | rw | r | `0x1` | |
 
 ### reg2
@@ -55,7 +55,7 @@ RO std_logic register
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:1 | unused | | | | |
+| 31:1 | reserved | | | | Read as 0, writes have no effect. |
 | 0 | reg2 | ro | w | `0x0` | |
 
 ### reg3
@@ -66,7 +66,7 @@ RW std_logic_vector\[7:0\] register that resets to 0x3
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:8 | unused | | | | |
+| 31:8 | reserved | | | | Read as 0, writes have no effect. |
 | 7:0 | reg3 | rw | r | `0x3` | |
 
 ### reg4
@@ -77,7 +77,7 @@ RO std_logic_vector\[13:0\]
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:14 | unused | | | | |
+| 31:14 | reserved | | | | Read as 0, writes have no effect. |
 | 13:0 | reg4 | ro | w | `0x0` | |
 
 ### reg5
@@ -108,7 +108,7 @@ RW register that have multiple fields
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:21 | unused | | | | |
+| 31:21 | reserved | | | | Read as 0, writes have no effect. |
 | 20:6 | field3 | rw | r | `0x2B` | std_logic_vector\[14:0\] that resets to 0x2b |
 | 5 | field2 | rw | r | `0x0` | std_logic that resets to 0x1 |
 | 4:1 | field1 | rw | r | `0xB` | std_logic_vector\[3:0\] that resets to 0xb is not a valid reset value |
@@ -122,7 +122,7 @@ RO register with multiple types of fields
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:24 | unused | | | | |
+| 31:24 | reserved | | | | Read as 0, writes have no effect. |
 | 23:21 | field3 | ro | w | `0x0` | std_logic_vector\[2:0\] field |
 | 20 | field2 | ro | w | `0x0` | std_logic field |
 | 19:1 | field1 | ro | w | `0x0` | std_logic_vector\[18:0\] field |
@@ -136,7 +136,7 @@ PULSE std_logic register that resets to 0x1
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:1 | unused | | | | |
+| 31:1 | reserved | | | | Read as 0, writes have no effect. |
 | 0 | reg9 | wo | r | `0x1` | singlepulse. |
 
 ### reg10
@@ -147,7 +147,7 @@ PULSE std_logic_vector\[3:0\] register that resets to 0xA
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:4 | unused | | | | |
+| 31:4 | reserved | | | | Read as 0, writes have no effect. |
 | 3:0 | reg10 | wo | r | `0xA` | singlepulse. |
 
 ### reg11
@@ -158,7 +158,7 @@ PULSE register with two fields
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-| 31:16 | unused | | | | |
+| 31:16 | reserved | | | | Read as 0, writes have no effect. |
 | 15 | field1 | wo | r | `0x0` | std_logic field that resets to 0x0 singlepulse. |
 | 14:0 | field0 | wo | r | `0x3` | std_logic_vector\[14:0\] field that resets to 0x3 singlepulse. |
 

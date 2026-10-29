@@ -83,19 +83,20 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
 
 \begin{register}{H}{reg0 - RW/R}{0x00000000}  \par Plain rw storage, hardware reads back. \regnewline
   \label{reg0}
-  \regfield{unused}{29}{3}{-}
+  \regfield{reserved}{29}{3}{-}
   \regfield{field1}{2}{1}{{0x0}}
   \regfield{field0}{1}{0}{0}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
     \item [field0]  (sw: rw, hw: r)
     \item [field1]  (sw: rw, hw: r)
+    \item [reserved] Bits 31:3. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
 
 \begin{register}{H}{reg1 - RO/W}{0x00000004}  \par Hardware-driven status, software read-only. \regnewline
   \label{reg1}
-  \regfield{unused}{26}{6}{-}
+  \regfield{reserved}{26}{6}{-}
   \regfield{field2}{1}{5}{0}
   \regfield{field1}{1}{4}{0}
   \regfield{field0}{4}{0}{{0x0}}
@@ -104,56 +105,63 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
     \item [field0]  (sw: ro, hw: w)
     \item [field1]  (sw: ro, hw: w)
     \item [field2]  (sw: ro, hw: w)
+    \item [reserved] Bits 31:6. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
 
 \begin{register}{H}{reg2 - WO/R}{0x00000008}  \par Write-only command field. \regnewline
   \label{reg2}
-  \regfield{unused}{31}{1}{-}
+  \regfield{reserved}{31}{1}{-}
   \regfield{field0}{1}{0}{0}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
     \item [field0]  (sw: wo, hw: r)
+    \item [reserved] Bits 31:1. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
 
 \begin{register}{H}{reg3 - RW/NA}{0x0000000C}  \par Software-only scratch register. \regnewline
   \label{reg3}
-  \regfield{unused}{24}{8}{-}
+  \regfield{reserved}{24}{8}{-}
   \regfield{field0}{8}{0}{{0x0}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
     \item [field0]  (sw: rw, hw: na)
+    \item [reserved] Bits 31:8. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
 
 \begin{register}{H}{reg4 - RW/RW}{0x00000010}  \par Hardware write-enable and hardware set/clear. \regnewline
   \label{reg4}
-  \regfield{unused}{23}{9}{-}
+  \regfield{reserved}{23}{9}{-}
   \regfield{field1}{1}{8}{0}
+  \regfield{reserved}{4}{4}{-}
   \regfield{field0}{4}{0}{{0x0}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
     \item [field0]  (sw: rw, hw: rw)
+    \item [reserved] Bits 7:4. Read as 0, writes have no effect.
     \item [field1]  (sw: rw, hw: r)
+    \item [reserved] Bits 31:9. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
 
 \begin{register}{H}{reg5 - RW/R}{0x00000014}  \par Read side effects. \regnewline
   \label{reg5}
-  \regfield{unused}{24}{8}{-}
+  \regfield{reserved}{24}{8}{-}
   \regfield{field1}{4}{4}{{0x0}}
   \regfield{field0}{4}{0}{{0x0}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
     \item [field0]  (sw: rw, hw: r, onread: rclr)
     \item [field1]  (sw: rw, hw: r, onread: rset)
+    \item [reserved] Bits 31:8. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
 
 \begin{register}{H}{reg6 - RW/R}{0x00000018}  \par Write-1 onwrite effects. \regnewline
   \label{reg6}
-  \regfield{unused}{20}{12}{-}
+  \regfield{reserved}{20}{12}{-}
   \regfield{field2}{4}{8}{{0x0}}
   \regfield{field1}{4}{4}{{0xF}}
   \regfield{field0}{4}{0}{{0x0}}
@@ -162,12 +170,13 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
     \item [field0]  (sw: rw, hw: r, onwrite: woset)
     \item [field1]  (sw: rw, hw: r, onwrite: woclr)
     \item [field2]  (sw: rw, hw: r, onwrite: wot)
+    \item [reserved] Bits 31:12. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
 
 \begin{register}{H}{reg7 - RW/R}{0x0000001C}  \par Write-0 onwrite effects. \regnewline
   \label{reg7}
-  \regfield{unused}{20}{12}{-}
+  \regfield{reserved}{20}{12}{-}
   \regfield{field2}{4}{8}{{0x0}}
   \regfield{field1}{4}{4}{{0xF}}
   \regfield{field0}{4}{0}{{0x0}}
@@ -176,50 +185,55 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
     \item [field0]  (sw: rw, hw: r, onwrite: wzs)
     \item [field1]  (sw: rw, hw: r, onwrite: wzc)
     \item [field2]  (sw: rw, hw: r, onwrite: wzt)
+    \item [reserved] Bits 31:12. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
 
 \begin{register}{H}{reg8 - RW/R}{0x00000020}  \par Whole-field onwrite effects. \regnewline
   \label{reg8}
-  \regfield{unused}{24}{8}{-}
+  \regfield{reserved}{24}{8}{-}
   \regfield{field1}{4}{4}{{0x0}}
   \regfield{field0}{4}{0}{{0xF}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
     \item [field0]  (sw: rw, hw: r, onwrite: wclr)
     \item [field1]  (sw: rw, hw: r, onwrite: wset)
+    \item [reserved] Bits 31:8. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
 
 \begin{register}{H}{reg9 - RW/R}{0x00000024}  \par Software-access pulses. \regnewline
   \label{reg9}
-  \regfield{unused}{24}{8}{-}
+  \regfield{reserved}{24}{8}{-}
   \regfield{field1}{4}{4}{{0x0}}
   \regfield{field0}{4}{0}{{0x0}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
     \item [field0]  (sw: rw, hw: r)
     \item [field1]  (sw: rw, hw: r)
+    \item [reserved] Bits 31:8. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
 
 \begin{register}{H}{reg10 - RW/R}{0x00000028}  \par Single-cycle pulse on software write. \regnewline
   \label{reg10}
-  \regfield{unused}{28}{4}{-}
+  \regfield{reserved}{28}{4}{-}
   \regfield{field0}{4}{0}{{0x0}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
     \item [field0]  (sw: rw, hw: r, singlepulse)
+    \item [reserved] Bits 31:4. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
 
 \begin{register}{H}{reg11 - RW/R}{0x0000002C}  \par Enumerated field. \regnewline
   \label{reg11}
-  \regfield{unused}{30}{2}{-}
+  \regfield{reserved}{30}{2}{-}
   \regfield{field0}{2}{0}{{0x0}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
     \item [field0]  (sw: rw, hw: r; values: STATE0=0, STATE1=1, STATE2=2, STATE3=3)
+    \item [reserved] Bits 31:2. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
 

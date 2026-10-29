@@ -10,6 +10,7 @@ can optionally contain multiple named bitfields.
 """
 
 import logging
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, cast
 
 from bust.exceptions import (
@@ -61,6 +62,19 @@ REGISTER_KEYS = {
     "fields",
     *INHERITABLE_ACCESS,
 }
+
+
+@dataclass(frozen=True)
+class BitRange:
+    """A run of bits of a register: one field, or bits that no field covers."""
+
+    high: int
+    low: int
+    field: Optional[Field]
+
+    @property
+    def width(self) -> int:
+        return self.high - self.low + 1
 
 
 class Register:
@@ -243,6 +257,21 @@ class Register:
     def effective_fields(self) -> List["Field"]:
         """Fields for local-bus generation: real fields, or the implicit one."""
         return self.fields if self.fields else [self._implicit_field]
+
+    @property
+    def bit_ranges(self) -> List[BitRange]:
+        """Every bit up to the data width, from the highest down, with each
+        run of bits that no field covers as a range of its own."""
+        ranges: List[BitRange] = []
+        next_high = self.module_data_width - 1
+        for field in sorted(self.effective_fields, key=lambda f: -f.pos_high):
+            if field.pos_high < next_high:
+                ranges.append(BitRange(next_high, field.pos_high + 1, None))
+            ranges.append(BitRange(field.pos_high, field.pos_low, field))
+            next_high = field.pos_low - 1
+        if next_high >= 0:
+            ranges.append(BitRange(next_high, 0, None))
+        return ranges
 
     def _init_fields(self) -> None:
         """Initialize fields from configuration for FIELDS type registers."""

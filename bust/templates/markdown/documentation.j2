@@ -44,13 +44,13 @@ Address `0x{{ "%08X" | format(reg.address) }}`, {{ reg.sw.value.upper() }}/{{ re
 
 | Bits | Name | SW | HW | Reset | Description |
 |------|------|----|----|-------|-------------|
-{% set free = namespace(high=module.data_width - 1) %}
-{% for field in reg.effective_fields | reverse %}
-{% if field.pos_high < free.high %}
-| {{ bits(free.high, field.pos_high + 1) }} | unused | | | | |
-{% endif %}
+{% for range in reg.bit_ranges %}
+{% if not range.field %}
+| {{ bits(range.high, range.low) }} | reserved | | | | Read as 0, writes have no effect. |
+{% else %}
+{% set field = range.field %}
 {% set notes = field_notes(field) %}
 | {{ bits(field.pos_high, field.pos_low) }} | {{ field.name }} | {{ field.sw.value }} | {{ field.hw.value }} | `0x{{ "%X" | format(field.reset[2:]|int(base=16)) }}` |{% if notes %} {{ notes }}{% endif %} |
-{% set free.high = field.pos_low - 1 %}
+{% endif %}
 {% endfor %}
 {% endfor %}

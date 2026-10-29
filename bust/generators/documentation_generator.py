@@ -34,7 +34,7 @@ def bit_diagram_svg(register, data_width):
     taller to fit the longest such name.
     """
     bit = 24 if data_width <= 32 else 14
-    segments = bit_segments(register, data_width)
+    segments = bit_segments(register)
     is_turned = [len(s.name) * _CHAR_WIDTH + 6 > s.width * bit for s in segments]
     box_height = max(
         [_MIN_BOX_HEIGHT]

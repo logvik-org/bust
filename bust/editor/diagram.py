@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 from bust.core.enums import RegisterType
+from bust.core.field import Field
 from bust.core.module import Module
 from bust.core.register import Register
 
@@ -33,26 +34,19 @@ def _reset(text: str, width: int) -> str:
     return str(value) if width < 2 else f"0x{value:X}"
 
 
-def bit_segments(register: Register, data_width: int) -> List[_Segment]:
-    """The fields of `register` from the highest bit down, with the unused
-    bits between them."""
-    if register.type == RegisterType.FIELDS:
-        used = [
-            _Segment(f.name, f.pos_high, f.pos_low, _reset(f.reset, f.width))
-            for f in register.fields
-        ]
-    else:
-        width = register.width
-        used = [_Segment(register.name, width - 1, 0, _reset(register.reset, width))]
-    segments: List[_Segment] = []
-    next_high = data_width - 1
-    for segment in sorted(used, key=lambda s: s.high, reverse=True):
-        if segment.high < next_high:
-            segments.append(_Segment("unused", next_high, segment.high + 1, "-", True))
-        segments.append(segment)
-        next_high = segment.low - 1
-    if next_high >= 0:
-        segments.append(_Segment("unused", next_high, 0, "-", True))
+def bit_segments(register: Register) -> List[_Segment]:
+    """The fields of `register` from the highest bit down, with the bits no
+    field covers between them as reserved."""
+    segments = []
+    for bits in register.bit_ranges:
+        if bits.field is None:
+            segments.append(_Segment("reserved", bits.high, bits.low, "-", True))
+            continue
+        name = (
+            bits.field.name if register.type == RegisterType.FIELDS else register.name
+        )
+        reset = _reset(bits.field.reset, bits.width)
+        segments.append(_Segment(name, bits.high, bits.low, reset))
     return segments
 
 
@@ -70,7 +64,7 @@ def bit_diagram(register: Register, data_width: int) -> List[str]:
     the field names, and the reset values."""
     bit = bit_width(data_width)
     numbers = top = names = bottom = resets = ""
-    for number, segment in enumerate(bit_segments(register, data_width)):
+    for number, segment in enumerate(bit_segments(register)):
         high, low = str(segment.high), str(segment.low)
         bits = high if segment.width == 1 else f"{high} {low}"
         # A box grows past its bits rather than cut a name short.
@@ -121,23 +115,40 @@ def register_heading(register: Register) -> Tuple[str, str]:
     return f"{register.name} - {_access(register)}", f"0x{register.address:08X}"
 
 
+RESERVED_NOTE = "Read as 0, writes have no effect."
+
+
+def _bits(high: int, low: int) -> str:
+    return f"{high}:{low}" if high > low else str(low)
+
+
+def _field_note(field: Field) -> str:
+    keys = [f"sw: {field.sw.value}", f"hw: {field.hw.value}"]
+    if field.onread:
+        keys.append(f"onread: {field.onread.value}")
+    if field.onwrite:
+        keys.append(f"onwrite: {field.onwrite.value}")
+    if field.singlepulse:
+        keys.append("singlepulse")
+    text = f"({', '.join(keys)})"
+    if field.is_enum:
+        values = ", ".join(f"{e.name}={e.value}" for e in field.enums)
+        text = f"({', '.join(keys)}; values: {values})"
+    if field.description:
+        text = f"{field.description} {text}"
+    return text
+
+
 def field_notes(register: Register) -> List[Tuple[str, str]]:
     """Each field's name, and its description with its access, as the
-    documentation lists them under a register."""
+    documentation lists them under a register, from the lowest bit up, with
+    the bits no field covers listed as reserved."""
     notes = []
-    for field in register.fields:
-        keys = [f"sw: {field.sw.value}", f"hw: {field.hw.value}"]
-        if field.onread:
-            keys.append(f"onread: {field.onread.value}")
-        if field.onwrite:
-            keys.append(f"onwrite: {field.onwrite.value}")
-        if field.singlepulse:
-            keys.append("singlepulse")
-        text = f"({', '.join(keys)})"
-        if field.is_enum:
-            values = ", ".join(f"{e.name}={e.value}" for e in field.enums)
-            text = f"({', '.join(keys)}; values: {values})"
-        if field.description:
-            text = f"{field.description} {text}"
-        notes.append((field.name, text))
+    for bits in reversed(register.bit_ranges):
+        if bits.field is not None:
+            notes.append((bits.field.name, _field_note(bits.field)))
+        else:
+            notes.append(
+                ("reserved", f"Bits {_bits(bits.high, bits.low)}. {RESERVED_NOTE}")
+            )
     return notes

@@ -646,7 +646,7 @@ def test_bit_diagram():
     lines = bit_diagram(reg3, 32)
 
     assert lines[2].split("│")[1:3] == [
-        " " * 33 + "unused" + " " * 32,
+        " " * 32 + "reserved" + " " * 31,
         " " * 10 + "reg3" + " " * 9,
     ]
     assert lines[1].startswith("┌") and lines[1].endswith("┐")
