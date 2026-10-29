@@ -14,6 +14,7 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 - `doc/<module>.html`, the documentation as one self-contained HTML page with inline SVG bit diagrams, links between the register list and the registers, a sidebar and a print stylesheet.
 - `doc/<module>.md`, the documentation as Markdown, with the register list and a bits table per register, readable on GitHub.
 - The documentation hosts the register map JSON Schema at https://bust.readthedocs.io/en/stable/register-map.schema.json. A register map may point to it with a `"$schema"` key, which gives completion, hover text and errors in editors with JSON Schema support. The editor adds the key to new register maps.
+- `bust.bundle_zip` turns the result of `generate_files` into one zip, in the folder layout the CLI writes, with a `README.md` that lists what each file is.
 
 ### Changed
 - The documentation and the editor overview show the bits that no field covers as `reserved` instead of `unused`, and list them among the fields with "Read as 0, writes have no effect."
