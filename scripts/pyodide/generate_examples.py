@@ -8,6 +8,7 @@ import glob
 import os
 
 import bust
+from bust.utils.file_utils import write_string_to_file
 
 
 def generate_examples(example_dir: str, output_dir: str) -> None:
@@ -20,7 +21,6 @@ def generate_examples(example_dir: str, output_dir: str) -> None:
         with open(json_path, encoding="utf-8", newline="") as fp:
             files = bust.generate_files(fp.read())
         for relative_path, content in files.items():
-            path = os.path.join(output_dir, relative_path)
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "w", encoding="utf-8") as fp:
-                fp.write(content)
+            directory, filename = os.path.split(os.path.join(output_dir, relative_path))
+            os.makedirs(directory, exist_ok=True)
+            write_string_to_file(content, filename, directory, True)
