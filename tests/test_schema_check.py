@@ -11,7 +11,7 @@ import pytest
 
 from bust.editing.json_source import JsonSource
 from bust.exceptions import FormatError
-from bust.schema import register_map_schema
+from bust.schema import SCHEMA_URL, register_map_schema
 from bust.utils.json_utils import json_parser, parse_json_text
 from bust.validation.schema_check import (
     ANNOTATION_KEYWORDS,
@@ -211,6 +211,7 @@ def test_unknown_keys_are_warnings():
         (("module", "register", 0, "type"), "VECTOR"),
         (("module", "register", 0, "address"), "0X1C"),
         (("module", "register", 0, "we"), False),
+        (("$schema",), SCHEMA_URL),
     ],
 )
 def test_forms_bust_reads_are_not_problems(path, value):

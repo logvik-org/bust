@@ -1,10 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
+import json
 import os
 import shutil
 import subprocess
 import tempfile
 
 from bust._version import __VERSION__
+from bust.schema import SCHEMA_URL, register_map_schema
 
 project = "bust"
 author = "Ola Groettvik"
@@ -63,6 +65,15 @@ html_theme_options = {
 }
 
 
+def _write_schema(app, exception):
+    if exception is not None or app.builder.format != "html":
+        return
+    path = os.path.join(app.outdir, os.path.basename(SCHEMA_URL))
+    with open(path, "w", encoding="utf-8") as fp:
+        json.dump(register_map_schema(), fp, indent=2)
+        fp.write("\n")
+
+
 # The documentation bust generated for the prototype example, put into the
 # built site so the docs can show it. Both come from the committed goldens,
 # which the tests keep in step with the generator: the HTML is copied, and the
@@ -111,3 +122,4 @@ def _build_example_pdf(tex, out_dir):
 
 def setup(app):
     app.connect("build-finished", _add_example_docs)
+    app.connect("build-finished", _write_schema)

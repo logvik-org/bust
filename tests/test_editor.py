@@ -26,6 +26,7 @@ from bust.editor.screens import (  # noqa: E402
     QuestionScreen,
     TextScreen,
 )
+from bust.schema import SCHEMA_URL  # noqa: E402
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
 _BLINKY = os.path.join(_REPO_ROOT, "tests", "data", "migrate", "axi", "blinky.json")
@@ -179,6 +180,7 @@ def test_create_a_register_map(tmp_path):
 
     assert f"Saved {path}." in editor.messages
     expected = {
+        "$schema": SCHEMA_URL,
         "bus": {"type": "axi", "addr_width": 16, "data_width": 32},
         "module": {
             "name": "uart",
