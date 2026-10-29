@@ -88,8 +88,8 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
   \regfield{field0}{1}{0}{0}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
-    \item [field0]  (sw: rw, hw: r)
-    \item [field1]  (sw: rw, hw: r)
+    \item [field0] (sw: rw, hw: r)
+    \item [field1] (sw: rw, hw: r)
     \item [reserved] Bits 31:3. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
@@ -102,9 +102,9 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
   \regfield{field0}{4}{0}{{0x0}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
-    \item [field0]  (sw: ro, hw: w)
-    \item [field1]  (sw: ro, hw: w)
-    \item [field2]  (sw: ro, hw: w)
+    \item [field0] (sw: ro, hw: w)
+    \item [field1] (sw: ro, hw: w)
+    \item [field2] (sw: ro, hw: w)
     \item [reserved] Bits 31:6. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
@@ -115,7 +115,7 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
   \regfield{field0}{1}{0}{0}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
-    \item [field0]  (sw: wo, hw: r)
+    \item [field0] (sw: wo, hw: r)
     \item [reserved] Bits 31:1. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
@@ -126,7 +126,7 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
   \regfield{field0}{8}{0}{{0x0}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
-    \item [field0]  (sw: rw, hw: na)
+    \item [field0] (sw: rw, hw: na)
     \item [reserved] Bits 31:8. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
@@ -139,9 +139,9 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
   \regfield{field0}{4}{0}{{0x0}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
-    \item [field0]  (sw: rw, hw: rw)
+    \item [field0] (sw: rw, hw: rw)
     \item [reserved] Bits 7:4. Read as 0, writes have no effect.
-    \item [field1]  (sw: rw, hw: r)
+    \item [field1] (sw: rw, hw: r)
     \item [reserved] Bits 31:9. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
@@ -153,8 +153,8 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
   \regfield{field0}{4}{0}{{0x0}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
-    \item [field0]  (sw: rw, hw: r, onread: rclr)
-    \item [field1]  (sw: rw, hw: r, onread: rset)
+    \item [field0] (sw: rw, hw: r, onread: rclr)
+    \item [field1] (sw: rw, hw: r, onread: rset)
     \item [reserved] Bits 31:8. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
@@ -167,9 +167,9 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
   \regfield{field0}{4}{0}{{0x0}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
-    \item [field0]  (sw: rw, hw: r, onwrite: woset)
-    \item [field1]  (sw: rw, hw: r, onwrite: woclr)
-    \item [field2]  (sw: rw, hw: r, onwrite: wot)
+    \item [field0] (sw: rw, hw: r, onwrite: woset)
+    \item [field1] (sw: rw, hw: r, onwrite: woclr)
+    \item [field2] (sw: rw, hw: r, onwrite: wot)
     \item [reserved] Bits 31:12. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
@@ -182,9 +182,9 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
   \regfield{field0}{4}{0}{{0x0}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
-    \item [field0]  (sw: rw, hw: r, onwrite: wzs)
-    \item [field1]  (sw: rw, hw: r, onwrite: wzc)
-    \item [field2]  (sw: rw, hw: r, onwrite: wzt)
+    \item [field0] (sw: rw, hw: r, onwrite: wzs)
+    \item [field1] (sw: rw, hw: r, onwrite: wzc)
+    \item [field2] (sw: rw, hw: r, onwrite: wzt)
     \item [reserved] Bits 31:12. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
@@ -196,8 +196,8 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
   \regfield{field0}{4}{0}{{0xF}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
-    \item [field0]  (sw: rw, hw: r, onwrite: wclr)
-    \item [field1]  (sw: rw, hw: r, onwrite: wset)
+    \item [field0] (sw: rw, hw: r, onwrite: wclr)
+    \item [field1] (sw: rw, hw: r, onwrite: wset)
     \item [reserved] Bits 31:8. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
@@ -209,8 +209,8 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
   \regfield{field0}{4}{0}{{0x0}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
-    \item [field0]  (sw: rw, hw: r)
-    \item [field1]  (sw: rw, hw: r)
+    \item [field0] (sw: rw, hw: r)
+    \item [field1] (sw: rw, hw: r)
     \item [reserved] Bits 31:8. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
@@ -221,7 +221,7 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
   \regfield{field0}{4}{0}{{0x0}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
-    \item [field0]  (sw: rw, hw: r, singlepulse)
+    \item [field0] (sw: rw, hw: r, singlepulse)
     \item [reserved] Bits 31:4. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}
@@ -232,7 +232,7 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
   \regfield{field0}{2}{0}{{0x0}}
 \reglabel{Reset}\regnewline
   \begin{regdesc}\begin{reglist}[field0]
-    \item [field0]  (sw: rw, hw: r; values: STATE0=0, STATE1=1, STATE2=2, STATE3=3)
+    \item [field0] (sw: rw, hw: r; values: STATE0=0, STATE1=1, STATE2=2, STATE3=3)
     \item [reserved] Bits 31:2. Read as 0, writes have no effect.
   \end{reglist}\end{regdesc}
 \end{register}

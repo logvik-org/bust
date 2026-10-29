@@ -11,8 +11,8 @@ from textual.widgets import DataTable, Footer, Header, Static
 
 from bust.core.enums import RegisterType
 from bust.core.module import Module
-from bust.editor.diagram import (
-    bit_diagram,
+from bust.editor.diagram import bit_diagram
+from bust.generators.register_layout import (
     field_notes,
     register_heading,
     register_list,

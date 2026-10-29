@@ -4,7 +4,9 @@ This package contains all code generation classes for producing output files
 from module definitions:
 
 - HeaderGenerator: Language header file generation (C, C++, Python)
-- DocumentationGenerator: LaTeX documentation generation
+- DocumentationGenerator: LaTeX, HTML and Markdown documentation generation
+- register_layout: The register list, bit segments and field notes the
+  documentation and the editor share
 - GeneratorFactory: Factory for creating VHDL generators
 - vhdl subpackage: VHDL code generators
 """

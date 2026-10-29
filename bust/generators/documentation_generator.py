@@ -9,8 +9,10 @@ from html import escape
 
 from bust._version import __VERSION__
 from bust.core.enums import RegisterType
-from bust.editor.diagram import (
+from bust.generators.register_layout import (
+    RESERVED_NOTE,
     bit_segments,
+    bits_text,
     field_notes,
     register_heading,
     register_list,
@@ -118,12 +120,20 @@ class DocumentationGenerator:
         if version is None:
             version = __VERSION__
 
+        headers, rows = register_list(self.module)
         return render_template(
             template_name,
             {
                 "module": self.module,
                 "version": version,
                 "reg_type_fields": RegisterType.FIELDS,
+                "list_headers": headers,
+                "list_rows": list(zip(rows, self.module.registers)),
+                "register_heading": register_heading,
+                "bit_segments": bit_segments,
+                "field_notes": field_notes,
+                "bits_text": bits_text,
+                "reserved_note": RESERVED_NOTE,
                 **context,
             },
         )
@@ -154,15 +164,8 @@ class DocumentationGenerator:
         Returns:
             HTML document as string.
         """
-        headers, rows = register_list(self.module)
         return self._render_template(
-            "html/documentation.j2",
-            test_version,
-            list_headers=headers,
-            list_rows=zip(rows, self.module.registers),
-            register_heading=register_heading,
-            field_notes=field_notes,
-            bit_diagram_svg=bit_diagram_svg,
+            "html/documentation.j2", test_version, bit_diagram_svg=bit_diagram_svg
         )
 
     def generate_markdown_documentation(self, test_version=None):

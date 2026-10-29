@@ -51,8 +51,8 @@
       \textbf{\#} & \textbf{Name} & \textbf{SW/HW} & \textbf{Address} & \textbf{Type} & \textbf{Width} &
       \textbf{Reset} \\
       \hline
-{% for reg in module.registers %}
-      {{ loop.index0 }} & {{ reg.name | utf8tolatex }} & {{ reg.sw.value.upper() }}/{{ reg.hw.value.upper() }} & \texttt{0x{{ "%08X" | format(reg.address) }}} & {{ reg.type.value.upper() }} & {{ reg.width }} & \texttt{0x{{ "%X" | format(reg.reset[2:]|int(base=16)) }}} \\
+{% for row, reg in list_rows %}
+      {{ row[0] }} & {{ row[1] | utf8tolatex }} & {{ row[2] }} & \texttt{{ '{' }}{{ row[3] }}{{ '}' }} & {{ row[4] }} & {{ row[5] }} & \texttt{{ '{' }}{{ row[6] }}{{ '}' }} \\
       \hline
 {% endfor %}
     \end{tabularx}
@@ -62,25 +62,20 @@
 \section{Registers}
 
 {% for reg in module.registers %}
-\begin{register}{{ '{' }}H{{ '}' }}{{ '{' }}{{ reg.name | utf8tolatex }} - {{ reg.sw.value.upper() }}/{{ reg.hw.value.upper() }}{{ '}' }}{{ '{' }}0x{{ "%08X" | format(reg.address) }}{{ '}' }}{% if reg.description %}  \par {{ reg.description | utf8tolatex }} \regnewline{% endif +%}
+{% set title, address = register_heading(reg) %}
+\begin{register}{{ '{' }}H{{ '}' }}{{ '{' }}{{ title | utf8tolatex }}{{ '}' }}{{ '{' }}{{ address }}{{ '}' }}{% if reg.description %}  \par {{ reg.description | utf8tolatex }} \regnewline{% endif +%}
   \label{{ '{' }}{{ reg.name }}{{ '}' }}
-{% for bits in reg.bit_ranges %}
-{% if bits.field %}
-  \regfield{{ '{' }}{% if reg.type == reg_type_fields %}{{ bits.field.name | utf8tolatex }}{% endif %}{{ '}' }}{{ '{' }}{{ bits.width }}{{ '}' }}{{ '{' }}{{ bits.low }}{{ '}' }}{{ '{' }}{% if bits.width < 2 %}{{ bits.field.reset[2:]|int(base=16) }}{% else %}{0x{{ "%X" | format(bits.field.reset[2:]|int(base=16)) }}}{% endif %}{{ '}' }}
-{% else %}
-  \regfield{{ '{' }}reserved{{ '}' }}{{ '{' }}{{ bits.width }}{{ '}' }}{{ '{' }}{{ bits.low }}{{ '}' }}{{ '{' }}-{{ '}' }}
-{% endif %}
+{% for segment in bit_segments(reg) %}
+{# A register without fields is one unnamed box, as its name heads it already. #}
+{% set name = segment.name if reg.type == reg_type_fields or segment.is_unused else "" %}
+{% set reset = segment.reset if segment.width < 2 or segment.is_unused else "{" ~ segment.reset ~ "}" %}
+  \regfield{{ '{' }}{{ name | utf8tolatex }}{{ '}' }}{{ '{' }}{{ segment.width }}{{ '}' }}{{ '{' }}{{ segment.low }}{{ '}' }}{{ '{' }}{{ reset }}{{ '}' }}
 {% endfor %}
 \reglabel{Reset}\regnewline
 {% if reg.type == reg_type_fields %}
   \begin{{ '{' }}regdesc{{ '}' }}\begin{{ '{' }}reglist{{ '}' }}[{{ reg.fields | map(attribute='name') | min | utf8tolatex }}]
-{% for bits in reg.bit_ranges | reverse %}
-{% if not bits.field %}
-    \item [reserved] Bits {% if bits.width > 1 %}{{ bits.high }}:{% endif %}{{ bits.low }}. Read as 0, writes have no effect.
-{% else %}
-{% set field = bits.field %}
-    \item [{{ field.name | utf8tolatex }}] {{ field.description | utf8tolatex }} (sw: {{ field.sw.value }}, hw: {{ field.hw.value }}{% if field.onread %}, onread: {{ field.onread.value }}{% endif %}{% if field.onwrite %}, onwrite: {{ field.onwrite.value }}{% endif %}{% if field.singlepulse %}, singlepulse{% endif %}{% if field.is_enum %}; values: {% for e in field.enums %}{{ e.name }}={{ e.value }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %})
-{% endif %}
+{% for name, note in field_notes(reg) %}
+    \item [{{ name | utf8tolatex }}] {{ note | utf8tolatex }}
 {% endfor %}  \end{{ '{' }}reglist{{ '}' }}\end{{ '{' }}regdesc{{ '}' }}
 {% endif %}
 \end{register}
