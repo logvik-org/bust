@@ -23,7 +23,8 @@ concurrency:
 jobs:
   test:
 
-    runs-on: ubuntu-latest
+    # setup-python has no Python 3.9 build for ubuntu-latest (26.04).
+    runs-on: ubuntu-24.04
     # Experimental (pre-release) Python versions may fail without failing CI.
     continue-on-error: ${{ matrix.experimental || false }}
     strategy:
