@@ -94,6 +94,24 @@ jobs:
         # -I keeps the checkout off sys.path, so this reads the installed package.
         version="$("$RUNNER_TEMP/wheel-venv/bin/python" -I -c 'from bust._version import __VERSION__; print(__VERSION__)')"
         PATH="$RUNNER_TEMP/wheel-venv/bin:$PATH" scripts/smoke-test.sh "$version"
+    # cloudbust runs bust in the browser. Install the wheel in Pyodide with only
+    # the core dependencies and check that it writes what CPython writes.
+    - name: Generate the examples with CPython
+      env:
+        SOURCE_DATE_EPOCH: 0
+      run: |
+        for example in example/*.json; do
+          "$RUNNER_TEMP/wheel-venv/bin/bust" "$example" -o "$RUNNER_TEMP/cpython" -p
+        done
+    - name: Generate the examples with Pyodide
+      working-directory: scripts/pyodide
+      env:
+        SOURCE_DATE_EPOCH: 0
+      run: |
+        npm ci
+        node run.mjs ../../dist/*.whl "$RUNNER_TEMP/pyodide"
+    - name: Compare
+      run: diff -r "$RUNNER_TEMP/cpython" "$RUNNER_TEMP/pyodide"
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
       with:
         name: dist
