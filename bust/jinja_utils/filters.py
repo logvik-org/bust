@@ -218,7 +218,7 @@ def _aligned_markdown_table(rows):
     return lines
 
 
-def align_markdown_tables(text):
+def align_markdown_tables(text: str) -> str:
     """Pad the cells of every Markdown table so its columns line up in the
     source. A table is a run of lines that start with | and whose second line
     is the delimiter row. Rendered Markdown looks the same."""
