@@ -45,7 +45,21 @@ def test_open_returns_data_text_and_warnings():
     assert state["data"]["module"]["name"] == "example_axi"
     assert state["canUndo"] is False
     assert state["layout"]["reg1"]["address"] == 4
-    assert state["layout"]["reg7"]["fields"]["field1"] == [1, 4]
+    reg7 = state["layout"]["reg7"]
+    assert reg7["fields"]["field1"] == {
+        "low": 1,
+        "high": 4,
+        "access": "RW/R",
+        "reset": "0xB",
+    }
+    assert reg7["access"] == "RW/R"
+    assert reg7["segments"][0] == {
+        "name": "reserved",
+        "high": 31,
+        "low": 21,
+        "reset": "-",
+        "isUnused": True,
+    }
     assert state["nextAddress"] == 56
 
 

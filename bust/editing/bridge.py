@@ -13,8 +13,8 @@ Methods:
     undo, redo: Step back or forward through the changes.
 
 Every method but schema returns a state. An accepted state holds the register
-map's data and text, bust's warnings, the address and bits bust gives each
-register and field, the address a new register would get, and whether undo and redo can step. A
+map's data and text, bust's warnings, each register and field as bust reads
+it (address, bits, access, reset, and the bit segments of the documentation), the address a new register would get, and whether undo and redo can step. A
 rejected state holds bust's problems, and the register map stays as it was.
 Each problem has the path to the value it is about, as a list of keys and
 indexes, and the line for problems in the text given to open.
@@ -26,6 +26,7 @@ from typing import Any, Callable, Dict, List, Optional, TextIO
 
 from bust.editing.document import EditRejected, RegisterMapDocument
 from bust.exceptions import FormatError
+from bust.generators.register_layout import access_text, bit_segments, reset_text
 from bust.schema import register_map_schema
 from bust.validation.schema_check import Problem, check_register_map
 
@@ -165,14 +166,34 @@ class EditorBridge:
 
 
 def _layout(document: RegisterMapDocument) -> Dict[str, Any]:
-    """Where bust places each register and field, by name, including the
-    addresses and bits it chose for those that give none."""
+    """How bust reads each register and field, by name: the addresses and bits
+    it chose for those that give none, and the access and reset values with
+    the defaults filled in, written as the documentation writes them."""
     return {
         register.name: {
             "address": register.address,
             "width": register.width,
+            "type": register.type.value,
+            "access": access_text(register),
+            "reset": reset_text(register.reset, register.width),
+            "segments": [
+                {
+                    "name": segment.name,
+                    "high": segment.high,
+                    "low": segment.low,
+                    "reset": segment.reset,
+                    "isUnused": segment.is_unused,
+                }
+                for segment in bit_segments(register)
+            ],
             "fields": {
-                field.name: [field.pos_low, field.pos_high] for field in register.fields
+                field.name: {
+                    "low": field.pos_low,
+                    "high": field.pos_high,
+                    "access": f"{field.sw.value.upper()}/{field.hw.value.upper()}",
+                    "reset": reset_text(field.reset, field.width),
+                }
+                for field in register.fields
             },
         }
         for register in document.module.registers
