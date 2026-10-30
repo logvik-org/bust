@@ -1,0 +1,386 @@
+/* The bust documentation palette: logvik paper, ink and teal. A host page can
+   set the --bust-* variables to theme the editor. */
+.bust-editor {
+  --bust-editor-paper: var(--bust-paper, #f2eee3);
+  --bust-editor-raised: var(--bust-raised, #e9e3d3);
+  --bust-editor-hover: var(--bust-hover, #e3ddcb);
+  --bust-editor-border: var(--bust-border, #d3cbb4);
+  --bust-editor-ink: var(--bust-ink, #1c2118);
+  --bust-editor-muted: var(--bust-muted, #686b61);
+  --bust-editor-teal: var(--bust-teal, #2c6e6a);
+  --bust-editor-on-teal: var(--bust-on-teal, #f2eee3);
+  --bust-editor-error: var(--bust-error, #b3261e);
+  --bust-editor-warning: var(--bust-warning, #8d6e00);
+  --bust-editor-mono: var(--bust-mono, ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace);
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+  color: var(--bust-editor-ink);
+  background: var(--bust-editor-paper);
+  font-size: 0.95rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .bust-editor {
+    --bust-editor-paper: var(--bust-paper, #1f1e1d);
+    --bust-editor-raised: var(--bust-raised, #2a2725);
+    --bust-editor-hover: var(--bust-hover, #2f2c2a);
+    --bust-editor-border: var(--bust-border, #3a3633);
+    --bust-editor-ink: var(--bust-ink, #ece8df);
+    --bust-editor-muted: var(--bust-muted, #9a948a);
+    --bust-editor-teal: var(--bust-teal, #5fa8a0);
+    --bust-editor-on-teal: var(--bust-on-teal, #1f1e1d);
+    --bust-editor-error: var(--bust-error, #f2867c);
+    --bust-editor-warning: var(--bust-warning, #d9b44a);
+  }
+}
+
+.bust-editor button,
+.bust-editor input,
+.bust-editor select,
+.bust-editor textarea {
+  font: inherit;
+  color: inherit;
+}
+
+.bust-editor :focus-visible {
+  outline: 2px solid var(--bust-editor-teal);
+  outline-offset: 1px;
+}
+
+.bust-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.bust-editor-group {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.bust-editor-toolbar button,
+.bust-editor-form button,
+.bust-editor-enums button {
+  padding: 0.3rem 0.7rem;
+  background: var(--bust-editor-raised);
+  border: 1px solid var(--bust-editor-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.bust-editor-toolbar button:hover:not(:disabled),
+.bust-editor-form button:hover {
+  background: var(--bust-editor-hover);
+}
+
+.bust-editor-toolbar button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.bust-editor-body {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) 2.5fr;
+  gap: 1rem;
+  min-height: 0;
+}
+
+@media (max-width: 44rem) {
+  .bust-editor-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bust-editor-tree {
+  overflow: auto;
+  max-height: 70vh;
+  padding: 0.4rem;
+  background: var(--bust-editor-raised);
+  border: 1px solid var(--bust-editor-border);
+  border-radius: 6px;
+}
+
+.bust-editor-tree ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bust-editor-tree ul ul {
+  margin-left: 0.9rem;
+  padding-left: 0.4rem;
+  border-left: 1px solid var(--bust-editor-border);
+}
+
+.bust-editor-node {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.2rem 0.45rem;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.bust-editor-node:hover {
+  background: var(--bust-editor-hover);
+}
+
+.bust-editor-node[aria-current="true"] {
+  color: var(--bust-editor-on-teal);
+  background: var(--bust-editor-teal);
+}
+
+.bust-editor-node[aria-current="true"] .bust-editor-meta {
+  color: inherit;
+  opacity: 0.85;
+}
+
+.bust-editor-meta {
+  flex: none;
+  min-width: 3.2rem;
+  font-family: var(--bust-editor-mono);
+  font-size: 0.8rem;
+  color: var(--bust-editor-muted);
+}
+
+.bust-editor-name {
+  overflow-wrap: anywhere;
+}
+
+.bust-editor-module .bust-editor-name {
+  font-weight: 600;
+}
+
+.bust-editor-node.bust-editor-invalid .bust-editor-name::after {
+  content: " \25CF";
+  color: var(--bust-editor-error);
+}
+
+.bust-editor-detail {
+  min-width: 0;
+}
+
+.bust-editor-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 1rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid var(--bust-editor-teal);
+}
+
+.bust-editor-heading h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+}
+
+.bust-editor-heading p {
+  margin: 0;
+  font-family: var(--bust-editor-mono);
+  font-size: 0.85rem;
+  color: var(--bust-editor-muted);
+}
+
+.bust-editor-row {
+  display: grid;
+  grid-template-columns: 11rem 1fr;
+  align-items: center;
+  gap: 0.15rem 0.75rem;
+  padding: 0.4rem 0;
+}
+
+.bust-editor-row > label,
+.bust-editor-label {
+  font-weight: 500;
+}
+
+.bust-editor-row > :not(label, .bust-editor-label, input[type="checkbox"]) {
+  grid-column: 2;
+}
+
+.bust-editor-check {
+  grid-template-columns: 11rem auto 1fr;
+}
+
+.bust-editor-check input {
+  justify-self: start;
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--bust-editor-teal);
+}
+
+.bust-editor-check label {
+  grid-row: 1;
+  grid-column: 1;
+}
+
+@media (max-width: 30rem) {
+  .bust-editor-row {
+    grid-template-columns: 1fr;
+  }
+  .bust-editor-row > * {
+    grid-column: 1 !important;
+  }
+}
+
+.bust-editor-row input[type="text"],
+.bust-editor-row select,
+.bust-editor-row textarea {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 28rem;
+  padding: 0.3rem 0.45rem;
+  background: var(--bust-editor-paper);
+  border: 1px solid var(--bust-editor-border);
+  border-radius: 4px;
+}
+
+.bust-editor-row input[type="text"] {
+  font-family: var(--bust-editor-mono);
+  font-size: 0.9rem;
+}
+
+.bust-editor-row textarea {
+  max-width: none;
+  resize: vertical;
+}
+
+.bust-editor-help {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--bust-editor-muted);
+}
+
+.bust-editor-row.bust-editor-invalid :is(input, select, textarea) {
+  border-color: var(--bust-editor-error);
+  box-shadow: 0 0 0 1px var(--bust-editor-error);
+}
+
+.bust-editor-problem {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--bust-editor-error);
+}
+
+.bust-editor-form details {
+  margin: 0.5rem 0;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--bust-editor-border);
+  border-radius: 6px;
+}
+
+.bust-editor-form summary {
+  padding: 0.25rem 0;
+  cursor: pointer;
+  color: var(--bust-editor-teal);
+}
+
+.bust-editor-messages:empty {
+  display: none;
+}
+
+.bust-editor-messages {
+  margin-bottom: 0.5rem;
+}
+
+.bust-editor-rejected {
+  margin: 0;
+  font-weight: 600;
+  color: var(--bust-editor-error);
+}
+
+.bust-editor-problems,
+.bust-editor-warnings {
+  margin: 0.25rem 0;
+  padding-left: 1.2rem;
+  font-family: var(--bust-editor-mono);
+  font-size: 0.85rem;
+}
+
+.bust-editor-problems {
+  color: var(--bust-editor-error);
+}
+
+.bust-editor-warnings {
+  color: var(--bust-editor-warning);
+}
+
+/* One column per bit, the highest on the left, as in bust's documentation. */
+.bust-editor-bits {
+  display: grid;
+  grid-template-columns: repeat(var(--bust-editor-bit-count), minmax(0, 1fr));
+  gap: 2px;
+  padding: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--bust-editor-raised) 0 calc(100% / var(--bust-editor-bit-count) - 2px),
+    var(--bust-editor-border) 0 calc(100% / var(--bust-editor-bit-count))
+  );
+  border: 1px solid var(--bust-editor-border);
+  border-radius: 4px;
+}
+
+.bust-editor-bits button {
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  padding: 0.2rem 0.1rem;
+  overflow: hidden;
+  color: var(--bust-editor-on-teal);
+  background: var(--bust-editor-teal);
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.bust-editor-bits span,
+.bust-editor-bits small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+}
+
+.bust-editor-bits small {
+  font-family: var(--bust-editor-mono);
+  font-size: 0.7rem;
+  opacity: 0.85;
+}
+
+.bust-editor-enums {
+  border-collapse: collapse;
+}
+
+.bust-editor-enums th {
+  font-weight: 500;
+  text-align: left;
+  color: var(--bust-editor-muted);
+}
+
+.bust-editor-enums td {
+  padding: 0.15rem 0.5rem 0.15rem 0;
+}
+
+.bust-editor-enums input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.25rem 0.4rem;
+  font-family: var(--bust-editor-mono);
+  background: var(--bust-editor-paper);
+  border: 1px solid var(--bust-editor-border);
+  border-radius: 4px;
+}
+
+.bust-editor-row > button {
+  justify-self: start;
+}
