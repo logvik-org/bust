@@ -25,7 +25,8 @@ from bust.editing.json_source import (
 from bust.schema import SCHEMA_URL
 from bust.settings import Settings
 from bust.utils.json_utils import json_parser
-from bust.validation.schema_check import check_register_map
+from bust.utils.json_utils import parse_json_text
+from bust.validation.schema_check import Problem, check_register_map
 
 Operation = Dict[str, Any]
 
@@ -34,7 +35,15 @@ class EditRejected(ValueError):
     """Raised for a change that would give a register map bust rejects.
 
     The message has one line for each problem.
+
+    Attributes:
+        problems: The problems, each with its place in the register map if
+            known.
     """
+
+    def __init__(self, message: str, problems: Optional[List[Problem]] = None):
+        super().__init__(message)
+        self.problems = problems if problems is not None else [Problem((), message)]
 
 
 class FileChanged(RuntimeError):
@@ -78,6 +87,18 @@ class RegisterMapDocument:
         with open(path, encoding="utf-8", newline="") as fp:
             text = fp.read()
         return cls(text, json_parser(path), saved_text=text)
+
+    @classmethod
+    def from_text(cls, text: str, name: str = "register map") -> "RegisterMapDocument":
+        """Read a register map from text, as if from a file that holds it.
+
+        Call `check` next.
+
+        Raises:
+            FormatError: If the text is not JSON or JSON5. The message starts
+                with `name` and the line.
+        """
+        return cls(text, parse_json_text(text, name), saved_text=text)
 
     @classmethod
     def new(cls, bus: Dict, module: Dict) -> "RegisterMapDocument":
@@ -320,7 +341,9 @@ def _build_module(data: Any) -> Tuple[Module, List[str]]:
     # the same and list every problem the schema finds.
     report = check_register_map(data)
     if report.errors:
-        raise EditRejected("\n".join(str(problem) for problem in report.errors))
+        raise EditRejected(
+            "\n".join(str(problem) for problem in report.errors), report.errors
+        )
     with _captured_warnings() as warnings:
         warnings.extend(str(problem) for problem in report.warnings)
         try:
