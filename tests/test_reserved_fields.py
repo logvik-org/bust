@@ -1,5 +1,7 @@
 """The documentation shows the bits that no field covers as reserved fields."""
 
+import re
+
 import pytest
 
 from bust.core.bus import Bus
@@ -74,8 +76,14 @@ def test_html_documentation_lists_reserved_fields():
     assert ">unused</text>" not in page
 
 
+def _without_padding(markdown):
+    """The Markdown with the spaces that line up table columns taken out."""
+    return re.sub(r" {2,}", " ", markdown)
+
+
 def test_markdown_documentation_lists_reserved_fields():
     page = DocumentationGenerator(_module()).generate_markdown_documentation("1.0.0")
+    page = _without_padding(page)
 
     assert (
         "| 31:6 | reserved | | | | Read as 0, writes have no effect. |\n"
@@ -87,6 +95,7 @@ def test_markdown_documentation_lists_reserved_fields():
 def test_markdown_documentation_lists_bits_below_the_lowest_field():
     irq = {"name": "irq", "fields": [{"name": "done", "type": "bit", "position": 2}]}
     page = DocumentationGenerator(_module(irq)).generate_markdown_documentation("1.0.0")
+    page = _without_padding(page)
 
     assert "| 1:0 | reserved | | | | Read as 0, writes have no effect. |\n" in page
 

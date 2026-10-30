@@ -18,6 +18,7 @@ from bust.generators.register_layout import (
     register_list,
 )
 from bust.jinja_utils.environment import render_template
+from bust.jinja_utils.filters import align_markdown_tables
 
 # An estimate of a character's width at the 11px font of the names, enough to
 # tell whether a name fits across its box or must be turned on its side.
@@ -177,4 +178,6 @@ class DocumentationGenerator:
         Returns:
             Markdown document as string.
         """
-        return self._render_template("markdown/documentation.j2", test_version)
+        return align_markdown_tables(
+            self._render_template("markdown/documentation.j2", test_version)
+        )

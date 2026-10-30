@@ -6,20 +6,20 @@ Comprehensive example exercising every v1 access mode, mirroring the prototype d
 
 ## Register list
 
-| # | Name | SW/HW | Address | Type | Width | Reset |
-|--:|------|-------|---------|------|------:|-------|
-| 0 | [reg0](#reg0) | RW/R | `0x00000000` | FIELDS | 3 | `0x0` |
-| 1 | [reg1](#reg1) | RO/W | `0x00000004` | FIELDS | 6 | `0x0` |
-| 2 | [reg2](#reg2) | WO/R | `0x00000008` | FIELDS | 1 | `0x0` |
-| 3 | [reg3](#reg3) | RW/NA | `0x0000000C` | FIELDS | 8 | `0x0` |
-| 4 | [reg4](#reg4) | RW/RW | `0x00000010` | FIELDS | 9 | `0x0` |
-| 5 | [reg5](#reg5) | RW/R | `0x00000014` | FIELDS | 8 | `0x0` |
-| 6 | [reg6](#reg6) | RW/R | `0x00000018` | FIELDS | 12 | `0xF0` |
-| 7 | [reg7](#reg7) | RW/R | `0x0000001C` | FIELDS | 12 | `0xF0` |
-| 8 | [reg8](#reg8) | RW/R | `0x00000020` | FIELDS | 8 | `0xF` |
-| 9 | [reg9](#reg9) | RW/R | `0x00000024` | FIELDS | 8 | `0x0` |
-| 10 | [reg10](#reg10) | RW/R | `0x00000028` | FIELDS | 4 | `0x0` |
-| 11 | [reg11](#reg11) | RW/R | `0x0000002C` | FIELDS | 2 | `0x0` |
+|   # | Name            | SW/HW | Address      | Type   | Width | Reset  |
+| --: | --------------- | ----- | ------------ | ------ | ----: | ------ |
+|   0 | [reg0](#reg0)   | RW/R  | `0x00000000` | FIELDS |     3 | `0x0`  |
+|   1 | [reg1](#reg1)   | RO/W  | `0x00000004` | FIELDS |     6 | `0x0`  |
+|   2 | [reg2](#reg2)   | WO/R  | `0x00000008` | FIELDS |     1 | `0x0`  |
+|   3 | [reg3](#reg3)   | RW/NA | `0x0000000C` | FIELDS |     8 | `0x0`  |
+|   4 | [reg4](#reg4)   | RW/RW | `0x00000010` | FIELDS |     9 | `0x0`  |
+|   5 | [reg5](#reg5)   | RW/R  | `0x00000014` | FIELDS |     8 | `0x0`  |
+|   6 | [reg6](#reg6)   | RW/R  | `0x00000018` | FIELDS |    12 | `0xF0` |
+|   7 | [reg7](#reg7)   | RW/R  | `0x0000001C` | FIELDS |    12 | `0xF0` |
+|   8 | [reg8](#reg8)   | RW/R  | `0x00000020` | FIELDS |     8 | `0xF`  |
+|   9 | [reg9](#reg9)   | RW/R  | `0x00000024` | FIELDS |     8 | `0x0`  |
+|  10 | [reg10](#reg10) | RW/R  | `0x00000028` | FIELDS |     4 | `0x0`  |
+|  11 | [reg11](#reg11) | RW/R  | `0x0000002C` | FIELDS |     2 | `0x0`  |
 
 ## Registers
 
@@ -29,11 +29,11 @@ Address `0x00000000`, RW/R, reset `0x0`.
 
 Plain rw storage, hardware reads back.
 
-| Bits | Name | SW | HW | Reset | Description |
-|------|------|----|----|-------|-------------|
-| 31:3 | reserved | | | | Read as 0, writes have no effect. |
-| 2:1 | field1 | rw | r | `0x0` | |
-| 0 | field0 | rw | r | `0x0` | |
+| Bits | Name     | SW  | HW  | Reset | Description                       |
+| ---- | -------- | --- | --- | ----- | --------------------------------- |
+| 31:3 | reserved |     |     |       | Read as 0, writes have no effect. |
+| 2:1  | field1   | rw  | r   | `0x0` |                                   |
+| 0    | field0   | rw  | r   | `0x0` |                                   |
 
 ### reg1
 
@@ -41,12 +41,12 @@ Address `0x00000004`, RO/W, reset `0x0`.
 
 Hardware-driven status, software read-only.
 
-| Bits | Name | SW | HW | Reset | Description |
-|------|------|----|----|-------|-------------|
-| 31:6 | reserved | | | | Read as 0, writes have no effect. |
-| 5 | field2 | ro | w | `0x0` | Modifiers: wel. |
-| 4 | field1 | ro | w | `0x0` | |
-| 3:0 | field0 | ro | w | `0x0` | Modifiers: we. |
+| Bits | Name     | SW  | HW  | Reset | Description                       |
+| ---- | -------- | --- | --- | ----- | --------------------------------- |
+| 31:6 | reserved |     |     |       | Read as 0, writes have no effect. |
+| 5    | field2   | ro  | w   | `0x0` | Modifiers: wel.                   |
+| 4    | field1   | ro  | w   | `0x0` |                                   |
+| 3:0  | field0   | ro  | w   | `0x0` | Modifiers: we.                    |
 
 ### reg2
 
@@ -54,10 +54,10 @@ Address `0x00000008`, WO/R, reset `0x0`.
 
 Write-only command field.
 
-| Bits | Name | SW | HW | Reset | Description |
-|------|------|----|----|-------|-------------|
-| 31:1 | reserved | | | | Read as 0, writes have no effect. |
-| 0 | field0 | wo | r | `0x0` | |
+| Bits | Name     | SW  | HW  | Reset | Description                       |
+| ---- | -------- | --- | --- | ----- | --------------------------------- |
+| 31:1 | reserved |     |     |       | Read as 0, writes have no effect. |
+| 0    | field0   | wo  | r   | `0x0` |                                   |
 
 ### reg3
 
@@ -65,10 +65,10 @@ Address `0x0000000C`, RW/NA, reset `0x0`.
 
 Software-only scratch register.
 
-| Bits | Name | SW | HW | Reset | Description |
-|------|------|----|----|-------|-------------|
-| 31:8 | reserved | | | | Read as 0, writes have no effect. |
-| 7:0 | field0 | rw | na | `0x0` | |
+| Bits | Name     | SW  | HW  | Reset | Description                       |
+| ---- | -------- | --- | --- | ----- | --------------------------------- |
+| 31:8 | reserved |     |     |       | Read as 0, writes have no effect. |
+| 7:0  | field0   | rw  | na  | `0x0` |                                   |
 
 ### reg4
 
@@ -76,12 +76,12 @@ Address `0x00000010`, RW/RW, reset `0x0`.
 
 Hardware write-enable and hardware set/clear.
 
-| Bits | Name | SW | HW | Reset | Description |
-|------|------|----|----|-------|-------------|
-| 31:9 | reserved | | | | Read as 0, writes have no effect. |
-| 8 | field1 | rw | r | `0x0` | Modifiers: hwset, hwclr. |
-| 7:4 | reserved | | | | Read as 0, writes have no effect. |
-| 3:0 | field0 | rw | rw | `0x0` | Modifiers: we. |
+| Bits | Name     | SW  | HW  | Reset | Description                       |
+| ---- | -------- | --- | --- | ----- | --------------------------------- |
+| 31:9 | reserved |     |     |       | Read as 0, writes have no effect. |
+| 8    | field1   | rw  | r   | `0x0` | Modifiers: hwset, hwclr.          |
+| 7:4  | reserved |     |     |       | Read as 0, writes have no effect. |
+| 3:0  | field0   | rw  | rw  | `0x0` | Modifiers: we.                    |
 
 ### reg5
 
@@ -89,11 +89,11 @@ Address `0x00000014`, RW/R, reset `0x0`.
 
 Read side effects.
 
-| Bits | Name | SW | HW | Reset | Description |
-|------|------|----|----|-------|-------------|
-| 31:8 | reserved | | | | Read as 0, writes have no effect. |
-| 7:4 | field1 | rw | r | `0x0` | onread: rset. |
-| 3:0 | field0 | rw | r | `0x0` | onread: rclr. |
+| Bits | Name     | SW  | HW  | Reset | Description                       |
+| ---- | -------- | --- | --- | ----- | --------------------------------- |
+| 31:8 | reserved |     |     |       | Read as 0, writes have no effect. |
+| 7:4  | field1   | rw  | r   | `0x0` | onread: rset.                     |
+| 3:0  | field0   | rw  | r   | `0x0` | onread: rclr.                     |
 
 ### reg6
 
@@ -101,12 +101,12 @@ Address `0x00000018`, RW/R, reset `0xF0`.
 
 Write-1 onwrite effects.
 
-| Bits | Name | SW | HW | Reset | Description |
-|------|------|----|----|-------|-------------|
-| 31:12 | reserved | | | | Read as 0, writes have no effect. |
-| 11:8 | field2 | rw | r | `0x0` | onwrite: wot. |
-| 7:4 | field1 | rw | r | `0xF` | onwrite: woclr. |
-| 3:0 | field0 | rw | r | `0x0` | onwrite: woset. |
+| Bits  | Name     | SW  | HW  | Reset | Description                       |
+| ----- | -------- | --- | --- | ----- | --------------------------------- |
+| 31:12 | reserved |     |     |       | Read as 0, writes have no effect. |
+| 11:8  | field2   | rw  | r   | `0x0` | onwrite: wot.                     |
+| 7:4   | field1   | rw  | r   | `0xF` | onwrite: woclr.                   |
+| 3:0   | field0   | rw  | r   | `0x0` | onwrite: woset.                   |
 
 ### reg7
 
@@ -114,12 +114,12 @@ Address `0x0000001C`, RW/R, reset `0xF0`.
 
 Write-0 onwrite effects.
 
-| Bits | Name | SW | HW | Reset | Description |
-|------|------|----|----|-------|-------------|
-| 31:12 | reserved | | | | Read as 0, writes have no effect. |
-| 11:8 | field2 | rw | r | `0x0` | onwrite: wzt. |
-| 7:4 | field1 | rw | r | `0xF` | onwrite: wzc. |
-| 3:0 | field0 | rw | r | `0x0` | onwrite: wzs. |
+| Bits  | Name     | SW  | HW  | Reset | Description                       |
+| ----- | -------- | --- | --- | ----- | --------------------------------- |
+| 31:12 | reserved |     |     |       | Read as 0, writes have no effect. |
+| 11:8  | field2   | rw  | r   | `0x0` | onwrite: wzt.                     |
+| 7:4   | field1   | rw  | r   | `0xF` | onwrite: wzc.                     |
+| 3:0   | field0   | rw  | r   | `0x0` | onwrite: wzs.                     |
 
 ### reg8
 
@@ -127,11 +127,11 @@ Address `0x00000020`, RW/R, reset `0xF`.
 
 Whole-field onwrite effects.
 
-| Bits | Name | SW | HW | Reset | Description |
-|------|------|----|----|-------|-------------|
-| 31:8 | reserved | | | | Read as 0, writes have no effect. |
-| 7:4 | field1 | rw | r | `0x0` | onwrite: wset. |
-| 3:0 | field0 | rw | r | `0xF` | onwrite: wclr. |
+| Bits | Name     | SW  | HW  | Reset | Description                       |
+| ---- | -------- | --- | --- | ----- | --------------------------------- |
+| 31:8 | reserved |     |     |       | Read as 0, writes have no effect. |
+| 7:4  | field1   | rw  | r   | `0x0` | onwrite: wset.                    |
+| 3:0  | field0   | rw  | r   | `0xF` | onwrite: wclr.                    |
 
 ### reg9
 
@@ -139,11 +139,11 @@ Address `0x00000024`, RW/R, reset `0x0`.
 
 Software-access pulses.
 
-| Bits | Name | SW | HW | Reset | Description |
-|------|------|----|----|-------|-------------|
-| 31:8 | reserved | | | | Read as 0, writes have no effect. |
-| 7:4 | field1 | rw | r | `0x0` | Modifiers: swacc. |
-| 3:0 | field0 | rw | r | `0x0` | Modifiers: swmod. |
+| Bits | Name     | SW  | HW  | Reset | Description                       |
+| ---- | -------- | --- | --- | ----- | --------------------------------- |
+| 31:8 | reserved |     |     |       | Read as 0, writes have no effect. |
+| 7:4  | field1   | rw  | r   | `0x0` | Modifiers: swacc.                 |
+| 3:0  | field0   | rw  | r   | `0x0` | Modifiers: swmod.                 |
 
 ### reg10
 
@@ -151,10 +151,10 @@ Address `0x00000028`, RW/R, reset `0x0`.
 
 Single-cycle pulse on software write.
 
-| Bits | Name | SW | HW | Reset | Description |
-|------|------|----|----|-------|-------------|
-| 31:4 | reserved | | | | Read as 0, writes have no effect. |
-| 3:0 | field0 | rw | r | `0x0` | singlepulse. |
+| Bits | Name     | SW  | HW  | Reset | Description                       |
+| ---- | -------- | --- | --- | ----- | --------------------------------- |
+| 31:4 | reserved |     |     |       | Read as 0, writes have no effect. |
+| 3:0  | field0   | rw  | r   | `0x0` | singlepulse.                      |
 
 ### reg11
 
@@ -162,7 +162,7 @@ Address `0x0000002C`, RW/R, reset `0x0`.
 
 Enumerated field.
 
-| Bits | Name | SW | HW | Reset | Description |
-|------|------|----|----|-------|-------------|
-| 31:2 | reserved | | | | Read as 0, writes have no effect. |
-| 1:0 | field0 | rw | r | `0x0` | Values: STATE0=0, STATE1=1, STATE2=2, STATE3=3. |
+| Bits | Name     | SW  | HW  | Reset | Description                                     |
+| ---- | -------- | --- | --- | ----- | ----------------------------------------------- |
+| 31:2 | reserved |     |     |       | Read as 0, writes have no effect.               |
+| 1:0  | field0   | rw  | r   | `0x0` | Values: STATE0=0, STATE1=1, STATE2=2, STATE3=3. |
