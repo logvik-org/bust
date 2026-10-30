@@ -10,6 +10,7 @@ Filters defined:
 - utf8tolatex: Convert UTF-8 text to LaTeX-safe encoding.
 - utf8tohtml: Escape text for HTML, with `code` spans as <code>.
 - markdown_cell: Escape text for one cell of a Markdown table.
+- align_markdown_tables: Pad the cells of every Markdown table into columns.
 
 Copyright (c) 2025 Ola Groettvik
 Licensed under the Apache License, Version 2.0. See the LICENSE file for details.
@@ -175,3 +176,68 @@ def markdown_cell(text):
         for i, part in enumerate(parts)
     )
     return " ".join(escaped.split())
+
+
+_MARKDOWN_DELIMITER_CELL = re.compile(r":?-+:?")
+
+
+def _markdown_row_cells(line):
+    """The cells of a table row. A backslash escapes the character after it, so
+    an escaped | stays in its cell."""
+    cells, cell, chars = [], "", iter(line.strip()[1:])
+    for char in chars:
+        if char == "\\":
+            cell += char + next(chars, "")
+        elif char == "|":
+            cells.append(cell.strip())
+            cell = ""
+        else:
+            cell += char
+    return cells
+
+
+def _aligned_markdown_table(rows):
+    delimiter = rows[1]
+    widths = [
+        max(3, *(len(row[column]) for row in rows if row is not delimiter))
+        for column in range(len(delimiter))
+    ]
+    lines = []
+    for row in rows:
+        cells = []
+        for cell, width, spec in zip(row, widths, delimiter):
+            if row is delimiter:
+                left = ":" if spec.startswith(":") else "-"
+                right = ":" if spec.endswith(":") else "-"
+                cells.append(left + "-" * (width - 2) + right)
+            elif spec.endswith(":") and not spec.startswith(":"):
+                cells.append(cell.rjust(width))
+            else:
+                cells.append(cell.ljust(width))
+        lines.append("| " + " | ".join(cells) + " |")
+    return lines
+
+
+def align_markdown_tables(text: str) -> str:
+    """Pad the cells of every Markdown table so its columns line up in the
+    source. A table is a run of lines that start with | and whose second line
+    is the delimiter row. Rendered Markdown looks the same."""
+    lines = text.split("\n")
+    aligned, start = [], 0
+    while start < len(lines):
+        end = start
+        while end < len(lines) and lines[end].lstrip().startswith("|"):
+            end += 1
+        rows = [_markdown_row_cells(line) for line in lines[start:end]]
+        is_table = (
+            len(rows) >= 2
+            and all(_MARKDOWN_DELIMITER_CELL.fullmatch(cell) for cell in rows[1])
+            and all(len(row) == len(rows[1]) for row in rows)
+        )
+        if is_table:
+            aligned.extend(_aligned_markdown_table(rows))
+            start = end
+        else:
+            aligned.append(lines[start])
+            start += 1
+    return "\n".join(aligned)

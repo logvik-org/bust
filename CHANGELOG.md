@@ -12,9 +12,9 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 ### Added
 - `bust.generate_files` returns every output file as `{path: content}`, without writing to disk or running `pdflatex`. The command line writes that result.
 - `doc/<module>.html`, the documentation as one self-contained HTML page with inline SVG bit diagrams, links between the register list and the registers, a sidebar and a print stylesheet.
-- `doc/<module>.md`, the documentation as Markdown, with the register list and a bits table per register, readable on GitHub.
+- `doc/<module>.md`, the documentation as Markdown, with the register list and a bits table per register, readable on GitHub, with the table columns lined up in the source.
 - The documentation hosts the register map JSON Schema at https://bust.readthedocs.io/en/stable/register-map.schema.json. A register map may point to it with a `"$schema"` key, which gives completion, hover text and errors in editors with JSON Schema support. The editor adds the key to new register maps.
-- `bust.bundle_zip` turns the result of `generate_files` into one zip, in the folder layout the CLI writes, with a `README.md` that lists what each file is.
+- `bust.bundle_zip` turns the result of `generate_files` into one zip, in the folder layout the CLI writes, with a `README.md` that lists what each file is and names the bust version and time.
 - bust runs under Pyodide in the browser. Getting started lists the dependencies to install there, and CI checks that the wheel generates every example under Pyodide as it does under CPython.
 
 ### Changed

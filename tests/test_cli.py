@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -199,7 +200,7 @@ def test_run_writes_markdown_docs_and_d_skips_them(tmp_path):
     code, output = _run_bust(tmp_path, str(path), "-o", "out", "-p")
     assert code == 0, output
     markdown = (tmp_path / "out/timer/doc/timer.md").read_text()
-    assert "| 0 | [ctrl](#ctrl) | RW/R |" in markdown
+    assert re.search(r"\| +0 \| \[ctrl\]\(#ctrl\) +\| RW/R +\|", markdown)
     assert "### ctrl" in markdown
 
     code, output = _run_bust(tmp_path, str(path), "-o", "skipped", "-d")
