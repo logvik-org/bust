@@ -65,8 +65,7 @@ export class RegisterMapEditor {
   ) {
     container.classList.add("bust-editor");
     container.replaceChildren(
-      this.toolbar,
-      this.summary,
+      element("div", { class: "bust-editor-head" }, this.summary, this.toolbar),
       this.messages,
       element(
         "div",
@@ -211,13 +210,7 @@ export class RegisterMapEditor {
         this.button("Undo", () => this.undo(), { isEnabled: state.canUndo, shortcut: "Ctrl+Z" }),
         this.button("Redo", () => this.redo(), { isEnabled: state.canRedo, shortcut: "Ctrl+Shift+Z" }),
       ),
-      element(
-        "div",
-        { class: "bust-editor-group" },
-        this.button("Add register", () => this.addRegister(this.registers.length), { shortcut: SHORTCUTS.addRegister }),
-        this.button("Module and bus", () => this.editModule(), { shortcut: SHORTCUTS.module }),
-      ),
-      element("p", { class: "bust-editor-hint" }, "Right-click a register or field, or press ", element("kbd", {}, "Shift+F10"), ", for its menu."),
+      this.button("Add register", () => this.addRegister(this.registers.length), { shortcut: SHORTCUTS.addRegister }),
     );
   }
 
@@ -229,7 +222,7 @@ export class RegisterMapEditor {
       facts.push(`version ${String(module.version)}`);
     }
     const name = this.button(String(module.name), () => this.editModule(), { className: "bust-editor-module-name" });
-    name.title = "Module and bus";
+    name.title = `Module and bus (${SHORTCUTS.module})`;
     this.summary.replaceChildren(name, element("span", {}, facts.join(" · ")));
     if (module.description) {
       this.summary.append(element("p", {}, String(module.description)));
@@ -327,7 +320,7 @@ export class RegisterMapEditor {
     edit: () => void,
     openMenu: (x: number, y: number, anchor?: HTMLElement) => void,
   ): HTMLTableRowElement {
-    const more = element("button", { type: "button", class: "bust-editor-more", "aria-label": "Actions", "aria-haspopup": "menu" }, "⋯");
+    const more = element("button", { type: "button", class: "bust-editor-more", "aria-label": "Actions", "aria-haspopup": "menu", title: `Actions (right-click or ${SHORTCUTS.menu})` }, "⋯");
     more.addEventListener("click", (event) => {
       event.stopPropagation();
       select();
@@ -381,7 +374,7 @@ export class RegisterMapEditor {
       if (!value.isSet) {
         valueElement.classList.add("bust-editor-unset");
       }
-      list.append(element("div", {}, element("dt", {}, button), valueElement));
+      list.append(element("div", { "data-key": key }, element("dt", {}, button), valueElement));
     }
     const edit = this.button("Edit", () => (kind === "field" ? this.editField() : this.editRegister()), { shortcut: SHORTCUTS.edit });
     this.keysPane.replaceChildren(element("div", { class: "bust-editor-pane-head" }, element("h3", {}, owner), edit), list);
