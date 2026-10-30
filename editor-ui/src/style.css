@@ -83,7 +83,7 @@
 
 .bust-editor-body {
   display: grid;
-  grid-template-columns: minmax(13rem, 1fr) 2.5fr;
+  grid-template-columns: minmax(12rem, 1fr) minmax(0, 2.5fr);
   gap: 1rem;
   min-height: 0;
 }
@@ -190,7 +190,7 @@
 
 .bust-editor-row {
   display: grid;
-  grid-template-columns: 11rem 1fr;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
   align-items: center;
   gap: 0.15rem 0.75rem;
   padding: 0.4rem 0;
@@ -206,7 +206,7 @@
 }
 
 .bust-editor-check {
-  grid-template-columns: 11rem auto 1fr;
+  grid-template-columns: 8.5rem auto 1fr;
 }
 
 .bust-editor-check input {

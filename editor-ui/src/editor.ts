@@ -81,6 +81,9 @@ export class RegisterMapEditor {
   private accepted?: AcceptedState;
   private problems: Problem[] = [];
   private selected: ValuePath = ["module"];
+  // The key of the selected object the last change from the form set. A
+  // problem bust gives without a place is shown there.
+  private editedKey?: string;
   private queue: Promise<unknown> = Promise.resolve();
   private readonly id = `bust-editor-${nextEditorId++}`;
   private readonly toolbar = element("div", { class: "bust-editor-toolbar", role: "toolbar", "aria-label": "Register map" });
@@ -167,6 +170,7 @@ export class RegisterMapEditor {
     }
     this.accepted = state;
     this.problems = [];
+    this.editedKey = undefined;
     if (valueAt(state.data, this.selected) === undefined) {
       this.selected = this.nearestExisting(this.selected);
     }
@@ -318,6 +322,7 @@ export class RegisterMapEditor {
   private select(path: ValuePath): void {
     this.selected = path;
     this.problems = [];
+    this.editedKey = undefined;
     this.render();
     this.form.querySelector<HTMLElement>("input, select, textarea")?.focus();
   }
@@ -396,6 +401,7 @@ export class RegisterMapEditor {
     const inputId = `${this.id}-${key}`;
     const input = this.input(key, property, object[key], required.includes(key), inputId);
     const commit = () => {
+      this.editedKey = key;
       const value = this.readInput(input, key, property, required.includes(key));
       this.apply(this.operationsFor(kind, object, key, value));
     };
@@ -499,7 +505,10 @@ export class RegisterMapEditor {
       row.classList.remove("bust-editor-invalid");
       row.querySelector(".bust-editor-problem")?.remove();
       const path = [...this.selected, row.dataset.key!];
-      const problems = this.problems.filter((problem) => startsWith(problem.path, path));
+      const problems = this.problems.filter(
+        (problem) =>
+          startsWith(problem.path, path) || (problem.path.length === 0 && row.dataset.key === this.editedKey),
+      );
       if (problems.length > 0) {
         row.classList.add("bust-editor-invalid");
         row.append(element("p", { class: "bust-editor-problem" }, problems.map((problem) => problem.message).join(" ")));

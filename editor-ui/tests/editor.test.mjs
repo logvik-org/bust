@@ -104,6 +104,8 @@ describe("RegisterMapEditor", () => {
     assert.equal(editor.state.data.module.register[1].name, "reg1");
     assert.equal(name.value, "reg0");
     assert.ok(container.querySelector(".bust-editor-rejected"));
+    // bust names no place for this problem, so it shows at the edited value.
+    assert.ok(container.querySelector("[data-key='name']").classList.contains("bust-editor-invalid"));
   });
 
   test("problems with a path show next to their input", async () => {
