@@ -378,7 +378,8 @@ export class RegisterMapEditor {
     if (placed) {
       const bus = this.accepted!.data.bus as JsonObject;
       const digits = Math.ceil(Number(bus.addr_width) / 4) || 4;
-      heading.append(element("p", {}, `At ${hex(placed.address, digits)}, ${placed.width} bits wide`));
+      const width = placed.width === 1 ? "1 bit" : `${placed.width} bits`;
+      heading.append(element("p", {}, `At ${hex(placed.address, digits)}, ${width} wide`));
     }
     return heading;
   }
@@ -537,7 +538,12 @@ export class RegisterMapEditor {
       cell.addEventListener("click", () => this.select([...this.selected, "fields", index]));
       map.append(cell);
     }
-    return element("div", { class: "bust-editor-row" }, element("span", { class: "bust-editor-label" }, "Fields"), map);
+    return element(
+      "div",
+      { class: "bust-editor-row bust-editor-wide" },
+      element("span", { class: "bust-editor-label" }, `Fields, bit ${width - 1} down to 0`),
+      map,
+    );
   }
 
   private enumTable(field: JsonObject): HTMLElement {

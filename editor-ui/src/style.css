@@ -132,7 +132,8 @@
   background: var(--bust-editor-hover);
 }
 
-.bust-editor-node[aria-current="true"] {
+.bust-editor-node[aria-current="true"],
+.bust-editor-node[aria-current="true"]:hover {
   color: var(--bust-editor-on-teal);
   background: var(--bust-editor-teal);
 }
@@ -203,6 +204,10 @@
 
 .bust-editor-row > :not(label, .bust-editor-label, input[type="checkbox"]) {
   grid-column: 2;
+}
+
+.bust-editor-wide > * {
+  grid-column: 1 / -1 !important;
 }
 
 .bust-editor-check {
@@ -318,17 +323,14 @@
   grid-template-columns: repeat(var(--bust-editor-bit-count), minmax(0, 1fr));
   gap: 2px;
   padding: 2px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--bust-editor-raised) 0 calc(100% / var(--bust-editor-bit-count) - 2px),
-    var(--bust-editor-border) 0 calc(100% / var(--bust-editor-bit-count))
-  );
+  background: var(--bust-editor-raised);
   border: 1px solid var(--bust-editor-border);
   border-radius: 4px;
 }
 
 .bust-editor-bits button {
   grid-row: 1;
+  min-height: 2.6rem;
   display: flex;
   flex-direction: column;
   align-items: center;
