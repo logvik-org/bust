@@ -14,7 +14,7 @@ import type {
   Problem,
   ValuePath,
 } from "./protocol.js";
-import { definitionOf, labelOf, placeholderOf, type NodeKind } from "./schema.js";
+import { ADVANCED_KEYS, definitionOf, labelOf, placeholderOf, type NodeKind } from "./schema.js";
 
 export type EditorOptions = {
   // Called with every register map bust accepts, after each change.
@@ -273,7 +273,7 @@ export class RegisterMapEditor {
     const heading = element(
       "div",
       { class: "bust-editor-pane-head" },
-      element("h3", {}, `Fields of ${String(register.name)}`),
+      element("h3", {}, `${register.type === "fields" ? "Fields" : "Bits"} of ${String(register.name)}`),
       this.button("Add field", () => this.addField(this.fields.length), { shortcut: SHORTCUTS.addField }),
     );
     const children: Node[] = [heading];
@@ -344,7 +344,10 @@ export class RegisterMapEditor {
       row.setAttribute("aria-selected", "true");
     }
     row.addEventListener("click", select);
-    row.addEventListener("dblclick", edit);
+    row.addEventListener("dblclick", () => {
+      select();
+      edit();
+    });
     row.addEventListener("contextmenu", (event) => {
       event.preventDefault();
       select();
@@ -366,7 +369,9 @@ export class RegisterMapEditor {
     const owner = kind === "field" ? `Field ${String(object.name)} of ${String(this.register!.name)}` : `Register ${String(object.name)}`;
     const list = element("dl", { class: "bust-editor-key-list" });
     for (const [key, property] of Object.entries(definition.properties ?? {})) {
-      if (["fields", "$schema"].includes(key)) {
+      // The rarely used access keys show only when set, as the dialog keeps
+      // them under "More access options".
+      if (["fields", "$schema"].includes(key) || (ADVANCED_KEYS.has(key) && object[key] === undefined)) {
         continue;
       }
       const value = this.shownValue(kind, object, key, property);

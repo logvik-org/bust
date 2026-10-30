@@ -18,6 +18,7 @@
   flex-direction: column;
   gap: 0.75rem;
   min-height: 0;
+  container-type: inline-size;
   color: var(--bust-editor-ink);
   font-size: 0.95rem;
 }
@@ -172,7 +173,7 @@
   align-items: start;
 }
 
-@media (max-width: 52rem) {
+@container (max-width: 52rem) {
   .bust-editor-body {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -257,6 +258,12 @@
 .bust-editor-table td:not(.bust-editor-name, :last-child, :nth-last-child(2)) {
   font-family: var(--bust-editor-mono);
   font-size: 0.8rem;
+}
+
+@container (max-width: 46rem) {
+  .bust-editor-table :is(td, th):nth-last-child(2) {
+    display: none;
+  }
 }
 
 .bust-editor-table td:nth-last-child(2) {
