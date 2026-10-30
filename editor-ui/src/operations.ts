@@ -63,3 +63,55 @@ export function uniqueName(prefix: string, taken: Iterable<string>): string {
     }
   }
 }
+
+function isSame(a: JsonValue | undefined, b: JsonValue | undefined): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+// The operations that turn `original` into what a form holds. Keys the form
+// hides for the object's type are taken out.
+export function editOperations(
+  kind: "bus" | "module" | "register" | "field",
+  original: JsonObject,
+  path: ValuePath,
+  draft: Record<string, JsonValue | undefined>,
+  formKeys: string[],
+): Operation[] {
+  const operations: Operation[] = [];
+  if ("type" in draft && !isSame(draft.type, original.type)) {
+    const type = draft.type as string | undefined;
+    if (kind === "register") {
+      operations.push(...setRegisterType(original, path, type));
+    } else if (kind === "field") {
+      operations.push(...setFieldType(original, path, type));
+    } else {
+      operations.push(...setKey(original, path, "type", type));
+    }
+  }
+  const touched = new Set(operations.map((operation) => operation.path));
+  for (const key of formKeys) {
+    const target = pointer([...path, key]);
+    if (key === "type" || touched.has(target)) {
+      continue;
+    }
+    const value = key in draft ? draft[key] : undefined;
+    if (!isSame(value, original[key])) {
+      operations.push(...setKey(original, path, key, value));
+    }
+  }
+  return operations;
+}
+
+// A new register or field from what a form holds.
+export function newObject(kind: "register" | "field", draft: Record<string, JsonValue | undefined>): JsonObject {
+  const created: JsonObject = {};
+  for (const [key, value] of Object.entries(draft)) {
+    if (value !== undefined) {
+      created[key] = value;
+    }
+  }
+  if (kind === "register" && created.type === "fields") {
+    created.fields = [{ name: "field0", type: "bit" }];
+  }
+  return created;
+}

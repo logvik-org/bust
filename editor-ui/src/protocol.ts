@@ -19,11 +19,33 @@ export type Problem = {
   line: number | null;
 };
 
+// A run of bits in a register, from the highest down, as bust's documentation
+// draws it: a field, the whole register, or bits no field uses.
+export type BitSegment = {
+  name: string;
+  high: number;
+  low: number;
+  reset: string;
+  isUnused: boolean;
+};
+
+export type FieldLayout = {
+  low: number;
+  high: number;
+  // Software and hardware access with defaults filled in, such as "RW/R".
+  access: string;
+  reset: string;
+};
+
+// A register as bust reads it, with the defaults filled in.
 export type RegisterLayout = {
   address: number;
   width: number;
-  // The lowest and highest bit of each field, by name.
-  fields: Record<string, [number, number]>;
+  type: string;
+  access: string;
+  reset: string;
+  segments: BitSegment[];
+  fields: Record<string, FieldLayout>;
 };
 
 export type AcceptedState = {

@@ -8,6 +8,8 @@ export {
   type JsonValue,
   type Operation,
   type Problem,
+  type BitSegment,
+  type FieldLayout,
   type RegisterLayout,
   type RejectedState,
   type Transport,
