@@ -1,6 +1,6 @@
 # bust-editor
 
-The register map editor of [bust](https://github.com/logvik-org/bust), for the web. Like bust's console editor, it shows the registers in a table, the fields and bits of the selected register below, and the keys of the one in focus beside them. Right-click or Shift+F10 on a register or field opens a menu of what to do with it, and changes go through dialogs built from bust's JSON Schema. [cloudbust](https://cloudbust.netlify.app) runs it with bust in the browser.
+The register map editor of [bust](https://github.com/logvik-org/bust), for the web. Like bust's console editor, it shows the registers in a table, the fields and bits of the selected register below, and the keys of the one in focus beside them. Right-click or Shift+F10 on a register or field opens a menu of what to do with it, and changes go through dialogs built from bust's JSON Schema. [cloudbust](https://cloudbust.org) runs it with bust in the browser.
 
 The editor never changes a register map itself. Every change goes to bust as JSON Patch operations, and bust either makes it or rejects it with its problems, which the editor shows next to the values they are about. So the editor only ever holds register maps bust accepts.
 
