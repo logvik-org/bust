@@ -9,12 +9,16 @@ the git log and on [PyPI](https://pypi.org/project/bust/#history).
 
 ## [Unreleased]
 
+## [1.1.0]
+
 ### Added
 - `bust.generate_files` returns every output file as `{path: content}`, without writing to disk or running `pdflatex`. The command line writes that result.
 - `doc/<module>.html`, the documentation as one self-contained HTML page with inline SVG bit diagrams, links between the register list and the registers, a sidebar and a print stylesheet.
 - `doc/<module>.md`, the documentation as Markdown, with the register list and a bits table per register, readable on GitHub, with the table columns lined up in the source.
 - The documentation hosts the register map JSON Schema at https://bust.readthedocs.io/en/stable/register-map.schema.json. A register map may point to it with a `"$schema"` key, which gives completion, hover text and errors in editors with JSON Schema support. The editor adds the key to new register maps.
 - `bust.bundle_zip` turns the result of `generate_files` into one zip, in the folder layout the CLI writes, with a `README.md` that lists what each file is and names the bust version and time.
+- `bust.editing.bridge` answers JSON-RPC 2.0 requests from an editor UI and applies them to a register map as JSON Patch operations, returning bust's problems for any change it rejects. Call `EditorBridge().handle(request)` in Python or Pyodide, or run `python -m bust.editing.bridge` over stdin and stdout.
+- `bust-editor`, a web register map editor in `editor-ui/`, published to npm on its own version line. cloudbust uses it.
 - bust runs under Pyodide in the browser. Getting started lists the dependencies to install there, and CI checks that the wheel generates every example under Pyodide as it does under CPython.
 
 ### Changed
@@ -176,5 +180,6 @@ First release of bust 1.0, a rewrite of bust 0.14. Install it with
 - `bust --help` and the README named the command `bust.py`. The installed
   command is `bust`.
 
-[Unreleased]: https://github.com/logvik-org/bust/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/logvik-org/bust/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/logvik-org/bust/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/logvik-org/bust/compare/v0.14.1...v1.0.0
